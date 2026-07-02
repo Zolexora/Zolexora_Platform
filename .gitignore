@@ -1,0 +1,30 @@
+# Python
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+*.env
+.env.local
+.env.*
+
+# Frappe / bench
+sites/
+logs/
+assets/
+public/files/
+private/files/
+node_modules/
+
+# Docker
+docker-compose.override.yml
+*.log
+*.tmp
+*.pid
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
+.idea/
+*.swp
