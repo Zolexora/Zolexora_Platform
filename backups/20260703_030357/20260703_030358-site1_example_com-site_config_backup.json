@@ -1,0 +1,15 @@
+{
+ "db_host": "mariadb",
+ "db_name": "_94f97f8d0a2b3951",
+ "db_password": "qlygYdGScapkciEU",
+ "db_type": "mariadb",
+ "db_user": "_94f97f8d0a2b3951",
+ "installed_apps": [
+  "frappe",
+  "erpnext",
+  "zolexora_core",
+  "zolexora_branding",
+  "zolexora_platform",
+  "zolexora_integrations"
+ ]
+}

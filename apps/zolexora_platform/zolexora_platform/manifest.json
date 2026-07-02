@@ -1,0 +1,13 @@
+{
+  "name": "Zolexora Platform",
+  "app_name": "zolexora_platform",
+  "app_title": "Zolexora Platform",
+  "app_publisher": "Zolexora",
+  "app_description": "Custom workflows and platform modules for Zolexora ERP.",
+  "app_email": "info@zolexora.com",
+  "app_license": "GPL-3.0-or-later",
+  "app_version": "1.0.0",
+  "required_apps": [
+    "zolexora_branding"
+  ]
+}

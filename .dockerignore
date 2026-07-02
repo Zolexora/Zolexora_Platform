@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.swp
+.env
+.env.*
+node_modules/
+logs/
+assets/
+backups/
+sites/

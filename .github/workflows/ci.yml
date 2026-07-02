@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - 'feature/**'
+      - 'release/**'
+      - 'hotfix/**'
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install Ruff and Black
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff black
+      - name: Check formatting
+        run: |
+          black --check .
+          ruff check .
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - name: Copy Env Template
+        run: cp .env.example .env
+      - name: Build Compose Images
+        run: |
+          docker compose -f compose.yaml build --pull
+
+  bootstrap-validation:
+    runs-on: ubuntu-latest
+    needs: docker-build
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Copy Env Template
+        run: cp .env.example .env
+      - name: Build Docker images
+        run: docker compose -f compose.yaml build --pull
+      - name: Start Compose stack
+        run: docker compose -f compose.yaml up -d
+      - name: Run clean bootstrap
+        run: ./scripts/init-site.sh
+      - name: Verify container health
+        run: |
+          docker compose -f compose.yaml ps
+          unhealthy="$(docker compose -f compose.yaml ps --format json | jq -r 'select(.Health == "unhealthy" or .State != "running") | .Service')"
+          if [ -n "$unhealthy" ]; then
+            echo "Unhealthy or stopped services:"
+            echo "$unhealthy"
+            docker compose -f compose.yaml logs --no-color --tail=120
+            exit 1
+          fi
+      - name: Cleanup
+        if: always()
+        run: docker compose -f compose.yaml down -v
