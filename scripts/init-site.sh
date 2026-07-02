@@ -2,18 +2,25 @@
 set -euo pipefail
 
 CURRENT_STEP="bootstrap"
+SCRIPT_NAME="init-site"
+
+log() {
+  local level="$1"
+  shift
+  printf '%s [%s] [%s] %s\n' "$(date -Iseconds)" "$level" "$SCRIPT_NAME" "$*"
+}
 
 log_step() {
   CURRENT_STEP="$1"
-  printf '\n✔ %s\n' "$CURRENT_STEP"
+  log "INFO" "$CURRENT_STEP"
 }
 
 fail_report() {
   local exit_code=$?
-  printf '\nBootstrap failed\n'
-  printf 'Step: %s\n' "$CURRENT_STEP"
-  printf 'Exit code: %s\n' "$exit_code"
-  printf 'Suggested remediation: review the exception above, fix the failing bootstrap phase, then rerun ./scripts/init-site.sh.\n'
+  log "ERROR" "Bootstrap failed"
+  log "ERROR" "Step: $CURRENT_STEP"
+  log "ERROR" "Exit code: $exit_code"
+  log "ERROR" "Suggested remediation: review the exception above, fix the failing bootstrap phase, then rerun ./scripts/init-site.sh"
   exit "$exit_code"
 }
 
@@ -37,6 +44,24 @@ compose_exec() {
   docker compose -f compose.yaml exec -T "$@"
 }
 
+app_available() {
+  local app="$1"
+  compose_exec backend test -d "apps/$app"
+}
+
+app_enabled_for_bench() {
+  local app="$1"
+  compose_exec backend sh -c "grep -qx '$app' sites/apps.txt"
+}
+
+enable_app_for_bench() {
+  local app="$1"
+  if app_enabled_for_bench "$app"; then
+    return
+  fi
+  compose_exec backend sh -c "printf '%s\n' '$app' >> sites/apps.txt"
+}
+
 site_exists() {
   compose_exec backend test -d "sites/$SITE"
 }
@@ -50,6 +75,11 @@ install_app_if_missing() {
   local app="$1"
   local label="$2"
   log_step "Installing $label"
+  if ! app_available "$app"; then
+    echo "$app app directory is not available in the runtime image; skipping."
+    return
+  fi
+  enable_app_for_bench "$app"
   if app_installed "$app"; then
     echo "$app is already installed; skipping."
     return

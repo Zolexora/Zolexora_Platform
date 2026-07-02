@@ -1,13 +1,17 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
-if [ ! -f .env ]; then
-  echo "Please copy .env.example to .env and update values."
-  exit 1
-fi
+SCRIPT_NAME="daily-backup"
 
-set -a
-source .env
-set +a
+log() {
+  local level="$1"
+  shift
+  printf '%s [%s] [%s] %s\n' "$(date -Iseconds)" "$level" "$SCRIPT_NAME" "$*"
+}
 
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT_DIR"
+
+log "INFO" "starting scheduled backup"
 ./scripts/backup.sh
+log "INFO" "scheduled backup completed"
