@@ -14,7 +14,7 @@ on:
       - develop
 
 jobs:
-  lint:
+  static-validation:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,30 +22,29 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install Ruff and Black
+      - name: Install Python tooling
         run: |
           python -m pip install --upgrade pip
           pip install ruff black
-      - name: Check formatting
+      - name: Shell syntax
         run: |
-          black --check .
-          ruff check .
-
-  docker-build:
-    runs-on: ubuntu-latest
-    needs: lint
-    steps:
-      - uses: actions/checkout@v4
-      - name: Copy Env Template
-        run: cp .env.example .env
-      - name: Build Compose Images
+          bash -n scripts/*.sh
+      - name: Python formatting and lint
         run: |
-          docker compose -f compose.yaml build --pull
+          black --check apps/zolexora_core apps/zolexora_branding apps/zolexora_platform apps/zolexora_integrations
+          ruff check apps/zolexora_core apps/zolexora_branding apps/zolexora_platform apps/zolexora_integrations
+      - name: Documentation files exist
+        run: |
+          test -f docs/production-guide.md
+          test -f docs/security-review.md
+          test -f docs/disaster-recovery-report.md
+          test -f docs/upgrade-validation-report.md
+          test -f docs/phase-3.8-production-certification-report.md
 
-  bootstrap-validation:
+  docker-operational-validation:
     runs-on: ubuntu-latest
-    needs: docker-build
-    timeout-minutes: 45
+    needs: static-validation
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - name: Copy Env Template
@@ -56,16 +55,40 @@ jobs:
         run: docker compose -f compose.yaml up -d
       - name: Run clean bootstrap
         run: ./scripts/init-site.sh
-      - name: Verify container health
+      - name: Run idempotent bootstrap
+        run: ./scripts/init-site.sh
+      - name: Run healthcheck
+        run: ./scripts/healthcheck.sh
+      - name: Generate verified backup
+        run: ./scripts/backup.sh
+      - name: Restore latest backup
         run: |
-          docker compose -f compose.yaml ps
-          unhealthy="$(docker compose -f compose.yaml ps --format json | jq -r 'select(.Health == "unhealthy" or .State != "running") | .Service')"
-          if [ -n "$unhealthy" ]; then
-            echo "Unhealthy or stopped services:"
-            echo "$unhealthy"
-            docker compose -f compose.yaml logs --no-color --tail=120
-            exit 1
-          fi
+          latest_backup="$(find backups -mindepth 1 -maxdepth 1 -type d | sort | tail -n 1)"
+          ./scripts/restore.sh "$latest_backup"
+      - name: Custom app import checks
+        run: |
+          docker compose -f compose.yaml exec -T backend python - <<'PY'
+          import importlib
+          for module in (
+              "zolexora_core",
+              "zolexora_branding",
+              "zolexora_platform",
+              "zolexora_integrations",
+          ):
+              importlib.import_module(module)
+          print("custom app imports ok")
+          PY
+      - name: Upgrade compatibility validation without image upgrade
+        run: ./scripts/upgrade-validation.sh
       - name: Cleanup
         if: always()
         run: docker compose -f compose.yaml down -v
+
+  destructive-disaster-recovery:
+    runs-on: ubuntu-latest
+    needs: docker-operational-validation
+    if: false
+    steps:
+      - run: |
+          echo "Full destructive DR is intentionally disabled in lightweight CI."
+          echo "Run locally or in staging with ZOLEXORA_ALLOW_DESTRUCTIVE_DR=1 ./scripts/disaster-recovery-test.sh"

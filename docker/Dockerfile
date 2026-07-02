@@ -4,7 +4,6 @@ FROM frappe/erpnext:version-16
 WORKDIR /home/frappe/frappe-bench
 
 USER frappe
-RUN bench get-app --branch version-16 https://github.com/frappe/payments.git
 
 USER root
 COPY ./apps /home/frappe/frappe-bench/apps
@@ -26,7 +25,7 @@ RUN chmod +x /usr/local/bin/configure-common-site
 
 USER frappe
 
-# Install Zolexora custom applications in correct dependency order
+# Install vendored Payments and Zolexora custom applications in dependency order.
 RUN /home/frappe/frappe-bench/env/bin/pip install -e apps/payments && \
     /home/frappe/frappe-bench/env/bin/pip install -e apps/zolexora_core && \
     /home/frappe/frappe-bench/env/bin/pip install -e apps/zolexora_branding && \
