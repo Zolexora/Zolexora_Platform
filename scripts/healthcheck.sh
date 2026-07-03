@@ -54,7 +54,7 @@ check "MariaDB connectivity" compose_exec mariadb mariadb-admin ping -h localhos
 check "Redis cache ping" compose_exec redis-cache redis-cli ping
 check "Redis queue ping" compose_exec redis-queue redis-cli ping
 check "Redis socketio ping" compose_exec redis-socketio redis-cli ping
-check "Backend HTTP availability" compose_exec backend curl -fsS http://localhost:8000
+check "Backend HTTP availability" compose_exec backend curl -fsS -H "Host: $SITE" http://localhost:8000/api/method/ping
 check "Frontend HTTP ping" curl -fsS -H "Host: $SITE" "http://127.0.0.1:${HTTP_PORT}/api/method/ping"
 check "Socket.IO process" compose_exec socketio sh -c "tr '\\0' ' ' </proc/1/cmdline | grep -q 'socketio.js'"
 check "Scheduler process" compose_exec scheduler sh -c "tr '\\0' ' ' </proc/1/cmdline | grep -q 'frappe schedule'"

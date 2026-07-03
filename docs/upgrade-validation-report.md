@@ -3,17 +3,23 @@
 Date: 2026-07-03
 Result: NOT CERTIFIED
 
-Upgrade validation was not executed after the Phase 3.8 bootstrap validation failed during Payments installation.
+Upgrade validation was not executed because Phase 3.8A stopped during bootstrap.
 
-The upgrade validation script was implemented at `scripts/upgrade-validation.sh`. It records app versions, optionally rebuilds the target v16 image, runs migrations, validates hook imports, runs smoke validation, and verifies background worker execution.
-
-## Remaining Required Command
+Failed command:
 
 ```bash
-RUN_UPGRADE_BUILD=1 ./scripts/upgrade-validation.sh
+./scripts/init-site.sh
 ```
+
+Failure:
+
+```text
+An error occurred while installing payments: Web Form: Options must be a valid DocType for field Payment Gateway in row 62
+```
+
+The upgrade validation script remains available at `scripts/upgrade-validation.sh`, but it was not executed.
 
 ## Decision
 
-NOT CERTIFIED until executed successfully in local staging or CI after bootstrap passes.
+NOT CERTIFIED.
 

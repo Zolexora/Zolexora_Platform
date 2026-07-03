@@ -54,6 +54,38 @@ compose_exec() {
   docker compose -f compose.yaml exec -T "$@"
 }
 
+site_database_grant_sql() {
+  compose_exec backend python3 - "$SITE" <<'PY'
+import json
+import sys
+
+site = sys.argv[1]
+with open(f"sites/{site}/site_config.json", encoding="utf-8") as handle:
+    config = json.load(handle)
+
+db_name = config["db_name"]
+db_user = config.get("db_user") or db_name
+db_password = config["db_password"]
+
+def sql_literal(value):
+    return "'" + str(value).replace("\\", "\\\\").replace("'", "''") + "'"
+
+def sql_identifier(value):
+    return "`" + str(value).replace("`", "``") + "`"
+
+print(f"CREATE USER IF NOT EXISTS {sql_literal(db_user)}@'%' IDENTIFIED BY {sql_literal(db_password)};")
+print(f"ALTER USER {sql_literal(db_user)}@'%' IDENTIFIED BY {sql_literal(db_password)};")
+print(f"GRANT ALL PRIVILEGES ON {sql_identifier(db_name)}.* TO {sql_literal(db_user)}@'%';")
+print("FLUSH PRIVILEGES;")
+PY
+}
+
+ensure_site_database_network_access() {
+  step "Ensuring site database network access"
+  site_database_grant_sql | compose_exec mariadb mariadb -u"$DB_ROOT" -p"$DB_ROOT_PASS"
+  log "INFO" "Ensured site database user can connect from Compose service containers"
+}
+
 find_required_file() {
   local pattern="$1"
   local exclude_pattern="${2:-a^}"
@@ -90,7 +122,12 @@ tar -tf "$PRIVATE_FILES" >/dev/null
 
 if [ -f "$BACKUP_DIR/SHA256SUMS" ]; then
   step "Verifying checksum manifest"
-  (cd "$BACKUP_DIR" && sha256sum -c SHA256SUMS)
+  if (cd "$BACKUP_DIR" && sha256sum -c SHA256SUMS); then
+    log "INFO" "checksum manifest verified using backup-relative paths"
+  else
+    log "WARN" "backup-relative checksum verification failed; retrying legacy repository-relative manifest"
+    sha256sum -c "$BACKUP_DIR/SHA256SUMS"
+  fi
 else
   log "WARN" "checksum manifest missing; restore will continue after archive validation"
 fi
@@ -110,6 +147,8 @@ compose_exec backend bench --site "$SITE" restore "sites/$SITE/private/backups/$
   --db-root-username "$DB_ROOT" \
   --db-root-password "$DB_ROOT_PASS" \
   --force
+
+ensure_site_database_network_access
 
 step "Running migrations"
 compose_exec backend bench --site "$SITE" migrate

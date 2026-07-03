@@ -39,9 +39,42 @@ SITE="${SITE_NAME:-site1.example.com}"
 ADMIN_PASS="${ADMIN_PASSWORD:?ADMIN_PASSWORD is required}"
 DB_ROOT="${DB_ROOT_USER:-root}"
 DB_ROOT_PASS="${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD is required}"
+INSTALL_PAYMENTS="${INSTALL_PAYMENTS:-0}"
 
 compose_exec() {
   docker compose -f compose.yaml exec -T "$@"
+}
+
+site_database_grant_sql() {
+  compose_exec backend python3 - "$SITE" <<'PY'
+import json
+import sys
+
+site = sys.argv[1]
+with open(f"sites/{site}/site_config.json", encoding="utf-8") as handle:
+    config = json.load(handle)
+
+db_name = config["db_name"]
+db_user = config.get("db_user") or db_name
+db_password = config["db_password"]
+
+def sql_literal(value):
+    return "'" + str(value).replace("\\", "\\\\").replace("'", "''") + "'"
+
+def sql_identifier(value):
+    return "`" + str(value).replace("`", "``") + "`"
+
+print(f"CREATE USER IF NOT EXISTS {sql_literal(db_user)}@'%' IDENTIFIED BY {sql_literal(db_password)};")
+print(f"ALTER USER {sql_literal(db_user)}@'%' IDENTIFIED BY {sql_literal(db_password)};")
+print(f"GRANT ALL PRIVILEGES ON {sql_identifier(db_name)}.* TO {sql_literal(db_user)}@'%';")
+print("FLUSH PRIVILEGES;")
+PY
+}
+
+ensure_site_database_network_access() {
+  log_step "Ensuring site database network access"
+  site_database_grant_sql | compose_exec mariadb mariadb -u"$DB_ROOT" -p"$DB_ROOT_PASS"
+  log "INFO" "Ensured site database user can connect from Compose service containers"
 }
 
 app_available() {
@@ -49,17 +82,42 @@ app_available() {
   compose_exec backend test -d "apps/$app"
 }
 
-app_enabled_for_bench() {
+ensure_app_in_apps_txt() {
   local app="$1"
-  compose_exec backend sh -c "grep -qx '$app' sites/apps.txt"
-}
+  local required="${2:-required}"
 
-enable_app_for_bench() {
-  local app="$1"
-  if app_enabled_for_bench "$app"; then
+  if ! app_available "$app"; then
+    if [ "$required" = "required" ]; then
+      log "ERROR" "Required app directory apps/$app is missing from the runtime image"
+      return 1
+    fi
+    log "WARN" "Optional app directory apps/$app not found; skipping apps.txt registration"
     return
   fi
+
+  compose_exec backend sh -c "touch sites/apps.txt"
+  if compose_exec backend sh -c "grep -qx '$app' sites/apps.txt"; then
+    log "INFO" "$app already present in sites/apps.txt"
+    return
+  fi
+
   compose_exec backend sh -c "printf '%s\n' '$app' >> sites/apps.txt"
+  log "INFO" "Added $app to sites/apps.txt"
+}
+
+sync_bench_app_registry() {
+  log_step "Synchronizing bench app registry"
+  ensure_app_in_apps_txt "frappe" "required"
+  ensure_app_in_apps_txt "erpnext" "required"
+  if [ "$INSTALL_PAYMENTS" = "1" ]; then
+    ensure_app_in_apps_txt "payments" "optional"
+  else
+    log "INFO" "Payments apps.txt registration skipped by INSTALL_PAYMENTS=0"
+  fi
+  ensure_app_in_apps_txt "zolexora_core" "required"
+  ensure_app_in_apps_txt "zolexora_branding" "required"
+  ensure_app_in_apps_txt "zolexora_platform" "required"
+  ensure_app_in_apps_txt "zolexora_integrations" "required"
 }
 
 site_exists() {
@@ -71,17 +129,47 @@ app_installed() {
   compose_exec backend bench --site "$SITE" list-apps | awk '{print $1}' | grep -qx "$app"
 }
 
+doctype_exists() {
+  local doctype="$1"
+  compose_exec backend bench --site "$SITE" mariadb -N -e "select name from tabDocType where name='$doctype';" | grep -qx "$doctype"
+}
+
+payments_partial_state_exists() {
+  app_installed "payments" && ! doctype_exists "Payment Gateway"
+}
+
+validate_payments_state() {
+  log_step "Validating Payments state"
+
+  if payments_partial_state_exists; then
+    log "ERROR" "Detected partial Payments state: payments is listed as installed but Payment Gateway DocType is missing"
+    log "ERROR" "Use a clean local/staging site volume or a Frappe-supported uninstall/cleanup before certification"
+    return 1
+  fi
+
+  if [ "$INSTALL_PAYMENTS" = "1" ]; then
+    log "INFO" "Payments installation enabled by INSTALL_PAYMENTS=1"
+    return
+  fi
+
+  log "INFO" "Payments install disabled by INSTALL_PAYMENTS=0"
+}
+
 install_app_if_missing() {
   local app="$1"
   local label="$2"
+  local required="${3:-required}"
   log_step "Installing $label"
   if ! app_available "$app"; then
-    echo "$app app directory is not available in the runtime image; skipping."
+    if [ "$required" = "required" ]; then
+      log "ERROR" "Required app $app is not available in the runtime image"
+      return 1
+    fi
+    log "WARN" "$app app directory is not available in the runtime image; skipping"
     return
   fi
-  enable_app_for_bench "$app"
   if app_installed "$app"; then
-    echo "$app is already installed; skipping."
+    log "INFO" "$app is already installed; skipping"
     return
   fi
   compose_exec backend bench --site "$SITE" install-app "$app"
@@ -125,7 +213,13 @@ else
     --set-default
 fi
 
-install_app_if_missing "payments" "Payments"
+ensure_site_database_network_access
+sync_bench_app_registry
+
+validate_payments_state
+if [ "$INSTALL_PAYMENTS" = "1" ]; then
+  install_app_if_missing "payments" "Payments" "optional"
+fi
 install_app_if_missing "zolexora_core" "zolexora_core"
 
 log_step "Running migrations"

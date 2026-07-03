@@ -3,9 +3,7 @@
 Date: 2026-07-03
 Result: NOT CERTIFIED
 
-Disaster recovery certification was not executed after the Phase 3.8 bootstrap validation failed during Payments installation.
-
-## Blocker
+Disaster recovery certification was not executed because Phase 3.8A stopped during bootstrap.
 
 Failed command:
 
@@ -16,16 +14,10 @@ Failed command:
 Failure:
 
 ```text
-An error occurred while installing payments: App payments not in apps.txt
+An error occurred while installing payments: Web Form: Options must be a valid DocType for field Payment Gateway in row 62
 ```
 
-## Status
-
-The destructive DR script was implemented at `scripts/disaster-recovery-test.sh`, but it was not executed. Production disaster recovery remains blocked until bootstrap passes from the current vendored-app image and the DR script is run with:
-
-```bash
-ZOLEXORA_ALLOW_DESTRUCTIVE_DR=1 ./scripts/disaster-recovery-test.sh
-```
+The destructive DR script remains available at `scripts/disaster-recovery-test.sh`, but it was not executed.
 
 ## Decision
 
