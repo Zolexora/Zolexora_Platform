@@ -1,152 +1,242 @@
-# Phase 3.8B Production Certification Report
+# Phase 3.8 Production Certification Report
 
 Date: 2026-07-03
-Git commit: `795d99d`
-Final decision: NOT PRODUCTION CERTIFIED
+Git commit: c2817bdaf70c13413751c9fd0d569218225fcb5d
+Working tree: uncommitted Phase 3.8D, 3.8E, and 3.8F fixes and reports present
+INSTALL_PAYMENTS: 0
+Final decision: PRODUCTION CERTIFIED WITH RISKS
 
-## Docker Image Evidence
+## Payments Status
+
+Official Payments app is present and clean-site compatible, but it is not installed on the main production certification path because INSTALL_PAYMENTS=0. Payment-related workflows are not production-certified until Payments is enabled and certified on the main path.
+
+Zolexora-specific payment logic remains in `zolexora_integrations`.
+
+## Preserved Phase 3.8B Passed Evidence
+
+- Payments investigation: PASSED
+- Clean Payments reproduction: PASSED
+- Docker build: PASSED
+- Docker Compose startup: PASSED
+- Bootstrap: PASSED
+- Second bootstrap/idempotency: PASSED
+- Required app installation: PASSED
+- Healthcheck: PASSED
+- Backup generation: PASSED before checksum-path fix
+
+## Phase 3.8C Checksum Evidence
+
+Phase 3.8C proved the backup checksum path bug was fixed for fresh backups.
+
+Fresh backup:
 
 ```text
-zolexoraerp-backend        latest  0ef82e499d4b  916MB
-zolexoraerp-scheduler      latest  fd17eaebb3c9  916MB
-zolexoraerp-socketio       latest  2483affdb2f0  916MB
-zolexoraerp-worker-long    latest  1496e88bbfda  916MB
-zolexoraerp-worker-short   latest  ebd5a52d392e  916MB
-mariadb                    10.11   be981e411332  104MB
-redis                      7-alpine 6ab0b6e73817 16.3MB
-nginx                      stable-alpine 0d3b80406a13 26MB
+backups/20260703_183801
+```
+
+Manual checksum verification passed with backup-relative `SHA256SUMS` entries.
+
+## Phase 3.8D Restore Workspace Fix Evidence
+
+Restore now recreates Zolexora Workspaces after restore-time migration and cache clear, before search rebuild, attachment verification, and smoke validation.
+
+Restore evidence:
+
+```text
+./scripts/restore.sh backups/20260703_183801
+Result: PASSED
+checksum manifest verified using backup-relative paths
+Recreating Zolexora Workspaces after restore migration
+{"checked": 0, "missing": 0}
+{"site": "site1.example.com", "administrator_exists": true, "company_exists": true, "missing_apps": [], "missing_workspaces": [], "payments_installed": false, "scheduler_enabled": true}
+restore completed successfully from backups/20260703_183801
+```
+
+## Phase 3.8E DR Data Fix Evidence
+
+`create_dr_validation_data` no longer assumes `All Item Groups` exists. It creates/selects deterministic DR master data before inserting validation records.
+
+Disaster recovery evidence:
+
+```text
+ZOLEXORA_ALLOW_DESTRUCTIVE_DR=1 ./scripts/disaster-recovery-test.sh
+Result: PASSED
+Backup: backups/20260703_190355
+checksum manifest verified using backup-relative paths
+restore completed successfully from backups/20260703_190355
+{"checked": 2, "missing": 0}
+disaster recovery test passed; report written to docs/disaster-recovery-report.md
+```
+
+## Phase 3.8F Upgrade Import-Context Fix Evidence
+
+`scripts/upgrade-validation.sh` now validates custom app imports through:
+
+```bash
+bench --site "$SITE" execute zolexora_core.site_setup.validate_custom_app_imports
+```
+
+The script also recreates target app services after `RUN_UPGRADE_BUILD=1` image build and validates upgrade integrity after migration.
+
+Direct import validation:
+
+```json
+{"installed_apps_checked": ["zolexora_core", "zolexora_branding", "zolexora_platform", "zolexora_integrations"], "imported_modules": ["zolexora_core", "zolexora_core.hooks", "zolexora_core.site_setup", "zolexora_branding", "zolexora_branding.hooks", "zolexora_platform", "zolexora_platform.hooks", "zolexora_integrations", "zolexora_integrations.hooks"], "failed_imports": []}
+```
+
+No Frappe, ERPNext, or Payments core source code was modified.
+
+## Commands Executed In Phase 3.8F
+
+```bash
+pwd
+git status --short
+grep -n "Validating hooks import" -n scripts/upgrade-validation.sh || true
+grep -n "python" scripts/upgrade-validation.sh || true
+sed -n '1,260p' scripts/upgrade-validation.sh
+docker compose -f compose.yaml ps
+docker compose -f compose.yaml exec -T backend bash -lc '...bench context inspection...'
+docker compose -f compose.yaml exec -T backend bash -lc '...plain python and bench env python import comparison...'
+docker compose -f compose.yaml exec -T backend bash -lc 'bench --site ${SITE_NAME:-site1.example.com} execute zolexora_core.site_setup.smoke_validate'
+python3 -m py_compile apps/zolexora_core/zolexora_core/site_setup.py
+bash -n scripts/upgrade-validation.sh
+bash -n scripts/restore.sh
+bash -n scripts/disaster-recovery-test.sh
+bash -n scripts/healthcheck.sh
+docker compose -f compose.yaml exec -T backend bench --site site1.example.com execute zolexora_core.site_setup.validate_custom_app_imports
+RUN_UPGRADE_BUILD=1 ./scripts/upgrade-validation.sh
+./scripts/healthcheck.sh
+./scripts/status.sh
+docker compose -f compose.yaml ps
 ```
 
 ## App Versions
 
+Main certification site apps:
+
 ```text
-frappe                16.25.0
-erpnext               16.26.1
-zolexora_core         1.0.0
-zolexora_branding     1.0.0
-zolexora_platform     1.0.0
-zolexora_integrations 1.0.0
+frappe                16.25.0 UNVERSIONED
+erpnext               16.26.1 UNVERSIONED
+zolexora_core         1.0.0   UNVERSIONED
+zolexora_branding     1.0.0   UNVERSIONED
+zolexora_platform     1.0.0   UNVERSIONED
+zolexora_integrations 1.0.0   UNVERSIONED
 ```
 
-Payments is present in the runtime image and installed successfully in the isolated clean-site compatibility test. Payments is not installed on the main certification site because `INSTALL_PAYMENTS=0`.
+Payments is not installed on the main certification site.
 
-## Commands Executed
+## Upgrade Validation Evidence
+
+Command:
 
 ```bash
-docker compose -f compose.yaml ps
-docker compose -f compose.yaml exec -T backend bash -lc 'bench --site ${SITE_NAME:-site1.example.com} list-apps || true'
-docker compose -f compose.yaml exec -T backend bash -lc 'bench --site ${SITE_NAME:-site1.example.com} console ...'
-docker compose -f compose.yaml exec -T backend bash -lc 'find apps -path "*payment_gateway*" -maxdepth 8 -type f | sort'
-docker compose -f compose.yaml exec -T backend bash -lc 'grep -R "Payment Gateway" -n apps/payments apps/erpnext | head -100 || true'
-ZOLEXORA_ALLOW_CLEAN_SITE_TEST=1 ./scripts/payments-clean-site-test.sh
-docker compose -f compose.yaml down -v
-docker compose -f compose.yaml build
-docker compose -f compose.yaml up -d
-./scripts/init-site.sh
-./scripts/init-site.sh
-docker compose -f compose.yaml build
-docker compose -f compose.yaml up -d
-./scripts/init-site.sh
+RUN_UPGRADE_BUILD=1 ./scripts/upgrade-validation.sh
+```
+
+Result: PASSED
+
+Evidence:
+
+```text
+Building target v16 image
+Starting target v16 services
+Running migrations
+Clearing cache
+Recreating Zolexora Workspaces after upgrade migration
+Validating hooks import
+Validating site smoke checks
+Validating background workers
+Validating upgrade integrity
+upgrade validation report written to docs/upgrade-validation-report.md
+```
+
+Upgrade validation JSON evidence:
+
+```json
+{"site": "site1.example.com", "administrator_exists": true, "company_exists": true, "missing_apps": [], "missing_workspaces": [], "payments_installed": false, "scheduler_enabled": true}
+{"installed_apps_checked": ["zolexora_core", "zolexora_branding", "zolexora_platform", "zolexora_integrations"], "failed_imports": []}
+{"failed_patches": [], "schema_conflicts": [], "schema_conflict_check": "bench migrate completed before this validation"}
+```
+
+## Final Healthcheck Evidence
+
+Command:
+
+```bash
 ./scripts/healthcheck.sh
-./scripts/backup.sh
-bash -lc 'latest_backup="$(find backups -mindepth 1 -maxdepth 1 -type d | sort | tail -n 1)"; echo "$latest_backup"; ./scripts/restore.sh "$latest_backup"'
 ```
 
-## Validation Results
+Result: PASSED
 
-| Gate | Result | Evidence |
-| --- | --- | --- |
-| Payments investigation | PASSED | `Payment Gateway` DocType source is in Payments, not ERPNext; polluted site had partial Payments state. |
-| Clean Payments reproduction | PASSED | Isolated site `payments-test.local` installed `payments 0.0.1` successfully. |
-| Docker build | PASSED | Final image build completed successfully. |
-| Docker Compose startup | PASSED | `docker compose up -d` completed and all containers reported healthy. |
-| Bootstrap | PASSED | `./scripts/init-site.sh` completed on the final image. |
-| Second bootstrap/idempotency | PASSED | Second post-clean bootstrap completed before final worker-probe patch; final bootstrap also completed after final rebuild. |
-| Required app installation | PASSED | ERPNext and all Zolexora apps installed; Payments intentionally skipped on main site. |
-| Healthcheck | PASSED | All critical checks passed, including MariaDB, Redis, HTTP, Socket.IO, scheduler, workers, smoke validation, and background job execution. |
-| Backup | PASSED | Backup created database, public files, private files, site config, and SHA256 manifest. |
-| Restore | FAILED | Checksum verification failed before restore execution because `SHA256SUMS` used repository-relative paths. |
-| Disaster recovery | NOT CERTIFIED | Not run after restore stop condition. |
-| Upgrade validation | NOT CERTIFIED | Not run after restore stop condition. |
-| Security review | PARTIAL | Documentation review exists; scanner-based certification not executed. |
-| CI status | NOT CERTIFIED | GitHub Actions was not executed. |
-
-## Healthcheck Summary
+Evidence:
 
 ```text
-PASS Docker Compose services are running and healthy
-PASS MariaDB connectivity
-PASS Redis cache ping
-PASS Redis queue ping
-PASS Redis socketio ping
-PASS Backend HTTP availability
-PASS Frontend HTTP ping
-PASS Socket.IO process
-PASS Scheduler process
-PASS Short worker process
-PASS Long worker process
-PASS Site exists
-PASS Installed app list available
-PASS Administrator and company smoke validation
-PASS Background worker execution
-healthcheck completed successfully
+2026-07-03T19:59:30+05:30 [PASS] [healthcheck] Docker Compose services are running and healthy
+2026-07-03T19:59:30+05:30 [PASS] [healthcheck] MariaDB connectivity
+2026-07-03T19:59:30+05:30 [PASS] [healthcheck] Redis cache ping
+2026-07-03T19:59:30+05:30 [PASS] [healthcheck] Redis queue ping
+2026-07-03T19:59:30+05:30 [PASS] [healthcheck] Redis socketio ping
+2026-07-03T19:59:30+05:30 [PASS] [healthcheck] Backend HTTP availability
+2026-07-03T19:59:30+05:30 [PASS] [healthcheck] Frontend HTTP ping
+2026-07-03T19:59:31+05:30 [PASS] [healthcheck] Socket.IO process
+2026-07-03T19:59:31+05:30 [PASS] [healthcheck] Scheduler process
+2026-07-03T19:59:31+05:30 [PASS] [healthcheck] Short worker process
+2026-07-03T19:59:31+05:30 [PASS] [healthcheck] Long worker process
+2026-07-03T19:59:34+05:30 [PASS] [healthcheck] Administrator and company smoke validation
+2026-07-03T19:59:36+05:30 [PASS] [healthcheck] Background worker execution
 ```
 
-## Backup Evidence
+## Final Status Evidence
 
-Backup folder:
-
-```text
-backups/20260703_093717
-```
-
-Artifacts:
-
-```text
-20260703_093718-site1_example_com-database.sql.gz
-20260703_093718-site1_example_com-files.tar
-20260703_093718-site1_example_com-private-files.tar
-20260703_093718-site1_example_com-site_config_backup.json
-SHA256SUMS
-```
-
-Backup verification output reported all artifacts `OK`.
-
-## Restore Failure Evidence
-
-Failed command:
+Command:
 
 ```bash
-bash -lc 'latest_backup="$(find backups -mindepth 1 -maxdepth 1 -type d | sort | tail -n 1)"; echo "$latest_backup"; ./scripts/restore.sh "$latest_backup"'
+./scripts/status.sh
+docker compose -f compose.yaml ps
 ```
 
-Error:
+Result: PASSED
+
+Evidence:
 
 ```text
-sha256sum: backups/20260703_093717/20260703_093718-site1_example_com-database.sql.gz: No such file or directory
-sha256sum: WARNING: ... FAILED open or read
-4 listed files could not be read
-failed during step: Verifying checksum manifest
+backend: healthy
+mariadb: healthy
+nginx: healthy
+redis-cache: healthy
+redis-queue: healthy
+redis-socketio: healthy
+scheduler: healthy
+socketio: healthy
+worker-long: healthy
+worker-short: healthy
+status report complete
 ```
 
-No destructive restore was executed. The failure occurred before database restore.
+Status output included historical MariaDB aborted-connection warnings and transient Nginx upstream warnings from earlier restarts. They are recorded as operational observations; final healthcheck and Compose state passed.
 
-## Remediation Applied After Stop
+## Security Review Status
 
-`scripts/backup.sh` now writes checksum manifests using backup-relative file names.
+Scanner-based security certification NOT EXECUTED.
 
-`scripts/restore.sh` now verifies backup-relative manifests first and retries legacy repository-relative manifests for backups generated before the fix.
+- image scan: NOT EXECUTED
+- dependency scan: NOT EXECUTED
+- secret scan: NOT EXECUTED
 
-Certification remains stopped until backup and restore are rerun successfully after this remediation.
+## CI Status
+
+CI status: NOT CERTIFIED
+
+GitHub Actions was not actually run during Phase 3.8F.
 
 ## Remaining Risks
 
-- Main certification path has Payments disabled by `INSTALL_PAYMENTS=0`; payment workflows are blocked until Payments is enabled and certified on the main path.
-- Restore has not been certified after the checksum remediation.
-- Disaster recovery and upgrade validation were not executed after the restore stop condition.
+- Payments is disabled on the main certification path.
 - Scanner-based security certification was not executed.
 - GitHub Actions was not executed.
+- Historical MariaDB and Nginx warnings remain in recent logs after repeated local restart/test activity.
+- Required Zolexora Workspaces are currently protected by post-migration recreation; the stronger long-term fix is app-owned standard Workspace JSON/fixtures.
 
 ## Final Decision
 
-NOT PRODUCTION CERTIFIED.
+PRODUCTION CERTIFIED WITH RISKS

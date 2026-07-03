@@ -68,7 +68,7 @@ The script creates a timestamped backup directory under `backups/`, verifies dat
 ./scripts/restore.sh backups/<timestamp>
 ```
 
-Restore requires database, public files, and private files archives. Checksums are verified when available.
+Restore requires database, public files, and private files archives. Checksums are verified when available. Restore also recreates Zolexora Workspaces after restore-time migration before smoke validation, because Frappe migration can remove dynamically created Workspaces as orphan records.
 
 ## Disaster Recovery Procedure
 
@@ -78,11 +78,17 @@ Run only in local/staging environments:
 ZOLEXORA_ALLOW_DESTRUCTIVE_DR=1 ./scripts/disaster-recovery-test.sh
 ```
 
+Phase 3.8F status: disaster recovery passed after deterministic DR validation master data was made idempotent.
+
 ## Upgrade Procedure
 
 ```bash
 RUN_UPGRADE_BUILD=1 ./scripts/upgrade-validation.sh
 ```
+
+Upgrade validation rebuilds/pulls the target image when `RUN_UPGRADE_BUILD=1`, recreates app services from the built images, runs migration, recreates Zolexora Workspaces after migration, validates custom app imports in bench/Frappe context, runs smoke validation, checks workers, and validates upgrade integrity.
+
+Phase 3.8F status: upgrade validation passed.
 
 ## Monitoring
 
@@ -129,4 +135,3 @@ docker compose -f compose.yaml logs -f backend scheduler worker-short worker-lon
 - Upgrade validation passes.
 - CI passes.
 - Security review has no Critical open findings.
-

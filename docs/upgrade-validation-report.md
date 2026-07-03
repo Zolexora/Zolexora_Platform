@@ -1,25 +1,62 @@
 # Upgrade Validation Report
 
-Date: 2026-07-03
-Result: NOT CERTIFIED
+Date: 2026-07-03T19:59:09+05:30
+Result: PASSED for local v16 build and migration validation
 
-Upgrade validation was not executed because Phase 3.8A stopped during bootstrap.
-
-Failed command:
-
-```bash
-./scripts/init-site.sh
-```
-
-Failure:
+## Versions Before
 
 ```text
-An error occurred while installing payments: Web Form: Options must be a valid DocType for field Payment Gateway in row 62
+
+frappe                16.25.0 UNVERSIONED
+erpnext               16.26.1 UNVERSIONED
+zolexora_core         1.0.0   UNVERSIONED
+zolexora_branding     1.0.0   UNVERSIONED
+zolexora_platform     1.0.0   UNVERSIONED
+zolexora_integrations 1.0.0   UNVERSIONED
 ```
 
-The upgrade validation script remains available at `scripts/upgrade-validation.sh`, but it was not executed.
+## Versions After
 
-## Decision
+```text
 
-NOT CERTIFIED.
+frappe                16.25.0 UNVERSIONED
+erpnext               16.26.1 UNVERSIONED
+zolexora_core         1.0.0   UNVERSIONED
+zolexora_branding     1.0.0   UNVERSIONED
+zolexora_platform     1.0.0   UNVERSIONED
+zolexora_integrations 1.0.0   UNVERSIONED
+```
 
+## Smoke Validation
+
+```json
+{"site": "site1.example.com", "administrator_exists": true, "company_exists": true, "missing_apps": [], "missing_workspaces": [], "payments_installed": false, "scheduler_enabled": true}
+```
+
+## Workspace Recreation
+
+```json
+{"created": ["Zolexora Dashboard", "Zolexora Accounts", "Zolexora Sales", "Zolexora Purchase", "Zolexora Inventory", "Zolexora CRM", "Zolexora Fleet", "Zolexora Logistics", "Zolexora Analytics", "Zolexora Administration", "Zolexora AI"], "existing": [], "skipped": []}
+```
+
+## Import Validation
+
+```json
+{"installed_apps_checked": ["zolexora_core", "zolexora_branding", "zolexora_platform", "zolexora_integrations"], "imported_modules": ["zolexora_core", "zolexora_core.hooks", "zolexora_core.site_setup", "zolexora_branding", "zolexora_branding.hooks", "zolexora_platform", "zolexora_platform.hooks", "zolexora_integrations", "zolexora_integrations.hooks"], "failed_imports": []}
+```
+
+## Worker Validation
+
+```json
+{"job_executed": true, "key": "zolexora_worker_probe:44827ddf435949f5b0c8522e9ed1a9f1"}
+```
+
+## Upgrade Integrity
+
+```json
+{"failed_patches": [], "schema_conflicts": [], "schema_conflict_check": "bench migrate completed before this validation"}
+```
+
+## Upgrade Evidence
+
+Image build/pull, migration, post-migration Workspace recreation, hook imports, smoke validation, worker probe, and failed-patch/schema-conflict checks completed.
