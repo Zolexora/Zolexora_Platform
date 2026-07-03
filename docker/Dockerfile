@@ -6,6 +6,15 @@ WORKDIR /home/frappe/frappe-bench
 USER frappe
 
 USER root
+RUN curl -fsSL https://deb.nodesource.com/setup_24.x -o /tmp/nodesource_setup.sh && \
+    bash /tmp/nodesource_setup.sh && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends nodejs && \
+    corepack enable && \
+    corepack prepare yarn@1.22.19 --activate && \
+    printf '#!/bin/sh\nexec corepack yarn "$@"\n' > /usr/local/bin/yarn && \
+    chmod +x /usr/local/bin/yarn && \
+    rm -rf /var/lib/apt/lists/* /tmp/nodesource_setup.sh
 COPY ./apps /home/frappe/frappe-bench/apps
 RUN mkdir -p /home/frappe/frappe-bench/sites && \
     echo "frappe" > /home/frappe/frappe-bench/sites/apps.txt && \
