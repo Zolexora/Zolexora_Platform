@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from time import sleep
 from uuid import uuid4
@@ -92,6 +93,7 @@ def validate_required_masters(create_missing: bool = False) -> dict[str, str]:
 def smoke_validate() -> dict[str, object]:
     """Run post-bootstrap checks that can be executed from bench."""
     installed_apps = set(frappe.get_installed_apps())
+    install_payments = os.environ.get("INSTALL_PAYMENTS", "0") == "1"
     required_apps = {
         "erpnext",
         "zolexora_core",
@@ -99,6 +101,8 @@ def smoke_validate() -> dict[str, object]:
         "zolexora_platform",
         "zolexora_integrations",
     }
+    if install_payments:
+        required_apps.add("payments")
     missing_apps = sorted(required_apps - installed_apps)
 
     workspace_names = [
@@ -120,6 +124,7 @@ def smoke_validate() -> dict[str, object]:
         "missing_apps": missing_apps,
         "missing_workspaces": missing_workspaces,
         "payments_installed": "payments" in installed_apps,
+        "install_payments": install_payments,
         "scheduler_enabled": bool(frappe.db.get_single_value("System Settings", "enable_scheduler")),
     }
 
