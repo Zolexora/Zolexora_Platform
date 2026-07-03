@@ -82,11 +82,17 @@ verify_backup() {
   tar -tf "$private_file" >/dev/null
 
   step "Writing checksum manifest"
-  sha256sum "$db_file" "$public_file" "$private_file" > "$BACKUP_DIR/SHA256SUMS"
+  (
+    cd "$BACKUP_DIR"
+    sha256sum "$(basename "$db_file")" "$(basename "$public_file")" "$(basename "$private_file")" > SHA256SUMS
+  )
   if find "$BACKUP_DIR" -maxdepth 1 -type f -name '*site_config_backup.json' | grep -q .; then
-    sha256sum "$BACKUP_DIR"/*site_config_backup.json >> "$BACKUP_DIR/SHA256SUMS"
+    (
+      cd "$BACKUP_DIR"
+      sha256sum *site_config_backup.json >> SHA256SUMS
+    )
   fi
-  sha256sum -c "$BACKUP_DIR/SHA256SUMS"
+  (cd "$BACKUP_DIR" && sha256sum -c SHA256SUMS)
 }
 
 mkdir -p "$BACKUP_DIR"

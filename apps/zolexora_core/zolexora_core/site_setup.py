@@ -282,8 +282,9 @@ def destroy_dr_validation_data() -> dict[str, object]:
 
 
 def background_job_marker(key: str) -> None:
-    """Write a short-lived cache marker from a worker process."""
-    frappe.cache().set_value(key, "ok", expires_in_sec=300)
+    """Write a temporary database-backed marker from a worker process."""
+    frappe.db.set_global(key, "ok")
+    frappe.db.commit()
 
 
 def background_job_probe(timeout: int = 30) -> dict[str, object]:
@@ -297,10 +298,14 @@ def background_job_probe(timeout: int = 30) -> dict[str, object]:
         job_name=key,
     )
 
-    for _ in range(max(timeout, 1)):
-        if frappe.cache().get_value(key) == "ok":
-            return {"job_executed": True, "key": key}
-        sleep(1)
+    try:
+        for attempt in range(max(timeout, 1)):
+            if frappe.db.get_global(key) == "ok":
+                return {"job_executed": True, "key": key}
+            sleep(1)
+    finally:
+        frappe.db.set_global(key, None)
+        frappe.db.commit()
 
     raise BootstrapError(_("Background worker probe timed out: {0}").format(key))
 

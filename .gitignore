@@ -5,11 +5,13 @@ __pycache__/
 *.pyd
 *.env
 .env.local
-.env.*
+.env.production
+.env.staging
 .env
 
 # Frappe / bench
 sites/
+backups/
 logs/
 assets/
 public/files/
