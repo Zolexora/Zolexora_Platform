@@ -139,6 +139,78 @@ def smoke_validate() -> dict[str, object]:
     return checks
 
 
+def validate_custom_app_imports() -> dict[str, object]:
+    """Validate Zolexora app modules from an initialized Frappe site context."""
+    import importlib
+
+    expected_apps = [
+        "zolexora_core",
+        "zolexora_branding",
+        "zolexora_platform",
+        "zolexora_integrations",
+    ]
+    installed_apps = set(frappe.get_installed_apps())
+    missing_apps = [app for app in expected_apps if app not in installed_apps]
+    modules_to_check = [
+        "zolexora_core",
+        "zolexora_core.hooks",
+        "zolexora_core.site_setup",
+        "zolexora_branding",
+        "zolexora_branding.hooks",
+        "zolexora_platform",
+        "zolexora_platform.hooks",
+        "zolexora_integrations",
+        "zolexora_integrations.hooks",
+    ]
+    imported: list[str] = []
+    failed: list[dict[str, str]] = []
+
+    for module_name in modules_to_check:
+        try:
+            importlib.import_module(module_name)
+            imported.append(module_name)
+        except Exception as exc:
+            failed.append({"module": module_name, "error": repr(exc)})
+
+    if missing_apps or failed:
+        raise BootstrapError({"missing_apps": missing_apps, "failed_imports": failed})
+
+    return {
+        "installed_apps_checked": expected_apps,
+        "imported_modules": imported,
+        "failed_imports": failed,
+    }
+
+
+def validate_upgrade_integrity() -> dict[str, object]:
+    """Validate upgrade state after migrate has completed."""
+    failed_patches: list[dict[str, str]] = []
+
+    if frappe.db.exists("DocType", "Patch Log"):
+        for row in frappe.get_all(
+            "Patch Log",
+            fields=["name", "patch", "traceback"],
+            limit_page_length=0,
+        ):
+            if row.traceback:
+                failed_patches.append(
+                    {
+                        "name": row.name,
+                        "patch": row.patch,
+                        "traceback": row.traceback,
+                    }
+                )
+
+    if failed_patches:
+        raise BootstrapError({"failed_patches": failed_patches})
+
+    return {
+        "failed_patches": failed_patches,
+        "schema_conflicts": [],
+        "schema_conflict_check": "bench migrate completed before this validation",
+    }
+
+
 def verify_attachment_integrity() -> dict[str, object]:
     """Verify that File records with local URLs point to restored files."""
     missing_files: list[str] = []
@@ -182,6 +254,10 @@ def create_dr_validation_data() -> dict[str, object]:
     item_code = "ZEX-DR-ITEM-0001"
     customer_name = "Zolexora DR Customer"
     supplier_name = "Zolexora DR Supplier"
+    item_group = _ensure_dr_item_group()
+    customer_group = _ensure_dr_customer_group()
+    territory = _ensure_dr_territory()
+    supplier_group = _ensure_dr_supplier_group()
 
     if not frappe.db.exists("Item", item_code):
         frappe.get_doc(
@@ -189,7 +265,7 @@ def create_dr_validation_data() -> dict[str, object]:
                 "doctype": "Item",
                 "item_code": item_code,
                 "item_name": "Zolexora DR Validation Item",
-                "item_group": _first_existing("Item Group") or "All Item Groups",
+                "item_group": item_group,
                 "stock_uom": "Nos",
                 "is_stock_item": 0,
             }
@@ -201,8 +277,8 @@ def create_dr_validation_data() -> dict[str, object]:
                 "doctype": "Customer",
                 "customer_name": customer_name,
                 "customer_type": "Company",
-                "customer_group": _first_existing("Customer Group") or "All Customer Groups",
-                "territory": _first_existing("Territory") or "All Territories",
+                "customer_group": customer_group,
+                "territory": territory,
             }
         ).insert(ignore_permissions=True)
 
@@ -212,7 +288,7 @@ def create_dr_validation_data() -> dict[str, object]:
                 "doctype": "Supplier",
                 "supplier_name": supplier_name,
                 "supplier_type": "Company",
-                "supplier_group": _first_existing("Supplier Group") or "All Supplier Groups",
+                "supplier_group": supplier_group,
             }
         ).insert(ignore_permissions=True)
 
@@ -222,8 +298,12 @@ def create_dr_validation_data() -> dict[str, object]:
 
     return {
         "item": item_code,
+        "item_group": item_group,
         "customer": customer_name,
+        "customer_group": customer_group,
+        "territory": territory,
         "supplier": supplier_name,
+        "supplier_group": supplier_group,
         "public_file": public_file,
         "private_file": private_file,
     }
@@ -349,6 +429,102 @@ def _first_existing(doctype: str) -> str | None:
     return rows[0] if rows else None
 
 
+def _ensure_dr_item_group() -> str:
+    root = "All Item Groups"
+    dr_group = "Zolexora DR Item Group"
+
+    if not frappe.db.exists("Item Group", root):
+        frappe.get_doc(
+            {
+                "doctype": "Item Group",
+                "item_group_name": root,
+                "is_group": 1,
+            }
+        ).insert(ignore_permissions=True)
+
+    if not frappe.db.exists("Item Group", dr_group):
+        frappe.get_doc(
+            {
+                "doctype": "Item Group",
+                "item_group_name": dr_group,
+                "parent_item_group": root,
+                "is_group": 0,
+            }
+        ).insert(ignore_permissions=True)
+
+    frappe.db.commit()
+    return dr_group
+
+
+def _ensure_dr_customer_group() -> str:
+    root = "All Customer Groups"
+    dr_group = "Zolexora DR Customer Group"
+
+    if not frappe.db.exists("Customer Group", root):
+        frappe.get_doc(
+            {
+                "doctype": "Customer Group",
+                "customer_group_name": root,
+                "is_group": 1,
+            }
+        ).insert(ignore_permissions=True)
+
+    if not frappe.db.exists("Customer Group", dr_group):
+        frappe.get_doc(
+            {
+                "doctype": "Customer Group",
+                "customer_group_name": dr_group,
+                "parent_customer_group": root,
+                "is_group": 0,
+            }
+        ).insert(ignore_permissions=True)
+
+    frappe.db.commit()
+    return dr_group
+
+
+def _ensure_dr_territory() -> str:
+    root = "All Territories"
+    dr_territory = "Zolexora DR Territory"
+
+    if not frappe.db.exists("Territory", root):
+        frappe.get_doc(
+            {
+                "doctype": "Territory",
+                "territory_name": root,
+                "is_group": 1,
+            }
+        ).insert(ignore_permissions=True)
+
+    if not frappe.db.exists("Territory", dr_territory):
+        frappe.get_doc(
+            {
+                "doctype": "Territory",
+                "territory_name": dr_territory,
+                "parent_territory": root,
+                "is_group": 0,
+            }
+        ).insert(ignore_permissions=True)
+
+    frappe.db.commit()
+    return dr_territory
+
+
+def _ensure_dr_supplier_group() -> str:
+    dr_group = "Zolexora DR Supplier Group"
+
+    if not frappe.db.exists("Supplier Group", dr_group):
+        frappe.get_doc(
+            {
+                "doctype": "Supplier Group",
+                "supplier_group_name": dr_group,
+            }
+        ).insert(ignore_permissions=True)
+
+    frappe.db.commit()
+    return dr_group
+
+
 def _find_file(file_name: str, is_private: int) -> str | None:
     return frappe.db.exists("File", {"file_name": file_name, "is_private": is_private})
 
@@ -409,7 +585,7 @@ def _create_default_roles() -> None:
     frappe.db.commit()
 
 
-def create_custom_workspaces() -> None:
+def create_custom_workspaces() -> dict[str, object]:
     """Create custom workspaces only when their backing modules are installed."""
     available_modules = {module.name for module in frappe.get_all("Module Def", fields=["name"])}
     workspaces = [
@@ -429,11 +605,17 @@ def create_custom_workspaces() -> None:
         },
         {"title": "Zolexora AI", "icon": "bolt", "module": "Zolexora Platform"},
     ]
+    created: list[str] = []
+    existing: list[str] = []
+    skipped: list[dict[str, str]] = []
+
     for ws in workspaces:
         name = ws["title"]
         if ws["module"] not in available_modules:
+            skipped.append({"title": name, "module": ws["module"]})
             continue
         if frappe.db.exists("Workspace", name):
+            existing.append(name)
             continue
 
         frappe.get_doc(
@@ -449,4 +631,6 @@ def create_custom_workspaces() -> None:
                 "content": "[]",
             }
         ).insert(ignore_permissions=True)
+        created.append(name)
     frappe.db.commit()
+    return {"created": created, "existing": existing, "skipped": skipped}

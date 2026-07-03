@@ -1,7 +1,13 @@
 # Security Review
 
 Date: 2026-07-03
-Result: PARTIAL REVIEW COMPLETED, NOT CERTIFIED
+Result: PARTIAL REVIEW COMPLETED, SCANNER CERTIFICATION NOT EXECUTED
+
+Scanner-based security certification NOT EXECUTED.
+
+- image scan: NOT EXECUTED
+- dependency scan: NOT EXECUTED
+- secret scan: NOT EXECUTED
 
 ## Checked
 
@@ -24,6 +30,8 @@ Result: PARTIAL REVIEW COMPLETED, NOT CERTIFIED
 
 ## Open Risks
 
+- Scanner-based security certification was not executed during Phase 3.8F.
+- GitHub Actions was not executed during Phase 3.8F.
 - `.env.example` still contains local development defaults and must not be used as production secrets.
 - Host backup scheduling is documented but not verified as installed.
 - Full dependency vulnerability scan was not run.
@@ -55,4 +63,3 @@ Result: PARTIAL REVIEW COMPLETED, NOT CERTIFIED
 - Enable WAF managed rules.
 - Restrict origin access where possible.
 - Configure DNS and SSL before setting secure cookie enforcement.
-

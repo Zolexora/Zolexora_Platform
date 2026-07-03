@@ -156,6 +156,9 @@ compose_exec backend bench --site "$SITE" migrate
 step "Clearing cache"
 compose_exec backend bench --site "$SITE" clear-cache
 
+step "Recreating Zolexora Workspaces after restore migration"
+compose_exec backend bench --site "$SITE" execute zolexora_core.site_setup.create_custom_workspaces
+
 step "Rebuilding search index if supported"
 if compose_exec backend bench --site "$SITE" build-search-index; then
   log "INFO" "search index rebuilt"
