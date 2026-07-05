@@ -96,6 +96,7 @@ verify_backup() {
 }
 
 mkdir -p "$BACKUP_DIR"
+chmod 0777 "$BACKUP_DIR"
 
 step "Creating full Frappe backup for site $SITE"
 compose_exec backend bench --site "$SITE" backup --with-files
