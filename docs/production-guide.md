@@ -111,6 +111,15 @@ python -m pip_audit --format json --output docs/pip-audit-report.json
 
 Phase 3.8I scanner reports are evidence artifacts, not blanket zero-risk claims. `gitleaks` and `pip-audit` passed with 0 findings after audit-tool remediation. Trivy executed successfully and reported accepted upstream HIGH/CRITICAL dependency and base-image findings; see `docs/security-review.md` and `docs/phase-3.8I-final-external-proof-report.md`.
 
+## CI Certification
+
+GitHub Actions validates both supported Docker paths:
+
+- `INSTALL_PAYMENTS=0`: default safe ERP path.
+- `INSTALL_PAYMENTS=1`: Payments-enabled production path.
+
+The Payments-enabled path must print `PAYMENTS_CI_OK` and `PAYMENTS_RESTORE_CI_OK` in CI before production certification can be claimed.
+
 ## Release & Production Certification Checklist
 
 - [x] `INSTALL_PAYMENTS=1` set and verified in `.env` and Docker build.
@@ -125,3 +134,4 @@ Phase 3.8I scanner reports are evidence artifacts, not blanket zero-risk claims.
 - [x] Security review completed & scanner proof generated (`docs/security-review.md`).
 - [x] External verification and remediation report completed (`docs/phase-3.8H-verification-report.md`, `docs/phase-3.8H-verification-remediation-report.md`).
 - [x] Phase 3.8I remote GitHub Actions completion verified (`docs/phase-3.8I-final-external-proof-report.md`).
+- [x] Phase 3.8J remote GitHub Actions Payments matrix verified (`docs/phase-3.8J-payments-ci-proof-report.md`).

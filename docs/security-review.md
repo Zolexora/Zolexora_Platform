@@ -1,11 +1,11 @@
 # Security Review
 
-Date: 2026-07-05
-Result: PHASE 3.8I REAL SCANNER REVIEW COMPLETED
+Date: 2026-07-06
+Result: PHASE 3.8J REAL SCANNER REVIEW CARRIED FORWARD WITH PAYMENTS CI VERIFIED
 
 ## Executive Summary
 
-Phase 3.8I security certification reviewed static configurations, container settings, environment variable handling, secret management, dependency structures, and real scanner execution using `gitleaks`, `trivy`, and `pip-audit`.
+Phase 3.8I security certification reviewed static configurations, container settings, environment variable handling, secret management, dependency structures, and real scanner execution using `gitleaks`, `trivy`, and `pip-audit`. Phase 3.8J added remote GitHub Actions matrix validation for both `INSTALL_PAYMENTS=0` and `INSTALL_PAYMENTS=1`; the Payments-enabled job passed explicit `PAYMENTS_CI_OK` and post-restore `PAYMENTS_RESTORE_CI_OK` assertions.
 
 ## Security Scanner Analysis & Artifact Status
 
@@ -31,6 +31,7 @@ Phase 3.8I security certification reviewed static configurations, container sett
 - Script failure behavior: `set -euo pipefail` and `trap fail_report ERR` enforced across all `./scripts/*.sh`.
 - Docker build context: `.dockerignore` excludes `.git`, `node_modules`, `backups`, and temporary test artifacts.
 - Official Payments App: `apps/payments` code sandboxed and enabled conditionally via `INSTALL_PAYMENTS=1`.
+- Payments-enabled CI: GitHub Actions run `28751892318` passed matrix jobs for `INSTALL_PAYMENTS=0` and `INSTALL_PAYMENTS=1`; the Payments path verified installed app state and `Payment Gateway` DocType before and after restore.
 
 ## Production Hardening Recommendations
 

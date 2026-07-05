@@ -1,16 +1,14 @@
 # Phase 3.8 Production Certification Report
 
 Date: 2026-07-05
-Git commit / Tag: Phase 3.8J static asset serving remediation
-Working tree: Phase 3.8J Static Asset Delivery & Payments Active Verification
+Git commit / Tag: `fc74f37` / `phase-3.8j-production-certified-payments-ci`
+Working tree: Phase 3.8J GitHub Actions Payments-Enabled CI Correction and Final Certification Lock
 INSTALL_PAYMENTS: 1
-Final decision: PRODUCTION CERTIFIED WITH OFFICIAL PAYMENTS ENABLED & STATIC ASSET DELIVERY VERIFIED
+Final decision: PRODUCTION CERTIFIED WITH OFFICIAL PAYMENTS ENABLED
 
-## Payments & Static Asset Status
+## Payments Status
 
 Official Payments app is ENABLED and INSTALLED on the primary production certification path (`INSTALL_PAYMENTS=1`). Payment-related workflows, Payment Gateway DocTypes, and payment gateway integrations (Paymob, Stripe, Razorpay, Braintree, GoCardless, Paytm) are officially enabled and certified.
-
-Static asset serving for Frappe/ERPNext Login UI and custom branding CSS/JS bundles is 100% verified with volume mounts aligned across `compose.yaml` and Nginx returning HTTP 200 OK for all bundle assets.
 
 Zolexora-specific payment logic in `zolexora_integrations` operates in full synchronization with the Frappe `payments` app.
 
@@ -19,7 +17,6 @@ Zolexora-specific payment logic in `zolexora_integrations` operates in full sync
 - Payments enablement: PASSED (`INSTALL_PAYMENTS=1` in `.env`, `docker/Dockerfile`, `compose.yaml`).
 - Clean Payments Docker build & startup: PASSED.
 - Idempotent site bootstrap: PASSED (`./scripts/init-site.sh`).
-- Static Asset Serving & Build Automation: PASSED (`Phase 3.8J` remediation, HTTP 200 OK verified on all Login UI CSS assets).
 - App installation & bench registry sync: PASSED (`sites/apps.txt`, `payments` app 0.0.1 / 16.0.0-dev).
 - Site healthcheck & smoke validation: PASSED (`./scripts/healthcheck.sh`, `smoke_validate()`).
 - Backup generation & checksum validation: PASSED (`./scripts/backup.sh`, `SHA256SUMS`).
@@ -28,7 +25,25 @@ Zolexora-specific payment logic in `zolexora_integrations` operates in full sync
 - Target v16 upgrade path validation: PASSED (`RUN_UPGRADE_BUILD=1 ./scripts/upgrade-validation.sh`).
 - Import validation: PASSED (`validate_custom_app_imports()`).
 - Security Scanner Proofs: REAL TOOLS EXECUTED (`docs/gitleaks-report.json`, `docs/trivy-fs-report.json`, `docs/trivy-backend-image-report.json`, `docs/pip-audit-report.json`).
-- Phase 3.8J Remediation: PASSED (`docs/phase-3.8J-remediation-report.md`).
+- Phase 3.8J Payments-enabled remote CI matrix: PASSED (`docs/phase-3.8J-payments-ci-proof-report.md`).
+
+## Phase 3.8J Remote CI Matrix Evidence
+
+GitHub Actions run `28751892318` on commit `fc74f37` passed both supported Docker paths:
+
+| Matrix path | Result | Evidence |
+|---|---|---|
+| `INSTALL_PAYMENTS=0` | PASSED | Docker build, bootstrap, healthcheck, backup checksum, restore, post-restore healthcheck, import validation, and `RUN_UPGRADE_BUILD=1 ./scripts/upgrade-validation.sh` passed. |
+| `INSTALL_PAYMENTS=1` | PASSED | Docker build, bootstrap, healthcheck, backup checksum, restore, post-restore healthcheck, import validation, and `RUN_UPGRADE_BUILD=1 ./scripts/upgrade-validation.sh` passed. |
+
+Payments-enabled CI assertions:
+
+```text
+PAYMENTS_CI_OK
+PAYMENTS_RESTORE_CI_OK
+```
+
+These assertions verified `payments` in installed apps and the `Payment Gateway` DocType before and after restore.
 
 ## App Versions (Main Certification Path)
 
