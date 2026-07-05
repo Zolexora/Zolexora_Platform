@@ -172,10 +172,12 @@ def validate_custom_app_imports() -> dict[str, object]:
         "zolexora_integrations.hooks",
     ]
     if install_payments:
-        modules_to_check.extend([
-            "payments",
-            "payments.hooks",
-        ])
+        modules_to_check.extend(
+            [
+                "payments",
+                "payments.hooks",
+            ]
+        )
     imported: list[str] = []
     failed: list[dict[str, str]] = []
 
