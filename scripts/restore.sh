@@ -153,8 +153,12 @@ ensure_site_database_network_access
 step "Running migrations"
 compose_exec backend bench --site "$SITE" migrate
 
+step "Building static assets"
+compose_exec backend bench build
+
 step "Clearing cache"
 compose_exec backend bench --site "$SITE" clear-cache
+compose_exec backend bench --site "$SITE" clear-website-cache
 
 step "Recreating Zolexora Workspaces after restore migration"
 compose_exec backend bench --site "$SITE" execute zolexora_core.site_setup.create_custom_workspaces

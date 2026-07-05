@@ -1,6 +1,6 @@
 # Upgrade Validation Report
 
-Date: 2026-07-05T21:18:46+05:30
+Date: 2026-07-05T23:23:12+05:30
 Result: PASSED for local v16 build and migration validation
 
 ## Versions Before
@@ -50,7 +50,7 @@ payments              0.0.1   UNVERSIONED
 ## Worker Validation
 
 ```json
-{"job_executed": true, "key": "zolexora_worker_probe:53373f36c36b4f0a86349d37ccf1348c"}
+{"job_executed": true, "key": "zolexora_worker_probe:2b45ca3b3a0c4968819b0396fa323b62"}
 ```
 
 ## Upgrade Integrity

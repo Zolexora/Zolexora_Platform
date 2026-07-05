@@ -223,6 +223,7 @@ fi
 install_app_if_missing "zolexora_core" "zolexora_core"
 
 log_step "Running migrations"
+compose_exec backend rm -f "sites/$SITE/locks/bench_migrate.lock"
 compose_exec backend bench --site "$SITE" migrate
 
 log_step "Validating Masters"
@@ -236,9 +237,14 @@ install_app_if_missing "zolexora_platform" "Platform"
 install_app_if_missing "zolexora_integrations" "Integrations"
 
 log_step "Final migration"
+compose_exec backend rm -f "sites/$SITE/locks/bench_migrate.lock"
 compose_exec backend bench --site "$SITE" migrate
-compose_exec backend bench --site "$SITE" clear-cache
 compose_exec backend bench --site "$SITE" enable-scheduler
+
+log_step "Building static assets and clearing cache"
+compose_exec backend bench build
+compose_exec backend bench --site "$SITE" clear-cache
+compose_exec backend bench --site "$SITE" clear-website-cache
 
 log_step "Creating Workspaces"
 compose_exec backend bench --site "$SITE" execute zolexora_core.site_setup.setup_site

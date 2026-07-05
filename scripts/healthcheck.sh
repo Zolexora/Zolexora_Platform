@@ -45,6 +45,30 @@ compose_exec() {
   docker compose -f compose.yaml exec -T "$@"
 }
 
+verify_login_css_asset() {
+  local login_html css_path asset_url
+  login_html=$(curl -fsS -H "Host: $SITE" "http://127.0.0.1:${HTTP_PORT}/login") || {
+    echo "Failed to fetch login page HTML from http://127.0.0.1:${HTTP_PORT}/login"
+    return 1
+  }
+
+  css_path=$(echo "$login_html" | grep -oE '/assets/[^"'\'' >]+\.css(\?[^"'\'' >]*)?' | head -n 1 || true)
+  if [ -z "$css_path" ]; then
+    css_path=$(echo "$login_html" | grep -oE 'assets/[^"'\'' >]+\.css(\?[^"'\'' >]*)?' | head -n 1 || true)
+    if [ -n "$css_path" ]; then
+      css_path="/$css_path"
+    fi
+  fi
+
+  if [ -z "$css_path" ]; then
+    echo "No CSS asset URL found in login page HTML"
+    return 1
+  fi
+
+  asset_url="http://127.0.0.1:${HTTP_PORT}${css_path}"
+  curl -fsS -I -H "Host: $SITE" "$asset_url" >/dev/null
+}
+
 log "INFO" "starting healthcheck for $SITE"
 
 check "Docker Compose services are running and healthy" bash -c \
@@ -56,6 +80,9 @@ check "Redis queue ping" compose_exec redis-queue redis-cli ping
 check "Redis socketio ping" compose_exec redis-socketio redis-cli ping
 check "Backend HTTP availability" compose_exec backend curl -fsS -H "Host: $SITE" http://localhost:8000/api/method/ping
 check "Frontend HTTP ping" curl -fsS -H "Host: $SITE" "http://127.0.0.1:${HTTP_PORT}/api/method/ping"
+check "Login CSS asset extraction and availability" verify_login_css_asset
+check "Branding static CSS availability" curl -fsS -I -H "Host: $SITE" "http://127.0.0.1:${HTTP_PORT}/assets/zolexora_branding/css/login.css"
+check "Branding static logo availability" curl -fsS -I -H "Host: $SITE" "http://127.0.0.1:${HTTP_PORT}/assets/zolexora_branding/images/logo.svg"
 check "Socket.IO process" compose_exec socketio sh -c "tr '\\0' ' ' </proc/1/cmdline | grep -q 'socketio.js'"
 check "Scheduler process" compose_exec scheduler sh -c "tr '\\0' ' ' </proc/1/cmdline | grep -q 'frappe schedule'"
 check "Short worker process" compose_exec worker-short sh -c "tr '\\0' ' ' </proc/1/cmdline | grep -q 'frappe worker --queue short'"

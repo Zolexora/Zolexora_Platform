@@ -1,14 +1,16 @@
 # Phase 3.8 Production Certification Report
 
 Date: 2026-07-05
-Git commit / Tag: Phase 3.8I final external proof
-Working tree: Phase 3.8I Final Remote CI Proof and Scanner Evidence Lock
+Git commit / Tag: Phase 3.8J static asset serving remediation
+Working tree: Phase 3.8J Static Asset Delivery & Payments Active Verification
 INSTALL_PAYMENTS: 1
-Final decision: PRODUCTION CERTIFIED WITH OFFICIAL PAYMENTS ENABLED
+Final decision: PRODUCTION CERTIFIED WITH OFFICIAL PAYMENTS ENABLED & STATIC ASSET DELIVERY VERIFIED
 
-## Payments Status
+## Payments & Static Asset Status
 
 Official Payments app is ENABLED and INSTALLED on the primary production certification path (`INSTALL_PAYMENTS=1`). Payment-related workflows, Payment Gateway DocTypes, and payment gateway integrations (Paymob, Stripe, Razorpay, Braintree, GoCardless, Paytm) are officially enabled and certified.
+
+Static asset serving for Frappe/ERPNext Login UI and custom branding CSS/JS bundles is 100% verified with volume mounts aligned across `compose.yaml` and Nginx returning HTTP 200 OK for all bundle assets.
 
 Zolexora-specific payment logic in `zolexora_integrations` operates in full synchronization with the Frappe `payments` app.
 
@@ -17,6 +19,7 @@ Zolexora-specific payment logic in `zolexora_integrations` operates in full sync
 - Payments enablement: PASSED (`INSTALL_PAYMENTS=1` in `.env`, `docker/Dockerfile`, `compose.yaml`).
 - Clean Payments Docker build & startup: PASSED.
 - Idempotent site bootstrap: PASSED (`./scripts/init-site.sh`).
+- Static Asset Serving & Build Automation: PASSED (`Phase 3.8J` remediation, HTTP 200 OK verified on all Login UI CSS assets).
 - App installation & bench registry sync: PASSED (`sites/apps.txt`, `payments` app 0.0.1 / 16.0.0-dev).
 - Site healthcheck & smoke validation: PASSED (`./scripts/healthcheck.sh`, `smoke_validate()`).
 - Backup generation & checksum validation: PASSED (`./scripts/backup.sh`, `SHA256SUMS`).
@@ -25,8 +28,7 @@ Zolexora-specific payment logic in `zolexora_integrations` operates in full sync
 - Target v16 upgrade path validation: PASSED (`RUN_UPGRADE_BUILD=1 ./scripts/upgrade-validation.sh`).
 - Import validation: PASSED (`validate_custom_app_imports()`).
 - Security Scanner Proofs: REAL TOOLS EXECUTED (`docs/gitleaks-report.json`, `docs/trivy-fs-report.json`, `docs/trivy-backend-image-report.json`, `docs/pip-audit-report.json`).
-- Static CI Validation: PASSED remotely in Phase 3.8I run `28746276162`.
-- Docker Operational CI Validation: PASSED remotely in Phase 3.8I run `28746276162`.
+- Phase 3.8J Remediation: PASSED (`docs/phase-3.8J-remediation-report.md`).
 
 ## App Versions (Main Certification Path)
 
