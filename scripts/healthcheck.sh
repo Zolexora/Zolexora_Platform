@@ -82,6 +82,7 @@ check "Backend HTTP availability" compose_exec backend curl -fsS -H "Host: $SITE
 check "Frontend HTTP ping" curl -fsS -H "Host: $SITE" "http://127.0.0.1:${HTTP_PORT}/api/method/ping"
 check "Login CSS asset extraction and availability" verify_login_css_asset
 check "Branding static CSS availability" curl -fsS -I -H "Host: $SITE" "http://127.0.0.1:${HTTP_PORT}/assets/zolexora_branding/css/login.css"
+check "Zolexora dark theme CSS availability" curl -fsS -I -H "Host: $SITE" "http://127.0.0.1:${HTTP_PORT}/assets/zolexora_branding/css/zolexora_dark.css"
 check "Branding static logo availability" curl -fsS -I -H "Host: $SITE" "http://127.0.0.1:${HTTP_PORT}/assets/zolexora_branding/images/logo.svg"
 check "Socket.IO process" compose_exec socketio sh -c "tr '\\0' ' ' </proc/1/cmdline | grep -q 'socketio.js'"
 check "Scheduler process" compose_exec scheduler sh -c "tr '\\0' ' ' </proc/1/cmdline | grep -q 'frappe schedule'"

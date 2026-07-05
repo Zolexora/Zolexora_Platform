@@ -120,6 +120,46 @@ GitHub Actions validates both supported Docker paths:
 
 The Payments-enabled path must print `PAYMENTS_CI_OK` and `PAYMENTS_RESTORE_CI_OK` in CI before production certification can be claimed.
 
+Phase 3.9A also validates the Zolexora branding CSS through `./scripts/healthcheck.sh`. The healthcheck fetches the login page, verifies a CSS asset is reachable, and checks:
+
+```text
+/assets/zolexora_branding/css/zolexora_dark.css
+```
+
+This guards against raw HTML, missing CSS, and broken static asset regressions after build, restore, or upgrade validation.
+
+## Zolexora Dark Theme
+
+The custom Zolexora dark theme lives in the branding app:
+
+```text
+apps/zolexora_branding/zolexora_branding/public/css/zolexora_dark.css
+```
+
+It is registered from:
+
+```text
+apps/zolexora_branding/zolexora_branding/hooks.py
+```
+
+The served asset URL is:
+
+```text
+http://<host>/assets/zolexora_branding/css/zolexora_dark.css
+```
+
+After changing branding assets, rebuild and clear caches:
+
+```bash
+docker compose -f compose.yaml exec -T backend bash -lc '
+cd /home/frappe/frappe-bench
+bench build
+bench --site site1.example.com clear-cache
+bench --site site1.example.com clear-website-cache
+'
+./scripts/healthcheck.sh
+```
+
 ## Release & Production Certification Checklist
 
 - [x] `INSTALL_PAYMENTS=1` set and verified in `.env` and Docker build.
@@ -135,3 +175,4 @@ The Payments-enabled path must print `PAYMENTS_CI_OK` and `PAYMENTS_RESTORE_CI_O
 - [x] External verification and remediation report completed (`docs/phase-3.8H-verification-report.md`, `docs/phase-3.8H-verification-remediation-report.md`).
 - [x] Phase 3.8I remote GitHub Actions completion verified (`docs/phase-3.8I-final-external-proof-report.md`).
 - [x] Phase 3.8J remote GitHub Actions Payments matrix verified (`docs/phase-3.8J-payments-ci-proof-report.md`).
+- [ ] Phase 3.9A custom dark theme remote GitHub Actions matrix verified (`docs/phase-3.9A-custom-dark-theme-report.md`).
