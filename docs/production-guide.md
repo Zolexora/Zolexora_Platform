@@ -92,16 +92,18 @@ Upgrade validation rebuilds target images when `RUN_UPGRADE_BUILD=1`, recreates 
 ## Security Scans
 
 ```bash
-# Gitleaks secret detection report:
-docs/gitleaks-report.json
+# Real Gitleaks secret detection:
+gitleaks detect --source . --redact --verbose --report-format json --report-path docs/gitleaks-report.json
 
-# Trivy filesystem & container image scan reports:
-docs/trivy-fs-report.json
-docs/trivy-backend-image-report.json
+# Real Trivy filesystem and backend image scans:
+trivy fs --scanners vuln,secret,config --severity HIGH,CRITICAL --format json --output docs/trivy-fs-report.json .
+trivy image --severity HIGH,CRITICAL --format json --output docs/trivy-backend-image-report.json zolexoraerp-backend:latest
 
-# Python dependency vulnerability scan report:
-docs/pip-audit-report.json
+# Real pip-audit scan:
+python -m pip_audit --format json --output docs/pip-audit-report.json
 ```
+
+Phase 3.8I scanner reports are evidence artifacts, not blanket zero-risk claims. `gitleaks` and `pip-audit` passed with 0 findings after audit-tool remediation. Trivy executed successfully and reported accepted upstream HIGH/CRITICAL dependency and base-image findings; see `docs/security-review.md` and `docs/phase-3.8I-final-external-proof-report.md`.
 
 ## Release & Production Certification Checklist
 
@@ -116,3 +118,4 @@ docs/pip-audit-report.json
 - [x] Upgrade validation passes (`RUN_UPGRADE_BUILD=1 ./scripts/upgrade-validation.sh`).
 - [x] Security review completed & scanner proof generated (`docs/security-review.md`).
 - [x] External verification and remediation report completed (`docs/phase-3.8H-verification-report.md`, `docs/phase-3.8H-verification-remediation-report.md`).
+- [x] Phase 3.8I remote GitHub Actions completion verified (`docs/phase-3.8I-final-external-proof-report.md`).
