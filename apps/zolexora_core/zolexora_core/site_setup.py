@@ -148,12 +148,16 @@ def validate_custom_app_imports() -> dict[str, object]:
     """Validate Zolexora app modules from an initialized Frappe site context."""
     import importlib
 
+    install_payments = os.environ.get("INSTALL_PAYMENTS", "0") == "1"
     expected_apps = [
         "zolexora_core",
         "zolexora_branding",
         "zolexora_platform",
         "zolexora_integrations",
     ]
+    if install_payments:
+        expected_apps.append("payments")
+
     installed_apps = set(frappe.get_installed_apps())
     missing_apps = [app for app in expected_apps if app not in installed_apps]
     modules_to_check = [
@@ -167,6 +171,11 @@ def validate_custom_app_imports() -> dict[str, object]:
         "zolexora_integrations",
         "zolexora_integrations.hooks",
     ]
+    if install_payments:
+        modules_to_check.extend([
+            "payments",
+            "payments.hooks",
+        ])
     imported: list[str] = []
     failed: list[dict[str, str]] = []
 
