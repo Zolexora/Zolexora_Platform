@@ -67,7 +67,7 @@ jobs:
           ./scripts/restore.sh "$latest_backup"
       - name: Custom app import checks
         run: |
-          docker compose -f compose.yaml exec -T backend python - <<'PY'
+          docker compose -f compose.yaml exec -T backend /home/frappe/frappe-bench/env/bin/python - <<'PY'
           import importlib
           for module in (
               "zolexora_core",
