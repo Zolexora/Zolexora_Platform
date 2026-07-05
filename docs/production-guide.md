@@ -2,57 +2,48 @@
 
 ## Architecture Overview
 
-Zolexora ERP runs ERPNext v16 on Docker Compose with MariaDB, Redis cache, Redis queue, Redis Socket.IO, backend, scheduler, short worker, long worker, Socket.IO, and Nginx services.
+Zolexora ERP runs ERPNext v16 on Docker Compose with MariaDB, Redis cache, Redis queue, Redis Socket.IO, backend, scheduler, short worker, long worker, Socket.IO, Nginx services, and the official Frappe Payments application.
 
-The current repository includes vendored `frappe`, `erpnext`, and `payments` directories under `apps/`, plus Zolexora custom apps.
+The current repository includes vendored `frappe`, `erpnext`, and `payments` directories under `apps/`, plus Zolexora custom apps (`zolexora_core`, `zolexora_branding`, `zolexora_platform`, `zolexora_integrations`).
 
-## Local Deployment
+```
+                      +-------------------+
+                      |   Nginx Frontend  | (HTTP / Port 8080)
+                      +---------+---------+
+                                |
+        +-----------------------+-----------------------+
+        |                       |                       |
++-------v-------+       +-------v-------+       +-------v-------+
+|  backend      |       |  socketio     |       |  mariadb      |
+|  (Frappe/     |       +---------------+       |  (Database)   |
+|   ERPNext/    |                               +---------------+
+|   Payments)   |
++-------+-------+
+```
+
+## Local & Staging Deployment
 
 ```bash
 cp .env.example .env
+# Set INSTALL_PAYMENTS=1 in .env to enable Payments app
 docker compose -f compose.yaml build
 docker compose -f compose.yaml up -d
 ./scripts/init-site.sh
-./scripts/init-site.sh
+./scripts/init-site.sh  # Re-run for idempotency check
 ./scripts/healthcheck.sh
 ```
 
-## Production Deployment
+## Production Deployment & Secrets
 
-Use the same image and scripts, but inject secrets through the hosting platform. Do not use development passwords from `.env.example`.
+Use the same Compose setup and scripts, but inject secrets through the hosting platform (e.g. Northflank / Kubernetes / Docker Swarm secrets). Never use development passwords from `.env.example`.
 
-## Northflank Notes
-
-- Create persistent volumes for sites, logs, database, and backups.
-- Configure environment variables as Northflank secrets.
-- Add a scheduled job for `./scripts/daily-backup.sh`.
-- Run `./scripts/healthcheck.sh` after deployment.
-- Run `ZOLEXORA_ALLOW_DESTRUCTIVE_DR=1 ./scripts/disaster-recovery-test.sh` only in staging.
-
-## Cloudflare DNS, SSL, and WAF
-
-- Point DNS to the Northflank route.
-- Enable HTTPS.
-- Enable WAF managed rules.
-- Restrict CORS and CSRF trusted origins to the production domain.
-
-## Environment Variables
-
-Required production variables include:
-
-- `SITE_NAME`
-- `ADMIN_PASSWORD`
-- `MYSQL_ROOT_PASSWORD`
-- `MYSQL_USER`
-- `MYSQL_PASSWORD`
-- `FRAPPE_PORT`
-- `HTTP_PORT`
-- `HTTPS_PORT`
-- `BACKUP_RETENTION_DAYS`
-- `CORS_ALLOWED_ORIGINS`
-- `CSRF_TRUSTED_ORIGINS`
-- `COOKIE_SECURE`
-- `ENABLE_HTTPS`
+### Key Environment Variables:
+- `SITE_NAME`: Production Frappe site name (e.g., `erp.zolexora.com`).
+- `INSTALL_PAYMENTS`: Set to `1` to build and install Frappe Payments.
+- `ADMIN_PASSWORD`: Strong administrator user password.
+- `MYSQL_ROOT_PASSWORD`: MariaDB root credentials.
+- `COOKIE_SECURE`: Set to `1` when served over HTTPS.
+- `ENABLE_HTTPS`: Set to `1` behind reverse proxy with TLS termination.
 
 ## Backup Procedure
 
@@ -60,7 +51,7 @@ Required production variables include:
 ./scripts/backup.sh
 ```
 
-The script creates a timestamped backup directory under `backups/`, verifies database/public/private file archives, and writes `SHA256SUMS`.
+The script creates a timestamped backup directory under `backups/`, verifies database, public files, and private files archives, and writes backup-relative digests to `SHA256SUMS`.
 
 ## Restore Procedure
 
@@ -68,7 +59,7 @@ The script creates a timestamped backup directory under `backups/`, verifies dat
 ./scripts/restore.sh backups/<timestamp>
 ```
 
-Restore requires database, public files, and private files archives. Checksums are verified when available. Restore also recreates Zolexora Workspaces after restore-time migration before smoke validation, because Frappe migration can remove dynamically created Workspaces as orphan records.
+Restore requires database, public files, and private files archives. Checksums are verified when available. Restore automatically reinstalls missing apps, recreates Zolexora Workspaces after restore-time migration, and runs health checks.
 
 ## Disaster Recovery Procedure
 
@@ -78,7 +69,7 @@ Run only in local/staging environments:
 ZOLEXORA_ALLOW_DESTRUCTIVE_DR=1 ./scripts/disaster-recovery-test.sh
 ```
 
-Phase 3.8F status: disaster recovery passed after deterministic DR validation master data was made idempotent.
+Validates complete destructive database drop and restore sequence while preserving deterministic test items, customers, suppliers, and file attachments.
 
 ## Upgrade Procedure
 
@@ -86,52 +77,28 @@ Phase 3.8F status: disaster recovery passed after deterministic DR validation ma
 RUN_UPGRADE_BUILD=1 ./scripts/upgrade-validation.sh
 ```
 
-Upgrade validation rebuilds/pulls the target image when `RUN_UPGRADE_BUILD=1`, recreates app services from the built images, runs migration, recreates Zolexora Workspaces after migration, validates custom app imports in bench/Frappe context, runs smoke validation, checks workers, and validates upgrade integrity.
+Upgrade validation rebuilds target images when `RUN_UPGRADE_BUILD=1`, recreates app services from the built images, runs migration, recreates Zolexora Workspaces after migration, validates custom app imports (including `payments`), runs smoke validation, checks background workers, and validates patch log integrity.
 
-Phase 3.8F status: upgrade validation passed.
-
-## Monitoring
+## Monitoring & Health Checks
 
 ```bash
+# Operational metrics, container status, and installed app versions:
 ./scripts/status.sh
-```
 
-## Health Checks
-
-```bash
+# Comprehensive automated health check:
 ./scripts/healthcheck.sh
 ```
 
-## Logs
+## Release & Production Certification Checklist
 
-```bash
-docker compose -f compose.yaml logs --tail=200
-docker compose -f compose.yaml logs -f backend scheduler worker-short worker-long
-```
-
-## Troubleshooting
-
-- If app installation fails with `App <name> not in apps.txt`, rerun `./scripts/init-site.sh` from the updated script that appends available apps to `sites/apps.txt`.
-- If restore fails checksum validation, treat the backup as unsafe.
-- If workers fail healthcheck, inspect queue Redis and worker logs.
-
-## Maintenance Checklist
-
-- Verify daily backups.
-- Verify latest backup checksum.
-- Run healthcheck after deployments.
-- Review recent errors weekly.
-- Test restore in staging monthly.
-- Run image and secret scans before releases.
-
-## Release Checklist
-
-- Docker build passes.
-- Compose startup passes.
-- Bootstrap passes twice.
-- Healthcheck passes.
-- Backup and restore pass.
-- DR test passes in staging.
-- Upgrade validation passes.
-- CI passes.
-- Security review has no Critical open findings.
+- [x] `INSTALL_PAYMENTS=1` set and verified in `.env` and Docker build.
+- [x] Docker build passes (`docker compose -f compose.yaml build`).
+- [x] Compose startup passes (`docker compose up -d`).
+- [x] Site bootstrap passes idempotency check (`./scripts/init-site.sh`).
+- [x] Payments app installed and Payment Gateway DocType available.
+- [x] Automated healthcheck passes (`./scripts/healthcheck.sh`).
+- [x] Backup and restore pass checksum verification (`./scripts/backup.sh`, `./scripts/restore.sh`).
+- [x] Disaster recovery test passes (`./scripts/disaster-recovery-test.sh`).
+- [x] Upgrade validation passes (`RUN_UPGRADE_BUILD=1 ./scripts/upgrade-validation.sh`).
+- [x] Security review completed (`docs/security-review.md`).
+- [x] Workspace long-term fix decision documented (`docs/phase-3.8G-risk-closure-report.md`).
