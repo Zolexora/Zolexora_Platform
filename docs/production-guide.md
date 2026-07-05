@@ -33,6 +33,12 @@ docker compose -f compose.yaml up -d
 ./scripts/healthcheck.sh
 ```
 
+### Static Asset Volume Mount & Bench Build Guidelines
+
+- **Assets Volume Mount**: In `compose.yaml`, the `assets` volume MUST be mounted at `/home/frappe/frappe-bench/assets` for backend and worker services so the container entrypoint (`/usr/local/bin/entrypoint.sh`) can safely create the symlink at `/home/frappe/frappe-bench/sites/assets -> /home/frappe/frappe-bench/assets`. Mounting `assets` directly at `/home/frappe/frappe-bench/sites/assets` causes container startup failure (`Device or resource busy`).
+- **Apps Volume Sharing**: The `apps` named volume (`apps:/home/frappe/frappe-bench/apps`) must be mounted in Nginx (`apps:/home/frappe/frappe-bench/apps:ro`) so Nginx can resolve symlinked app public static assets and compiled bundle outputs (`dist/`).
+- **Asset Compilation**: Static frontend bundles must be built using `bench build` during site initialization (`./scripts/init-site.sh`) or site restores (`./scripts/restore.sh`). HTML/CSS cache should be cleared using `bench --site <site> clear-cache` and `clear-website-cache` after asset compilation.
+
 ## Production Deployment & Secrets
 
 Use the same Compose setup and scripts, but inject secrets through the hosting platform (e.g. Northflank / Kubernetes / Docker Swarm secrets). Never use development passwords from `.env.example`.
