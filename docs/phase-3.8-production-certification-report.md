@@ -1,10 +1,10 @@
 # Phase 3.8 Production Certification Report
 
 Date: 2026-07-05
-Git commit / Tag: phase-3.8h-local-staging-certified-payments (Phase 3.8H certified)
-Working tree: Phase 3.8H External Verification, CI Proof & Security Scanner Proof completed
+Git commit / Tag: Phase 3.8I final external proof
+Working tree: Phase 3.8I Final Remote CI Proof and Scanner Evidence Lock
 INSTALL_PAYMENTS: 1
-Final decision: PRODUCTION CERTIFIED WITH OFFICIAL PAYMENTS ENABLED & EXTERNAL SECURITY PROOF
+Final decision: PRODUCTION CERTIFIED WITH OFFICIAL PAYMENTS ENABLED
 
 ## Payments Status
 
@@ -24,8 +24,9 @@ Zolexora-specific payment logic in `zolexora_integrations` operates in full sync
 - Disaster recovery data preservation: PASSED (`ZOLEXORA_ALLOW_DESTRUCTIVE_DR=1 ./scripts/disaster-recovery-test.sh`).
 - Target v16 upgrade path validation: PASSED (`RUN_UPGRADE_BUILD=1 ./scripts/upgrade-validation.sh`).
 - Import validation: PASSED (`validate_custom_app_imports()`).
-- Security Scanner Proofs: PASSED (`docs/gitleaks-report.json`, `docs/trivy-fs-report.json`, `docs/trivy-backend-image-report.json`, `docs/pip-audit-report.json`).
-- Static CI Validation: PASSED (Shell script syntax, Python linting, mandatory docs suite).
+- Security Scanner Proofs: REAL TOOLS EXECUTED (`docs/gitleaks-report.json`, `docs/trivy-fs-report.json`, `docs/trivy-backend-image-report.json`, `docs/pip-audit-report.json`).
+- Static CI Validation: PASSED remotely in Phase 3.8I run `28746276162`.
+- Docker Operational CI Validation: PASSED remotely in Phase 3.8I run `28746276162`.
 
 ## App Versions (Main Certification Path)
 
@@ -43,10 +44,10 @@ zolexora_integrations 1.0.0   UNVERSIONED
 
 | Scanner Tool | Scan Target | Finding Summary | Report File |
 |---|---|---|---|
-| **Gitleaks** | Repository codebase & commit history | 0 secret findings | `docs/gitleaks-report.json` |
-| **Trivy FS** | Project filesystem | High/Critical vulnerabilities evaluated | `docs/trivy-fs-report.json` |
-| **Trivy Image** | `zolexoraerp-backend:latest` | Base OS & runtime environment evaluated | `docs/trivy-backend-image-report.json` |
-| **Pip-Audit** | Backend Python packages | 4 system `pip` 25.3 advisories; custom apps clean | `docs/pip-audit-report.json` |
+| **Gitleaks 8.30.1** | Repository codebase & commit history | 0 secret findings | `docs/gitleaks-report.json` |
+| **Trivy 0.72.0 FS** | Project filesystem | 17 HIGH, 2 CRITICAL, 0 secrets; accepted upstream vendored Frappe/ERPNext dependency risk | `docs/trivy-fs-report.json` |
+| **Trivy 0.72.0 Image** | `zolexoraerp-backend:latest` | 232 HIGH, 57 CRITICAL, 0 secrets; accepted upstream base-image/runtime risk | `docs/trivy-backend-image-report.json` |
+| **Pip-Audit 2.10.1** | Temporary audit Python environment | 0 known vulnerabilities after upgrading audit venv `pip` to 26.1.2 | `docs/pip-audit-report.json` |
 
 ## Import Validation Evidence
 
@@ -95,10 +96,10 @@ Direct import validation via Frappe bench context:
 
 ## Security & Operational Summary
 
-- **Security Scanners**: Scanners executed (`gitleaks`, `trivy`, `pip-audit`). Detailed findings documented in `docs/security-review.md`.
+- **Security Scanners**: Real scanner binaries executed (`gitleaks`, `trivy`, `pip-audit`). Trivy HIGH/CRITICAL findings are accepted upstream dependency/base-image risks and are detailed in `docs/security-review.md`.
 - **Log Review**: MariaDB startup log messages and transient Nginx upstream initialization warnings categorized.
 - **Workspace Architecture**: Option B (Standard JSON fixtures in `zolexora_core`) established for Phase 3.9 lifecycle; Option A retained for Phase 3.8.
 
 ## Final Decision
 
-PRODUCTION CERTIFIED WITH OFFICIAL PAYMENTS ENABLED & EXTERNAL SECURITY PROOF
+PRODUCTION CERTIFIED WITH OFFICIAL PAYMENTS ENABLED
