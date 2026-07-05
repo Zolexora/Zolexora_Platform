@@ -110,7 +110,7 @@ sync_bench_app_registry() {
   ensure_app_in_apps_txt "frappe" "required"
   ensure_app_in_apps_txt "erpnext" "required"
   if [ "$INSTALL_PAYMENTS" = "1" ]; then
-    ensure_app_in_apps_txt "payments" "optional"
+    ensure_app_in_apps_txt "payments" "required"
   else
     log "INFO" "Payments apps.txt registration skipped by INSTALL_PAYMENTS=0"
   fi
@@ -218,7 +218,7 @@ sync_bench_app_registry
 
 validate_payments_state
 if [ "$INSTALL_PAYMENTS" = "1" ]; then
-  install_app_if_missing "payments" "Payments" "optional"
+  install_app_if_missing "payments" "Payments" "required"
 fi
 install_app_if_missing "zolexora_core" "zolexora_core"
 

@@ -18,6 +18,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -45,10 +47,24 @@ jobs:
     runs-on: ubuntu-latest
     needs: static-validation
     timeout-minutes: 60
+    name: docker-operational-validation (INSTALL_PAYMENTS=${{ matrix.install_payments }})
+    strategy:
+      fail-fast: false
+      matrix:
+        install_payments: ["0", "1"]
     steps:
       - uses: actions/checkout@v4
-      - name: Copy Env Template
-        run: cp .env.example .env
+        with:
+          submodules: recursive
+      - name: Configure Env Template
+        run: |
+          cp .env.example .env
+          if grep -q "^INSTALL_PAYMENTS=" .env; then
+            sed -i "s/^INSTALL_PAYMENTS=.*/INSTALL_PAYMENTS=${{ matrix.install_payments }}/" .env
+          else
+            echo "INSTALL_PAYMENTS=${{ matrix.install_payments }}" >> .env
+          fi
+          grep "^INSTALL_PAYMENTS=" .env
       - name: Build Docker images
         run: docker compose -f compose.yaml build --pull
       - name: Start Compose stack
@@ -59,27 +75,47 @@ jobs:
         run: ./scripts/init-site.sh
       - name: Run healthcheck
         run: ./scripts/healthcheck.sh
+      - name: Verify Payments matrix path
+        run: |
+          docker compose -f compose.yaml exec -T backend bench --site site1.example.com list-apps
+          if [ "${{ matrix.install_payments }}" = "1" ]; then
+            docker compose -f compose.yaml exec -T backend bench --site site1.example.com list-apps | awk '{print $1}' | grep -qx "payments"
+            docker compose -f compose.yaml exec -T backend bench --site site1.example.com console <<'PY'
+          import frappe
+          assert "payments" in frappe.get_installed_apps(), "payments app not installed"
+          assert frappe.db.exists("DocType", "Payment Gateway"), "Payment Gateway DocType missing"
+          print("PAYMENTS_CI_OK")
+          PY
+          else
+            echo "INSTALL_PAYMENTS=0 path validated"
+          fi
       - name: Generate verified backup
         run: ./scripts/backup.sh
       - name: Restore latest backup
         run: |
           latest_backup="$(find backups -mindepth 1 -maxdepth 1 -type d | sort | tail -n 1)"
+          (cd "$latest_backup" && sha256sum -c SHA256SUMS)
           ./scripts/restore.sh "$latest_backup"
+      - name: Run post-restore healthcheck
+        run: ./scripts/healthcheck.sh
+      - name: Verify post-restore Payments state
+        run: |
+          if [ "${{ matrix.install_payments }}" = "1" ]; then
+            docker compose -f compose.yaml exec -T backend bench --site site1.example.com list-apps | awk '{print $1}' | grep -qx "payments"
+            docker compose -f compose.yaml exec -T backend bench --site site1.example.com console <<'PY'
+          import frappe
+          assert "payments" in frappe.get_installed_apps(), "payments app not installed after restore"
+          assert frappe.db.exists("DocType", "Payment Gateway"), "Payment Gateway DocType missing after restore"
+          print("PAYMENTS_RESTORE_CI_OK")
+          PY
+          else
+            echo "INSTALL_PAYMENTS=0 post-restore path validated"
+          fi
       - name: Custom app import checks
         run: |
-          docker compose -f compose.yaml exec -T backend /home/frappe/frappe-bench/env/bin/python - <<'PY'
-          import importlib
-          for module in (
-              "zolexora_core",
-              "zolexora_branding",
-              "zolexora_platform",
-              "zolexora_integrations",
-          ):
-              importlib.import_module(module)
-          print("custom app imports ok")
-          PY
-      - name: Upgrade compatibility validation without image upgrade
-        run: ./scripts/upgrade-validation.sh
+          docker compose -f compose.yaml exec -T backend bench --site site1.example.com execute zolexora_core.site_setup.validate_custom_app_imports
+      - name: Upgrade compatibility validation
+        run: RUN_UPGRADE_BUILD=1 ./scripts/upgrade-validation.sh
       - name: Cleanup
         if: always()
         run: docker compose -f compose.yaml down -v
