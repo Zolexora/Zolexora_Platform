@@ -8,7 +8,6 @@ from uuid import uuid4
 import frappe
 from frappe import _
 
-
 COMPANY_NAME = "Zolexora ERP"
 COMPANY_ABBR = "ZEX"
 DEFAULT_COUNTRY = "United States"
@@ -78,7 +77,9 @@ def validate_required_masters(create_missing: bool = False) -> dict[str, str]:
         results,
     )
 
-    missing = [f"{doctype}: {name}" for doctype, name in results.items() if name == "missing"]
+    missing = [
+        f"{doctype}: {name}" for doctype, name in results.items() if name == "missing"
+    ]
     if missing:
         raise BootstrapError(
             _("Missing ERPNext master data required for bootstrap: {0}").format(
@@ -125,7 +126,9 @@ def smoke_validate() -> dict[str, object]:
         "missing_workspaces": missing_workspaces,
         "payments_installed": "payments" in installed_apps,
         "install_payments": install_payments,
-        "scheduler_enabled": bool(frappe.db.get_single_value("System Settings", "enable_scheduler")),
+        "scheduler_enabled": bool(
+            frappe.db.get_single_value("System Settings", "enable_scheduler")
+        ),
     }
 
     failures = []
@@ -343,7 +346,9 @@ def validate_dr_validation_data() -> dict[str, object]:
         "validator": expected,
     }
 
-    failures = [key for key, value in result.items() if key.endswith("_exists") and not value]
+    failures = [
+        key for key, value in result.items() if key.endswith("_exists") and not value
+    ]
     if failures:
         raise BootstrapError(_("DR validation failed: {0}").format(", ".join(failures)))
 
@@ -407,10 +412,18 @@ def background_job_probe(timeout: int = 30) -> dict[str, object]:
 
 
 def _set_defaults(admin_email: str | None = None) -> None:
-    frappe.db.set_default("language", frappe.db.get_default("language") or DEFAULT_LANGUAGE)
-    frappe.db.set_default("timezone", frappe.db.get_default("timezone") or DEFAULT_TIMEZONE)
-    frappe.db.set_default("country", frappe.db.get_default("country") or DEFAULT_COUNTRY)
-    frappe.db.set_default("currency", frappe.db.get_default("currency") or DEFAULT_CURRENCY)
+    frappe.db.set_default(
+        "language", frappe.db.get_default("language") or DEFAULT_LANGUAGE
+    )
+    frappe.db.set_default(
+        "timezone", frappe.db.get_default("timezone") or DEFAULT_TIMEZONE
+    )
+    frappe.db.set_default(
+        "country", frappe.db.get_default("country") or DEFAULT_COUNTRY
+    )
+    frappe.db.set_default(
+        "currency", frappe.db.get_default("currency") or DEFAULT_CURRENCY
+    )
 
     if admin_email:
         frappe.db.set_default("user_email", admin_email)
@@ -603,7 +616,9 @@ def _create_default_roles() -> None:
 
 def create_custom_workspaces() -> dict[str, object]:
     """Create custom workspaces only when their backing modules are installed."""
-    available_modules = {module.name for module in frappe.get_all("Module Def", fields=["name"])}
+    available_modules = {
+        module.name for module in frappe.get_all("Module Def", fields=["name"])
+    }
     workspaces = [
         {"title": "Zolexora Dashboard", "icon": "dashboard", "module": "Zolexora Core"},
         {"title": "Zolexora Accounts", "icon": "briefcase", "module": "Accounts"},
@@ -613,7 +628,11 @@ def create_custom_workspaces() -> dict[str, object]:
         {"title": "Zolexora CRM", "icon": "customer", "module": "CRM"},
         {"title": "Zolexora Fleet", "icon": "delivery", "module": "Zolexora Platform"},
         {"title": "Zolexora Logistics", "icon": "globe", "module": "Zolexora Platform"},
-        {"title": "Zolexora Analytics", "icon": "chart-pie", "module": "Zolexora Platform"},
+        {
+            "title": "Zolexora Analytics",
+            "icon": "chart-pie",
+            "module": "Zolexora Platform",
+        },
         {
             "title": "Zolexora Administration",
             "icon": "setting",
