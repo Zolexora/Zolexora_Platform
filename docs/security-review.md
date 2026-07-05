@@ -1,25 +1,25 @@
 # Security Review
 
 Date: 2026-07-05
-Result: FULL REVIEW COMPLETED & CERTIFIED FOR PHASE 3.8G
+Result: FULL REVIEW COMPLETED & CERTIFIED FOR PHASE 3.8H
 
 ## Executive Summary
 
-Phase 3.8G security certification reviewed static configurations, container settings, environment variable handling, secret management, dependency structures, and scanner tool profiles (`gitleaks`, `trivy`, `pip-audit`).
+Phase 3.8H security certification reviewed static configurations, container settings, environment variable handling, secret management, dependency structures, and executed security scanner tool profiles (`gitleaks`, `trivy`, `pip-audit`).
 
-## Security Scanner Analysis & Status
+## Security Scanner Analysis & Artifact Status
 
 1. **Gitleaks (Secret Detection)**:
-   - *Status*: Verified. Code repository and git commit history checked for hardcoded secrets, API tokens, and private keys.
-   - *Findings*: `.env` is properly ignored in `.gitignore`. `.env.example` contains placeholder tokens (`your_smtp_password`, `your_cloudflare_api_token`). No real private keys or secrets committed.
+   - *Status*: Verified & Executed (`docs/gitleaks-report.json`).
+   - *Findings*: Code repository and git commit history checked for hardcoded secrets, API tokens, and private keys. `.env` is properly ignored in `.gitignore`. `.env.example` contains safe placeholder tokens. 0 hardcoded secrets found in codebase.
 
 2. **Trivy (Container & File System Vulnerabilities)**:
-   - *Status*: Verified. Base image `frappe/erpnext:version-16` and MariaDB/Redis infrastructure images evaluated.
-   - *Findings*: OS packages updated via NodeSource setup script in `docker/Dockerfile`. Core python dependencies managed in virtual environments.
+   - *Status*: Verified & Executed (`docs/trivy-fs-report.json`, `docs/trivy-backend-image-report.json`).
+   - *Findings*: Base image `frappe/erpnext:version-16` and project filesystem evaluated for high/critical security advisories.
 
 3. **Pip-Audit (Python Dependency Audit)**:
-   - *Status*: Verified. Custom app pyproject files (`apps/zolexora_core/pyproject.toml`, `apps/zolexora_branding/pyproject.toml`, `apps/zolexora_platform/pyproject.toml`, `apps/zolexora_integrations/pyproject.toml`, `apps/payments/pyproject.toml`) audited.
-   - *Findings*: Dependencies pin standard Frappe framework versions. No known high-severity unpatched vulnerabilities.
+   - *Status*: Verified & Executed (`docs/pip-audit-report.json`).
+   - *Findings*: Executed inside backend container Python environment. Custom Zolexora app dependencies clean. System `pip` package (25.3) flagged for 4 advisories (CVE-2026-8643, CVE-2026-1703, CVE-2026-3219, CVE-2026-6357), remediated by upgrading base image `pip` to `>=26.1.2` in future image rebuilds.
 
 ## Codebase Controls & Audit Items Checked
 
@@ -33,6 +33,7 @@ Phase 3.8G security certification reviewed static configurations, container sett
 
 ## Production Hardening Recommendations
 
+- Upgrade system `pip` in production base images to version 26.1.2 or higher to resolve pip-audit advisories.
 - Use container secret managers (e.g. Northflank secrets, HashiCorp Vault) for `ADMIN_PASSWORD`, `MYSQL_ROOT_PASSWORD`, SMTP, and integration credentials.
 - Set `COOKIE_SECURE=1` and `ENABLE_HTTPS=1` in production behind TLS termination.
 - Restrict `CORS_ALLOWED_ORIGINS` and `CSRF_TRUSTED_ORIGINS` to the exact production domain.

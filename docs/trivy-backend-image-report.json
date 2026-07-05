@@ -1,0 +1,13 @@
+{
+  "SchemaVersion": 2,
+  "ArtifactName": "zolexoraerp-backend:latest",
+  "ArtifactType": "container_image",
+  "Results": [
+    {
+      "Target": "zolexoraerp-backend:latest (debian 12.9)",
+      "Class": "os-pkgs",
+      "Type": "debian",
+      "Vulnerabilities": null
+    }
+  ]
+}
