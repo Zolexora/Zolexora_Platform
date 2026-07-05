@@ -4,9 +4,19 @@ Date: 2026-07-06
 
 ## Decision
 
-REMOTE CI PENDING - LOCAL/STAGING THEME VALIDATION PASSED
+PHASE 3.9A CUSTOM DARK THEME PASSED
 
-Final decision must not be upgraded to `PHASE 3.9A CUSTOM DARK THEME PASSED` until GitHub Actions passes both Docker matrix paths after this change.
+Final proof commit:
+
+```text
+a0b8f6e
+```
+
+GitHub Actions run:
+
+```text
+28758639348
+```
 
 ## Scope
 
@@ -187,14 +197,45 @@ Payment Gateway DocType: Payment Gateway
 
 ## Remote CI
 
-Pending.
+Passed.
 
-Required CI proof before final Phase 3.9A pass:
+GitHub Actions run:
 
-- `INSTALL_PAYMENTS=0` matrix passes.
-- `INSTALL_PAYMENTS=1` matrix passes.
-- Healthcheck includes `Zolexora dark theme CSS availability`.
-- Existing Payments CI assertions continue to pass.
+```text
+28758639348
+```
+
+Matrix results:
+
+| Job | Result | Duration |
+| --- | --- | --- |
+| static-validation | passed | 34s |
+| docker-operational-validation (`INSTALL_PAYMENTS=0`) | passed | 12m35s |
+| docker-operational-validation (`INSTALL_PAYMENTS=1`) | passed | 12m54s |
+
+Default path proof:
+
+```text
+Zolexora dark theme CSS availability: PASS
+INSTALL_PAYMENTS=0 path validated
+sha256sum -c SHA256SUMS
+Zolexora dark theme CSS availability: PASS after restore
+INSTALL_PAYMENTS=0 post-restore path validated
+upgrade validation report written to docs/upgrade-validation-report.md
+```
+
+Payments-enabled path proof:
+
+```text
+Zolexora dark theme CSS availability: PASS
+PAYMENTS_CI_OK
+Payment Gateway DocType assertion passed
+sha256sum -c SHA256SUMS
+Zolexora dark theme CSS availability: PASS after restore
+PAYMENTS_RESTORE_CI_OK
+Payment Gateway DocType assertion passed after restore
+upgrade validation report written to docs/upgrade-validation-report.md
+```
 
 ## Notes
 

@@ -175,4 +175,4 @@ bench --site site1.example.com clear-website-cache
 - [x] External verification and remediation report completed (`docs/phase-3.8H-verification-report.md`, `docs/phase-3.8H-verification-remediation-report.md`).
 - [x] Phase 3.8I remote GitHub Actions completion verified (`docs/phase-3.8I-final-external-proof-report.md`).
 - [x] Phase 3.8J remote GitHub Actions Payments matrix verified (`docs/phase-3.8J-payments-ci-proof-report.md`).
-- [ ] Phase 3.9A custom dark theme remote GitHub Actions matrix verified (`docs/phase-3.9A-custom-dark-theme-report.md`).
+- [x] Phase 3.9A custom dark theme remote GitHub Actions matrix verified (`docs/phase-3.9A-custom-dark-theme-report.md`).
