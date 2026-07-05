@@ -1,0 +1,13 @@
+{
+  "SchemaVersion": 2,
+  "ArtifactName": ".",
+  "ArtifactType": "filesystem",
+  "Results": [
+    {
+      "Target": "Python",
+      "Class": "lang-pkgs",
+      "Type": "pip",
+      "Vulnerabilities": null
+    }
+  ]
+}

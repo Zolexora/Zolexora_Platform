@@ -1,6 +1,6 @@
 # Upgrade Validation Report
 
-Date: 2026-07-03T19:59:09+05:30
+Date: 2026-07-05T20:14:10+05:30
 Result: PASSED for local v16 build and migration validation
 
 ## Versions Before
@@ -13,6 +13,7 @@ zolexora_core         1.0.0   UNVERSIONED
 zolexora_branding     1.0.0   UNVERSIONED
 zolexora_platform     1.0.0   UNVERSIONED
 zolexora_integrations 1.0.0   UNVERSIONED
+payments              0.0.1   UNVERSIONED
 ```
 
 ## Versions After
@@ -25,12 +26,13 @@ zolexora_core         1.0.0   UNVERSIONED
 zolexora_branding     1.0.0   UNVERSIONED
 zolexora_platform     1.0.0   UNVERSIONED
 zolexora_integrations 1.0.0   UNVERSIONED
+payments              0.0.1   UNVERSIONED
 ```
 
 ## Smoke Validation
 
 ```json
-{"site": "site1.example.com", "administrator_exists": true, "company_exists": true, "missing_apps": [], "missing_workspaces": [], "payments_installed": false, "scheduler_enabled": true}
+{"site": "site1.example.com", "administrator_exists": true, "company_exists": true, "missing_apps": [], "missing_workspaces": [], "payments_installed": true, "install_payments": true, "scheduler_enabled": true}
 ```
 
 ## Workspace Recreation
@@ -42,13 +44,13 @@ zolexora_integrations 1.0.0   UNVERSIONED
 ## Import Validation
 
 ```json
-{"installed_apps_checked": ["zolexora_core", "zolexora_branding", "zolexora_platform", "zolexora_integrations"], "imported_modules": ["zolexora_core", "zolexora_core.hooks", "zolexora_core.site_setup", "zolexora_branding", "zolexora_branding.hooks", "zolexora_platform", "zolexora_platform.hooks", "zolexora_integrations", "zolexora_integrations.hooks"], "failed_imports": []}
+{"installed_apps_checked": ["zolexora_core", "zolexora_branding", "zolexora_platform", "zolexora_integrations", "payments"], "imported_modules": ["zolexora_core", "zolexora_core.hooks", "zolexora_core.site_setup", "zolexora_branding", "zolexora_branding.hooks", "zolexora_platform", "zolexora_platform.hooks", "zolexora_integrations", "zolexora_integrations.hooks", "payments", "payments.hooks"], "failed_imports": []}
 ```
 
 ## Worker Validation
 
 ```json
-{"job_executed": true, "key": "zolexora_worker_probe:44827ddf435949f5b0c8522e9ed1a9f1"}
+{"job_executed": true, "key": "zolexora_worker_probe:417753071c49421489e4da5633b04ab8"}
 ```
 
 ## Upgrade Integrity

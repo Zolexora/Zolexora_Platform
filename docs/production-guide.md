@@ -89,6 +89,20 @@ Upgrade validation rebuilds target images when `RUN_UPGRADE_BUILD=1`, recreates 
 ./scripts/healthcheck.sh
 ```
 
+## Security Scans
+
+```bash
+# Gitleaks secret detection report:
+docs/gitleaks-report.json
+
+# Trivy filesystem & container image scan reports:
+docs/trivy-fs-report.json
+docs/trivy-backend-image-report.json
+
+# Python dependency vulnerability scan report:
+docs/pip-audit-report.json
+```
+
 ## Release & Production Certification Checklist
 
 - [x] `INSTALL_PAYMENTS=1` set and verified in `.env` and Docker build.
@@ -100,5 +114,5 @@ Upgrade validation rebuilds target images when `RUN_UPGRADE_BUILD=1`, recreates 
 - [x] Backup and restore pass checksum verification (`./scripts/backup.sh`, `./scripts/restore.sh`).
 - [x] Disaster recovery test passes (`./scripts/disaster-recovery-test.sh`).
 - [x] Upgrade validation passes (`RUN_UPGRADE_BUILD=1 ./scripts/upgrade-validation.sh`).
-- [x] Security review completed (`docs/security-review.md`).
-- [x] Workspace long-term fix decision documented (`docs/phase-3.8G-risk-closure-report.md`).
+- [x] Security review completed & scanner proof generated (`docs/security-review.md`).
+- [x] External verification and remediation report completed (`docs/phase-3.8H-verification-report.md`, `docs/phase-3.8H-verification-remediation-report.md`).
