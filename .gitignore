@@ -23,6 +23,8 @@ docker-compose.override.yml
 *.log
 *.tmp
 *.pid
+.trivy-cache/
+.trivy-tmp/
 
 # VS Code
 .vscode/
@@ -34,4 +36,3 @@ docker-compose.override.yml
 
 # Agents
 .agents/
-
