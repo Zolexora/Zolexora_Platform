@@ -62,6 +62,21 @@ a:hover,
   box-shadow: 0 1px 0 rgba(38, 54, 79, 0.9);
 }
 
+.navbar-home {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.navbar-home::before {
+  display: inline-block;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  background: url("/assets/zolexora_branding/img/zolexora-icon.svg") center / contain no-repeat;
+  content: "";
+}
+
 .navbar .navbar-brand,
 .navbar .nav-link,
 .navbar .dropdown-toggle,
@@ -70,6 +85,12 @@ a:hover,
 .navbar .standard-image,
 .page-title .title-text {
   color: var(--zolexora-text);
+}
+
+.navbar-home img,
+.navbar .navbar-brand img {
+  max-height: 30px;
+  border-radius: 8px;
 }
 
 .search-bar,
@@ -288,6 +309,40 @@ body[data-path="login"] .page-content-wrapper,
 #page-login .forgot-password-message a,
 #page-login .toggle-password {
   color: var(--zolexora-text) !important;
+}
+
+#page-login .page-card-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+body[data-path="login"] .page-card-head > img.app-logo {
+  display: none;
+}
+
+#page-login .page-card-head::before,
+.login-content .app-logo::before {
+  display: block;
+  width: min(220px, 70vw);
+  height: 64px;
+  background: url("/assets/zolexora_branding/img/zolexora-logo.svg") center / contain no-repeat;
+  content: "";
+}
+
+#page-login .page-card-head h4 {
+  font-size: 0;
+  line-height: 0;
+}
+
+#page-login .page-card-head h4::after {
+  display: block;
+  color: var(--zolexora-muted);
+  content: "Sign in to Zolexora ERP";
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
 }
 
 .login-content .page-card,
