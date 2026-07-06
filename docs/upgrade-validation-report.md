@@ -1,6 +1,6 @@
 # Upgrade Validation Report
 
-Date: 2026-07-06T05:47:25+05:30
+Date: 2026-07-06T07:02:43+05:30
 Result: PASSED for local v16 build and migration validation
 
 ## Versions Before
@@ -38,7 +38,7 @@ payments              0.0.1   UNVERSIONED
 ## Workspace Recreation
 
 ```json
-{"created": ["Zolexora Dashboard", "Zolexora Accounts", "Zolexora Sales", "Zolexora Purchase", "Zolexora Inventory", "Zolexora CRM", "Zolexora Fleet", "Zolexora Logistics", "Zolexora Analytics", "Zolexora Administration", "Zolexora AI"], "existing": [], "skipped": []}
+{"fallback_used": false, "created": [], "existing": ["Zolexora Dashboard", "Zolexora Accounts", "Zolexora Sales", "Zolexora Purchase", "Zolexora Inventory", "Zolexora CRM", "Zolexora Fleet", "Zolexora Logistics", "Zolexora Analytics", "Zolexora Administration", "Zolexora AI"], "skipped": [], "total_required": 11}
 ```
 
 ## Import Validation
@@ -50,7 +50,7 @@ payments              0.0.1   UNVERSIONED
 ## Worker Validation
 
 ```json
-{"job_executed": true, "key": "zolexora_worker_probe:a46895becbf8478db44b516408aabc76"}
+{"job_executed": true, "key": "zolexora_worker_probe:fe1a7f6ef6bf4151ba95f244945d3613"}
 ```
 
 ## Upgrade Integrity

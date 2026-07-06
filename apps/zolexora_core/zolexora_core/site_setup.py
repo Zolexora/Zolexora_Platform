@@ -106,16 +106,27 @@ def smoke_validate() -> dict[str, object]:
         required_apps.add("payments")
     missing_apps = sorted(required_apps - installed_apps)
 
-    workspace_names = [
-        "Zolexora Dashboard",
-        "Zolexora Accounts",
-        "Zolexora Sales",
-        "Zolexora Purchase",
-        "Zolexora Inventory",
-        "Zolexora Administration",
+    available_modules = {
+        module.name for module in frappe.get_all("Module Def", fields=["name"])
+    }
+    all_workspaces = [
+        {"title": "Zolexora Dashboard", "module": "Zolexora Core"},
+        {"title": "Zolexora Accounts", "module": "Accounts"},
+        {"title": "Zolexora Sales", "module": "Selling"},
+        {"title": "Zolexora Purchase", "module": "Buying"},
+        {"title": "Zolexora Inventory", "module": "Stock"},
+        {"title": "Zolexora CRM", "module": "CRM"},
+        {"title": "Zolexora Fleet", "module": "Zolexora Platform"},
+        {"title": "Zolexora Logistics", "module": "Zolexora Platform"},
+        {"title": "Zolexora Analytics", "module": "Zolexora Platform"},
+        {"title": "Zolexora Administration", "module": "Setup"},
+        {"title": "Zolexora AI", "module": "Zolexora Platform"},
     ]
     missing_workspaces = [
-        name for name in workspace_names if not frappe.db.exists("Workspace", name)
+        ws["title"]
+        for ws in all_workspaces
+        if ws["module"] in available_modules
+        and not frappe.db.exists("Workspace", ws["title"])
     ]
 
     checks = {
@@ -615,7 +626,7 @@ def _create_default_roles() -> None:
 
 
 def create_custom_workspaces() -> dict[str, object]:
-    """Create custom workspaces only when their backing modules are installed."""
+    """Create custom workspaces as a safety fallback if JSON fixtures failed to import."""
     available_modules = {
         module.name for module in frappe.get_all("Module Def", fields=["name"])
     }
@@ -661,11 +672,19 @@ def create_custom_workspaces() -> dict[str, object]:
                 "label": name,
                 "icon": ws["icon"],
                 "module": ws["module"],
-                "is_standard": 0,
+                "is_standard": 1,
                 "public": 1,
                 "content": "[]",
             }
         ).insert(ignore_permissions=True)
         created.append(name)
+
+    fallback_used = len(created) > 0
     frappe.db.commit()
-    return {"created": created, "existing": existing, "skipped": skipped}
+    return {
+        "fallback_used": fallback_used,
+        "created": created,
+        "existing": existing,
+        "skipped": skipped,
+        "total_required": len(workspaces),
+    }
