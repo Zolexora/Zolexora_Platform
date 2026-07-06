@@ -221,4 +221,4 @@ bench --site site1.example.com clear-website-cache
 - [x] Phase 3.8I remote GitHub Actions completion verified (`docs/phase-3.8I-final-external-proof-report.md`).
 - [x] Phase 3.8J remote GitHub Actions Payments matrix verified (`docs/phase-3.8J-payments-ci-proof-report.md`).
 - [x] Phase 3.9A custom dark theme remote GitHub Actions matrix verified (`docs/phase-3.9A-custom-dark-theme-report.md`).
-- [ ] Phase 3.9B app branding and icons remote GitHub Actions matrix verified (`docs/phase-3.9B-branding-report.md`).
+- [x] Phase 3.9B app branding and icons remote GitHub Actions matrix verified (`docs/phase-3.9B-branding-report.md`).

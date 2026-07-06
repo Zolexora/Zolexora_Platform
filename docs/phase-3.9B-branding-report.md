@@ -4,12 +4,19 @@ Date: 2026-07-06
 
 ## Decision
 
-PENDING REMOTE CI
+PHASE 3.9B BRANDING PASSED
 
-Phase 3.9B local/staging proof has passed. Final `PHASE 3.9B BRANDING PASSED` requires GitHub Actions to pass both CI matrix jobs:
+Final proof commit:
 
-- `INSTALL_PAYMENTS=0`
-- `INSTALL_PAYMENTS=1`
+```text
+8c2ad1e
+```
+
+GitHub Actions run:
+
+```text
+28760005664
+```
 
 ## Scope
 
@@ -259,16 +266,52 @@ Payment Gateway DocType: Payment Gateway
 
 ## Remote CI
 
-Pending.
+Passed.
 
-Required final evidence:
+GitHub Actions run:
 
-- GitHub Actions run ID
-- Commit hash
-- `INSTALL_PAYMENTS=0` matrix result
-- `INSTALL_PAYMENTS=1` matrix result
-- Branding asset healthcheck result
-- Payments CI assertions
-- Backup checksum
-- Restore
-- Upgrade validation
+```text
+28760005664
+```
+
+Commit:
+
+```text
+8c2ad1e
+```
+
+Matrix results:
+
+| Job | Result | Duration |
+| --- | --- | --- |
+| static-validation | passed | 31s |
+| docker-operational-validation (`INSTALL_PAYMENTS=0`) | passed | 11m0s |
+| docker-operational-validation (`INSTALL_PAYMENTS=1`) | passed | 14m5s |
+
+Default path proof:
+
+```text
+Zolexora dark theme CSS availability: PASS
+Branding static logo availability: PASS
+INSTALL_PAYMENTS=0 path validated
+sha256sum -c SHA256SUMS
+post-restore Zolexora dark theme CSS availability: PASS
+post-restore Branding static logo availability: PASS
+INSTALL_PAYMENTS=0 post-restore path validated
+upgrade validation report written to docs/upgrade-validation-report.md
+```
+
+Payments-enabled path proof:
+
+```text
+Zolexora dark theme CSS availability: PASS
+Branding static logo availability: PASS
+PAYMENTS_CI_OK
+Payment Gateway DocType assertion passed
+sha256sum -c SHA256SUMS
+post-restore Zolexora dark theme CSS availability: PASS
+post-restore Branding static logo availability: PASS
+PAYMENTS_RESTORE_CI_OK
+post-restore Payment Gateway DocType assertion passed
+upgrade validation report written to docs/upgrade-validation-report.md
+```
