@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">Zolexora favicon</title>
+  <desc id="desc">A compact blue Zolexora mark on a dark background.</desc>
+  <rect width="64" height="64" rx="15" fill="#07111f"/>
+  <path d="M17 17h32L30 36h18L22 51l13-22H17z" fill="#2f81f7"/>
+  <path d="M17 17h32L30 36h18L22 51l13-22H17z" fill="none" stroke="#8cc0ff" stroke-width="2" stroke-linejoin="round" opacity=".55"/>
+</svg>

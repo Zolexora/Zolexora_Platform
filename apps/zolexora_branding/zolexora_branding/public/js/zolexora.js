@@ -1,3 +1,9 @@
 frappe.ready(function() {
-    console.log('Zolexora ERP custom assets loaded.');
+    function setBrandTitle() {
+        document.title = "Zolexora ERP";
+    }
+
+    setBrandTitle();
+    window.addEventListener("hashchange", setBrandTitle);
+    window.addEventListener("popstate", setBrandTitle);
 });

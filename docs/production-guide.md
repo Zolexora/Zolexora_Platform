@@ -160,6 +160,51 @@ bench --site site1.example.com clear-website-cache
 ./scripts/healthcheck.sh
 ```
 
+## Zolexora Branding Assets
+
+Zolexora ERP app branding lives in the branding app:
+
+```text
+apps/zolexora_branding
+```
+
+Primary brand assets:
+
+```text
+apps/zolexora_branding/zolexora_branding/public/img/zolexora-logo.svg
+apps/zolexora_branding/zolexora_branding/public/img/zolexora-icon.svg
+apps/zolexora_branding/zolexora_branding/public/img/favicon.svg
+```
+
+Served URLs:
+
+```text
+/assets/zolexora_branding/img/zolexora-logo.svg
+/assets/zolexora_branding/img/zolexora-icon.svg
+/assets/zolexora_branding/img/favicon.svg
+```
+
+Brand metadata is registered from:
+
+```text
+apps/zolexora_branding/zolexora_branding/hooks.py
+apps/zolexora_branding/zolexora_branding/startup.py
+```
+
+The login page uses the Zolexora wordmark and favicon. Desk receives the favicon, dark theme CSS, boot branding metadata, and a scoped title update from the branding app JavaScript. Full server-rendered Desk title replacement is intentionally not forced through Frappe core edits.
+
+After changing brand assets, rebuild and clear caches:
+
+```bash
+docker compose -f compose.yaml exec -T backend bash -lc '
+cd /home/frappe/frappe-bench
+bench build
+bench --site site1.example.com clear-cache
+bench --site site1.example.com clear-website-cache
+'
+./scripts/healthcheck.sh
+```
+
 ## Release & Production Certification Checklist
 
 - [x] `INSTALL_PAYMENTS=1` set and verified in `.env` and Docker build.
@@ -176,3 +221,4 @@ bench --site site1.example.com clear-website-cache
 - [x] Phase 3.8I remote GitHub Actions completion verified (`docs/phase-3.8I-final-external-proof-report.md`).
 - [x] Phase 3.8J remote GitHub Actions Payments matrix verified (`docs/phase-3.8J-payments-ci-proof-report.md`).
 - [x] Phase 3.9A custom dark theme remote GitHub Actions matrix verified (`docs/phase-3.9A-custom-dark-theme-report.md`).
+- [ ] Phase 3.9B app branding and icons remote GitHub Actions matrix verified (`docs/phase-3.9B-branding-report.md`).
