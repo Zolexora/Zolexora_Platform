@@ -200,6 +200,9 @@ Result:
 ```text
 healthcheck completed successfully
 Branding static logo availability: PASS
+Zolexora logo SVG availability: PASS
+Zolexora icon SVG availability: PASS
+Zolexora favicon SVG availability: PASS
 Zolexora dark theme CSS availability: PASS
 ```
 
