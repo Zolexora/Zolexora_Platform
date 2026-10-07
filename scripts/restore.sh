@@ -35,7 +35,7 @@ source .env
 set +a
 
 if [ "${1:-}" = "" ]; then
-  log "ERROR" "usage: ./scripts/restore.sh backups/<timestamp>"
+  log "ERROR" "usage: ./scripts/restore.sh storage/backups/<timestamp>"
   exit 1
 fi
 

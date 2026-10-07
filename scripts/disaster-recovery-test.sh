@@ -62,7 +62,7 @@ CREATE_JSON=$(compose_exec backend bench --site "$SITE" execute zolexora_core.si
 
 step "Creating verified backup"
 ./scripts/backup.sh | tee -a "$TMP_LOG"
-BACKUP_DIR=$(find backups -mindepth 1 -maxdepth 1 -type d | sort | tail -n 1)
+BACKUP_DIR=$(find storage/backups -mindepth 1 -maxdepth 1 -type d | sort | tail -n 1)
 test -n "$BACKUP_DIR"
 test -f "$BACKUP_DIR/SHA256SUMS"
 

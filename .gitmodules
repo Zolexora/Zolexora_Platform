@@ -1,12 +1,12 @@
-[submodule "apps/frappe"]
-	path = apps/frappe
+[submodule "backend/frappe"]
+	path = backend/frappe
 	url = https://github.com/frappe/frappe.git
 	branch = version-16
-[submodule "apps/erpnext"]
-	path = apps/erpnext
+[submodule "backend/erpnext"]
+	path = backend/erpnext
 	url = https://github.com/frappe/erpnext.git
 	branch = version-16
-[submodule "apps/payments"]
-	path = apps/payments
+[submodule "backend/payments"]
+	path = backend/payments
 	url = https://github.com/frappe/payments.git
 	branch = version-16

@@ -16,7 +16,7 @@ RUN curl -fsSL https://deb.nodesource.com/setup_24.x -o /tmp/nodesource_setup.sh
     chmod +x /usr/local/bin/yarn && \
     rm -rf /var/lib/apt/lists/* /tmp/nodesource_setup.sh
 ARG INSTALL_PAYMENTS=0
-COPY ./apps /home/frappe/frappe-bench/apps
+COPY ./backend /home/frappe/frappe-bench/apps
 RUN if [ "$INSTALL_PAYMENTS" = "1" ] && [ ! -f apps/payments/setup.py ] && [ ! -f apps/payments/pyproject.toml ]; then \
       echo "ERROR: INSTALL_PAYMENTS=1 but apps/payments is not a valid Python project"; \
       exit 1; \
@@ -29,7 +29,7 @@ RUN mkdir -p /home/frappe/frappe-bench/sites && \
     echo "zolexora_branding" >> /home/frappe/frappe-bench/sites/apps.txt && \
     echo "zolexora_platform" >> /home/frappe/frappe-bench/sites/apps.txt && \
     echo "zolexora_integrations" >> /home/frappe/frappe-bench/sites/apps.txt
-COPY ./compose /home/frappe/frappe-bench/compose
+COPY ./infrastructure/compose /home/frappe/frappe-bench/compose
 COPY ./scripts/configure-common-site.sh /usr/local/bin/configure-common-site
 
 ENV PIP_NO_CACHE_DIR=1

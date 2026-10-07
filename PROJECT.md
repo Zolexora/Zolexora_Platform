@@ -50,7 +50,7 @@ Phase 3.8G focuses on **Risk Closure + Official Payments Enablement Before Phase
 |-------|----------------|----------------------|
 | **Phase 0** | Pre-Check Current Runtime | Run `git status --short`, `docker compose -f compose.yaml ps`, `./scripts/healthcheck.sh`, `./scripts/status.sh`. Verify container health. |
 | **Phase 1** | Commit & Freeze Phase 3.8F | Freeze working tree with `git commit -m "Phase 3.8F production certification with risks"` and tag `phase-3.8f-certified-with-risks`. |
-| **Phase 2** | Payments App Validity Inspection | Inspect `apps/payments` validity, check `setup.py` / `pyproject.toml`, and inspect `INSTALL_PAYMENTS` references. |
+| **Phase 2** | Payments App Validity Inspection | Inspect `backend/payments` validity, check `setup.py` / `pyproject.toml`, and inspect `INSTALL_PAYMENTS` references. |
 | **Phase 3** | Safety Backup Before Payments | Execute `./scripts/backup.sh` and verify SHA256SUMS. |
 | **Phase 4** | Enable Payments on Main Certification Path | Set `INSTALL_PAYMENTS=1` in `.env`, update `.env.example`, ensure `.env` is git ignored. |
 | **Phase 5** | Build Runtime With Payments Enabled | Build Docker images (`docker compose -f compose.yaml build`) with `INSTALL_PAYMENTS=1`. |
@@ -97,7 +97,7 @@ Phase 3.8G focuses on **Risk Closure + Official Payments Enablement Before Phase
 ```
 /home/chickenman/Documents/my_projects/ZolexoraERP/
 ├── .agents/                      # Teamwork agent metadata & workspace logs (NOT project code)
-├── apps/                         # Frappe applications
+├── backend/                      # Frappe applications
 │   ├── erpnext/                  # ERPNext core app
 │   ├── frappe/                   # Frappe framework core app
 │   ├── payments/                 # Frappe Payments app
@@ -106,10 +106,10 @@ Phase 3.8G focuses on **Risk Closure + Official Payments Enablement Before Phase
 │   ├── zolexora_integrations/    # Third-party integrations
 │   └── zolexora_platform/        # Platform extensions
 ├── backups/                      # Site backup archives
-├── compose/                      # Docker compose configuration snippets
+├── infrastructure/compose/                      # Docker compose configuration snippets
 ├── compose.yaml                  # Primary Docker Compose orchestration file
 ├── configs/                      # Service configuration files (mariadb, nginx, redis)
-├── docker/                       # Dockerfile and build scripts
+├── infrastructure/docker/                       # Dockerfile and build scripts
 │   └── Dockerfile                # Multi-stage image build for Zolexora
 ├── docs/                         # Architecture, security, operational & remediation docs
 ├── scripts/                      # Operational automation bash scripts
