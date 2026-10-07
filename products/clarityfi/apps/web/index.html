@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0a0a0a" />
+  <meta name="description" content="ClarityFi brings your money, movement, and daily habits into one private, calm workspace." />
+  <title>ClarityFi — One clear view of your life</title>
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #11110f;
+      --surface-2: #181814;
+      --surface-3: #202019;
+      --gold: #c9a840;
+      --gold-soft: #e4ca78;
+      --cream: #f2f0e7;
+      --muted: #9b9a90;
+      --line: #2b2a24;
+      --green: #71bb7b;
+      --red: #d46b6b;
+      --radius: 24px;
+      --max: 1180px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--cream);
+      background:
+        radial-gradient(circle at 76% 8%, rgba(201, 168, 64, .1), transparent 25rem),
+        var(--bg);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; }
+    button, a { -webkit-tap-highlight-color: transparent; }
+    .shell { width: min(calc(100% - 40px), var(--max)); margin-inline: auto; }
+    .eyebrow {
+      margin: 0 0 18px;
+      color: var(--gold-soft);
+      font-size: 12px;
+      font-weight: 750;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+    .eyebrow::before { content: ""; display: inline-block; width: 24px; height: 1px; margin: 0 10px 3px 0; background: var(--gold); }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+      background: rgba(10,10,10,.78);
+      backdrop-filter: blur(18px);
+    }
+    .nav { min-height: 72px; display: flex; align-items: center; justify-content: space-between; gap: 30px; }
+    .brand { display: inline-flex; align-items: center; gap: 11px; color: var(--cream); text-decoration: none; font-size: 19px; font-weight: 760; letter-spacing: -.03em; }
+    .brand-mark { width: 30px; height: 30px; display: grid; place-items: center; border: 1px solid rgba(201,168,64,.42); border-radius: 9px; color: var(--gold); background: rgba(201,168,64,.09); }
+    .brand-mark svg { width: 18px; }
+    .nav-links { display: flex; align-items: center; gap: 30px; }
+    .nav-links a { color: var(--muted); font-size: 14px; text-decoration: none; transition: color .2s; }
+    .nav-links a:hover, .nav-links a:focus-visible { color: var(--cream); }
+    .nav-cta, .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      min-height: 46px;
+      padding: 0 21px;
+      border: 1px solid var(--gold);
+      border-radius: 12px;
+      background: var(--gold);
+      color: #111008;
+      font-size: 14px;
+      font-weight: 750;
+      text-decoration: none;
+      transition: transform .2s, background .2s;
+    }
+    .nav-cta:hover, .button:hover { transform: translateY(-2px); background: var(--gold-soft); }
+    .button.secondary { border-color: var(--line); background: transparent; color: var(--cream); }
+    .button.secondary:hover { border-color: #555246; background: rgba(255,255,255,.03); }
+
+    .hero { min-height: calc(100vh - 72px); display: grid; grid-template-columns: 1.05fr .95fr; align-items: center; gap: clamp(50px, 8vw, 110px); padding-block: 76px 90px; }
+    .hero h1 { max-width: 730px; margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: clamp(55px, 7.2vw, 104px); font-weight: 400; letter-spacing: -.055em; line-height: .91; }
+    .hero h1 em { color: var(--gold-soft); font-weight: 400; }
+    .hero-copy > p:not(.eyebrow) { max-width: 590px; margin: 28px 0 34px; color: var(--muted); font-size: clamp(17px, 1.6vw, 20px); line-height: 1.7; }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+    .trust-note { display: flex; align-items: center; gap: 9px; margin-top: 22px; color: #77776f; font-size: 13px; }
+    .trust-note svg { width: 15px; color: var(--gold); }
+
+    .phone-stage { position: relative; display: grid; place-items: center; min-height: 620px; }
+    .orbit { position: absolute; width: min(100%, 560px); aspect-ratio: 1; border: 1px solid rgba(201,168,64,.13); border-radius: 50%; }
+    .orbit::before, .orbit::after { content: ""; position: absolute; inset: 11%; border: 1px solid rgba(255,255,255,.05); border-radius: inherit; }
+    .orbit::after { inset: 25%; background: rgba(201,168,64,.045); border: 0; }
+    .phone {
+      position: relative;
+      z-index: 2;
+      width: 286px;
+      height: 585px;
+      overflow: hidden;
+      border: 1px solid #4a483d;
+      border-radius: 42px;
+      background: #0d0d0d;
+      box-shadow: 0 40px 100px rgba(0,0,0,.58), inset 0 0 0 6px #171715;
+      transform: rotate(2deg);
+    }
+    .speaker { position: absolute; z-index: 3; top: 13px; left: 50%; width: 70px; height: 19px; border-radius: 20px; background: #030303; transform: translateX(-50%); }
+    .screen { height: 100%; padding: 48px 18px 20px; }
+    .screen-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+    .screen-brand { font-size: 12px; font-weight: 800; }
+    .avatar { width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; background: var(--surface-3); color: var(--gold); font-size: 10px; }
+    .screen-label { color: #77776f; font-size: 9px; letter-spacing: .14em; text-transform: uppercase; }
+    .balance { margin-top: 5px; font-size: 28px; font-weight: 760; letter-spacing: -.04em; }
+    .month { margin-top: 4px; color: #77776f; font-size: 10px; }
+    .mini-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 19px; }
+    .mini-card { padding: 13px; border: 1px solid #292923; border-radius: 14px; background: #151513; }
+    .mini-card small { display: block; margin-bottom: 5px; color: #77776f; font-size: 8px; text-transform: uppercase; }
+    .mini-card strong { font-size: 12px; }
+    .income { color: var(--green); }
+    .expense { color: var(--red); }
+    .chart-card { margin-top: 10px; padding: 14px; border: 1px solid #292923; border-radius: 15px; background: #151513; }
+    .chart-title { display: flex; justify-content: space-between; color: #8d8c84; font-size: 9px; }
+    .bars { height: 86px; display: flex; align-items: flex-end; gap: 7px; padding-top: 14px; }
+    .bar { flex: 1; min-height: 20%; border-radius: 3px 3px 1px 1px; background: #343329; }
+    .bar.active { background: var(--gold); }
+    .recent-title { margin: 17px 0 8px; color: #8d8c84; font-size: 9px; text-transform: uppercase; letter-spacing: .1em; }
+    .transaction { display: flex; align-items: center; gap: 9px; padding: 9px 0; border-bottom: 1px solid #21211e; }
+    .transaction-icon { width: 28px; height: 28px; display: grid; place-items: center; flex: none; border-radius: 9px; background: #202019; color: var(--gold); font-size: 11px; }
+    .transaction-copy { flex: 1; }
+    .transaction-copy strong { display: block; font-size: 10px; }
+    .transaction-copy small { color: #696961; font-size: 8px; }
+    .transaction-amount { font-size: 9px; font-weight: 700; }
+    .float-card { position: absolute; z-index: 3; min-width: 158px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 15px; background: rgba(24,24,20,.92); box-shadow: 0 18px 50px rgba(0,0,0,.35); backdrop-filter: blur(12px); }
+    .float-card small { display: block; margin-bottom: 4px; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .1em; }
+    .float-card strong { font-family: Georgia, serif; font-size: 20px; font-weight: 400; }
+    .float-card.one { top: 112px; right: -5px; }
+    .float-card.two { bottom: 92px; left: -28px; }
+
+    .proof { border-block: 1px solid var(--line); background: rgba(255,255,255,.012); }
+    .proof-grid { display: grid; grid-template-columns: repeat(4, 1fr); }
+    .proof-item { padding: 28px; border-right: 1px solid var(--line); }
+    .proof-item:first-child { padding-left: 0; }
+    .proof-item:last-child { border: 0; }
+    .proof-item strong { display: block; margin-bottom: 5px; color: var(--cream); font-family: Georgia, serif; font-size: 27px; font-weight: 400; }
+    .proof-item span { color: var(--muted); font-size: 13px; }
+
+    .section { padding-block: 130px; }
+    .section-head { display: grid; grid-template-columns: .8fr 1.2fr; gap: 50px; align-items: end; margin-bottom: 60px; }
+    .section h2 { max-width: 800px; margin: 0; font-family: Georgia, serif; font-size: clamp(42px, 5.2vw, 70px); font-weight: 400; letter-spacing: -.045em; line-height: 1; }
+    .section-head > p { max-width: 530px; margin: 0 0 5px auto; color: var(--muted); font-size: 17px; line-height: 1.7; }
+    .pillar-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .pillar { position: relative; min-height: 400px; padding: 30px; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+    .pillar::after { content: ""; position: absolute; right: -75px; bottom: -100px; width: 240px; height: 240px; border: 1px solid rgba(201,168,64,.14); border-radius: 50%; box-shadow: 0 0 0 35px rgba(201,168,64,.025), 0 0 0 70px rgba(201,168,64,.018); }
+    .pillar-number { color: #65645c; font-size: 12px; letter-spacing: .12em; }
+    .pillar-icon { width: 52px; height: 52px; display: grid; place-items: center; margin-top: 70px; border-radius: 16px; background: rgba(201,168,64,.1); color: var(--gold-soft); }
+    .pillar-icon svg { width: 24px; }
+    .pillar h3 { margin: 24px 0 10px; font-family: Georgia, serif; font-size: 31px; font-weight: 400; }
+    .pillar p { max-width: 290px; margin: 0; color: var(--muted); font-size: 14px; line-height: 1.7; }
+    .pillar-tag { position: absolute; right: 24px; top: 24px; padding: 6px 9px; border: 1px solid var(--line); border-radius: 20px; color: #77776f; font-size: 10px; text-transform: uppercase; }
+
+    .feature-section { background: var(--surface); border-block: 1px solid var(--line); }
+    .bento { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }
+    .feature { min-height: 240px; padding: 28px; border: 1px solid var(--line); border-radius: 20px; background: var(--bg); }
+    .feature.wide { grid-column: span 7; }
+    .feature.narrow { grid-column: span 5; }
+    .feature.third { grid-column: span 4; }
+    .feature-top { display: flex; align-items: center; justify-content: space-between; }
+    .feature-icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 12px; background: var(--surface-3); color: var(--gold); }
+    .feature-icon svg { width: 20px; }
+    .feature-kicker { color: #66655e; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
+    .feature h3 { margin: 44px 0 9px; font-size: 21px; letter-spacing: -.025em; }
+    .feature p { max-width: 470px; margin: 0; color: var(--muted); font-size: 14px; line-height: 1.7; }
+
+    .privacy { display: grid; grid-template-columns: 1fr 1fr; gap: 90px; align-items: center; }
+    .privacy-visual { position: relative; min-height: 500px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 32px; background: repeating-linear-gradient(0deg, transparent 0 39px, rgba(255,255,255,.025) 40px), repeating-linear-gradient(90deg, transparent 0 39px, rgba(255,255,255,.025) 40px), var(--surface); }
+    .shield { width: 150px; height: 150px; display: grid; place-items: center; border: 1px solid rgba(201,168,64,.3); border-radius: 50%; background: rgba(201,168,64,.07); color: var(--gold-soft); box-shadow: 0 0 0 35px rgba(201,168,64,.025), 0 0 0 70px rgba(201,168,64,.018); }
+    .shield svg { width: 56px; }
+    .local-label { position: absolute; bottom: 26px; padding: 9px 13px; border: 1px solid var(--line); border-radius: 20px; background: var(--bg); color: var(--muted); font-size: 12px; }
+    .privacy h2 { margin: 0 0 22px; }
+    .privacy-copy > p:not(.eyebrow) { color: var(--muted); font-size: 17px; line-height: 1.75; }
+    .privacy-list { display: grid; gap: 15px; margin-top: 30px; }
+    .privacy-item { display: flex; align-items: center; gap: 12px; color: #c4c2b9; font-size: 14px; }
+    .check { width: 23px; height: 23px; display: grid; place-items: center; flex: none; border: 1px solid rgba(201,168,64,.28); border-radius: 50%; color: var(--gold); font-size: 12px; }
+
+    .cta-section { padding-bottom: 100px; }
+    .cta-panel { position: relative; overflow: hidden; padding: clamp(50px, 8vw, 100px); border: 1px solid rgba(201,168,64,.25); border-radius: 32px; background: linear-gradient(130deg, #1d1c15, #11110e); text-align: center; }
+    .cta-panel::before, .cta-panel::after { content: ""; position: absolute; width: 400px; height: 400px; border: 1px solid rgba(201,168,64,.08); border-radius: 50%; }
+    .cta-panel::before { left: -220px; top: -250px; }
+    .cta-panel::after { right: -200px; bottom: -260px; }
+    .cta-panel h2 { max-width: 780px; margin: 0 auto 20px; font-family: Georgia, serif; font-size: clamp(43px, 6vw, 76px); font-weight: 400; letter-spacing: -.05em; line-height: 1; }
+    .cta-panel p { max-width: 520px; margin: 0 auto 32px; color: var(--muted); font-size: 16px; }
+    .status-pill { display: inline-flex; align-items: center; gap: 8px; margin-top: 18px; color: #89887f; font-size: 12px; }
+    .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 4px rgba(201,168,64,.1); }
+
+    footer { border-top: 1px solid var(--line); }
+    .footer-inner { min-height: 112px; display: flex; align-items: center; justify-content: space-between; gap: 30px; }
+    .footer-inner p { margin: 0; color: #6f6e67; font-size: 12px; }
+    .footer-links { display: flex; gap: 20px; }
+    .footer-links a { color: var(--muted); font-size: 12px; text-decoration: none; }
+
+    @media (max-width: 900px) {
+      .hero { grid-template-columns: 1fr; padding-top: 90px; text-align: center; }
+      .hero-copy > p:not(.eyebrow) { margin-inline: auto; }
+      .hero-actions, .trust-note { justify-content: center; }
+      .phone-stage { min-height: 650px; }
+      .proof-grid { grid-template-columns: repeat(2, 1fr); }
+      .proof-item { border-bottom: 1px solid var(--line); }
+      .proof-item:nth-child(2) { border-right: 0; }
+      .section-head, .privacy { grid-template-columns: 1fr; }
+      .section-head > p { margin-left: 0; }
+      .pillar-grid { grid-template-columns: 1fr; }
+      .pillar { min-height: 330px; }
+      .pillar-icon { margin-top: 45px; }
+      .feature.wide, .feature.narrow { grid-column: span 6; }
+      .feature.third { grid-column: span 6; }
+      .privacy { gap: 60px; }
+      .privacy-visual { min-height: 400px; }
+    }
+
+    @media (max-width: 640px) {
+      .shell { width: min(calc(100% - 28px), var(--max)); }
+      .nav-links { display: none; }
+      .nav-cta { min-height: 40px; padding-inline: 14px; }
+      .hero { min-height: auto; padding-block: 75px 55px; }
+      .hero h1 { font-size: clamp(50px, 15vw, 72px); }
+      .hero-actions .button { width: 100%; }
+      .phone-stage { min-height: 600px; margin-inline: -7px; }
+      .phone { width: 270px; height: 555px; }
+      .float-card { display: none; }
+      .proof-grid { grid-template-columns: 1fr 1fr; }
+      .proof-item { padding: 22px 14px; }
+      .proof-item:first-child { padding-left: 14px; }
+      .section { padding-block: 90px; }
+      .section-head { gap: 24px; margin-bottom: 40px; }
+      .section h2 { font-size: 43px; }
+      .bento { grid-template-columns: 1fr; }
+      .feature.wide, .feature.narrow, .feature.third { grid-column: auto; }
+      .privacy-visual { min-height: 340px; }
+      .footer-inner { padding-block: 28px; flex-direction: column; justify-content: center; text-align: center; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="shell nav">
+      <a class="brand" href="#top" aria-label="ClarityFi home">
+        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M6 17.5V13m6 4.5V6.5m6 11v-8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
+        ClarityFi
+      </a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="#life">Your life</a><a href="#features">Features</a><a href="#privacy">Privacy</a>
+      </nav>
+      <a class="nav-cta" href="#access">Release status</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="shell hero">
+      <div class="hero-copy">
+        <p class="eyebrow">Your personal clarity system</p>
+        <h1>See your life.<br /><em>Clearly.</em></h1>
+        <p>Money, movement, and daily habits finally make sense together. ClarityFi gives you one calm, private place to understand what matters.</p>
+        <div class="hero-actions">
+          <a class="button" href="#life">Explore ClarityFi <span aria-hidden="true">↓</span></a>
+          <a class="button secondary" href="#access">Release status <span aria-hidden="true">↘</span></a>
+        </div>
+        <div class="trust-note"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3 5 6v5c0 4.8 2.9 8.1 7 10 4.1-1.9 7-5.2 7-10V6l-7-3Z" stroke="currentColor" stroke-width="1.8"/></svg> Private by design. Your records stay on your device.</div>
+      </div>
+
+      <div class="phone-stage" aria-label="Preview of the ClarityFi finance dashboard">
+        <div class="orbit" aria-hidden="true"></div>
+        <div class="float-card one"><small>Monthly balance</small><strong class="income">+₹48,250</strong></div>
+        <div class="float-card two"><small>Budget health</small><strong>On track</strong></div>
+        <div class="phone">
+          <div class="speaker"></div>
+          <div class="screen">
+            <div class="screen-head"><span class="screen-brand">ClarityFi</span><span class="avatar">CF</span></div>
+            <div class="screen-label">Total balance</div>
+            <div class="balance">₹1,24,800</div>
+            <div class="month">June 2026 · 12 days remaining</div>
+            <div class="mini-grid">
+              <div class="mini-card"><small>Income</small><strong class="income">+ ₹72,000</strong></div>
+              <div class="mini-card"><small>Expense</small><strong class="expense">− ₹23,750</strong></div>
+            </div>
+            <div class="chart-card">
+              <div class="chart-title"><span>Spending rhythm</span><span>6 months</span></div>
+              <div class="bars"><i class="bar" style="height:42%"></i><i class="bar" style="height:65%"></i><i class="bar" style="height:50%"></i><i class="bar" style="height:78%"></i><i class="bar" style="height:58%"></i><i class="bar active" style="height:70%"></i></div>
+            </div>
+            <div class="recent-title">Recent records</div>
+            <div class="transaction"><span class="transaction-icon">⌂</span><span class="transaction-copy"><strong>Rent</strong><small>Home</small></span><span class="transaction-amount expense">− ₹12,000</span></div>
+            <div class="transaction"><span class="transaction-icon">＋</span><span class="transaction-copy"><strong>Salary</strong><small>Income</small></span><span class="transaction-amount income">+ ₹72,000</span></div>
+            <div class="transaction"><span class="transaction-icon">◎</span><span class="transaction-copy"><strong>Groceries</strong><small>Food</small></span><span class="transaction-amount expense">− ₹1,840</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="proof">
+      <div class="shell proof-grid">
+        <div class="proof-item"><strong>3 in 1</strong><span>Finance, fitness, lifestyle</span></div>
+        <div class="proof-item"><strong>Offline first</strong><span>Works without an account</span></div>
+        <div class="proof-item"><strong>28+</strong><span>Ready-to-use categories</span></div>
+        <div class="proof-item"><strong>100%</strong><span>Your data, under your control</span></div>
+      </div>
+    </div>
+
+    <section class="shell section" id="life">
+      <div class="section-head">
+        <div><p class="eyebrow">The whole picture</p><h2>Three parts of life. One clear view.</h2></div>
+        <p>Your choices do not happen in separate apps. ClarityFi connects the practical signals of your day without turning life into a spreadsheet.</p>
+      </div>
+      <div class="pillar-grid">
+        <article class="pillar"><span class="pillar-number">01</span><span class="pillar-tag">Finance</span><div class="pillar-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M4 19V9m5 10V5m6 14v-7m5 7V3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div><h3>Know your money</h3><p>Track records, accounts, budgets, and trends in one grounded view of your finances.</p></article>
+        <article class="pillar"><span class="pillar-number">02</span><span class="pillar-tag">Fitness</span><div class="pillar-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M4 13h3l2-5 4 10 2-5h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><h3>Notice your rhythm</h3><p>Keep an eye on steps, workouts, sleep, and health signals without losing the bigger picture.</p></article>
+        <article class="pillar"><span class="pillar-number">03</span><span class="pillar-tag">Lifestyle</span><div class="pillar-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M19 5C11 5 6 9 6 16m0 0c3-4 6-6 11-7M6 16v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div><h3>Build better days</h3><p>Follow the habits and routines that shape how you feel, spend, move, and live.</p></article>
+      </div>
+    </section>
+
+    <section class="feature-section" id="features">
+      <div class="shell section">
+        <div class="section-head"><div><p class="eyebrow">Built for real life</p><h2>Useful depth. No clutter.</h2></div><p>The everyday tools are fast, while deeper context is always close when you need it.</p></div>
+        <div class="bento">
+          <article class="feature wide"><div class="feature-top"><span class="feature-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M4 19V9m5 10V5m6 14v-7m5 7V3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><span class="feature-kicker">Five analysis views</span></div><h3>Patterns you can act on</h3><p>Compare months, accounts, and categories through clear charts and percentage breakdowns.</p></article>
+          <article class="feature narrow"><div class="feature-top"><span class="feature-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3 5 6v5c0 4.8 2.9 8.1 7 10 4.1-1.9 7-5.2 7-10V6l-7-3Z" stroke="currentColor" stroke-width="1.8"/></svg></span><span class="feature-kicker">Local first</span></div><h3>Private by default</h3><p>No mandatory account. Add passcode and biometric protection when you want another layer.</p></article>
+          <article class="feature third"><div class="feature-top"><span class="feature-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M6 3v3M4.5 4.5h3M18 15v5m-2.5-2.5h5M14 4l1 2.5L18 8l-3 1.5L14 12l-1-2.5L10 8l3-1.5L14 4Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span><span class="feature-kicker">AI chat</span></div><h3>Ask in plain language</h3><p>Turn your own records into practical, personal spending insights.</p></article>
+          <article class="feature third"><div class="feature-top"><span class="feature-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M4 19h16M6 16V8m4 8V5m4 11v-4m4 4V7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><span class="feature-kicker">Budgets</span></div><h3>Stay ahead of the month</h3><p>Set category limits and follow progress while there is still time to adjust.</p></article>
+          <article class="feature third"><div class="feature-top"><span class="feature-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M8 7h10a2 2 0 0 1 2 2v8H8a4 4 0 0 1 0-8h12M8 13h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="feature-kicker">Your format</span></div><h3>Accounts that match life</h3><p>Keep cash, bank, card, and savings balances together—with custom categories.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="shell section privacy" id="privacy">
+      <div class="privacy-visual"><div class="shield"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3 5 6v5c0 4.8 2.9 8.1 7 10 4.1-1.9 7-5.2 7-10V6l-7-3Z" stroke="currentColor" stroke-width="1.5"/><path d="m9.3 12 1.8 1.8 3.8-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="local-label">Stored locally on your device</span></div>
+      <div class="privacy-copy"><p class="eyebrow">Privacy is the product</p><h2>Your life is not an ad profile.</h2><p>ClarityFi is designed around local storage and deliberate control. Your personal records remain yours, with simple tools to move or remove them.</p><div class="privacy-list"><div class="privacy-item"><span class="check">✓</span>No account required to get started</div><div class="privacy-item"><span class="check">✓</span>Passcode and biometric app lock</div><div class="privacy-item"><span class="check">✓</span>JSON backup, restore, and CSV export</div><div class="privacy-item"><span class="check">✓</span>Delete and reset controls built in</div></div></div>
+    </section>
+
+    <section class="shell cta-section" id="access">
+      <div class="cta-panel"><p class="eyebrow">Android release is ready</p><h2>Download ClarityFi for Android.</h2><p>Install the first public APK release directly from GitHub. This build is made for modern arm64 Android devices.</p><a class="button" href="https://github.com/Abhishek-art01/03_Clearityfi/releases/latest/download/clarityfi-v1.0.0-arm64.apk">Download APK <span aria-hidden="true">↓</span></a><a class="button secondary" href="https://github.com/Abhishek-art01/03_Clearityfi/releases/latest">View release notes <span aria-hidden="true">↗</span></a><div class="status-pill"><span class="status-dot"></span> v1.0.0 APK available now</div></div>
+    </section>
+  </main>
+
+  <footer><div class="shell footer-inner"><a class="brand" href="#top"><span class="brand-mark" aria-hidden="true">C</span>ClarityFi</a><p>Money · Movement · Daily life</p><div class="footer-links"><a href="#privacy">Privacy</a><a href="#features">Features</a></div><p>© 2026 ClarityFi</p></div></footer>
+</body>
+</html>

@@ -1,0 +1,25 @@
+minimumReleaseAge: 1440
+
+minimumReleaseAgeExclude:
+  - '@replit/*'
+  - stripe-replit-sync
+
+packages:
+  - apps/*
+  - packages/*
+  - tools/*
+
+catalog:
+  '@tanstack/react-query': ^5.90.21
+  '@types/node': ^25.3.3
+  '@types/react': ^19.2.0
+  '@types/react-dom': ^19.2.0
+  react: 19.1.0
+  react-dom: 19.1.0
+  zod: ^3.25.76
+  drizzle-orm: ^0.45.2
+
+autoInstallPeers: false
+
+allowBuilds:
+  esbuild: true
