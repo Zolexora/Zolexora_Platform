@@ -1,0 +1,8 @@
+path	type	owner_role	group_role	mode	mutability	purpose
+/data	directory	administrator	administrator	0755	managed-boundary	Managed production data boundary
+/data/projects	directory	deployment-service	deployment-service	0750	release-mutable	Generated application configuration and release state
+/data/backups	directory	deployment-service	deployment-service	0750	shared-mutable	Local backup staging and verification evidence
+/data/logs	directory	deployment-service	deployment-service	0750	shared-mutable	Deployment and operational logs subject to rotation
+/data/secrets	directory	deployment-service	deployment-service	0700	restricted-mutable	Protected runtime secret files
+/data/ssl	directory	deployment-service	deployment-service	0700	restricted-mutable	Origin TLS state where required
+/data/scripts	directory	administrator	administrator	0755	published-immutable	Installed version-controlled operational entry points

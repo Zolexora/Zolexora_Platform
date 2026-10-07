@@ -1,0 +1,8 @@
+field	value
+contract_version	1
+transaction_state	complete
+plan_digest	779c68e8fbb0b3846d25e3cc4a180ae0b5fdec9c07fc1e7b9da5cd7b0e557d7c
+last_completed_sequence	10
+step_id	finalize_transaction
+step_status	verified
+safe_summary	isolated transaction complete
