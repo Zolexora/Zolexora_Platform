@@ -1,38 +1,30 @@
 # Platform API Contract Analysis
 
-**Date:** 2026-10-08
-**Status:** EXTRACTION CANDIDATE CONFIRMED
+## Contract Inventory
+1. **ApiResponse<T>**
+   - **Purpose:** Standard JSON envelope for successful API responses.
+   - **Consumers:** RentoEasy, TheTextileCare
+   - **Status:** Hardened
 
-## 1. Overview of Implementations
-Several products have independently created internal API specification packages:
-1. `products/ClarityFi/packages/api-spec` (OpenAPI)
-2. `products/ZolexoraEngage/lib/api-spec` (OpenAPI)
-3. `products/TheTextileCare/packages/types` (TypeScript)
-4. `products/RentoEasy/packages/shared-types` (TypeScript)
+2. **PaginatedResponse<T>**
+   - **Purpose:** Standard envelope for paginated lists.
+   - **Consumers:** RentoEasy, TheTextileCare
+   - **Status:** Hardened
 
-## 2. Comparison of Contracts
+3. **ApiError**
+   - **Purpose:** Standard error payload structure.
+   - **Consumers:** RentoEasy, TheTextileCare
+   - **Status:** Hardened
 
-By deeply inspecting the generated `types` and `openapi.yaml` files, the following identical patterns emerged:
+4. **HealthStatus**
+   - **Purpose:** String literal type for service health (`'ok' | 'degraded' | 'error'`).
+   - **Consumers:** RentoEasy, TheTextileCare, ZolexoraEngage
+   - **Status:** Hardened
 
-### Identical / Highly Similar Abstractions:
-* **`ApiResponse<T>` / `HealthStatus`**: Every product wraps successes in a generic data envelope and requires a health-check schema.
-* **`PaginatedResponse<T>`**: Pagination (page, limit, total) is uniformly structured across RentoEasy and TheTextileCare.
-* **`ApiError` / `ErrorResponse`**: Standardized error envelopes (`statusCode`, `message`, `error`) appear in both Python and Node.js products.
-* **`AuthTokens`**: Standard definitions for `accessToken`, `refreshToken`, and `expiresIn`.
+## Versioning and Evolution Strategy
+* **Locality:** `@zolexora/api-contracts` is consumed via local `file:` linking.
+* **Evolution:** Because changes instantly propagate to all consumers during local development and CI, any breaking change to the contracts MUST be resolved atomically in the same commit/PR for all consuming products.
+* **No Publishing:** The package is marked `"private": true` and will NOT be published to npm.
 
-## 3. Analysis
-
-The duplication here is structural and language-agnostic. 
-Because `RentoEasy` and `TheTextileCare` both manually maintain identical TypeScript representations of these envelopes, and `ClarityFi`/`ZolexoraEngage` maintain OpenAPI schemas of the same envelopes, this is a **prime candidate for the first Platform Core extraction.**
-
-## 4. Proposed First Extraction
-We will create:
-`packages/api-contracts/` (or `platform/api-contracts/`)
-
-This package will act as the canonical source for:
-1. `ApiResponse<T>`
-2. `PaginatedResponse<T>`
-3. `ApiError`
-4. `HealthStatus`
-
-It will have zero dependencies on any product and will be published as a pure, product-neutral TypeScript definition library, establishing the first true Platform Core contract.
+## Extraction Criteria
+We will NOT extract additional contracts (like `Address` or `User`) if they represent business data or if they conflict across products (e.g., TheTextileCare's pagination uses `offset/limit` while api-contracts uses `page/limit`). Only true, purely semantic cross-product agreements belong here.
