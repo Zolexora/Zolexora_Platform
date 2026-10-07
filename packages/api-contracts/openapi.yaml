@@ -1,0 +1,65 @@
+openapi: 3.1.0
+info:
+  title: Zolexora Platform API Contracts
+  version: 0.1.0
+  description: Shared OpenAPI components for the Zolexora Platform
+paths: {}
+components:
+  schemas:
+    ApiResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+        message:
+          type: string
+        requestId:
+          type: string
+      required:
+        - success
+        - data
+    PaginatedResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+        pageSize:
+          type: integer
+        totalPages:
+          type: integer
+      required:
+        - data
+        - total
+        - page
+        - totalPages
+    ApiError:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+        code:
+          type: string
+        message:
+          type: string
+        error:
+          type: string
+        details:
+          type: object
+      required:
+        - message
+    HealthStatus:
+      type: string
+      enum:
+        - ok
+        - degraded
+        - error

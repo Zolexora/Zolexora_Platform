@@ -2,36 +2,39 @@ node_modules/
 .next/
 dist/
 build/
-docs/Gemini
 .vercel/
 .expo/
 .expo-shared/
 *.log
-.antigravitycli
 
-# Supabase temp files
-services/marketplace-api/infrastructure/supabase/.temp
-services/marketplace-api/infrastructure/supabase/.branches
+# Supabase temp files (Local if any)
+.temp
+.branches
+
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+
 .env
 .env.*
 !.env.example
 .env.local
 .env.production
+
 __pycache__/
 *.pyc
 .mypy_cache/
 .venv/
 venv/
 uploads/
+
 .turbo/
 .pytest_cache/
 .ruff_cache/
 *.tsbuildinfo
 coverage/
+
 .DS_Store
 Thumbs.db
 .idea/
