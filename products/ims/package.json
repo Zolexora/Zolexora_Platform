@@ -1,0 +1,31 @@
+{
+  "name": "zolexora-ims-monorepo",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Zolexora IMS — Enterprise Multi-Tenant Inventory Management Monorepo",
+  "packageManager": "pnpm@10.32.1",
+  "scripts": {
+    "dev:user:frontend": "pnpm --filter @zolexora/ims-user-frontend dev",
+    "dev:admin:frontend": "pnpm --filter @zolexora/ims-admin-frontend dev",
+    "dev:user:backend": "cd apps/ims-user/backend && uvicorn main:app --reload --port 8000",
+    "dev:admin:backend": "cd apps/ims-admin/backend && uvicorn main:app --reload --port 8001",
+    "build": "pnpm --filter \"@zolexora/*\" build",
+    "build:user": "pnpm --filter @zolexora/ims-user-frontend build",
+    "build:admin": "pnpm --filter @zolexora/ims-admin-frontend build",
+    "test:backend": "pytest apps/ims-user/backend/tests apps/ims-admin/backend/tests",
+    "test:all": "bash scripts/test-all.sh",
+    "deploy": "bash scripts/deploy.sh",
+    "deploy:frontends": "bash scripts/deploy-frontends-cloudflare.sh",
+    "health": "bash scripts/health-check.sh",
+    "docker:ops": "bash scripts/docker-ops.sh",
+    "docker:up": "bash scripts/docker-ops.sh up",
+    "docker:down": "bash scripts/docker-ops.sh down",
+    "db:migrate": "bash scripts/db-ops.sh migrate",
+    "db:seed": "bash scripts/db-ops.sh seed",
+    "env:audit": "bash scripts/sync-env.sh audit",
+    "menu": "bash scripts/menu.sh"
+  },
+  "devDependencies": {
+    "wrangler": "^4.129.0"
+  }
+}

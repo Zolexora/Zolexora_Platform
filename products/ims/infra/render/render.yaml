@@ -1,0 +1,63 @@
+services:
+  # ----------------------------------------------------------------------------
+  # 1. Zolexora IMS Core API (Docker Container)
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: zolexora-ims-api
+    runtime: docker
+    region: oregon
+    plan: free
+    dockerfilePath: apps/ims-user/backend/Dockerfile
+    dockerContext: apps/ims-user/backend
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: ENVIRONMENT
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: CLOUDFLARE_ACCOUNT_ID
+        sync: false
+      - key: CLOUDFLARE_D1_DATABASE_ID
+        sync: false
+      - key: CLOUDFLARE_API_TOKEN
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+
+  # ----------------------------------------------------------------------------
+  # 2. Zolexora Admin API (Docker Container)
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: zolexora-admin-api
+    runtime: docker
+    region: oregon
+    plan: free
+    dockerfilePath: apps/ims-admin/backend/Dockerfile
+    dockerContext: apps/ims-admin/backend
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 8001
+      - key: ENVIRONMENT
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: SUPERADMIN_EMAIL
+        sync: false
+      - key: CLOUDFLARE_ACCOUNT_ID
+        sync: false
+      - key: CLOUDFLARE_D1_DATABASE_ID
+        sync: false
+      - key: CLOUDFLARE_API_TOKEN
+        sync: false
+

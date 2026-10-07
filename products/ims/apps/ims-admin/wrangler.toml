@@ -1,0 +1,28 @@
+name = "admin-ims"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+workers_dev = true
+
+# Custom Domain (uncomment when zolexora.com custom DNS route is active)
+# routes = [
+#   { pattern = "admin.ims.zolexora.com/*", zone_name = "zolexora.com" }
+# ]
+
+# Central Cloudflare D1 Database Binding
+[[d1_databases]]
+binding = "DB"
+database_name = "zolexora-ims-1-db"
+database_id = "63b1b80b-ee96-4948-acce-c96d6ac65f61"
+
+# Edge Session Store Binding
+[[kv_namespaces]]
+binding = "SESSION_KV"
+id = "96c2aa5eace04fe0aa2bbafd29de9f76"
+preview_id = "07e2d34d75414835ad296d6a0887a89b"
+
+# Environment Variables
+[vars]
+PLATFORM_APP_NAME = "Zolexora IMS Platform Admin"
+SUPERADMIN_EMAIL = "admin@zolexora.com"
+SESSION_TTL_SECONDS = "604800"
+TENANT_IMS_URL = "https://ims.zolexora.workers.dev"

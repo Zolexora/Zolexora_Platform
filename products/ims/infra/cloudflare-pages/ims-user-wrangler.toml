@@ -1,0 +1,8 @@
+name = "zolexora-ims-web"
+compatibility_date = "2024-09-01"
+pages_build_output_dir = "dist"
+
+[vars]
+VITE_API_BASE_URL = "https://api.ims.zolexora.com"
+VITE_SUPABASE_URL = "https://<PROJECT_REF>.supabase.co"
+VITE_SUPABASE_ANON_KEY = "placeholder_anon_key"
