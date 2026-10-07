@@ -1,0 +1,39 @@
+{
+  "name": "Zolexora ERP Devcontainer",
+  "image": "mcr.microsoft.com/devcontainers/universal:linux",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
+      "moby": false
+    }
+  },
+  "forwardPorts": [8000, 8080, 8443],
+  "portsAttributes": {
+    "8000": {
+      "label": "Frappe Backend (Dev)",
+      "onAutoForward": "notify"
+    },
+    "8080": {
+      "label": "Zolexora ERP Frontend (Nginx)",
+      "onAutoForward": "openBrowser"
+    },
+    "8443": {
+      "label": "Zolexora ERP HTTPS (Nginx)",
+      "onAutoForward": "silent"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.black-formatter",
+        "charliermarsh.ruff",
+        "ms-azuretools.vscode-docker"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/home/frappe/frappe-bench/env/bin/python",
+        "editor.formatOnSave": true
+      }
+    }
+  },
+  "postCreateCommand": "cp -n .env.example .env 2>/dev/null || true"
+}
