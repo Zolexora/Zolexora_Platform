@@ -1,0 +1,13 @@
+{
+  "name": "Zolexora Integrations",
+  "app_name": "zolexora_integrations",
+  "app_title": "Zolexora Integrations",
+  "app_publisher": "Zolexora",
+  "app_description": "Marketplace integrations and custom sync logic for Zolexora ERP.",
+  "app_email": "info@zolexora.com",
+  "app_license": "GPL-3.0-or-later",
+  "app_version": "1.0.0",
+  "required_apps": [
+    "zolexora_platform"
+  ]
+}

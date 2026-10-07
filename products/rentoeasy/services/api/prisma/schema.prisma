@@ -1,0 +1,572 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Rent & Stay — Prisma Schema
+// Database : Supabase (PostgreSQL)
+// Convention: every table → @@map("NN_ras_tablename")
+//   NN  = 2-digit order number
+//   ras = project prefix (Rent And Stay)
+// ─────────────────────────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL") // Supabase requires this for migrations
+}
+
+// ─── ENUMS ───────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  tenant
+  owner
+  admin
+}
+
+enum KYCStatus {
+  pending
+  submitted
+  verified
+  rejected
+}
+
+enum PropertyType {
+  single
+  shared
+  pg
+  flat
+  studio
+}
+
+enum FurnishingType {
+  furnished
+  semi_furnished
+  unfurnished
+}
+
+enum GenderPreference {
+  male
+  female
+  any
+}
+
+enum PropertyStatus {
+  active
+  occupied
+  inactive
+  under_review
+}
+
+enum BookingStatus {
+  pending
+  accepted
+  rejected
+  active
+  cancelled
+  completed
+}
+
+enum PaymentStatus {
+  pending
+  processing
+  success
+  failed
+  refunded
+}
+
+enum PaymentType {
+  rent
+  security_deposit
+  refund
+}
+
+enum PaymentMethod {
+  upi
+  card
+  net_banking
+  wallet
+}
+
+enum PayoutStatus {
+  pending
+  processing
+  completed
+  failed
+}
+
+enum DocumentType {
+  aadhaar
+  pan
+  bank_account
+  property_doc
+}
+
+enum MaintenanceStatus {
+  open
+  in_progress
+  resolved
+  closed
+}
+
+enum MaintenancePriority {
+  low
+  medium
+  high
+  urgent
+}
+
+enum PoliceVerificationStatus {
+  pending
+  submitted
+  verified
+}
+
+enum MessageType {
+  text
+  image
+  system
+}
+
+enum NotificationType {
+  booking_request
+  booking_accepted
+  booking_rejected
+  rent_due
+  rent_paid
+  maintenance_update
+  agreement_ready
+  kyc_verified
+  kyc_rejected
+  payout_done
+}
+
+// ─── 01 USERS ────────────────────────────────────────────────────────────────
+
+model User {
+  id           String    @id @default(uuid())
+  phone        String    @unique
+  email        String?   @unique
+  name         String
+  role         UserRole
+  profilePhoto String?
+  kycStatus    KYCStatus @default(pending)
+  isActive     Boolean   @default(true)
+  passwordHash String?   // for email+password login (owner/admin only)
+  fcmToken     String?
+  deviceId     String?
+
+  // Tenant fields
+  permanentAddress   String?
+  city               String?
+  declaredIdType     String?
+  declaredIdLastFour String?
+
+  // Owner fields
+  panNumber         String?
+  aadhaarVerified   Boolean @default(false)
+  panVerified       Boolean @default(false)
+  bankVerified      Boolean @default(false)
+  bankAccountNumber String?
+  bankIfsc          String?
+  bankAccountName   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  ownedProperties  Property[]           @relation("OwnerProperties")
+  tenantBookings   Booking[]            @relation("TenantBookings")
+  ownerBookings    Booking[]            @relation("OwnerBookings")
+  kycDocuments     KYCDocument[]
+  sentMessages     ChatMessage[]
+  notifications    Notification[]
+  maintenanceReqs  MaintenanceRequest[] @relation("TenantMaintenance")
+  reviews          Review[]
+  tenantPayments   Payment[]            @relation("TenantPayments")
+  ownerPayments    Payment[]            @relation("OwnerPayments")
+  ownerPayouts     Payout[]
+  refreshTokens    RefreshToken[]
+
+  @@index([phone])
+  @@index([role])
+  @@index([kycStatus])
+  @@index([isActive])
+  @@map("01_ras_users")
+}
+
+// ─── 02 REFRESH TOKENS ───────────────────────────────────────────────────────
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([token])
+  @@map("02_ras_refresh_tokens")
+}
+
+// ─── 03 OTP ──────────────────────────────────────────────────────────────────
+
+model OTP {
+  id        String   @id @default(uuid())
+  phone     String
+  code      String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([phone])
+  @@index([expiresAt])
+  @@map("03_ras_otps")
+}
+
+// ─── 04 KYC DOCUMENTS ────────────────────────────────────────────────────────
+
+model KYCDocument {
+  id              String       @id @default(uuid())
+  userId          String
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type            DocumentType
+  status          KYCStatus    @default(pending)
+  digioRequestId  String?
+  verifiedData    Json?        // name, dob, address, etc. from Digio
+  rejectionReason String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@unique([userId, type])
+  @@index([userId])
+  @@index([status])
+  @@map("04_ras_kyc_documents")
+}
+
+// ─── 05 AMENITIES ────────────────────────────────────────────────────────────
+
+model Amenity {
+  id         String            @id @default(uuid())
+  name       String            @unique
+  icon       String
+  sortOrder  Int               @default(0)
+  properties PropertyAmenity[]
+
+  @@map("05_ras_amenities")
+}
+
+// ─── 06 PROPERTIES ───────────────────────────────────────────────────────────
+
+model Property {
+  id               String           @id @default(uuid())
+  ownerId          String
+  owner            User             @relation("OwnerProperties", fields: [ownerId], references: [id])
+  title            String
+  description      String
+  type             PropertyType
+  status           PropertyStatus   @default(under_review)
+  monthlyRent      Int              // in rupees
+  securityDeposit  Int              // in rupees
+  furnishing       FurnishingType
+  genderPreference GenderPreference @default(any)
+  rules            String?
+  availableFrom    DateTime
+  rating           Float?
+  reviewCount      Int              @default(0)
+  totalBookings    Int              @default(0)
+
+  // Address
+  addressLine1 String
+  addressLine2 String?
+  city         String
+  state        String
+  pincode      String
+  landmark     String?
+  latitude     Float
+  longitude    Float
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  photos          PropertyPhoto[]
+  amenities       PropertyAmenity[]
+  bookings        Booking[]
+  reviews         Review[]
+  maintenanceReqs MaintenanceRequest[]
+
+  @@index([ownerId])
+  @@index([city])
+  @@index([pincode])
+  @@index([status])
+  @@index([monthlyRent])
+  @@index([latitude, longitude])
+  @@index([type])
+  @@index([genderPreference])
+  @@map("06_ras_properties")
+}
+
+// ─── 07 PROPERTY PHOTOS ──────────────────────────────────────────────────────
+
+model PropertyPhoto {
+  id           String   @id @default(uuid())
+  propertyId   String
+  property     Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  url          String   // Cloudinary URL
+  thumbnailUrl String
+  isPrimary    Boolean  @default(false)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  @@index([propertyId])
+  @@map("07_ras_property_photos")
+}
+
+// ─── 08 PROPERTY AMENITIES (junction) ────────────────────────────────────────
+
+model PropertyAmenity {
+  propertyId String
+  amenityId  String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  amenity    Amenity  @relation(fields: [amenityId], references: [id])
+
+  @@id([propertyId, amenityId])
+  @@map("08_ras_property_amenities")
+}
+
+// ─── 09 BOOKINGS ─────────────────────────────────────────────────────────────
+
+model Booking {
+  id                      String                   @id @default(uuid())
+  propertyId              String
+  property                Property                 @relation(fields: [propertyId], references: [id])
+  tenantId                String
+  tenant                  User                     @relation("TenantBookings", fields: [tenantId], references: [id])
+  ownerId                 String
+  owner                   User                     @relation("OwnerBookings", fields: [ownerId], references: [id])
+  status                  BookingStatus            @default(pending)
+  moveInDate              DateTime
+  moveOutDate             DateTime?
+  monthlyRent             Int
+  securityDeposit         Int
+  agreementUrl            String?
+  agreementSignedByTenant Boolean                  @default(false)
+  agreementSignedByOwner  Boolean                  @default(false)
+  agreementSignedAt       DateTime?
+  policeVerificationStatus PoliceVerificationStatus @default(pending)
+  rejectionReason         String?
+  cancelledBy             String?                  // userId
+  cancelReason            String?
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+
+  // Relations
+  payments        Payment[]
+  chatRoom        ChatRoom?
+  maintenanceReqs MaintenanceRequest[]
+
+  @@index([tenantId])
+  @@index([ownerId])
+  @@index([propertyId])
+  @@index([status])
+  @@index([moveInDate])
+  @@map("09_ras_bookings")
+}
+
+// ─── 10 PAYMENTS ─────────────────────────────────────────────────────────────
+
+model Payment {
+  id                 String        @id @default(uuid())
+  bookingId          String
+  booking            Booking       @relation(fields: [bookingId], references: [id])
+  tenantId           String
+  tenant             User          @relation("TenantPayments", fields: [tenantId], references: [id])
+  ownerId            String
+  owner              User          @relation("OwnerPayments", fields: [ownerId], references: [id])
+  amountPaise        Int           // full amount in paise (100 paise = ₹1)
+  platformFeePaise   Int           // platform cut in paise
+  ownerAmountPaise   Int           // amountPaise - platformFeePaise
+  type               PaymentType
+  status             PaymentStatus @default(pending)
+  method             PaymentMethod?
+  razorpayOrderId    String?       @unique
+  razorpayPaymentId  String?       @unique
+  razorpaySignature  String?
+  receiptNumber      String?       @unique
+  receiptUrl         String?       // S3 URL
+  paidAt             DateTime?
+  dueDate            DateTime
+  payout             Payout?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([bookingId])
+  @@index([tenantId])
+  @@index([ownerId])
+  @@index([status])
+  @@index([dueDate])
+  @@index([razorpayOrderId])
+  @@map("10_ras_payments")
+}
+
+// ─── 11 PAYOUTS ──────────────────────────────────────────────────────────────
+
+model Payout {
+  id               String       @id @default(uuid())
+  paymentId        String       @unique
+  payment          Payment      @relation(fields: [paymentId], references: [id])
+  ownerId          String
+  owner            User         @relation(fields: [ownerId], references: [id])
+  amountPaise      Int
+  status           PayoutStatus @default(pending)
+  razorpayPayoutId String?      @unique
+  failureReason    String?
+  processedAt      DateTime?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@index([ownerId])
+  @@index([status])
+  @@map("11_ras_payouts")
+}
+
+// ─── 12 CHAT ROOMS ───────────────────────────────────────────────────────────
+
+model ChatRoom {
+  id           String        @id @default(uuid())
+  bookingId    String        @unique
+  booking      Booking       @relation(fields: [bookingId], references: [id])
+  tenantId     String
+  ownerId      String
+  lastMessage  String?
+  lastMessageAt DateTime?
+  messages     ChatMessage[]
+  createdAt    DateTime      @default(now())
+
+  @@index([tenantId])
+  @@index([ownerId])
+  @@map("12_ras_chat_rooms")
+}
+
+// ─── 13 CHAT MESSAGES ────────────────────────────────────────────────────────
+
+model ChatMessage {
+  id        String      @id @default(uuid())
+  roomId    String
+  room      ChatRoom    @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User        @relation(fields: [senderId], references: [id])
+  content   String
+  type      MessageType @default(text)
+  mediaUrl  String?     // for image messages — S3/Cloudinary URL
+  readAt    DateTime?
+  createdAt DateTime    @default(now())
+
+  @@index([roomId])
+  @@index([senderId])
+  @@index([createdAt])
+  @@map("13_ras_chat_messages")
+}
+
+// ─── 14 MAINTENANCE REQUESTS ─────────────────────────────────────────────────
+
+model MaintenanceRequest {
+  id          String              @id @default(uuid())
+  bookingId   String
+  booking     Booking             @relation(fields: [bookingId], references: [id])
+  propertyId  String
+  property    Property            @relation(fields: [propertyId], references: [id])
+  tenantId    String
+  tenant      User                @relation("TenantMaintenance", fields: [tenantId], references: [id])
+  title       String
+  description String
+  status      MaintenanceStatus   @default(open)
+  priority    MaintenancePriority @default(medium)
+  photos      String[]            // S3 URLs
+  ownerNote   String?
+  resolvedAt  DateTime?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@index([bookingId])
+  @@index([propertyId])
+  @@index([tenantId])
+  @@index([status])
+  @@map("14_ras_maintenance_requests")
+}
+
+// ─── 15 REVIEWS ──────────────────────────────────────────────────────────────
+
+model Review {
+  id         String   @id @default(uuid())
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id])
+  tenantId   String
+  tenant     User     @relation(fields: [tenantId], references: [id])
+  rating     Int      // 1–5
+  comment    String?
+  ownerReply String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([propertyId, tenantId]) // one review per tenant per property
+  @@index([propertyId])
+  @@index([rating])
+  @@map("15_ras_reviews")
+}
+
+// ─── 16 NOTIFICATIONS ────────────────────────────────────────────────────────
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  body      String
+  data      Json?            // extra payload for deep links
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  @@index([userId])
+  @@index([readAt])
+  @@index([createdAt])
+  @@map("16_ras_notifications")
+}
+
+// ─── 17 PLATFORM CONFIG ──────────────────────────────────────────────────────
+
+model PlatformConfig {
+  id                String   @id @default("singleton")
+  platformFeePercent Float   @default(2.0)
+  maxPhotosPerListing Int    @default(10)
+  otpExpirySeconds  Int      @default(300)  // 5 min
+  rentDueDayOfMonth Int      @default(1)
+  updatedAt         DateTime @updatedAt
+  updatedById       String?
+
+  @@map("17_ras_platform_config")
+}
+
+// ─── 18 AUDIT LOGS ───────────────────────────────────────────────────────────
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String   // who did it
+  actorRole  UserRole
+  action     String   // e.g. "BOOKING_ACCEPTED", "KYC_REJECTED"
+  targetType String   // e.g. "Booking", "User", "Payment"
+  targetId   String
+  metadata   Json?    // before/after values, reason, etc.
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  @@index([actorId])
+  @@index([targetType, targetId])
+  @@index([createdAt])
+  @@map("18_ras_audit_logs")
+}

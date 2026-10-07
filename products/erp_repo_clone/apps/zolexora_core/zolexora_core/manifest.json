@@ -1,0 +1,13 @@
+{
+  "name": "Zolexora Core",
+  "app_name": "zolexora_core",
+  "app_title": "Zolexora Core",
+  "app_publisher": "Zolexora",
+  "app_description": "Core business logic and framework customizations for Zolexora ERP.",
+  "app_email": "info@zolexora.com",
+  "app_license": "GPL-3.0-or-later",
+  "app_version": "1.0.0",
+  "required_apps": [
+    "erpnext"
+  ]
+}

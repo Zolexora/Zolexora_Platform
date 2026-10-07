@@ -1,0 +1,217 @@
+x-defaults: &defaults
+  restart: unless-stopped
+  env_file: .env
+  volumes:
+    - sites:/home/frappe/frappe-bench/sites
+    - assets:/home/frappe/frappe-bench/assets
+    - apps:/home/frappe/frappe-bench/apps
+    - logs:/home/frappe/frappe-bench/logs
+    - ./backups:/home/frappe/frappe-bench/backups
+  networks:
+    - zolexora
+
+services:
+  mariadb:
+    image: mariadb:10.11
+    container_name: zolexora-mariadb
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - database:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mariadb-admin ping -h localhost -uroot -p\"$${MYSQL_ROOT_PASSWORD}\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - zolexora
+
+  redis-cache:
+    image: redis:7-alpine
+    container_name: zolexora-redis-cache
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    volumes:
+      - redis-cache:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - zolexora
+
+  redis-queue:
+    image: redis:7-alpine
+    container_name: zolexora-redis-queue
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-queue:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - zolexora
+
+  redis-socketio:
+    image: redis:7-alpine
+    container_name: zolexora-redis-socketio
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    volumes:
+      - redis-socketio:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - zolexora
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        INSTALL_PAYMENTS: ${INSTALL_PAYMENTS:-0}
+    container_name: zolexora-backend
+    <<: *defaults
+    command: sh -c "configure-common-site && exec bench serve --port 8000"
+    ports:
+      - "${FRAPPE_PORT}:8000"
+    volumes:
+      - sites:/home/frappe/frappe-bench/sites
+      - assets:/home/frappe/frappe-bench/assets
+      - apps:/home/frappe/frappe-bench/apps
+      - logs:/home/frappe/frappe-bench/logs
+      - ./backups:/home/frappe/frappe-bench/backups
+      - ./scripts/yarn-wrapper.sh:/usr/local/bin/yarn:ro
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis-cache:
+        condition: service_healthy
+      redis-queue:
+        condition: service_healthy
+      redis-socketio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sS http://localhost:8000 >/dev/null"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        INSTALL_PAYMENTS: ${INSTALL_PAYMENTS:-0}
+    container_name: zolexora-scheduler
+    command: bench schedule
+    depends_on:
+      backend:
+        condition: service_healthy
+    <<: *defaults
+    healthcheck:
+      test: ["CMD-SHELL", "tr '\\0' ' ' </proc/1/cmdline | grep -q 'frappe schedule'"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  worker-short:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        INSTALL_PAYMENTS: ${INSTALL_PAYMENTS:-0}
+    container_name: zolexora-worker-short
+    command: bench worker --queue short
+    depends_on:
+      backend:
+        condition: service_healthy
+    <<: *defaults
+    healthcheck:
+      test: ["CMD-SHELL", "tr '\\0' ' ' </proc/1/cmdline | grep -q 'frappe worker --queue short'"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  worker-long:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        INSTALL_PAYMENTS: ${INSTALL_PAYMENTS:-0}
+    container_name: zolexora-worker-long
+    command: bench worker --queue long
+    depends_on:
+      backend:
+        condition: service_healthy
+    <<: *defaults
+    healthcheck:
+      test: ["CMD-SHELL", "tr '\\0' ' ' </proc/1/cmdline | grep -q 'frappe worker --queue long'"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  socketio:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        INSTALL_PAYMENTS: ${INSTALL_PAYMENTS:-0}
+    container_name: zolexora-socketio
+    command: sh -c "configure-common-site && exec bench socketio"
+    depends_on:
+      backend:
+        condition: service_healthy
+      redis-socketio:
+        condition: service_healthy
+    <<: *defaults
+    healthcheck:
+      test: ["CMD-SHELL", "tr '\\0' ' ' </proc/1/cmdline | grep -q 'socketio.js'"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  nginx:
+    image: nginx:stable-alpine
+    container_name: zolexora-nginx
+    ports:
+      - "${HTTP_PORT}:80"
+      - "${HTTPS_PORT}:443"
+    volumes:
+      - ./compose/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - sites:/home/frappe/frappe-bench/sites:ro
+      - assets:/home/frappe/frappe-bench/assets:ro
+      - apps:/home/frappe/frappe-bench/apps:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - zolexora
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget --header='Host: ${SITE_NAME:-site1.example.com}' -q -O /dev/null http://127.0.0.1/api/method/ping || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+networks:
+  zolexora:
+    driver: bridge
+
+volumes:
+  sites:
+  database:
+  redis-cache:
+  redis-queue:
+  redis-socketio:
+  logs:
+  assets:
+  apps:
+  backups:

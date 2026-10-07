@@ -1,0 +1,59 @@
+{
+  "name": "rent-and-stay",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "services/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:web": "turbo run dev --filter=./apps/*",
+    "dev:api": "turbo run dev --filter=./services/api",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "type-check": "turbo run type-check",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "format": "prettier --write \"**/*.{ts,tsx,json,md}\""
+  },
+  "dependencies": {
+    "@nestjs/common": "11.1.24",
+    "@nestjs/core": "11.1.24",
+    "@nestjs/platform-express": "11.1.24",
+    "@nestjs/platform-socket.io": "11.1.24",
+    "@nestjs/websockets": "11.1.24",
+    "rxjs": "7.8.2"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0",
+    "prettier": "^3.2.0",
+    "typescript": "^5.4.0"
+  },
+  "overrides": {
+    "@nestjs/common": "11.1.24",
+    "@nestjs/core": "11.1.24",
+    "rxjs": "7.8.2"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
+  "packageManager": "pnpm@10.32.1",
+  "pnpm": {
+    "overrides": {
+      "uuid": "^11.1.1"
+    },
+    "onlyBuiltDependencies": [
+      "@firebase/util",
+      "@nestjs/core",
+      "@prisma/client",
+      "@prisma/engines",
+      "@scarf/scarf",
+      "msgpackr-extract",
+      "prisma",
+      "protobufjs"
+    ]
+  }
+}

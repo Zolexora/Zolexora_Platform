@@ -1,0 +1,63 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ras-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: rent_and_stay
+      POSTGRES_USER: ras_user
+      POSTGRES_PASSWORD: ras_pass
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ras_user -d rent_and_stay']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: ras-redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./services/api
+      dockerfile: Dockerfile.dev
+    container_name: ras-api
+    restart: unless-stopped
+    ports:
+      - '8000:8000'
+    environment:
+      DATABASE_URL: postgresql://ras_user:ras_pass@postgres:5432/rent_and_stay
+      REDIS_URL: redis://redis:6379
+      NODE_ENV: development
+    env_file:
+      - ./services/api/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./services/api:/app
+      - /app/node_modules
+    command: npm run dev
+
+volumes:
+  postgres_data:
+  redis_data:

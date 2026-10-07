@@ -1,0 +1,4 @@
+path	type	owner_role	group_role	mode	mutability	purpose
+/data	directory	administrator	administrator	0755	managed-boundary	Managed production data boundary
+/data/projects	directory	deployment-service	deployment-service	0750	release-mutable	Generated application configuration and release state
+/data/projects	directory	deployment-service	deployment-service	0777	release-mutable	Duplicate unsafe path
