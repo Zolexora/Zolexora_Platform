@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Categories — Mahila Madel</title>
+<link rel="stylesheet" href="/shared.css"/>
+</head>
+<body>
+<div id="sidebar-container"></div>
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left"><div class="topbar-title">Categories</div></div>
+    <div class="topbar-right">
+      <a href="/api/products/categories" target="_blank" class="json-btn">View JSON ↗</a>
+      <div class="time-badge" id="time">--</div>
+    </div>
+  </div>
+  <div class="content" style="max-width:900px">
+    <div id="catsContainer"><div class="loading"><div class="spinner"></div>Loading...</div></div>
+
+    <div class="section-card" style="margin-top:20px">
+      <div class="section-header">
+        <div class="section-title">Raw API Response</div>
+        <a href="/api/products/categories" target="_blank" class="json-btn">Open in new tab ↗</a>
+      </div>
+      <div class="section-body">
+        <div class="json-box" id="jsonBox">Loading...</div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="/shared.js"></script>
+<script>
+  initSidebar('categories');
+  setInterval(() => document.getElementById('time').textContent = new Date().toLocaleTimeString(), 1000);
+  document.getElementById('time').textContent = new Date().toLocaleTimeString();
+
+  const EMOJIS = {'Jewellery':'💎','Clothing':'👗','Bags':'👜','Footwear':'👠','Accessories':'🧣','Beauty':'💄','Home Decor':'🏠','Electronics':'📱'};
+  const COLORS = ['#b06aff','#4d9fff','#00d084','#ff8c42','#ffd93d','#ff4d4d'];
+
+  async function load() {
+    try {
+      const [catRes, prodRes] = await Promise.all([fetch('/api/products/categories'), fetch('/api/products?limit=100')]);
+      const cats = await catRes.json();
+      const prods = await prodRes.json();
+      const products = prods.products || [];
+      document.getElementById('jsonBox').textContent = JSON.stringify(cats, null, 2);
+      const counts = {};
+      cats.forEach(c => { counts[c] = products.filter(p=>p.category===c).length; });
+      const max = Math.max(...Object.values(counts));
+      document.getElementById('catsContainer').innerHTML = `
+        <div class="stats-grid">
+          <div class="stat-card blue"><div class="stat-top"><div class="stat-icon blue">🗂️</div><span class="stat-tag blue">Total</span></div><div class="stat-value">${cats.length}</div><div class="stat-label">Categories</div></div>
+          <div class="stat-card green"><div class="stat-top"><div class="stat-icon green">📦</div><span class="stat-tag green">Items</span></div><div class="stat-value">${products.length}</div><div class="stat-label">Total Products</div></div>
+        </div>
+        <div class="section-card">
+          <div class="section-header"><div class="section-title">All Categories</div><span class="section-count">${cats.length}</span></div>
+          <div class="section-body">
+            <div class="cats-grid">${cats.map((cat,i) => {
+              const count = counts[cat]||0;
+              const color = COLORS[i%COLORS.length];
+              const pct = max>0?Math.round((count/max)*100):0;
+              return `<a href="/products.html" class="cat-card" style="--cat-color:${color}">
+                <div class="cat-emoji">${EMOJIS[cat]||'🛍️'}</div>
+                <div class="cat-name">${cat}</div>
+                <div class="cat-count">${count} product${count!==1?'s':''}</div>
+                <div class="cat-bar"><div style="width:${pct}%;height:100%;background:${color};border-radius:2px;transition:width 0.5s"></div></div>
+              </a>`;
+            }).join('')}</div>
+          </div>
+        </div>`;
+    } catch(e) {
+      document.getElementById('catsContainer').innerHTML = `<div class="loading">❌ ${e.message}</div>`;
+    }
+  }
+  load();
+</script>
+</body>
+</html>

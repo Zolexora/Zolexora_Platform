@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Health — Mahila Madel</title>
+<link rel="stylesheet" href="/shared.css"/>
+</head>
+<body>
+<div id="sidebar-container"></div>
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left"><div class="topbar-title">Health Check</div></div>
+    <div class="topbar-right">
+      <a href="/api/health" target="_blank" class="json-btn">View JSON ↗</a>
+      <div class="time-badge" id="time">--</div>
+    </div>
+  </div>
+  <div class="content" style="max-width:800px">
+    <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="stat-card green">
+        <div class="stat-top"><div class="stat-icon green">🚀</div><span class="stat-tag green" id="statusTag">Checking</span></div>
+        <div class="stat-value" id="statusVal">--</div>
+        <div class="stat-label">Server</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="stat-top"><div class="stat-icon blue">⚡</div><span class="stat-tag blue">ms</span></div>
+        <div class="stat-value" id="respTime">--</div>
+        <div class="stat-label">Response Time</div>
+      </div>
+      <div class="stat-card purple">
+        <div class="stat-top"><div class="stat-icon purple">🕐</div><span class="stat-tag purple">Live</span></div>
+        <div class="stat-value" style="font-size:16px" id="serverTime">--</div>
+        <div class="stat-label">Server Time</div>
+      </div>
+    </div>
+
+    <div class="section-card" style="margin-bottom:16px">
+      <div class="section-header">
+        <div class="section-title">Services</div>
+        <button class="json-btn" onclick="checkHealth()">↻ Refresh</button>
+      </div>
+      <div class="section-body">
+        <div class="endpoint"><span class="dot-status" id="apiDot"></span><span class="ep-path">API Server</span><span id="apiStatus" class="ep-desc">--</span><span class="ep-desc" id="apiTime">--</span></div>
+        <div class="endpoint"><span class="dot-status" id="dbDot"></span><span class="ep-path">MongoDB Atlas</span><span id="dbStatus" class="ep-desc">--</span><span class="ep-desc">Cloud</span></div>
+        <div class="endpoint"><span class="dot-status" style="background:var(--green)"></span><span class="ep-path">CORS</span><span class="ep-desc" style="color:var(--green)">Enabled</span></div>
+        <div class="endpoint"><span class="dot-status" style="background:var(--green)"></span><span class="ep-path">JWT Auth</span><span class="ep-desc" style="color:var(--green)">Active · 30d expiry</span></div>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-title">Raw Response</div>
+        <a href="/api/health" target="_blank" class="json-btn">Open in new tab ↗</a>
+      </div>
+      <div class="section-body">
+        <div class="json-box" id="jsonBox">Loading...</div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="/shared.js"></script>
+<script>
+  initSidebar('health');
+  setInterval(() => document.getElementById('time').textContent = new Date().toLocaleTimeString(), 1000);
+  document.getElementById('time').textContent = new Date().toLocaleTimeString();
+
+  async function checkHealth() {
+    const start = Date.now();
+    try {
+      const res = await fetch('/api/health');
+      const data = await res.json();
+      const ms = Date.now() - start;
+      document.getElementById('statusVal').textContent = 'Online';
+      document.getElementById('statusTag').textContent = 'Live';
+      document.getElementById('respTime').textContent = ms + 'ms';
+      document.getElementById('serverTime').textContent = new Date().toLocaleTimeString();
+      document.getElementById('apiDot').style.background = 'var(--green)';
+      document.getElementById('apiStatus').textContent = 'Online';
+      document.getElementById('apiStatus').style.color = 'var(--green)';
+      document.getElementById('apiTime').textContent = ms + 'ms';
+      document.getElementById('dbDot').style.background = 'var(--green)';
+      document.getElementById('dbStatus').textContent = 'Connected';
+      document.getElementById('dbStatus').style.color = 'var(--green)';
+      document.getElementById('jsonBox').textContent = JSON.stringify(data, null, 2);
+    } catch(e) {
+      document.getElementById('statusVal').textContent = 'Offline';
+      document.getElementById('statusTag').textContent = 'Down';
+      document.getElementById('apiDot').style.background = 'var(--red)';
+      document.getElementById('apiStatus').textContent = 'Offline';
+      document.getElementById('apiStatus').style.color = 'var(--red)';
+      document.getElementById('jsonBox').textContent = 'Error: ' + e.message;
+    }
+  }
+  checkHealth();
+  setInterval(checkHealth, 30000);
+</script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+.profile-page { padding: 20px 0; }
+.profile-layout { display: grid; grid-template-columns: 240px 1fr; gap: 20px; align-items: start; }
+.profile-sidebar { padding: 24px; text-align: center; position: sticky; top: calc(var(--header-h) + 16px); }
+.profile-avatar { width: 72px; height: 72px; border-radius: 50%; background: var(--primary); color: #fff; font-size: 28px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; }
+.profile-name { font-size: 16px; font-weight: 600; margin-bottom: 3px; }
+.profile-email { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
+.profile-nav { display: flex; flex-direction: column; gap: 2px; }
+.pnav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 4px; border: none; background: none; cursor: pointer; font-size: 14px; color: var(--text); text-align: left; transition: all 0.15s; }
+.pnav-item:hover { background: var(--bg); }
+.pnav-item.active { background: #e3f0ff; color: var(--primary); font-weight: 500; }
+.profile-main { padding: 24px; }
+.profile-main h2 { font-size: 18px; font-weight: 600; margin-bottom: 20px; }
+.form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+.profile-section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.profile-section-head h2 { margin-bottom: 0; }
+.addresses-list { display: flex; flex-direction: column; gap: 12px; }
+.addr-card { border: 1px solid var(--border); border-radius: 4px; padding: 14px; position: relative; font-size: 14px; line-height: 1.7; }
+.addr-type-badge { margin-bottom: 6px; }
+.addr-del-btn { position: absolute; top: 12px; right: 12px; background: none; border: none; color: var(--danger); font-size: 13px; cursor: pointer; }
+.addr-del-btn:hover { text-decoration: underline; }
+@media(max-width:768px){ .profile-layout{grid-template-columns:1fr;} .profile-sidebar{position:relative;top:0;} .form-row-2,.form-row-3{grid-template-columns:1fr;} }

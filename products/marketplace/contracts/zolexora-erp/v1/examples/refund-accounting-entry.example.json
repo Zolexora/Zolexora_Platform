@@ -1,0 +1,1 @@
+{"schema_version":"1.0","tenant_external_id":"customer-tenant-001","organization_external_id":"organization-001","refund_external_id":"refund-4001","payment_external_id":"payment-5001","credit_reference":null,"amount_minor":60000,"currency":"INR","idempotency_key":"refund:refund-4001:confirmed"}

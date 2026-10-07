@@ -1,0 +1,156 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  javascript:
+    name: Workspace, Build, Type Check, Lint & Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9.0.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Verify workspace
+        run: pnpm verify:workspace
+      - name: Build applications
+        run: pnpm build
+        env:
+          NEXT_PUBLIC_API_URL: https://api.zolexora.com/api
+      - name: Type-check applications
+        run: pnpm type-check
+      - name: Lint configured JavaScript packages
+        run: pnpm exec turbo run lint
+      - name: Run existing frontend tests
+        run: pnpm test
+
+  test-backend:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: marketplace_local
+          POSTGRES_USER: marketplace_local
+          POSTGRES_PASSWORD: marketplace-local-only
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Secret Scanning
+        uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+      - name: Install dependencies
+        run: |
+          pip install -r services/marketplace-api/requirements.txt
+      - name: Dependency Audit
+        run: pnpm audit --prod --audit-level high || true
+      - name: Run tests
+        env:
+          DATABASE_URL: postgresql://marketplace_local:marketplace-local-only@localhost:5432/marketplace_local
+          REDIS_URL: redis://localhost:6379
+        run: |
+          export PYTHONPATH=$PYTHONPATH:services/marketplace-api
+          python scripts/validate-erp-contracts.py
+          python scripts/validate-postgresql-schema.py
+          cd services/marketplace-api
+          alembic heads
+          alembic upgrade head --sql >/dev/null
+          # Run database migrations
+          alembic upgrade head
+          cd ../..
+          python -m compileall -q services/marketplace-api
+          cd services/marketplace-api
+          ruff check .
+
+          # Mandatory Security Gates
+          pytest tests/test_storefront_context.py tests/test_storefront_isolation.py tests/test_payments.py
+
+          pytest -q
+
+  docker-publish:
+    name: Build & Publish Images
+    runs-on: ubuntu-latest
+    needs: [javascript, test-backend]
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+      - name: Build API Image
+        uses: docker/build-push-action@v7
+        with:
+          context: ./services/marketplace-api
+          file: ./services/marketplace-api/Dockerfile
+          push: false
+          tags: zolexora/api:latest
+      - name: Build Zolexora Shop Image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./infrastructure/docker/Dockerfile.nextjs
+          build-args: |
+            APP_NAME=@zolexora/storefront-zolexora-shop
+            APP_DIR=apps/storefronts/zolexora-shop/web
+          push: false
+          tags: zolexora/zolexora-shop:latest
+      - name: Build Mahila Madel Image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./infrastructure/docker/Dockerfile.cra
+          build-args: |
+            APP_NAME=@zolexora/storefront-mahila-madel
+            APP_DIR=apps/storefronts/mahila-madel/web
+          push: false
+          tags: zolexora/mahila-madel:latest
+      - name: Build Seller Portal Image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./infrastructure/docker/Dockerfile.nextjs
+          build-args: |
+            APP_NAME=@zolexora/seller-portal
+            APP_DIR=apps/portals/seller/web
+          push: false
+          tags: zolexora/seller-portal:latest
+      - name: Build Admin Image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./infrastructure/docker/Dockerfile.nextjs
+          build-args: |
+            APP_NAME=@zolexora/marketplace-admin
+            APP_DIR=apps/portals/marketplace-admin/web
+          push: false
+          tags: zolexora/admin:latest

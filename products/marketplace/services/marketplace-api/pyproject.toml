@@ -1,0 +1,15 @@
+[project]
+name = "zolexora-backend"
+version = "2.1.0"
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+pythonpath = ["."]
+testpaths = ["tests"]
+env = [
+    "MONGO_URL=mongodb://localhost:27017",
+    "DB_NAME=test_db",
+    "REDIS_URL=redis://127.0.0.1:55434/1",
+    "AUTH_OTP_PEPPER=test-only-otp-pepper-not-for-production",
+]

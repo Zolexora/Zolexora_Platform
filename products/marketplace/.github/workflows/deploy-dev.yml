@@ -1,0 +1,103 @@
+name: Deploy - Development
+
+on:
+  push:
+    branches: [ main, develop, development ]
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for manual trigger'
+        required: false
+        default: 'Manual development deployment'
+
+jobs:
+  deploy-server:
+    name: Deploy API Server to Development
+    runs-on: ubuntu-latest
+    environment: Development – server
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build & Package API Container
+        env:
+          ADMIN_URL: ${{ secrets.ADMIN_URL }}
+          CASHFREE_CLIENT_ID: ${{ secrets.CASHFREE_CLIENT_ID }}
+          CASHFREE_CLIENT_SECRET: ${{ secrets.CASHFREE_CLIENT_SECRET }}
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CORS_ORIGINS: ${{ secrets.CORS_ORIGINS }}
+          JWT_EXPIRE_HOURS: ${{ secrets.JWT_EXPIRE_HOURS }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          MAHILA_MADEL_PAYMENT_PROVIDER: ${{ secrets.MAHILA_MADEL_PAYMENT_PROVIDER }}
+          MAHILA_MADEL_URL: ${{ secrets.MAHILA_MADEL_URL }}
+          MONGO_DB_NAME: ${{ secrets.MONGO_DB_NAME }}
+          MONGO_URL: ${{ secrets.MONGO_URL }}
+          RAZORPAY_KEY_ID: ${{ secrets.RAZORPAY_KEY_ID }}
+          RAZORPAY_KEY_SECRET: ${{ secrets.RAZORPAY_KEY_SECRET }}
+          RAZORPAY_WEBHOOK_SECRET: ${{ secrets.RAZORPAY_WEBHOOK_SECRET }}
+          REDIS_URL: ${{ secrets.REDIS_URL }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          SELLER_URL: ${{ secrets.SELLER_URL }}
+          SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
+          ZOLEXORA_SHOP_URL: ${{ secrets.ZOLEXORA_SHOP_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          ZOLEXORA_SHOP_PAYMENT_PROVIDER: ${{ secrets.ZOLEXORA_SHOP_PAYMENT_PROVIDER }}
+        run: |
+          echo "Packaging services/marketplace-api container image for DEV..."
+          # Deploy step here
+
+  deploy-marketplace-admin:
+    name: Deploy Admin Web to Development
+    runs-on: ubuntu-latest
+    environment: Development – marketplace-admin
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build & Deploy Admin Web
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+        run: |
+          echo "Deploying Admin to Development..."
+          # Build/Deploy step here
+
+  deploy-zolexora-shop:
+    name: Deploy Zolexora Shop to Development
+    runs-on: ubuntu-latest
+    environment: Development – zolexora-shop
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build & Deploy Zolexora Shop
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+        run: |
+          echo "Deploying Zolexora Shop to Development..."
+          # Build/Deploy step here
+
+  deploy-mahila-madel:
+    name: Deploy Mahila Madel to Development
+    runs-on: ubuntu-latest
+    environment: Development – mahila-madel
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build & Deploy Mahila Madel
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+        run: |
+          echo "Deploying Mahila Madel to Development..."
+          # Build/Deploy step here
+
+  deploy-zolexora-seller:
+    name: Deploy Seller Portal to Development
+    runs-on: ubuntu-latest
+    environment: Development – zolexora-seller
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build & Deploy Seller Portal
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+        run: |
+          echo "Deploying Seller Portal to Development..."
+          # Build/Deploy step here

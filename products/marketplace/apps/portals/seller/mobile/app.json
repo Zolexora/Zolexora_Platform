@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "Zolexora Seller",
+    "slug": "zolexora-seller",
+    "version": "1.0.0",
+    "scheme": "zolexoraseller",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "backgroundColor": "#111111"
+    },
+    "ios": {
+      "bundleIdentifier": "com.zolexora.seller"
+    },
+    "android": {
+      "package": "com.zolexora.seller",
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-image-picker"
+    ],
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "4a431ad4-a158-4958-9f7f-3073c41e43f6"
+      }
+    }
+  }
+}

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Featured — Mahila Madel</title>
+<link rel="stylesheet" href="/shared.css"/>
+</head>
+<body>
+<div id="sidebar-container"></div>
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left"><div class="topbar-title">Featured Products</div></div>
+    <div class="topbar-right">
+      <a href="/api/products/featured" target="_blank" class="json-btn">View JSON ↗</a>
+      <div class="time-badge" id="time">--</div>
+    </div>
+  </div>
+  <div class="content">
+    <div id="statsRow"></div>
+    <div id="container"><div class="loading"><div class="spinner"></div>Loading...</div></div>
+    <div class="section-card" style="margin-top:20px">
+      <div class="section-header">
+        <div class="section-title">Raw API Response</div>
+        <a href="/api/products/featured" target="_blank" class="json-btn">Open in new tab ↗</a>
+      </div>
+      <div class="section-body"><div class="json-box" id="jsonBox">Loading...</div></div>
+    </div>
+  </div>
+</div>
+<script src="/shared.js"></script>
+<script>
+  initSidebar('featured');
+  setInterval(() => document.getElementById('time').textContent = new Date().toLocaleTimeString(), 1000);
+  document.getElementById('time').textContent = new Date().toLocaleTimeString();
+
+  const EMOJIS = {'Jewellery':'💎','Clothing':'👗','Bags':'👜','Footwear':'👠','Accessories':'🧣','Beauty':'💄'};
+  const fmt = n => '₹' + Number(n).toLocaleString('en-IN');
+  const disc = (p,m) => Math.round(((m-p)/m)*100);
+
+  async function load() {
+    try {
+      const res = await fetch('/api/products/featured');
+      const products = await res.json();
+      document.getElementById('jsonBox').textContent = JSON.stringify(products, null, 2);
+      document.getElementById('statsRow').innerHTML = `
+        <div class="stats-grid" style="margin-bottom:20px">
+          <div class="stat-card purple"><div class="stat-top"><div class="stat-icon purple">⭐</div><span class="stat-tag purple">Featured</span></div><div class="stat-value">${products.length}</div><div class="stat-label">Featured Products</div></div>
+          <div class="stat-card green"><div class="stat-top"><div class="stat-icon green">✅</div><span class="stat-tag green">Live</span></div><div class="stat-value">${products.filter(p=>p.stock>0).length}</div><div class="stat-label">In Stock</div></div>
+          <div class="stat-card blue"><div class="stat-top"><div class="stat-icon blue">⭐</div><span class="stat-tag blue">Avg</span></div><div class="stat-value">${products.length?(products.reduce((s,p)=>s+(p.ratings||0),0)/products.length).toFixed(1):'0'}</div><div class="stat-label">Avg Rating</div></div>
+          <div class="stat-card orange"><div class="stat-top"><div class="stat-icon orange">🗂️</div><span class="stat-tag orange">Cats</span></div><div class="stat-value">${new Set(products.map(p=>p.category)).size}</div><div class="stat-label">Categories</div></div>
+        </div>`;
+      document.getElementById('container').innerHTML = `
+        <div class="section-card">
+          <div class="section-header"><div class="section-title">⭐ Featured Products</div><span class="section-count">${products.length}</span></div>
+          <div class="section-body">
+            <div class="products-grid">${products.map(p => {
+              const d = disc(p.price, p.mrp);
+              return `<div class="product-card">
+                <div class="product-img" style="background:linear-gradient(135deg,#1a1a2e,#16213e)">${EMOJIS[p.category]||'🛍️'}<span class="product-badge badge-feat">⭐ Featured</span></div>
+                <div class="product-body">
+                  <div class="product-cat">${p.category}</div>
+                  <div class="product-name">${p.name}</div>
+                  <div class="product-brand">${p.brand||'—'}</div>
+                  <div class="product-price-row">
+                    <span class="product-price">${fmt(p.price)}</span>
+                    ${p.mrp>p.price?`<span class="product-mrp">${fmt(p.mrp)}</span><span class="product-disc">${d}%</span>`:''}
+                  </div>
+                  <div class="product-footer">
+                    <span class="rating-badge">${p.ratings?.toFixed(1)||'0'} ★ · ${p.numReviews||0}</span>
+                    <span class="stock-info ${p.stock===0?'out':p.stock<=5?'low':''}">${p.stock} stock</span>
+                  </div>
+                </div>
+              </div>`;
+            }).join('')}</div>
+          </div>
+        </div>`;
+    } catch(e) {
+      document.getElementById('container').innerHTML = `<div class="loading">❌ ${e.message}</div>`;
+    }
+  }
+  load();
+</script>
+</body>
+</html>

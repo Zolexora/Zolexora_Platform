@@ -1,0 +1,1 @@
+{"schema_version":"1.0","tenant_external_id":"customer-tenant-001","organization_external_id":"organization-001","order_external_id":"order-10001","invoice_external_id":"invoice-8001","status":"submitted","total_minor":125000,"currency":"INR","idempotency_key":"invoice:invoice-8001:submitted"}

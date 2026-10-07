@@ -1,0 +1,5 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "title": "Payment accounting entry", "type": "object", "additionalProperties": false,
+  "required": ["schema_version", "tenant_external_id", "organization_external_id", "payment_external_id", "order_external_id", "payment_mode_external_id", "amount_minor", "currency", "status", "idempotency_key"],
+  "properties": {"schema_version": {"const": "1.0"}, "tenant_external_id": {"type": "string", "minLength": 1}, "organization_external_id": {"type": "string", "minLength": 1}, "payment_external_id": {"type": "string", "minLength": 1}, "order_external_id": {"type": "string", "minLength": 1}, "payment_mode_external_id": {"type": "string", "minLength": 1}, "amount_minor": {"type": "integer", "exclusiveMinimum": 0}, "currency": {"type": "string", "pattern": "^[A-Z]{3}$"}, "status": {"enum": ["captured", "reversed"]}, "idempotency_key": {"type": "string", "minLength": 1}}
+}

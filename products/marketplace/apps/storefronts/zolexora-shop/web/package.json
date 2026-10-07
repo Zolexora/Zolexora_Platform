@@ -1,0 +1,49 @@
+{
+  "name": "@zolexora/storefront-zolexora-shop",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test": "vitest run",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.2",
+    "@radix-ui/react-dropdown-menu": "^2.1.24",
+    "@radix-ui/react-select": "^2.1.2",
+    "@radix-ui/react-slider": "^1.4.7",
+    "@radix-ui/react-tooltip": "^1.2.16",
+    "@react-oauth/google": "^0.12.1",
+    "@zolexora/shared-api": "workspace:*",
+    "axios": "^1.7.0",
+    "clsx": "^2.1.1",
+    "firebase": "^12.17.1",
+    "framer-motion": "^13.1.0",
+    "lucide-react": "^0.460.0",
+    "next": "15.0.7",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "react-hot-toast": "^2.4.1",
+    "tailwind-merge": "^2.5.4",
+    "zustand": "^5.0.0"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/node": "^26.2.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^6.0.5",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^9.0.0",
+    "eslint-config-next": "15.0.4",
+    "jsdom": "^29.1.1",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.15",
+    "typescript": "^5.6.0",
+    "vitest": "^4.1.10"
+  }
+}

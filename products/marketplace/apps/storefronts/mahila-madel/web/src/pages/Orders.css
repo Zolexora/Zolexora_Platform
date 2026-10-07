@@ -1,0 +1,52 @@
+.orders-page { padding: 16px 0; max-width: 900px; margin: 0 auto; }
+.orders-list { display: flex; flex-direction: column; gap: 16px; }
+.order-card { padding: 20px; }
+.order-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+.order-id { font-size: 14px; font-weight: 600; color: var(--primary); }
+.order-date { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.order-header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.order-total { font-size: 17px; font-weight: 600; }
+.oip-item { display: flex; gap: 12px; margin-bottom: 12px; }
+.oip-item img { width: 60px; height: 60px; object-fit: cover; border-radius: 3px; border: 1px solid var(--border); flex-shrink: 0; }
+.oip-name { font-size: 14px; font-weight: 500; line-height: 1.3; margin-bottom: 3px; }
+.oip-meta { font-size: 12px; color: var(--text-muted); }
+.oip-more { font-size: 12px; color: var(--text-muted); padding: 4px 0; }
+.order-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 12px; border-top: 1px solid var(--border); }
+.order-tracking-mini { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-muted); }
+
+/* Order Detail */
+.od-header { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+.back-btn { background: none; border: 1px solid var(--border); padding: 7px 14px; border-radius: 4px; font-size: 13px; cursor: pointer; }
+.back-btn:hover { border-color: var(--primary); color: var(--primary); }
+.od-header .page-title { font-size: 20px; }
+.tracking-card { padding: 24px; margin-bottom: 16px; }
+.tracking-card h2 { font-size: 17px; font-weight: 600; margin-bottom: 8px; }
+.tracking-num { font-size: 13px; color: var(--text-muted); margin-bottom: 4px; }
+.est-delivery { font-size: 14px; color: var(--primary); background: #e3f0ff; padding: 8px 12px; border-radius: 4px; margin: 12px 0 20px; }
+
+.track-steps { display: flex; align-items: center; justify-content: space-between; position: relative; margin-bottom: 24px; }
+.track-step { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; position: relative; text-align: center; }
+.track-dot { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 13px; background: #fff; color: var(--text-muted); z-index: 1; }
+.track-step.done .track-dot { background: var(--success); border-color: var(--success); color: #fff; }
+.track-step.current .track-dot { background: var(--primary); border-color: var(--primary); color: #fff; }
+.track-step span { font-size: 11px; color: var(--text-muted); max-width: 80px; line-height: 1.3; }
+.track-step.done span, .track-step.current span { color: var(--text); font-weight: 500; }
+.track-line { position: absolute; top: 14px; left: calc(50% + 15px); right: calc(-50% + 15px); height: 2px; background: var(--border); z-index: 0; }
+.track-line.done { background: var(--success); }
+
+.track-history { border-top: 1px solid var(--border); padding-top: 16px; }
+.track-history h4 { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+.th-item { display: flex; gap: 12px; padding: 8px 0; position: relative; }
+.th-item:not(:last-child)::after { content: ''; position: absolute; left: 5px; top: 24px; bottom: 0; width: 1px; background: var(--border); }
+.th-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--primary); flex-shrink: 0; margin-top: 3px; }
+.th-status { font-size: 13px; font-weight: 600; }
+.th-msg { font-size: 13px; color: var(--text); }
+.th-time { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+.od-grid { display: grid; grid-template-columns: 1fr 300px; gap: 16px; }
+.od-card { padding: 20px; }
+.od-card h2 { font-size: 16px; font-weight: 600; margin-bottom: 14px; }
+.od-right { display: flex; flex-direction: column; gap: 16px; }
+.summary-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 10px; }
+
+@media(max-width:768px){ .od-grid{grid-template-columns:1fr;} .track-step span{font-size:9px; max-width:50px;} }

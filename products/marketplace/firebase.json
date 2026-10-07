@@ -1,0 +1,18 @@
+{
+  "auth": {
+    "authorizedDomains": [
+      "localhost",
+      "127.0.0.1",
+      "shop.zolexora.com",
+      "mahilamadel.store",
+      "seller.zolexora.com"
+    ],
+    "providers": {
+      "emailPassword": true,
+      "googleSignIn": {
+        "oAuthBrandDisplayName": "Zolexora Marketplace",
+        "supportEmail": "abhishekofficial4577@gmail.com"
+      }
+    }
+  }
+}

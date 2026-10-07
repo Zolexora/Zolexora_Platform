@@ -1,0 +1,520 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   Mahila Madel — Unified Authentication Styling (Rose & Gold Luxury Theme)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.mm-auth-page {
+  min-height: calc(100vh - 120px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 16px;
+  background: #FEFCFA;
+  position: relative;
+  overflow: hidden;
+}
+
+.mm-auth-deco {
+  position: absolute;
+  top: -120px;
+  right: -120px;
+  width: 380px;
+  height: 380px;
+  background: radial-gradient(circle, rgba(181, 68, 90, 0.08) 0%, rgba(253, 240, 242, 0.0) 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.mm-auth-card {
+  width: 100%;
+  max-width: 440px;
+  background: #FFFFFF;
+  border-radius: 24px;
+  border: 1px solid #EDD8DC;
+  box-shadow: 0 12px 36px rgba(44, 21, 32, 0.06);
+  padding: 32px 28px;
+  position: relative;
+  z-index: 1;
+}
+
+.mm-auth-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  min-height: 24px;
+}
+
+.mm-auth-back-btn {
+  background: transparent;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: #9C7A80;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.mm-auth-back-btn:hover {
+  color: #B5445A;
+}
+
+.mm-auth-platform-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #C9963C;
+}
+
+.mm-auth-brand {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.mm-auth-logo {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 26px;
+  font-weight: 700;
+  color: #2C1520;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.mm-auth-logo em {
+  font-style: normal;
+  color: #B5445A;
+  font-size: 16px;
+  margin: 0 3px;
+}
+
+.mm-auth-logo span {
+  color: #B5445A;
+}
+
+.mm-auth-tagline {
+  font-size: 12px;
+  color: #9C7A80;
+  margin-top: 4px;
+}
+
+/* Status alerts */
+.mm-alert {
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+
+.mm-alert-error {
+  background: #FFF1F3;
+  border: 1px solid #FFD0D7;
+  color: #B5445A;
+}
+
+.mm-alert-success {
+  background: #F0FAF4;
+  border: 1px solid #C4EED0;
+  color: #2D7A4F;
+}
+
+/* 3-Row Options Stack */
+.mm-auth-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mm-btn {
+  width: 100%;
+  height: 48px;
+  border-radius: 16px;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Jost', sans-serif;
+  border: none;
+}
+
+.mm-btn-google {
+  background: #FFFFFF;
+  border: 2px solid #EDD8DC;
+  color: #2C1520;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+}
+
+.mm-btn-google:hover {
+  background: #FDF6F7;
+  border-color: #D4637A;
+}
+
+.mm-google-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.mm-btn-primary {
+  background: #B5445A;
+  color: #FFFFFF;
+}
+
+.mm-btn-primary:hover {
+  background: #8B2D40;
+}
+
+.mm-btn-outline {
+  background: #FFFFFF;
+  border: 2px solid #EDD8DC;
+  color: #2C1520;
+}
+
+.mm-btn-outline:hover {
+  background: #FDF0F2;
+  border-color: #B5445A;
+  color: #B5445A;
+}
+
+.mm-btn-secondary {
+  background: #F5EAEC;
+  color: #B5445A;
+  border: 1px solid #EDD8DC;
+}
+
+.mm-btn-secondary:hover:not(:disabled) {
+  background: #FDF0F2;
+}
+
+.mm-btn-block {
+  margin-top: 12px;
+}
+
+.mm-btn-sm {
+  height: 38px;
+  padding: 0 16px;
+  font-size: 12px;
+  border-radius: 10px;
+  background: #B5445A;
+  color: #fff;
+  border: none;
+}
+
+.mm-btn-inline {
+  background: #B5445A;
+  color: #FFFFFF;
+  border: none;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 0 14px;
+  height: 38px;
+  border-radius: 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.mm-btn-inline:hover {
+  background: #8B2D40;
+}
+
+.mm-btn:disabled, .mm-btn-inline:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Forms & Inputs */
+.mm-auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.mm-input-group label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #3D2028;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.mm-label-sub {
+  font-weight: 400;
+  color: #C9963C;
+  font-size: 10px;
+}
+
+.mm-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: #FDF6F7;
+  border: 1px solid #EDD8DC;
+  border-radius: 14px;
+  transition: all 0.2s;
+}
+
+.mm-input-wrap:focus-within {
+  border-color: #B5445A;
+  background: #FFFFFF;
+  box-shadow: 0 0 0 3px rgba(181, 68, 90, 0.08);
+}
+
+.mm-input-icon {
+  position: absolute;
+  left: 14px;
+  color: #9C7A80;
+  font-size: 16px;
+}
+
+.mm-input-wrap input {
+  width: 100%;
+  height: 44px;
+  padding: 0 14px 0 40px;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  color: #2C1520;
+  outline: none;
+}
+
+.mm-input-caps {
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.mm-pw-toggle {
+  background: transparent;
+  border: none;
+  color: #9C7A80;
+  padding: 0 12px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+/* Phone input styling */
+.mm-phone-wrap {
+  padding-left: 0;
+}
+
+.mm-phone-prefix {
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #3D2028;
+  background: #F5EAEC;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  border-radius: 13px 0 0 13px;
+  border-right: 1px solid #EDD8DC;
+}
+
+.mm-phone-wrap input {
+  padding-left: 12px;
+  font-family: monospace;
+  font-weight: 600;
+}
+
+/* Verification boxes & badges */
+.mm-verification-box {
+  background: #FDF0F2;
+  border: 1px solid #EDD8DC;
+  padding: 14px;
+  border-radius: 16px;
+}
+
+.mm-verification-box label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #B5445A;
+  margin-bottom: 8px;
+}
+
+.mm-badge-verified {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #F0FAF4;
+  border: 1px solid #C4EED0;
+  border-radius: 12px;
+  color: #2D7A4F;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.mm-badge-success {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #2D7A4F;
+}
+
+/* OTP boxes */
+.mm-otp-container {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.mm-otp-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.mm-otp-row .mm-otp-timing {
+  flex-basis: 100%;
+}
+
+.mm-otp-timing {
+  width: 100%;
+  margin: 8px 0 10px;
+  text-align: center;
+  font-size: 11px;
+  color: #9C7A80;
+}
+
+.mm-otp-timing strong {
+  color: #B5445A;
+  font-variant-numeric: tabular-nums;
+}
+
+.mm-btn-secondary:disabled,
+.mm-btn-inline:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.mm-otp-box {
+  width: 42px;
+  height: 48px;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 700;
+  border-radius: 12px;
+  border: 1px solid #EDD8DC;
+  background: #FDF6F7;
+  color: #2C1520;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.mm-otp-box:focus {
+  border-color: #B5445A;
+  background: #FFFFFF;
+  box-shadow: 0 0 0 3px rgba(181, 68, 90, 0.08);
+}
+
+/* Mini tabs */
+.mm-auth-tabs-mini {
+  display: flex;
+  background: #F5EAEC;
+  padding: 3px;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  gap: 4px;
+}
+
+.mm-auth-tabs-mini button {
+  flex: 1;
+  height: 32px;
+  border: none;
+  background: transparent;
+  font-size: 11px;
+  font-weight: 600;
+  color: #9C7A80;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mm-auth-tabs-mini button.active {
+  background: #FFFFFF;
+  color: #B5445A;
+  box-shadow: 0 2px 4px rgba(44, 21, 32, 0.05);
+}
+
+.mm-forgot-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -6px;
+}
+
+.mm-link-btn {
+  background: transparent;
+  border: none;
+  font-size: 11px;
+  font-weight: 600;
+  color: #B5445A;
+  cursor: pointer;
+}
+
+.mm-info-text {
+  font-size: 12px;
+  color: #9C7A80;
+  text-align: center;
+}
+
+.mm-info-text strong {
+  color: #2C1520;
+}
+
+.mm-not-registered-card {
+  padding: 16px;
+  text-align: center;
+  border: 1px solid #F0D8A8;
+  border-radius: 16px;
+  background: #FFF9EC;
+}
+
+.mm-not-registered-card h3 {
+  margin: 0;
+  color: #2C1520;
+  font-size: 15px;
+}
+
+.mm-not-registered-card p {
+  margin: 6px 0 0;
+  color: #8B6B36;
+  font-size: 12px;
+  word-break: break-word;
+}
+
+.mm-password-rules {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 12px;
+  margin-top: 8px;
+  font-size: 10px;
+  color: #9C7A80;
+}
+
+.mm-password-rules span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mm-password-rules svg {
+  width: 12px;
+  height: 12px;
+}
+
+.mm-password-rules span.valid {
+  color: #218739;
+}

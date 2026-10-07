@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Login — Mahila Madel</title>
+<link rel="stylesheet" href="/shared.css"/>
+<style>
+  body { display:flex; align-items:center; justify-content:center; min-height:100vh; background:var(--bg); }
+  .login-wrap { width:100%; max-width:420px; padding:24px; }
+
+  .login-logo { text-align:center; margin-bottom:40px; }
+  .login-logo h1 { font-size:26px; font-weight:700; letter-spacing:-0.5px; }
+  .login-logo h1 span { color:var(--purple); }
+  .login-logo p { font-size:13px; color:var(--muted2); margin-top:6px; letter-spacing:1px; text-transform:uppercase; }
+
+  .login-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:32px; position:relative; overflow:hidden; }
+  .login-card::before { content:''; position:absolute; top:-60px; right:-60px; width:180px; height:180px; background:radial-gradient(circle, rgba(176,106,255,0.08) 0%, transparent 70%); border-radius:50%; pointer-events:none; }
+
+  .login-field { margin-bottom:18px; }
+  .login-field label { display:block; font-size:12px; font-weight:500; color:var(--muted2); margin-bottom:7px; letter-spacing:0.5px; text-transform:uppercase; }
+  .login-input { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:12px 14px; font-size:14px; color:var(--text); font-family:'Inter',sans-serif; outline:none; transition:all 0.2s; }
+  .login-input:focus { border-color:var(--purple); box-shadow:0 0 0 3px rgba(176,106,255,0.1); }
+  .login-input::placeholder { color:var(--muted); }
+  .pass-wrap { position:relative; }
+  .pass-toggle { position:absolute; right:12px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--muted2); font-size:12px; cursor:pointer; font-family:'Inter',sans-serif; transition:color 0.15s; }
+  .pass-toggle:hover { color:var(--purple); }
+
+  .login-btn { width:100%; padding:13px; background:var(--purple); color:#fff; border:none; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.2s; margin-top:8px; letter-spacing:0.3px; position:relative; overflow:hidden; }
+  .login-btn:hover { background:#9a55ee; transform:translateY(-1px); box-shadow:0 6px 20px rgba(176,106,255,0.25); }
+  .login-btn:active { transform:translateY(0); }
+  .login-btn:disabled { opacity:0.6; cursor:not-allowed; transform:none; box-shadow:none; }
+
+  .error-box { background:rgba(255,77,77,0.08); border:1px solid rgba(255,77,77,0.2); border-radius:8px; padding:10px 14px; font-size:13px; color:var(--red); margin-top:14px; display:none; animation:fadeIn 0.2s ease; }
+
+  .demo-section { margin-top:24px; padding-top:20px; border-top:1px solid var(--border); }
+  .demo-label { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; text-align:center; }
+  .demo-btns { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .demo-btn { background:var(--surface2); border:1px solid var(--border); border-radius:7px; padding:10px 12px; cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.15s; text-align:left; }
+  .demo-btn:hover { border-color:var(--purple); background:rgba(176,106,255,0.06); }
+  .demo-btn-role { font-size:12px; font-weight:600; color:var(--text); display:block; margin-bottom:2px; }
+  .demo-btn-email { font-size:11px; color:var(--muted2); font-family:'JetBrains Mono',monospace; }
+
+  .login-footer { text-align:center; margin-top:20px; font-size:12px; color:var(--muted); }
+  .login-footer span { color:var(--purple); }
+
+  @keyframes fadeIn { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes slideIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes spin { to{transform:rotate(360deg)} }
+
+  .spinner-inline { width:16px; height:16px; border:2px solid rgba(255,255,255,0.3); border-top-color:#fff; border-radius:50%; animation:spin 0.7s linear infinite; display:inline-block; vertical-align:middle; margin-right:8px; }
+</style>
+</head>
+<body>
+
+<div class="login-wrap">
+  <div class="login-logo">
+    <h1>Mahila<span>Madel</span></h1>
+    <p>API Dashboard</p>
+  </div>
+
+  <div class="login-card">
+    <div class="login-field">
+      <label>Email</label>
+      <input class="login-input" id="emailInput" type="email" placeholder="Enter your email" autofocus/>
+    </div>
+
+    <div class="login-field">
+      <label>Password</label>
+      <div class="pass-wrap">
+        <input class="login-input" id="passInput" type="password" placeholder="Enter your password" style="padding-right:60px"/>
+        <button class="pass-toggle" id="toggleBtn" onclick="togglePass()">Show</button>
+      </div>
+    </div>
+
+    <button class="login-btn" id="loginBtn" onclick="doLogin()">Login →</button>
+    <div class="error-box" id="errorBox"></div>
+
+    <div class="demo-section">
+      <div class="demo-label">Quick Access</div>
+      <div class="demo-btns">
+        <button class="demo-btn" onclick="fillDemo('admin@shopkart.com','admin123')">
+          <span class="demo-btn-role">👑 Admin</span>
+          <span class="demo-btn-email">admin@shopkart.com</span>
+        </button>
+        <button class="demo-btn" onclick="fillDemo('priya@example.com','user123')">
+          <span class="demo-btn-role">👤 User</span>
+          <span class="demo-btn-email">priya@example.com</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="login-footer">
+    <span>Mahila Madel</span> · API Dashboard v1.0.0
+  </div>
+</div>
+
+<script src="/shared.js"></script>
+<script>
+  if (isLoggedIn()) window.location.href = '/';
+
+  const reason = new URLSearchParams(window.location.search).get('reason');
+  if (reason === 'inactive') showToast('⏱️ Logged out due to inactivity', 'warning');
+  if (reason === 'auth') showToast('🔒 Please login to continue', 'info');
+
+  function fillDemo(email, pass) {
+    document.getElementById('emailInput').value = email;
+    document.getElementById('passInput').value = pass;
+    document.getElementById('emailInput').focus();
+  }
+
+  function togglePass() {
+    const inp = document.getElementById('passInput');
+    const btn = document.getElementById('toggleBtn');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+    btn.textContent = inp.type === 'password' ? 'Show' : 'Hide';
+  }
+
+  async function doLogin() {
+    const email = document.getElementById('emailInput').value.trim();
+    const pass = document.getElementById('passInput').value.trim();
+    const btn = document.getElementById('loginBtn');
+    const err = document.getElementById('errorBox');
+
+    err.style.display = 'none';
+    if (!email || !pass) {
+      err.style.display = 'block';
+      err.textContent = '❌ Please enter email and password';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-inline"></span>Logging in...';
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password: pass })
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        saveSession({ token: data.token, name: data.name, email: data.email, isAdmin: data.isAdmin, _id: data._id });
+        btn.innerHTML = '✅ Success! Redirecting...';
+        btn.style.background = 'var(--green)';
+        showToast(`Welcome back, ${data.name}! 👋`, 'success');
+        setTimeout(() => { window.location.href = '/'; }, 1000);
+      } else {
+        err.style.display = 'block';
+        err.textContent = '❌ ' + (data.message || 'Invalid credentials');
+        btn.disabled = false;
+        btn.innerHTML = 'Login →';
+        document.getElementById('passInput').value = '';
+        document.getElementById('passInput').focus();
+      }
+    } catch(e) {
+      err.style.display = 'block';
+      err.textContent = '❌ Network error — is the server running?';
+      btn.disabled = false;
+      btn.innerHTML = 'Login →';
+    }
+  }
+
+  document.getElementById('passInput').addEventListener('keypress', e => {
+    if (e.key === 'Enter') doLogin();
+  });
+  document.getElementById('emailInput').addEventListener('keypress', e => {
+    if (e.key === 'Enter') document.getElementById('passInput').focus();
+  });
+</script>
+</body>
+</html>

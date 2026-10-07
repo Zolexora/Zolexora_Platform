@@ -1,0 +1,49 @@
+.pc { background: #FFFFFF; border: 1px solid #EDD8DC; border-radius: 2px; overflow: hidden; transition: transform 0.25s, box-shadow 0.25s; position: relative; }
+.pc:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(181,68,90,0.12); }
+
+.pc-img-wrap { position: relative; aspect-ratio: 3/4; overflow: hidden; background: #FDF0F2; }
+.pc-img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; }
+.pc:hover .pc-img { transform: scale(1.06); }
+
+.pc-badge { position: absolute; top: 10px; left: 10px; font-size: 9px; font-weight: 700; padding: 3px 8px; letter-spacing: 1px; text-transform: uppercase; }
+.pc-badge-disc { background: #B5445A; color: #fff; }
+.pc-badge-oos { background: #2C1520; color: #fff; }
+.pc-badge-feat { background: #C9963C; color: #2C1520; }
+
+.pc-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(44,21,32,0.55) 0%, transparent 50%); display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding: 14px; gap: 8px; opacity: 0; transition: opacity 0.25s; pointer-events: none; }
+.pc:hover .pc-overlay { opacity: 1; pointer-events: none; }
+
+.pc-wish { position: absolute; top: 10px; right: 10px; width: 32px; height: 32px; background: rgba(255,255,255,0.95); border: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #B5445A; transition: transform 0.2s; pointer-events: auto; }
+.pc-wish:hover { transform: scale(1.1); }
+
+.pc-actions { display: flex; gap: 8px; width: 100%; pointer-events: auto; }
+.pc-quick-add, .pc-buy { flex: 1; background: #FFFFFF; color: #B5445A; border: none; padding: 9px 0; font-size: 11px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; cursor: pointer; transition: all 0.2s; font-family: 'Jost', sans-serif; border-radius: 1px; }
+.pc-quick-add:hover:not(:disabled), .pc-buy:hover:not(:disabled) { background: #B5445A; color: #fff; }
+.pc-quick-add:disabled, .pc-buy:disabled { opacity: 0.6; cursor: not-allowed; }
+.pc-buy { background: #B5445A; color: #FFFFFF; }
+.pc-buy:hover:not(:disabled) { background: #963548; }
+
+.pc-body { display: block; padding: 14px; text-decoration: none; color: inherit; }
+.pc-brand { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: #9C7A80; margin-bottom: 5px; font-weight: 500; }
+.pc-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #2C1520;
+  margin-bottom: 7px;
+  line-height: 1.3;
+
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+
+  -webkit-line-clamp: 2; /* For Chrome, Edge, Safari */
+  line-clamp: 2;         /* Standard property */
+
+  overflow: hidden;
+}.pc-rating { display: flex; align-items: center; gap: 5px; margin-bottom: 8px; }
+.pc-stars { font-size: 11px; font-weight: 600; background: #FDF0F2; color: #B5445A; padding: 2px 6px; border-radius: 2px; }
+.pc-review-count { font-size: 11px; color: #9C7A80; }
+.pc-price-row { display: flex; align-items: baseline; gap: 7px; }
+.pc-price { font-size: 16px; font-weight: 600; color: #2C1520; font-family: 'Playfair Display', serif; }
+.pc-mrp { font-size: 12px; color: #9C7A80; text-decoration: line-through; }
+.pc-stock-warn { font-size: 11px; color: #B8860B; font-weight: 500; margin-top: 5px; }
