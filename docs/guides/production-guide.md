@@ -120,10 +120,14 @@ GitHub Actions validates both supported Docker paths:
 
 The Payments-enabled path must print `PAYMENTS_CI_OK` and `PAYMENTS_RESTORE_CI_OK` in CI before production certification can be claimed.
 
-Phase 3.9A also validates the Zolexora branding CSS through `./scripts/healthcheck.sh`. The healthcheck fetches the login page, verifies a CSS asset is reachable, and checks:
+Phase 3.9A and 3.9B also validate the Zolexora branding CSS and SVG branding assets through `./scripts/healthcheck.sh`. The healthcheck fetches the login page, verifies CSS assets are reachable, and checks:
 
 ```text
 /assets/zolexora_branding/css/zolexora_dark.css
+/assets/zolexora_branding/img/zolexora-logo.svg
+/assets/zolexora_branding/img/zolexora-icon.svg
+/assets/zolexora_branding/img/favicon.svg
+/assets/zolexora_branding/images/logo.svg
 ```
 
 This guards against raw HTML, missing CSS, and broken static asset regressions after build, restore, or upgrade validation.
