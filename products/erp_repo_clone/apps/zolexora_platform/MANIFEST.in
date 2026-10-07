@@ -1,0 +1,10 @@
+include LICENSE
+include README.md
+recursive-include zolexora_platform *.html
+recursive-include zolexora_platform *.txt
+recursive-include zolexora_platform *.js
+recursive-include zolexora_platform *.css
+recursive-include zolexora_platform *.png
+recursive-include zolexora_platform *.svg
+recursive-include zolexora_platform *.json
+recursive-include zolexora_platform *.csv

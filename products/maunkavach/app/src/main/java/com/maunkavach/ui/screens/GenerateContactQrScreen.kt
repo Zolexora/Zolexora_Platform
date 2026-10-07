@@ -1,0 +1,163 @@
+package com.maunkavach.ui.screens
+
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.fragment.app.FragmentActivity
+import com.maunkavach.crypto.KeyExpiry
+import com.maunkavach.crypto.VaultKeyManager
+import com.maunkavach.data.ContactExchange
+import com.maunkavach.security.BiometricHelper
+import com.maunkavach.ui.util.QrCodeEncoder
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun GenerateContactQrScreen(activity: FragmentActivity, username: String, onBack: () -> Unit) {
+    val vaultKeyManager = remember { VaultKeyManager(activity) }
+    var payload by remember(username) { mutableStateOf<String?>(null) }
+    var authError by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(username) {
+        if (!BiometricHelper.canUseBiometrics(activity)) {
+            authError = "Device PIN, fingerprint, or face unlock is required before showing the full chat QR."
+            return@LaunchedEffect
+        }
+        BiometricHelper.promptUnlock(
+            activity = activity,
+            title = "Generate Chat QR",
+            subtitle = "Authenticate before exporting chat keys",
+            onSuccess = {
+                runCatching {
+                    val cleanUsername = username.trim()
+                    val bundle = vaultKeyManager.getContactKey(cleanUsername)
+                        ?: vaultKeyManager.generateContactKeyAuto(cleanUsername, KeyExpiry.NO_EXPIRY)
+                    ContactExchange.createFull(username = cleanUsername, bundle = bundle)
+                }.onSuccess {
+                    payload = it
+                    authError = null
+                }.onFailure {
+                    authError = it.message ?: "Could not generate QR."
+                }
+            },
+            onError = { authError = it }
+        )
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Generate QR") },
+                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, contentDescription = "Back") } }
+            )
+        },
+        containerColor = Color(0xFFF6F1FF)
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Surface(shape = RoundedCornerShape(8.dp), color = Color.White, tonalElevation = 2.dp) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(4.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    val qrPayload = payload
+                    if (qrPayload == null) {
+                        Icon(Icons.Filled.Lock, contentDescription = null, tint = Color(0xFF7C3AED))
+                        Spacer(Modifier.height(16.dp))
+                        Text("Authentication required", style = MaterialTheme.typography.titleLarge)
+                        authError?.let {
+                            Spacer(Modifier.height(8.dp))
+                            Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                        }
+                        return@Column
+                    }
+                    ContactQrPreview(payload = qrPayload)
+                    Spacer(Modifier.height(6.dp))
+                    Text(username, style = MaterialTheme.typography.headlineSmall)
+                    Text(
+                        "Full brightness. Keep steady.",
+                        modifier = Modifier.padding(top = 4.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Color(0xFF6B5B80)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ContactQrPreview(payload: String) {
+    val modulesResult = remember(payload) { runCatching { QrCodeEncoder.encode(payload) } }
+    val modules = modulesResult.getOrNull()
+    if (modules == null) {
+        Text(
+            "QR data is too large to display. Regenerate the key and try again.",
+            modifier = Modifier.padding(16.dp),
+            color = MaterialTheme.colorScheme.error,
+            style = MaterialTheme.typography.bodyMedium
+        )
+        return
+    }
+    Canvas(
+        modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(1f)
+            .background(Color.White, RoundedCornerShape(4.dp))
+            .padding(2.dp)
+    ) {
+        val cells = modules.size
+        val cell = size.minDimension / cells
+        for (y in 0 until cells) {
+            for (x in 0 until cells) {
+                if (modules[y][x]) {
+                    drawRect(
+                        color = Color.Black,
+                        topLeft = Offset(x * cell, y * cell),
+                        size = Size(cell + 0.25f, cell + 0.25f)
+                    )
+                }
+            }
+        }
+    }
+}

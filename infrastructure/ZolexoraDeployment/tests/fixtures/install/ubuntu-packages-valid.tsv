@@ -1,0 +1,19 @@
+capability	ubuntu_versions	package	requirement	version_policy	source	reason
+shell-bash	24.04,26.04	bash	required	exact-resolved-pin	ubuntu-archive	Production Bash runtime
+filesystem-core	24.04,26.04	coreutils	required	exact-resolved-pin	ubuntu-archive	Core filesystem and capacity utilities
+shell-awk	24.04,26.04	mawk	required	exact-resolved-pin	ubuntu-archive	Deterministic text processing
+shell-sed	24.04,26.04	sed	required	exact-resolved-pin	ubuntu-archive	Deterministic stream editing
+shell-grep	24.04,26.04	grep	required	exact-resolved-pin	ubuntu-archive	Deterministic text matching
+locking	24.04,26.04	util-linux	required	exact-resolved-pin	ubuntu-archive	Local flock support
+nss-resolution	24.04,26.04	libc-bin	required	exact-resolved-pin	ubuntu-archive	Local NSS hostname resolution
+socket-inspection	24.04,26.04	iproute2	required	exact-resolved-pin	ubuntu-archive	Read-only listener inspection
+service-manager	24.04,26.04	systemd	required	exact-resolved-pin	ubuntu-archive	Service manager and state inspection
+time-sync	24.04,26.04	systemd-timesyncd	required	exact-resolved-pin	ubuntu-archive	Local time synchronization
+ca-certificates	24.04,26.04	ca-certificates	required	exact-resolved-pin	ubuntu-archive	Trusted certificate authorities
+git-client	24.04,26.04	git	required	exact-resolved-pin	ubuntu-archive	Version-controlled operational sources
+nginx	24.04,26.04	nginx	required	exact-resolved-pin	ubuntu-archive	Origin reverse proxy
+docker-engine	24.04,26.04	docker-ce	required	exact-resolved-pin	unresolved-external	Docker Engine runtime
+docker-cli	24.04,26.04	docker-ce-cli	required	exact-resolved-pin	unresolved-external	Docker command-line client
+container-runtime	24.04,26.04	containerd.io	required	exact-resolved-pin	unresolved-external	OCI container runtime
+docker-buildx	24.04,26.04	docker-buildx-plugin	optional	exact-resolved-pin	unresolved-external	CI-only Docker build extension; production does not build images
+docker-compose-v2	24.04,26.04	docker-compose-plugin	required	exact-resolved-pin	unresolved-external	Docker Compose v2 plugin

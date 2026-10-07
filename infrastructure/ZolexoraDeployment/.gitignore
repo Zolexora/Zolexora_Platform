@@ -1,0 +1,71 @@
+# Runtime environment files; safe examples remain trackable.
+.env
+**/.env
+.env.*
+**/.env.*
+!.env.example
+!**/.env.example
+!*.env.example
+!**/*.env.example
+
+# Private keys and certificate/key bundles.
+*.key
+*.pem
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.crt
+*.cer
+*.der
+id_rsa
+id_ed25519
+
+# Credentials and generated secrets.
+credentials
+credentials.*
+*.credential
+*.credentials
+*.secret
+*.generated-secret
+service-account*.json
+
+# Backup archives and database dumps.
+*.dump
+*.pgdump
+*.backup
+*.sql.gz
+*.sql.zst
+*.bak
+backup-*.tar
+backup-*.tar.gz
+backup-*.tar.zst
+
+# Runtime state, logs, and temporary files.
+.runtime/
+.state/
+*.state
+*.pid
+*.log
+*.log.*
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Test and tool caches.
+.cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+__pycache__/
+*.py[cod]
+.coverage
+htmlcov/
+
+# Editors and operating systems.
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

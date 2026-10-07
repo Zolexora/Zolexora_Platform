@@ -1,0 +1,3 @@
+🌱 Seeding database...
+✅ Platform config seeded
+✅ 18 amenities seeded

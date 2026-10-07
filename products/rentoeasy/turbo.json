@@ -1,0 +1,74 @@
+{
+  "$schema": "https://turbo.build/schema.v2.json",
+  "globalEnv": [
+    "NODE_ENV",
+    "PORT",
+    "VITE_API_URL",
+    "VITE_GOOGLE_MAPS_KEY",
+    "VITE_RAZORPAY_KEY",
+    "VITE_FIREBASE_API_KEY",
+    "VITE_FIREBASE_AUTH_DOMAIN",
+    "VITE_FIREBASE_PROJECT_ID",
+    "VITE_FIREBASE_STORAGE_BUCKET",
+    "VITE_FIREBASE_MESSAGING_SENDER_ID",
+    "VITE_FIREBASE_APP_ID",
+    "DATABASE_URL",
+    "DIRECT_URL",
+    "REDIS_URL",
+    "REDIS_HOST",
+    "REDIS_PORT",
+    "JWT_ACCESS_SECRET",
+    "JWT_REFRESH_SECRET",
+    "RAZORPAY_KEY_ID",
+    "RAZORPAY_KEY_SECRET",
+    "RAZORPAY_WEBHOOK_SECRET",
+    "FIREBASE_PROJECT_ID",
+    "FIREBASE_CLIENT_EMAIL",
+    "FIREBASE_PRIVATE_KEY",
+    "SENDGRID_API_KEY",
+    "SENDGRID_FROM_EMAIL",
+    "TENANT_WEB_URL",
+    "OWNER_WEB_URL",
+    "ADMIN_WEB_URL",
+    "ADMIN_SEED_EMAIL",
+    "ADMIN_SEED_PASSWORD"
+  ],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "src/**",
+        "prisma/**",
+        "package.json",
+        "tsconfig*.json",
+        "vite.config.*",
+        "nest-cli.json",
+        "postcss.config.*",
+        "tailwind.config.*",
+        ".env*"
+      ],
+      "outputs": ["dist/**", "build/**", ".next/**", "!.next/cache/**"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "lint": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "src/**", "package.json", "tsconfig*.json"]
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "src/**", "tests/**", "package.json", "tsconfig*.json"],
+      "outputs": ["coverage/**"]
+    },
+    "type-check": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "src/**", "package.json", "tsconfig*.json"]
+    },
+    "clean": {
+      "cache": false
+    }
+  }
+}

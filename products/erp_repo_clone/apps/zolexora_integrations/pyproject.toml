@@ -1,0 +1,17 @@
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "zolexora_integrations"
+authors = [
+    {name = "Zolexora", email = "info@zolexora.com"}
+]
+description = "Marketplace sync, external notifications, API integrations, and webhook integrations for Zolexora ERP."
+dependencies = [
+    "frappe>=16.0.0"
+]
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://zolexora.com"

@@ -1,0 +1,412 @@
+:root {
+  color-scheme: dark;
+  --zolexora-bg: #07111f;
+  --zolexora-panel: #0f1b2d;
+  --zolexora-panel-soft: #17243a;
+  --zolexora-border: #26364f;
+  --zolexora-text: #e6edf7;
+  --zolexora-muted: #9fb0c8;
+  --zolexora-accent: #2f81f7;
+  --zolexora-accent-soft: rgba(47, 129, 247, 0.18);
+  --bg-color: var(--zolexora-bg);
+  --fg-color: var(--zolexora-text);
+  --text-color: var(--zolexora-text);
+  --text-muted: var(--zolexora-muted);
+  --card-bg: var(--zolexora-panel);
+  --control-bg: var(--zolexora-panel-soft);
+  --border-color: var(--zolexora-border);
+  --primary: var(--zolexora-accent);
+  --primary-color: var(--zolexora-accent);
+  --btn-primary: var(--zolexora-accent);
+}
+
+html,
+body,
+.page-container,
+.layout-main,
+.layout-main-section,
+.page-body,
+.desk-page,
+.workspace-page {
+  background: var(--zolexora-bg);
+  color: var(--zolexora-text);
+}
+
+body {
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+a,
+.indicator-pill,
+.link-content,
+.sidebar-item-label a {
+  color: #7cb2ff;
+}
+
+a:hover,
+.link-content:hover {
+  color: var(--zolexora-text);
+}
+
+.navbar,
+.navbar-default,
+.navbar-expand,
+.page-head,
+.page-head .page-head-content {
+  background: rgba(7, 17, 31, 0.96);
+  border-color: var(--zolexora-border);
+  color: var(--zolexora-text);
+}
+
+.navbar {
+  box-shadow: 0 1px 0 rgba(38, 54, 79, 0.9);
+}
+
+.navbar-home {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.navbar-home::before {
+  display: inline-block;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  background: url("/assets/zolexora_branding/img/zolexora-icon.svg") center / contain no-repeat;
+  content: "";
+}
+
+.navbar .navbar-brand,
+.navbar .nav-link,
+.navbar .dropdown-toggle,
+.navbar-home,
+.navbar-home img,
+.navbar .standard-image,
+.page-title .title-text {
+  color: var(--zolexora-text);
+}
+
+.navbar-home img,
+.navbar .navbar-brand img {
+  max-height: 30px;
+  border-radius: 8px;
+}
+
+.search-bar,
+.search-bar .awesomplete,
+.search-bar input,
+.navbar .form-control,
+.awesomplete input {
+  background: var(--zolexora-panel-soft);
+  border-color: var(--zolexora-border);
+  color: var(--zolexora-text);
+}
+
+.search-bar input::placeholder,
+.form-control::placeholder {
+  color: var(--zolexora-muted);
+}
+
+.awesomplete > ul,
+.dropdown-menu,
+.popover,
+.modal-content,
+.page-card {
+  background: var(--zolexora-panel);
+  border: 1px solid var(--zolexora-border);
+  color: var(--zolexora-text);
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.34);
+}
+
+.awesomplete > ul > li,
+.dropdown-item {
+  color: var(--zolexora-text);
+}
+
+.awesomplete > ul > li:hover,
+.awesomplete > ul > li[aria-selected="true"],
+.dropdown-item:hover,
+.standard-sidebar-item:hover,
+.desk-sidebar-item:hover {
+  background: var(--zolexora-accent-soft);
+  color: var(--zolexora-text);
+}
+
+.desk-sidebar,
+.standard-sidebar,
+.layout-side-section,
+.sidebar-section,
+.workspace-sidebar {
+  background: #0a1627;
+  border-color: var(--zolexora-border);
+  color: var(--zolexora-muted);
+}
+
+.standard-sidebar-item,
+.desk-sidebar-item,
+.sidebar-item-container,
+.sidebar-item-label,
+.sidebar-item-label span {
+  color: var(--zolexora-muted);
+}
+
+.standard-sidebar-item.selected,
+.standard-sidebar-item.active,
+.desk-sidebar-item.selected,
+.sidebar-item-container.is-selected {
+  background: var(--zolexora-accent-soft);
+  color: var(--zolexora-text);
+  border-radius: 8px;
+}
+
+.workspace,
+.workspace .widget,
+.workspace-card,
+.widget,
+.frappe-card,
+.card,
+.dashboard-card,
+.number-card,
+.shortcut-widget-box,
+.links-widget-box,
+.list-row,
+.list-row-container,
+.report-wrapper,
+.form-layout,
+.form-dashboard {
+  background: var(--zolexora-panel);
+  border-color: var(--zolexora-border);
+  color: var(--zolexora-text);
+}
+
+.widget,
+.frappe-card,
+.workspace-card,
+.shortcut-widget-box,
+.links-widget-box {
+  border-radius: 8px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
+}
+
+.widget-title,
+.widget-head,
+.workspace-title,
+.workspace-label,
+.shortcut-label,
+.link-text,
+.list-subject,
+.list-row-head,
+.section-head,
+.form-section-heading,
+.control-label {
+  color: var(--zolexora-text);
+}
+
+.widget-subtitle,
+.text-muted,
+.text-extra-muted,
+.small,
+.list-row .text-muted,
+.modified,
+.creation {
+  color: var(--zolexora-muted) !important;
+}
+
+.widget .icon,
+.workspace .icon,
+.sidebar-item-icon,
+.shortcut-widget-box .icon {
+  color: var(--zolexora-accent);
+}
+
+.btn-primary,
+.btn.btn-primary,
+button.btn-primary,
+.primary-action {
+  background: var(--zolexora-accent);
+  border-color: var(--zolexora-accent);
+  color: #ffffff;
+  border-radius: 8px;
+}
+
+.btn-primary:hover,
+.btn.btn-primary:hover,
+.primary-action:hover {
+  background: #5a9cff;
+  border-color: #5a9cff;
+  color: #ffffff;
+}
+
+.btn-default,
+.btn-secondary,
+.btn.btn-default,
+.btn.btn-secondary {
+  background: var(--zolexora-panel-soft);
+  border-color: var(--zolexora-border);
+  color: var(--zolexora-text);
+  border-radius: 8px;
+}
+
+.form-control,
+.control-input,
+.control-input-wrapper input,
+.control-input-wrapper textarea,
+.input-with-feedback,
+.like-disabled-input,
+.ql-editor,
+.ace_editor {
+  background: var(--zolexora-panel-soft);
+  border-color: var(--zolexora-border);
+  color: var(--zolexora-text);
+}
+
+.form-control:focus,
+.control-input:focus,
+.input-with-feedback:focus {
+  border-color: var(--zolexora-accent);
+  box-shadow: 0 0 0 3px var(--zolexora-accent-soft);
+}
+
+.modal-header,
+.modal-footer,
+.page-form,
+.list-filters,
+.list-paging-area,
+.comment-box,
+.timeline-item {
+  background: var(--zolexora-panel);
+  border-color: var(--zolexora-border);
+  color: var(--zolexora-text);
+}
+
+.login-content,
+.for-login,
+.for-forgot,
+.for-signup,
+.for-email-login {
+  background:
+    radial-gradient(circle at 18% 0%, rgba(47, 129, 247, 0.28), transparent 34%),
+    linear-gradient(145deg, #07111f 0%, #101827 52%, #07111f 100%);
+  color: var(--zolexora-text);
+}
+
+body[data-path="login"],
+body[data-path="login"] .page-content-wrapper,
+#page-login,
+#page-login main.container,
+#page-login .page_content {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(47, 129, 247, 0.28), transparent 34%),
+    linear-gradient(145deg, #07111f 0%, #101827 52%, #07111f 100%);
+  color: var(--zolexora-text);
+}
+
+#page-login .page-card-head h4,
+#page-login .page-card-head,
+#page-login .login-divider,
+#page-login .forgot-password-message a,
+#page-login .toggle-password {
+  color: var(--zolexora-text) !important;
+}
+
+#page-login .page-card-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+body[data-path="login"] .page-card-head > img.app-logo {
+  display: none;
+}
+
+#page-login .page-card-head::before,
+.login-content .app-logo::before {
+  display: block;
+  width: min(220px, 70vw);
+  height: 64px;
+  background: url("/assets/zolexora_branding/img/zolexora-logo.svg") center / contain no-repeat;
+  content: "";
+}
+
+#page-login .page-card-head h4 {
+  font-size: 0;
+  line-height: 0;
+}
+
+#page-login .page-card-head h4::after {
+  display: block;
+  color: var(--zolexora-muted);
+  content: "Sign in to Zolexora ERP";
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.login-content .page-card,
+.for-login .page-card,
+.for-forgot .page-card,
+.for-signup .page-card,
+.login-content .login-card,
+#page-login .login-content.page-card {
+  background: rgba(15, 27, 45, 0.94);
+  border: 1px solid var(--zolexora-border);
+  border-radius: 8px;
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.42);
+}
+
+#page-login .login-content.page-card .form-control,
+#page-login .login-content.page-card input[type="text"],
+#page-login .login-content.page-card input[type="email"],
+#page-login .login-content.page-card input[type="password"] {
+  background: #0b1728;
+  border-color: var(--zolexora-border);
+  color: var(--zolexora-text);
+}
+
+#page-login .login-content.page-card .form-control::placeholder {
+  color: var(--zolexora-muted);
+}
+
+#page-login .login-content.page-card .field-icon,
+#page-login .login-content.page-card .es-icon {
+  color: var(--zolexora-muted);
+  stroke: var(--zolexora-muted);
+}
+
+#page-login .btn-login-option {
+  background: var(--zolexora-panel-soft);
+  border-color: var(--zolexora-border);
+  color: var(--zolexora-muted);
+}
+
+.login-content h1,
+.login-content h2,
+.login-content .page-card-head,
+.login-content .app-logo,
+.login-content .login-title,
+.page-card-head h4 {
+  color: var(--zolexora-text);
+}
+
+.login-content .form-control,
+.page-card .form-control {
+  background: #0b1728;
+  color: var(--zolexora-text);
+}
+
+.login-content .btn-primary,
+.page-card .btn-primary {
+  width: 100%;
+}
+
+.table,
+.datatable,
+.datatable .dt-cell,
+.datatable .dt-header {
+  background: var(--zolexora-panel);
+  border-color: var(--zolexora-border);
+  color: var(--zolexora-text);
+}

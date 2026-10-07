@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "noEmit": true,
+    "strict": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "types": ["node", "vite/client"],
+    "paths": {
+      "@/*": ["src/*"],
+      "@rent-stay/types": ["../../packages/shared-types/src/index.ts"],
+      "@rent-stay/utils": ["../../packages/shared-utils/src/index.ts"]
+    }
+  },
+  "include": ["src", "vite.config.ts"]
+}

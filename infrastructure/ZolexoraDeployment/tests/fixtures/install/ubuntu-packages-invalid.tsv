@@ -1,0 +1,3 @@
+capability	ubuntu_versions	package	requirement	version_policy	source	reason
+shell-bash	24.04,26.04	bash	required	exact-resolved-pin	ubuntu-archive	Production Bash runtime
+shell-bash	24.04,26.04	bash	required	exact-resolved-pin	ubuntu-archive	Duplicate package record
