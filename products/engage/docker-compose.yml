@@ -1,0 +1,51 @@
+services:
+  api:
+    image: fleetrelay-api
+    container_name: fleetrelay-api
+    network_mode: bridge
+    extra_hosts:
+      - "graph.facebook.com:157.240.13.14"
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    ports:
+      - "${API_HOST_PORT:-3000}:3000"
+    dns:
+      - "168.63.129.16"
+      - "8.8.8.8"
+    environment:
+      PORT: "3000"
+      DATABASE_URL:
+      PGHOST:
+      PGPORT:
+      PGDATABASE:
+      PGUSER:
+      PGPASSWORD:
+      SUPABASE_URL:
+      SUPABASE_PUBLISHABLE_KEY:
+      SUPABASE_SECRET_KEY:
+      SUPABASE_JWKS_URL:
+      WHATSAPP_PHONE_NUMBER_ID:
+      WHATSAPP_ACCESS_TOKEN:
+      WHATSAPP_APP_SECRET:
+      WHATSAPP_WEBHOOK_VERIFY_TOKEN:
+    restart: unless-stopped
+
+  web-app:
+    image: fleetrelay-web
+    container_name: fleetrelay-web
+    build:
+      context: .
+      dockerfile: docker/frontend.Dockerfile
+      args:
+        APP_DIR: artifacts/client/web
+        APP_DIR_NAME: client/web
+        APP_NAME: "@workspace/client-web"
+        PORT: "5174"
+        BASE_PATH: "/"
+        VITE_API_URL: ${API_PUBLIC_URL:-http://127.0.0.1:3000}
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL:-}
+        VITE_SUPABASE_PUBLISHABLE_KEY: ${VITE_SUPABASE_PUBLISHABLE_KEY:-}
+    ports:
+      - "${DISPATCHER_HOST_PORT:-5174}:80"
+    restart: unless-stopped

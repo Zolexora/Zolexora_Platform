@@ -1,0 +1,19 @@
+{
+  "name": "@zolexora/ims-user",
+  "version": "1.0.0",
+  "description": "Zolexora IMS — Multi-Tenant Business Inventory Application",
+  "main": "worker.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "kv:create": "wrangler kv namespace create SESSION_KV",
+    "kv:create:preview": "wrangler kv namespace create SESSION_KV --preview",
+    "tail": "wrangler tail"
+  },
+  "devDependencies": {
+    "wrangler": "^3.0.0 || ^4.0.0"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.115.0"
+  }
+}

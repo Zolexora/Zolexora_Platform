@@ -1,0 +1,100 @@
+import { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import type { Session, User } from '@supabase/supabase-js';
+import { supabase } from '../../lib/supabase';
+import { apiClient } from '../../lib/api';
+import type { AuthMeResponse, Organisation, EffectivePermissionsResponse } from '../../types';
+
+export function useAuth() {
+  const queryClient = useQueryClient();
+  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [isSessionLoading, setIsSessionLoading] = useState(true);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      setSession(currentSession);
+      setUser(currentSession?.user ?? null);
+      setIsSessionLoading(false);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession);
+      setUser(newSession?.user ?? null);
+      setIsSessionLoading(false);
+      queryClient.invalidateQueries({ queryKey: ['auth-me'] });
+      queryClient.invalidateQueries({ queryKey: ['organisation-me'] });
+      queryClient.invalidateQueries({ queryKey: ['effective-permissions'] });
+    });
+
+    return () => subscription.unsubscribe();
+  }, [queryClient]);
+
+  const {
+    data: authMe,
+    isLoading: isAuthMeLoading,
+    error: authMeError,
+  } = useQuery({
+    queryKey: ['auth-me', session?.access_token],
+    queryFn: () => apiClient<AuthMeResponse>('/api/v1/auth/me'),
+    enabled: !!session?.access_token,
+  });
+
+  // Keep localStorage in sync with the active org from the backend auth response
+  useEffect(() => {
+    if (authMe?.organisation_id) {
+      localStorage.setItem('zolexora_active_org_id', authMe.organisation_id);
+    } else if (!isAuthMeLoading && !authMe) {
+      localStorage.removeItem('zolexora_active_org_id');
+    }
+  }, [authMe?.organisation_id, isAuthMeLoading, authMe]);
+
+  const {
+    data: organisation,
+    isLoading: isOrgLoading,
+    error: orgError,
+  } = useQuery({
+    queryKey: ['organisation-me', session?.access_token],
+    queryFn: () => apiClient<Organisation>('/api/v1/organisations/me'),
+    enabled: !!session?.access_token && !!authMe?.organisation_id,
+  });
+
+  const {
+    data: permissions,
+    isLoading: isPermissionsLoading,
+  } = useQuery({
+    queryKey: ['effective-permissions', session?.access_token, authMe?.organisation_id],
+    queryFn: () => apiClient<EffectivePermissionsResponse>('/api/v1/organisations/me/effective-permissions'),
+    enabled: !!session?.access_token && !!authMe?.organisation_id,
+  });
+
+  const signOut = async () => {
+    localStorage.removeItem('zolexora_active_org_id');
+    await supabase.auth.signOut();
+    queryClient.clear();
+  };
+
+  const isCommander = authMe?.is_commander === true || permissions?.is_commander === true;
+
+  const hasPermission = (module: string, page: string, action: string) => {
+    if (isCommander) return true;
+    if (!permissions) return false;
+    const requiredCap = `${module}.${page}.${action}`;
+    return permissions.permissions.includes(requiredCap);
+  };
+
+  return {
+    session,
+    user,
+    authMe,
+    organisation,
+    permissions,
+    isLoading: isSessionLoading || (!!session && (isAuthMeLoading || isOrgLoading || isPermissionsLoading)),
+    error: authMeError || orgError,
+    isCommander,
+    hasPermission,
+    signOut,
+  };
+}

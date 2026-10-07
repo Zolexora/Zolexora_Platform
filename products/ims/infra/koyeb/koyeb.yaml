@@ -1,0 +1,70 @@
+# ==============================================================================
+# Zolexora IMS — Koyeb Cloud Configuration (Free Container Tier)
+# Deploy containerized FastAPI backends on Koyeb Eco/Nano instance with global edge
+# Docs: https://www.koyeb.com/docs
+# ==============================================================================
+
+name: zolexora-ims
+
+services:
+  # ----------------------------------------------------------------------------
+  # 1. Zolexora IMS Core API
+  # ----------------------------------------------------------------------------
+  - name: zolexora-user-api
+    type: web
+    instance_type: nano
+    regions:
+      - fra # Frankfurt or was (Washington DC)
+    docker:
+      dockerfile: apps/ims-user/backend/Dockerfile
+    ports:
+      - port: 8000
+        path: /
+    routes:
+      - path: /
+    health_checks:
+      - path: /health
+        port: 8000
+        interval: 30
+        timeout: 5
+    env:
+      - key: PORT
+        value: "8000"
+      - key: ENVIRONMENT
+        value: "production"
+      - key: SUPABASE_URL
+        value: "https://<PROJECT_REF>.supabase.co"
+      - key: SUPABASE_SERVICE_KEY
+        value: "@supabase-service-key"
+      - key: CLOUDFLARE_ACCOUNT_ID
+        value: "@cloudflare-account-id"
+      - key: CLOUDFLARE_API_TOKEN
+        value: "@cloudflare-api-token"
+      - key: CLOUDFLARE_D1_DATABASE_ID
+        value: "@cloudflare-d1-database-id"
+
+  # ----------------------------------------------------------------------------
+  # 2. Zolexora Admin API
+  # ----------------------------------------------------------------------------
+  - name: zolexora-admin-api
+    type: web
+    instance_type: nano
+    regions:
+      - fra
+    docker:
+      dockerfile: apps/ims-admin/backend/Dockerfile
+    ports:
+      - port: 8001
+        path: /
+    routes:
+      - path: /
+    health_checks:
+      - path: /health
+        port: 8001
+        interval: 30
+        timeout: 5
+    env:
+      - key: PORT
+        value: "8001"
+      - key: ENVIRONMENT
+        value: "production"

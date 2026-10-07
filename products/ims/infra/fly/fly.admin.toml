@@ -1,0 +1,29 @@
+# ==============================================================================
+# Zolexora IMS — Fly.io Configuration for Admin API (MicroVM Container)
+# Deploy with: fly launch --config infra/fly/fly.admin.toml
+# ==============================================================================
+
+app = "zolexora-admin-api"
+primary_region = "ord"
+
+[build]
+  dockerfile = "../../apps/ims-admin/backend/Dockerfile"
+
+[http_service]
+  internal_port = 8001
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+[[http_service.checks]]
+  grace_period = "10s"
+  interval = "30s"
+  method = "GET"
+  timeout = "5s"
+  path = "/health"
+
+[env]
+  PORT = "8001"
+  ENVIRONMENT = "production"
