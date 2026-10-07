@@ -39,7 +39,7 @@ section "Resource Usage"
 docker stats --no-stream --format 'table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}' || true
 
 section "Disk Usage"
-df -h . backups sites 2>/dev/null || df -h .
+df -h . storage/backups sites 2>/dev/null || df -h .
 
 section "Database"
 compose_exec mariadb mariadb -uroot "-p${MYSQL_ROOT_PASSWORD}" -N -e \
@@ -68,7 +68,7 @@ section "Recent Errors"
 docker compose -f compose.yaml logs --no-color --tail=200 2>/dev/null | grep -Ei 'error|exception|traceback|critical' | tail -40 || true
 
 section "Latest Backup"
-latest_backup=$(find backups -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort | tail -n 1 || true)
+latest_backup=$(find storage/backups -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort | tail -n 1 || true)
 if [ -n "$latest_backup" ]; then
   printf '%s\n' "$latest_backup"
   find "$latest_backup" -maxdepth 1 -type f -printf '%f %s bytes\n' | sort

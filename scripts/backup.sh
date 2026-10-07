@@ -35,7 +35,7 @@ set +a
 
 SITE="${SITE_NAME:-site1.example.com}"
 BACKUP_RETENTION_DAYS="${BACKUP_RETENTION_DAYS:-30}"
-BACKUP_ROOT="${BACKUP_ROOT:-backups}"
+BACKUP_ROOT="${BACKUP_ROOT:-storage/backups}"
 BACKUP_DIR="$BACKUP_ROOT/$(date +%Y%m%d_%H%M%S)"
 CONTAINER_BACKUP_DIR="/home/frappe/frappe-bench/backups/$(basename "$BACKUP_DIR")"
 

@@ -1,18 +1,18 @@
 # Zolexora ERP
 
-Zolexora ERP is an enterprise-ready, modular, and upgrade-safe ERP platform built on top of Frappe and ERPNext v16. It leverages a clean separation of concerns using four custom applications inside the `apps/` directory.
+Zolexora ERP is an enterprise-ready, modular, and upgrade-safe ERP platform built on top of Frappe and ERPNext v16. It leverages a clean separation of concerns using four custom applications inside the `backend/` directory.
 
 ---
 
 ## Repository Structure
 
-- `apps/`
+- `backend/`
   - `zolexora_core/` - Core business logic, setup scripts, base APIs, and DB validation.
   - `zolexora_branding/` - Stylesheets, javascript hooks, and logo assets for whitelabeling.
   - `zolexora_platform/` - Fleet management, logistics, manufacturing, and AI forecast integration.
   - `zolexora_integrations/` - Marketplace synchronization (e.g. buyer/inventory sync) and messaging channels.
-- `compose/` - Nginx configuration containing full WebSocket routing support.
-- `docker/` - Hardened Dockerfile installing Zolexora applications in dependency order.
+- `infrastructure/compose/` - Nginx configuration containing full WebSocket routing support.
+- `infrastructure/docker/` - Hardened Dockerfile installing Zolexora applications in dependency order.
 - `scripts/` - Production site setup, database restore, and automated backup scripts.
 - `docs/` - Complete architecture, deployment, developer, backup, and security guides.
 - `compose.yaml` - Main Docker Compose manifest with network, volume, and service definitions.
