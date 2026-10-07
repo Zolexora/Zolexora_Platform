@@ -16,7 +16,7 @@ RUN curl -fsSL https://deb.nodesource.com/setup_24.x -o /tmp/nodesource_setup.sh
     chmod +x /usr/local/bin/yarn && \
     rm -rf /var/lib/apt/lists/* /tmp/nodesource_setup.sh
 ARG INSTALL_PAYMENTS=0
-COPY ./backend /home/frappe/frappe-bench/apps
+COPY ./products/ZolexoraERP/backend /home/frappe/frappe-bench/apps
 RUN if [ "$INSTALL_PAYMENTS" = "1" ] && [ ! -f apps/payments/setup.py ] && [ ! -f apps/payments/pyproject.toml ]; then \
       echo "ERROR: INSTALL_PAYMENTS=1 but apps/payments is not a valid Python project"; \
       exit 1; \

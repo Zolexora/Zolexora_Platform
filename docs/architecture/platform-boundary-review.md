@@ -13,19 +13,19 @@ A unified monorepo segregating cross-product Platform Core services, isolated bu
 `platform/` - Serves as the cross-product capability center. Will eventually own Identity, Organizations, Entitlements, Product Registry, Automations, Integrations, Audit, Billing, Domains, and Support.
 
 ## 5. ERP Boundary
-`products/erp/` - Will eventually own the Frappe-based ERP implementation (currently mostly residing at `backend/`). The ERP boundary strictly encapsulates Accounting, Stock, Buying, Selling, and Manufacturing.
+`products/ZolexoraERP/` - Will eventually own the Frappe-based ERP implementation (currently mostly residing at `backend/`). The ERP boundary strictly encapsulates Accounting, Stock, Buying, Selling, and Manufacturing.
 
 ## 6. Marketplace Boundary
-`products/marketplace/` - Will encapsulate Marketplace-specific operations and frontend logic.
+`products/ZolexoraMarketplace/` - Will encapsulate Marketplace-specific operations and frontend logic.
 
 ## 7. IMS Boundary
-`products/ims/` - Dedicated to Inventory Management specific logic outside ERP.
+`products/ZolexoraIMS/` - Dedicated to Inventory Management specific logic outside ERP.
 
 ## 8. TMS Boundary
-`products/tms/` - Transportation and fleet logic.
+`products/ZolexoraTMS/` - Transportation and fleet logic.
 
 ## 9. AI Boundary
-`products/ai/` - Core AI services and prediction models.
+`products/ZolexoraAI/` - Core AI services and prediction models.
 
 ## 10. Analytics Boundary
 `products/analytics/` - Product for cross-platform data visualization and pipelines.
@@ -73,7 +73,7 @@ High risk if ERP directly attempts to orchestrate Platform Core while Platform C
 1. Establish architecture placeholders (done).
 2. Validate and test the conceptual boundary without breaking existing apps.
 3. Gradually extract identity and organization models to `platform/`.
-4. Migrate the legacy `backend/` host directory to `products/erp/backend/` once safe to do so.
+4. Migrate the legacy `backend/` host directory to `products/ZolexoraERP/backend/` once safe to do so.
 
 ## 25. Items Requiring Decision
 - Final home of `backend/zolexora_branding`: Does it become `platform/domains/` or remain in ERP?
