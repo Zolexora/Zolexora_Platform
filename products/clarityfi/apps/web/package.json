@@ -1,0 +1,9 @@
+{
+  "name": "@clarityfi/web",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "npx serve .",
+    "build": "echo 'Static site, nothing to build'"
+  }
+}
