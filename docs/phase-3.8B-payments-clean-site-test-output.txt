@@ -1,10 +1,1 @@
-Result: PASS
-Project: zolexora_payments_test
-Site: payments-test.local
-Log file: /tmp/zolexora_payments_test.log
-Installed apps:
-
-frappe   16.25.0 UNVERSIONED
-erpnext  16.26.1 UNVERSIONED
-payments 0.0.1   UNVERSIONED
-
+reports/phases/phase-3.8B-payments-clean-site-test-output.txt

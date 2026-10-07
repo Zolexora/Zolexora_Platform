@@ -34,7 +34,7 @@ COPY ./scripts/configure-common-site.sh /usr/local/bin/configure-common-site
 
 ENV PIP_NO_CACHE_DIR=1
 USER root
-RUN chown -R frappe:frappe /home/frappe/frappe-bench
+RUN groupadd -f frappe && usermod -g frappe frappe && chown -R frappe:frappe /home/frappe/frappe-bench
 RUN chmod +x /usr/local/bin/configure-common-site
 
 USER frappe
