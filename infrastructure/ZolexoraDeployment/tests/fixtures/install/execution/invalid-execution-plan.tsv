@@ -1,3 +1,0 @@
-sequence	id	action	target	expected_before	desired_after	reversible	failure_policy
-1	validate_execution_context	validate	isolation-root	marker-present	validated-isolation	no	stop
-1	validate_resolved_plan	validate	execution-plan	resolved	versions-resolved,source-resolved,signing-key-trusted,identity-policy-defined	no	stop

@@ -2,7 +2,7 @@ import json
 import os
 import shutil
 
-base_dir = "backend/zolexora_core/zolexora_core/workspace"
+base_dir = "products/ZolexoraERP/backend/zolexora_core/zolexora_core/workspace"
 duplicates = ["zolexora_accounts", "zolexora_purchase", "zolexora_sales", "zolexora_inventory", "zolexora_administration", "zolexora_crm"]
 renames = {
     "zolexora_ai": "ai",
@@ -48,7 +48,7 @@ for old_name, new_name in renames.items():
             print(f"Updated JSON inside {new_name}")
 
 # 3. Update fixtures/workspace.json
-fixture_path = "backend/zolexora_core/zolexora_core/fixtures/workspace.json"
+fixture_path = "products/ZolexoraERP/backend/zolexora_core/zolexora_core/fixtures/workspace.json"
 if os.path.exists(fixture_path):
     with open(fixture_path, 'r') as f:
         fixtures = json.load(f)

@@ -5,7 +5,7 @@ Zolexora_Platform is the monorepo containing the complete Zolexora Platform ecos
 ## Architecture Boundaries
 
 * **Platform Core** is located at: `platform/`
-* **ZolexoraERP** is located at: `products/erp/`
+* **ZolexoraERP** is located at: `products/ZolexoraERP/`
 * **Products** are located at: `products/`
 * **Shared packages** are located at: `packages/`
 * **Clients** are located at: `clients/`

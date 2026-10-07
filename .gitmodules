@@ -1,12 +1,12 @@
 [submodule "backend/frappe"]
-	path = backend/frappe
+	path = products/ZolexoraERP/backend/frappe
 	url = https://github.com/frappe/frappe.git
 	branch = version-16
 [submodule "backend/erpnext"]
-	path = backend/erpnext
+	path = products/ZolexoraERP/backend/erpnext
 	url = https://github.com/frappe/erpnext.git
 	branch = version-16
 [submodule "backend/payments"]
-	path = backend/payments
+	path = products/ZolexoraERP/backend/payments
 	url = https://github.com/frappe/payments.git
 	branch = version-16

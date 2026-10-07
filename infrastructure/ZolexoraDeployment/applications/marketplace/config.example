@@ -1,4 +1,0 @@
-# NON-PRODUCTION CONTRACT EXAMPLE. Compose does not load this file automatically.
-# Replace every value through a reviewed release process before any later deployment phase.
-COMPOSE_PROJECT_NAME=marketplace-contract-example
-UNRESOLVED_SERVICE_IMAGE_REFERENCE=registry.invalid/zolexora/unresolved@sha256:0000000000000000000000000000000000000000000000000000000000000000
