@@ -1,0 +1,31 @@
+FROM node:20-bookworm-slim
+
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+
+WORKDIR /workspace
+
+RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
+COPY packages/shared-api/package.json packages/shared-api/package.json
+COPY packages/shared-config/package.json packages/shared-config/package.json
+COPY apps/storefronts/zolexora-shop/web/package.json apps/storefronts/zolexora-shop/web/package.json
+COPY apps/storefronts/mahila-madel/web/package.json apps/storefronts/mahila-madel/web/package.json
+COPY apps/storefronts/mahila-madel/legacy-server/package.json apps/storefronts/mahila-madel/legacy-server/package.json
+COPY apps/portals/seller/web/package.json apps/portals/seller/web/package.json
+COPY apps/portals/marketplace-admin/web/package.json apps/portals/marketplace-admin/web/package.json
+COPY apps/storefronts/zolexora-shop/mobile/package.json apps/storefronts/zolexora-shop/mobile/package.json
+COPY apps/storefronts/mahila-madel/mobile/package.json apps/storefronts/mahila-madel/mobile/package.json
+COPY apps/portals/seller/mobile/package.json apps/portals/seller/mobile/package.json
+
+RUN pnpm install --frozen-lockfile
+
+COPY . .
+
+ENV HOST=0.0.0.0
+ENV TURBO_TELEMETRY_DISABLED=1
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV EXPO_NO_TELEMETRY=1
+
+CMD ["pnpm", "dev:buyer"]

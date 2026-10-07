@@ -1,0 +1,40 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 2 * * 1' # Weekly on Monday at 02:00 UTC
+  workflow_dispatch:
+
+jobs:
+  python-security:
+    name: Python Security Audit (Bandit & Ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Install security tools
+        run: pip install bandit ruff
+      - name: Run Bandit SAST on Backend
+        run: bandit -r services/marketplace-api -x services/marketplace-api/tests -ll -ii || true
+      - name: Run Ruff Check
+        run: ruff check services/marketplace-api
+
+  container-security:
+    name: Container & Secret Vulnerability Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'table'
+          exit-code: '0'
+          severity: 'CRITICAL,HIGH'

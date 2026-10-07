@@ -1,0 +1,29 @@
+version: "3.9"
+# Usage: docker compose up -d --build --scale api=4
+services:
+  api:
+    build: { context: ., dockerfile: Dockerfile }
+    env_file:
+      - path: .env
+        required: false
+    restart: unless-stopped
+    expose: ["8000"]
+    healthcheck:
+      test: ["CMD","curl","-f","http://localhost:8000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks: [internal]
+
+  nginx:
+    image: nginx:1.27-alpine
+    depends_on: [api]
+    volumes: ["./nginx-docker.conf:/etc/nginx/nginx.conf:ro"]
+    ports: ["80:80"]
+    restart: unless-stopped
+    networks: [internal, public]
+
+networks:
+  internal:
+  public:

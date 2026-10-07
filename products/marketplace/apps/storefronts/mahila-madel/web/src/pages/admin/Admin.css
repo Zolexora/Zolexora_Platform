@@ -1,0 +1,91 @@
+.admin-page {
+  display: flex;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 999;
+  background: #FEFCFA;
+  overflow: hidden;
+}
+
+.admin-sidebar {
+  width: 220px;
+  background: #2C1520;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.admin-brand {
+  color: #fff;
+  font-family: 'Playfair Display', serif;
+  font-size: 16px;
+  font-weight: 400;
+  padding: 8px 20px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  margin-bottom: 8px;
+  font-style: italic;
+}
+.admin-brand span { color: #C9963C; }
+
+.admin-nav-item {
+  display: block; width: 100%; padding: 12px 20px;
+  background: none; border: none; color: rgba(255,255,255,0.6);
+  font-size: 13px; text-align: left; cursor: pointer;
+  transition: all 0.15s; border-left: 2px solid transparent;
+  font-family: 'Jost', sans-serif; text-decoration: none;
+}
+.admin-nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+.admin-nav-item.active { background: rgba(181,68,90,0.2); color: #fff; border-left-color: #B5445A; }
+.back-link { margin-top: auto; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+
+.admin-main {
+  flex: 1;
+  padding: 28px;
+  overflow-y: auto;
+  height: 100vh;
+  background: #FEFCFA;
+}
+
+.admin-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 26px; font-weight: 400;
+  margin-bottom: 24px; color: #2C1520;
+}
+.admin-tab-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+.admin-tab-head .admin-title { margin-bottom: 0; }
+
+.stat-cards { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 28px; }
+.stat-card { background: #fff; border: 1px solid #EDD8DC; border-radius: 4px; padding: 20px; display: flex; align-items: center; gap: 16px; }
+.stat-icon { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; background: #FDF0F2; flex-shrink: 0; }
+.stat-value { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 600; color: #2C1520; }
+.stat-label { font-size: 12px; color: #9C7A80; margin-top: 2px; }
+
+.admin-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.admin-card { background: #fff; border: 1px solid #EDD8DC; border-radius: 4px; padding: 20px; }
+.admin-card h3 { font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 400; margin-bottom: 16px; color: #2C1520; }
+.status-row { display: flex; justify-content: space-between; font-size: 13px; padding: 8px 0; border-bottom: 1px solid #F5EAEC; color: #3D2028; }
+.status-count { font-weight: 600; color: #B5445A; }
+.recent-order { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #F5EAEC; }
+
+.admin-table-wrap { background: #fff; border: 1px solid #EDD8DC; border-radius: 4px; overflow: auto; }
+.admin-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 700px; }
+.admin-table th { background: #FDF6F7; padding: 12px 14px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: #9C7A80; border-bottom: 1px solid #EDD8DC; white-space: nowrap; }
+.admin-table td { padding: 12px 14px; border-bottom: 1px solid #F5EAEC; vertical-align: middle; color: #3D2028; }
+.admin-table tr:hover td { background: #FDF6F7; }
+.order-id-cell { font-family: monospace; color: #B5445A; font-weight: 700; font-size: 12px; }
+.prod-cell { display: flex; align-items: center; gap: 10px; }
+.prod-cell img { width: 40px; height: 40px; object-fit: cover; border-radius: 2px; flex-shrink: 0; border: 1px solid #EDD8DC; }
+.prod-cell-name { font-size: 13px; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.status-select { border: 1px solid #EDD8DC; border-radius: 2px; padding: 5px 8px; font-size: 12px; cursor: pointer; outline: none; background: #fff; font-family: 'Jost', sans-serif; color: #3D2028; }
+.status-select:focus { border-color: #B5445A; }
+
+@media(max-width:768px) {
+  .admin-page { position: relative; flex-direction: column; }
+  .admin-sidebar { width: 100%; height: auto; flex-direction: row; flex-wrap: wrap; }
+  .admin-main { height: auto; overflow-y: visible; }
+  .stat-cards { grid-template-columns: repeat(2,1fr); }
+  .admin-grid-2 { grid-template-columns: 1fr; }
+}

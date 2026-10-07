@@ -1,0 +1,5 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "title": "Return request", "type": "object", "additionalProperties": false,
+  "required": ["schema_version", "tenant_external_id", "organization_external_id", "return_external_id", "order_external_id", "reason_code", "amount_minor", "idempotency_key"],
+  "properties": {"schema_version": {"const": "1.0"}, "tenant_external_id": {"type": "string", "minLength": 1}, "organization_external_id": {"type": "string", "minLength": 1}, "return_external_id": {"type": "string", "minLength": 1}, "order_external_id": {"type": "string", "minLength": 1}, "reason_code": {"type": "string", "minLength": 1}, "amount_minor": {"type": "integer", "minimum": 0}, "idempotency_key": {"type": "string", "minLength": 1}}
+}

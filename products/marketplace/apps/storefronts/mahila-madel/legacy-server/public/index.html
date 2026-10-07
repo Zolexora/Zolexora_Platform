@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Dashboard — Mahila Madel</title>
+<link rel="stylesheet" href="/shared.css"/>
+</head>
+<body>
+<div id="sidebar-container"></div>
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left"><div class="topbar-title">Dashboard</div></div>
+    <div class="topbar-right">
+      <div class="status-pill"><div class="status-dot"></div>All Systems Operational</div>
+      <div class="time-badge" id="time">--</div>
+    </div>
+  </div>
+  <div class="content">
+    <div class="base-url-card">
+      <span class="base-url-label">Base URL</span>
+      <div class="base-url-value" id="baseUrl">loading...</div>
+      <button class="copy-btn" onclick="copyBase()">Copy</button>
+      <a href="/api/health" target="_blank" class="json-btn">View JSON ↗</a>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card green">
+        <div class="stat-top"><div class="stat-icon green">🚀</div><span class="stat-tag green">Live</span></div>
+        <div class="stat-value" id="serverStatus">Online</div>
+        <div class="stat-label">Server Status</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="stat-top"><div class="stat-icon blue">🗄️</div><span class="stat-tag blue">Atlas</span></div>
+        <div class="stat-value">MongoDB</div>
+        <div class="stat-label">Database</div>
+      </div>
+      <div class="stat-card purple">
+        <div class="stat-top"><div class="stat-icon purple">🔐</div><span class="stat-tag purple">Secure</span></div>
+        <div class="stat-value">JWT</div>
+        <div class="stat-label">Authentication</div>
+      </div>
+      <div class="stat-card orange">
+        <div class="stat-top"><div class="stat-icon orange">📡</div><span class="stat-tag orange">REST</span></div>
+        <div class="stat-value">20+</div>
+        <div class="stat-label">API Endpoints</div>
+      </div>
+    </div>
+    <div class="sections-grid">
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#b06aff" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Auth Routes
+          </div>
+          <span class="section-count">7</span>
+        </div>
+        <div class="section-body">
+          <div class="endpoint"><span class="method get">GET</span><span class="ep-path">/api/health</span><span class="ep-desc">Health check</span></div>
+          <div class="endpoint"><span class="method post">POST</span><span class="ep-path">/api/auth/register</span><span class="ep-desc">Register</span></div>
+          <div class="endpoint"><span class="method post">POST</span><span class="ep-path">/api/auth/login</span><span class="ep-desc">Login</span></div>
+          <div class="endpoint"><span class="method get">GET</span><span class="ep-path">/api/auth/profile</span><span class="ep-lock">🔒 Auth</span></div>
+          <div class="endpoint"><span class="method put">PUT</span><span class="ep-path">/api/auth/profile</span><span class="ep-lock">🔒 Auth</span></div>
+          <div class="endpoint"><span class="method post">POST</span><span class="ep-path">/api/auth/address</span><span class="ep-lock">🔒 Auth</span></div>
+          <div class="endpoint"><span class="method delete">DEL</span><span class="ep-path">/api/auth/address/<em>:id</em></span><span class="ep-lock">🔒 Auth</span></div>
+        </div>
+      </div>
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4d9fff" strokeWidth="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg>
+            Product Routes
+          </div>
+          <span class="section-count">8</span>
+        </div>
+        <div class="section-body">
+          <div class="endpoint"><span class="method get">GET</span><span class="ep-path">/api/products</span><span class="ep-desc">List all</span></div>
+          <div class="endpoint"><span class="method get">GET</span><span class="ep-path">/api/products/featured</span><span class="ep-desc">Featured</span></div>
+          <div class="endpoint"><span class="method get">GET</span><span class="ep-path">/api/products/categories</span><span class="ep-desc">Categories</span></div>
+          <div class="endpoint"><span class="method get">GET</span><span class="ep-path">/api/products/<em>:id</em></span><span class="ep-desc">Single</span></div>
+          <div class="endpoint"><span class="method post">POST</span><span class="ep-path">/api/products/<em>:id</em>/reviews</span><span class="ep-lock">🔒 Auth</span></div>
+          <div class="endpoint"><span class="method post">POST</span><span class="ep-path">/api/products</span><span class="ep-admin">👑 Admin</span></div>
+          <div class="endpoint"><span class="method put">PUT</span><span class="ep-path">/api/products/<em>:id</em></span><span class="ep-admin">👑 Admin</span></div>
+          <div class="endpoint"><span class="method delete">DEL</span><span class="ep-path">/api/products/<em>:id</em></span><span class="ep-admin">👑 Admin</span></div>
+        </div>
+      </div>
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ff8c42" strokeWidth="2"><rect x="2" y="3" width="20" height="18" rx="2"/><line x1="7" y1="8" x2="17" y2="8"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="7" y1="16" x2="13" y2="16"/></svg>
+            Order Routes
+          </div>
+          <span class="section-count">8</span>
+        </div>
+        <div class="section-body">
+          <div class="endpoint"><span class="method post">POST</span><span class="ep-path">/api/orders</span><span class="ep-lock">🔒 Auth</span><span class="ep-desc">Create</span></div>
+          <div class="endpoint"><span class="method get">GET</span><span class="ep-path">/api/orders/myorders</span><span class="ep-lock">🔒 Auth</span></div>
+          <div class="endpoint"><span class="method get">GET</span><span class="ep-path">/api/orders/<em>:id</em></span><span class="ep-lock">🔒 Auth</span></div>
+          <div class="endpoint"><span class="method put">PUT</span><span class="ep-path">/api/orders/<em>:id</em>/pay</span><span class="ep-lock">🔒 Auth</span></div>
+          <div class="endpoint"><span class="method put">PUT</span><span class="ep-path">/api/orders/<em>:id</em>/cancel</span><span class="ep-lock">🔒 Auth</span></div>
+          <div class="endpoint"><span class="method get">GET</span><span class="ep-path">/api/orders/admin/all</span><span class="ep-admin">👑 Admin</span></div>
+          <div class="endpoint"><span class="method get">GET</span><span class="ep-path">/api/orders/admin/stats</span><span class="ep-admin">👑 Admin</span></div>
+          <div class="endpoint"><span class="method put">PUT</span><span class="ep-path">/api/orders/<em>:id</em>/status</span><span class="ep-admin">👑 Admin</span></div>
+        </div>
+      </div>
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00d084" strokeWidth="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+            Cart & Wishlist
+          </div>
+          <span class="section-count">7</span>
+        </div>
+        <div class="section-body">
+          <div class="endpoint"><span class="method get">GET</span><span class="ep-path">/api/cart</span><span class="ep-lock">🔒 Auth</span><span class="ep-desc">Get cart</span></div>
+          <div class="endpoint"><span class="method post">POST</span><span class="ep-path">/api/cart</span><span class="ep-lock">🔒 Auth</span><span class="ep-desc">Add item</span></div>
+          <div class="endpoint"><span class="method put">PUT</span><span class="ep-path">/api/cart/<em>:id</em></span><span class="ep-lock">🔒 Auth</span><span class="ep-desc">Update qty</span></div>
+          <div class="endpoint"><span class="method delete">DEL</span><span class="ep-path">/api/cart/<em>:id</em></span><span class="ep-lock">🔒 Auth</span><span class="ep-desc">Remove</span></div>
+          <div class="endpoint"><span class="method delete">DEL</span><span class="ep-path">/api/cart</span><span class="ep-lock">🔒 Auth</span><span class="ep-desc">Clear all</span></div>
+          <div class="endpoint"><span class="method get">GET</span><span class="ep-path">/api/wishlist</span><span class="ep-lock">🔒 Auth</span><span class="ep-desc">Get list</span></div>
+          <div class="endpoint"><span class="method post">POST</span><span class="ep-path">/api/wishlist/<em>:id</em></span><span class="ep-lock">🔒 Auth</span><span class="ep-desc">Toggle</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="footer"><span>Mahila Madel</span> API © 2024 · Built with Node.js + Express + MongoDB Atlas</div>
+  </div>
+</div>
+<script src="/shared.js"></script>
+<script>
+  initSidebar('index');
+  setInterval(() => document.getElementById('time').textContent = new Date().toLocaleTimeString(), 1000);
+  document.getElementById('time').textContent = new Date().toLocaleTimeString();
+  document.getElementById('baseUrl').textContent = window.location.origin + '/api';
+  function copyBase() {
+    navigator.clipboard.writeText(window.location.origin + '/api');
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = 'Copied!'; btn.style.color = 'var(--green)'; btn.style.borderColor = 'var(--green)';
+    setTimeout(() => { btn.textContent = 'Copy'; btn.style.color=''; btn.style.borderColor=''; }, 2000);
+  }
+</script>
+</body>
+</html>

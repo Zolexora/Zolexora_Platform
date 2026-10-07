@@ -1,0 +1,5 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "title": "Refund accounting entry", "type": "object", "additionalProperties": false,
+  "required": ["schema_version", "tenant_external_id", "organization_external_id", "refund_external_id", "payment_external_id", "amount_minor", "currency", "idempotency_key"],
+  "properties": {"schema_version": {"const": "1.0"}, "tenant_external_id": {"type": "string", "minLength": 1}, "organization_external_id": {"type": "string", "minLength": 1}, "refund_external_id": {"type": "string", "minLength": 1}, "payment_external_id": {"type": "string", "minLength": 1}, "credit_reference": {"type": ["string", "null"]}, "amount_minor": {"type": "integer", "exclusiveMinimum": 0}, "currency": {"type": "string", "pattern": "^[A-Z]{3}$"}, "idempotency_key": {"type": "string", "minLength": 1}}
+}

@@ -1,0 +1,40 @@
+{
+  "name": "zolexora",
+  "private": true,
+  "scripts": {
+    "dev:backend": "cd services/marketplace-api && node ../../scripts/py-exec.mjs -m uvicorn main:app --reload --port 8000",
+    "dev:zolexora-shop": "pnpm --filter @zolexora/storefront-zolexora-shop dev",
+    "dev:mahila-madel": "pnpm --filter @zolexora/storefront-mahila-madel dev",
+    "dev:seller": "pnpm --filter @zolexora/seller-portal dev",
+    "dev:admin": "pnpm --filter @zolexora/marketplace-admin dev",
+    "dev:zolexora-mobile": "pnpm --filter @zolexora/storefront-zolexora-shop-mobile dev",
+    "dev:mahila-madel-mobile": "pnpm --filter @zolexora/storefront-mahila-madel-mobile dev",
+    "dev:seller-mobile": "pnpm --filter @zolexora/seller-portal-mobile dev",
+    "dev:mahila-madel-server": "pnpm --filter @zolexora/mahila-legacy-server dev",
+    "verify:workspace": "node scripts/verify-workspace.mjs",
+    "verify:contracts": "node scripts/py-exec.mjs scripts/validate-erp-contracts.py",
+    "verify:database": "node scripts/py-exec.mjs scripts/validate-postgresql-schema.py && cd services/marketplace-api && node ../../scripts/py-exec.mjs -m alembic heads && node ../../scripts/py-exec.mjs -m alembic upgrade head --sql >/dev/null",
+    "build": "pnpm verify:workspace && turbo run build",
+    "type-check": "pnpm verify:workspace && turbo run type-check",
+    "lint": "pnpm verify:workspace && turbo run lint && node scripts/py-exec.mjs -m ruff check services/marketplace-api",
+    "test": "pnpm verify:workspace && CI=true turbo run test --continue=always",
+    "verify:backend": "node scripts/py-exec.mjs -m compileall -q services/marketplace-api && node scripts/py-exec.mjs -m ruff check services/marketplace-api && node scripts/py-exec.mjs -m pytest services/marketplace-api -q",
+    "verify": "pnpm verify:workspace && pnpm verify:contracts && pnpm verify:database && pnpm type-check && pnpm lint && pnpm test && pnpm build && pnpm verify:backend && pnpm verify:openapi",
+    "verify:openapi": "./scripts/check-openapi-drift.sh",
+    "generate:openapi": "node scripts/py-exec.mjs scripts/generate_openapi.py",
+    "generate:client": "openapi-typescript contracts/marketplace/openapi.json -o packages/shared-api/src/generated/types.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "openapi-typescript": "^7.13.0",
+    "turbo": "^2.3.0",
+    "typescript": "^5.4.5"
+  },
+  "packageManager": "pnpm@9.0.0",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  }
+}

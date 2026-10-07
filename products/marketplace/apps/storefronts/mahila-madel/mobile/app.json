@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "Mahila Madel",
+    "slug": "mahila-madel",
+    "version": "1.0.0",
+    "scheme": "mahilamadel",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "backgroundColor": "#FF69B4"
+    },
+    "ios": {
+      "bundleIdentifier": "store.mahilamadel.mobile",
+      "supportsTablet": false
+    },
+    "android": {
+      "package": "store.mahilamadel.mobile",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#FF69B4"
+      }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store"
+    ],
+    "extra": {
+      "router": { "origin": false },
+      "eas": {
+        "projectId": "11111111-2222-3333-4444-555555555555"
+      }
+    }
+  }
+}

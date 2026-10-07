@@ -1,0 +1,11 @@
+.admin-bar { background: #2C1520; color: #fff; position: sticky; top: 0; z-index: 1100; border-bottom: 1px solid rgba(181,68,90,0.4); }
+.admin-bar-inner { max-width: 1200px; margin: 0 auto; padding: 0 20px; display: flex; align-items: center; justify-content: space-between; height: 36px; }
+.ab-left { display: flex; align-items: center; gap: 8px; }
+.ab-text { font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,0.6); }
+.ab-name { font-size: 12px; color: #C9963C; font-weight: 500; }
+.ab-right { display: flex; align-items: center; }
+.ab-btn { display: inline-flex; align-items: center; gap: 6px; padding: 5px 14px; border-radius: 2px; font-size: 11px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; text-decoration: none; transition: all 0.2s; font-family: inherit; }
+.ab-admin { background: #B5445A; color: #fff; }
+.ab-admin:hover { background: #8B2D40; color: #fff; }
+.ab-store { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.85); border: 1px solid rgba(255,255,255,0.15); }
+.ab-store:hover { background: rgba(255,255,255,0.2); color: #fff; }

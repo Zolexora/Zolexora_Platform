@@ -1,0 +1,433 @@
+ZolexoraMarketplace-main/
+├── .dockerignore
+├── .env.example
+├── .eslintrc.json
+├── .github
+│   └── workflows
+│       └── ci.yml
+├── .gitignore
+├── .hintrc
+├── .prettierrc
+├── DEPLOYMENT.md
+├── Dockerfile.frontend
+├── README.md
+├── SECURITY.md
+├── apps
+│   ├── MahilaMadel
+│   │   └── web-app
+│   │       ├── .gitignore
+│   │       ├── README.md
+│   │       ├── client
+│   │       │   ├── package-lock.json
+│   │       │   ├── package.json
+│   │       │   ├── public
+│   │       │   │   └── index.html
+│   │       │   └── src
+│   │       │       ├── App.js
+│   │       │       ├── components
+│   │       │       │   ├── AdminBar.css
+│   │       │       │   ├── AdminBar.js
+│   │       │       │   ├── Header.css
+│   │       │       │   ├── Header.js
+│   │       │       │   ├── ProductCard.css
+│   │       │       │   ├── ProductCard.js
+│   │       │       │   └── ProtectedRoute.js
+│   │       │       ├── context
+│   │       │       │   ├── AuthContext.js
+│   │       │       │   ├── CartContext.js
+│   │       │       │   └── WishlistContext.js
+│   │       │       ├── index.css
+│   │       │       ├── index.js
+│   │       │       ├── pages
+│   │       │       │   ├── Auth.css
+│   │       │       │   ├── Cart.css
+│   │       │       │   ├── Cart.js
+│   │       │       │   ├── Checkout.css
+│   │       │       │   ├── Checkout.js
+│   │       │       │   ├── Home.css
+│   │       │       │   ├── Home.js
+│   │       │       │   ├── Login.js
+│   │       │       │   ├── OrderDetail.js
+│   │       │       │   ├── Orders.css
+│   │       │       │   ├── Orders.js
+│   │       │       │   ├── ProductDetail.css
+│   │       │       │   ├── ProductDetail.js
+│   │       │       │   ├── Products.css
+│   │       │       │   ├── Products.js
+│   │       │       │   ├── Profile.css
+│   │       │       │   ├── Profile.js
+│   │       │       │   ├── Wishlist.css
+│   │       │       │   ├── Wishlist.js
+│   │       │       │   └── admin
+│   │       │       │       ├── Admin.css
+│   │       │       │       ├── Admin.js
+│   │       │       │       └── ProductForm.js
+│   │       │       └── utils
+│   │       │           └── api.js
+│   │       ├── package-lock.json
+│   │       ├── package.json
+│   │       └── server
+│   │           ├── .gitignore
+│   │           ├── config
+│   │           │   └── db.js
+│   │           ├── controllers
+│   │           │   ├── authController.js
+│   │           │   ├── cartController.js
+│   │           │   ├── orderController.js
+│   │           │   ├── productController.js
+│   │           │   └── wishlistController.js
+│   │           ├── middleware
+│   │           │   └── auth.js
+│   │           ├── models
+│   │           │   ├── Order.js
+│   │           │   ├── Product.js
+│   │           │   └── User.js
+│   │           ├── package-lock.json
+│   │           ├── package.json
+│   │           ├── public
+│   │           │   ├── categories.html
+│   │           │   ├── featured.html
+│   │           │   ├── health.html
+│   │           │   ├── index.html
+│   │           │   ├── login.html
+│   │           │   ├── products.html
+│   │           │   ├── shared.css
+│   │           │   ├── shared.js
+│   │           │   └── sidebar.html
+│   │           ├── routes
+│   │           │   ├── auth.js
+│   │           │   ├── cartWishlist.js
+│   │           │   ├── orders.js
+│   │           │   ├── products.js
+│   │           │   └── users.js
+│   │           ├── seed.js
+│   │           └── server.js
+│   ├── ZolexoraShop
+│   │   ├── mobile-app
+│   │   │   ├── buyer
+│   │   │   │   ├── .env.example
+│   │   │   │   ├── app
+│   │   │   │   │   ├── (tabs)
+│   │   │   │   │   │   ├── _layout.tsx
+│   │   │   │   │   │   ├── cart.tsx
+│   │   │   │   │   │   ├── index.tsx
+│   │   │   │   │   │   ├── orders.tsx
+│   │   │   │   │   │   ├── shop.tsx
+│   │   │   │   │   │   └── wallet.tsx
+│   │   │   │   │   ├── _layout.tsx
+│   │   │   │   │   ├── assets
+│   │   │   │   │   │   ├── adaptive-icon.png
+│   │   │   │   │   │   ├── icon.png
+│   │   │   │   │   │   └── splash.png
+│   │   │   │   │   ├── auth
+│   │   │   │   │   │   └── index.tsx
+│   │   │   │   │   └── product
+│   │   │   │   │       └── [id].tsx
+│   │   │   │   ├── app.json
+│   │   │   │   ├── assets
+│   │   │   │   │   ├── Zolexora_logo.png -> ../../public/Zolexora_logo.png
+│   │   │   │   │   ├── adaptive-icon.png
+│   │   │   │   │   ├── icon.png
+│   │   │   │   │   └── splash.png
+│   │   │   │   ├── eas.json
+│   │   │   │   ├── metro.config.js
+│   │   │   │   ├── package.json
+│   │   │   │   ├── src
+│   │   │   │   │   ├── lib
+│   │   │   │   │   │   └── api.ts
+│   │   │   │   │   ├── store
+│   │   │   │   │   │   └── index.ts
+│   │   │   │   │   └── test
+│   │   │   │   │       ├── cart.test.ts
+│   │   │   │   │       └── setup.ts
+│   │   │   │   ├── tsconfig.json
+│   │   │   │   └── vitest.config.ts
+│   │   │   └── seller
+│   │   │       ├── .env.example
+│   │   │       ├── app
+│   │   │       │   ├── (tabs)
+│   │   │       │   │   ├── _layout.tsx
+│   │   │       │   │   ├── analytics.tsx
+│   │   │       │   │   ├── index.tsx
+│   │   │       │   │   ├── orders.tsx
+│   │   │       │   │   ├── products.tsx
+│   │   │       │   │   └── reels.tsx
+│   │   │       │   ├── _layout.tsx
+│   │   │       │   ├── assets
+│   │   │       │   │   ├── adaptive-icon.png
+│   │   │       │   │   ├── icon.png
+│   │   │       │   │   └── splash.png
+│   │   │       │   ├── auth
+│   │   │       │   │   └── index.tsx
+│   │   │       │   └── product-form
+│   │   │       │       └── index.tsx
+│   │   │       ├── app.json
+│   │   │       ├── assets
+│   │   │       │   ├── Zolexora_logo.png -> ../../public/Zolexora_logo.png
+│   │   │       │   ├── adaptive-icon.png
+│   │   │       │   ├── icon.png
+│   │   │       │   └── splash.png
+│   │   │       ├── eas.json
+│   │   │       ├── metro.config.js
+│   │   │       ├── package.json
+│   │   │       ├── src
+│   │   │       │   ├── lib
+│   │   │       │   │   └── api.ts
+│   │   │       │   └── store
+│   │   │       │       └── index.ts
+│   │   │       └── tsconfig.json
+│   │   └── web-app
+│   │       ├── adminpanal
+│   │       │   ├── .env.example
+│   │       │   ├── next-env.d.ts
+│   │       │   ├── next.config.js
+│   │       │   ├── package.json
+│   │       │   ├── postcss.config.js
+│   │       │   ├── public
+│   │       │   │   └── Zolexora_logo.png -> ../../public/Zolexora_logo.png
+│   │       │   ├── src
+│   │       │   │   ├── app
+│   │       │   │   │   ├── auth
+│   │       │   │   │   │   └── page.tsx
+│   │       │   │   │   ├── dashboard
+│   │       │   │   │   │   └── page.tsx
+│   │       │   │   │   ├── globals.css
+│   │       │   │   │   ├── layout.tsx
+│   │       │   │   │   ├── orders
+│   │       │   │   │   │   └── page.tsx
+│   │       │   │   │   ├── page.tsx
+│   │       │   │   │   ├── products
+│   │       │   │   │   │   └── page.tsx
+│   │       │   │   │   ├── reels
+│   │       │   │   │   │   └── page.tsx
+│   │       │   │   │   ├── shipping
+│   │       │   │   │   │   └── page.tsx
+│   │       │   │   │   └── users
+│   │       │   │   │       └── page.tsx
+│   │       │   │   ├── components
+│   │       │   │   │   └── layout
+│   │       │   │   │       └── AdminShell.tsx
+│   │       │   │   ├── lib
+│   │       │   │   │   ├── api.ts
+│   │       │   │   │   └── shipping-api.ts
+│   │       │   │   └── store
+│   │       │   │       └── index.ts
+│   │       │   ├── tailwind.config.js
+│   │       │   ├── tsconfig.json
+│   │       │   └── vercel.json
+│   │       ├── buyer
+│   │       │   ├── .env.example
+│   │       │   ├── next-env.d.ts
+│   │       │   ├── next.config.js
+│   │       │   ├── package.json
+│   │       │   ├── postcss.config.js
+│   │       │   ├── public
+│   │       │   │   └── Zolexora_logo.png -> ../../public/Zolexora_logo.png
+│   │       │   ├── src
+│   │       │   │   ├── app
+│   │       │   │   │   ├── auth
+│   │       │   │   │   │   ├── page.tsx
+│   │       │   │   │   │   └── reset-password
+│   │       │   │   │   │       └── page.tsx
+│   │       │   │   │   ├── cart
+│   │       │   │   │   │   └── page.tsx
+│   │       │   │   │   ├── globals.css
+│   │       │   │   │   ├── layout.tsx
+│   │       │   │   │   ├── orders
+│   │       │   │   │   │   ├── [id]
+│   │       │   │   │   │   │   └── page.tsx
+│   │       │   │   │   │   └── page.tsx
+│   │       │   │   │   ├── page.tsx
+│   │       │   │   │   ├── product
+│   │       │   │   │   │   └── [id]
+│   │       │   │   │   │       └── page.tsx
+│   │       │   │   │   ├── providers.tsx
+│   │       │   │   │   ├── store
+│   │       │   │   │   │   ├── StorePageClient.tsx
+│   │       │   │   │   │   └── page.tsx
+│   │       │   │   │   ├── track
+│   │       │   │   │   │   ├── TrackPageClient.tsx
+│   │       │   │   │   │   └── page.tsx
+│   │       │   │   │   └── wallet
+│   │       │   │   │       └── page.tsx
+│   │       │   │   ├── components
+│   │       │   │   │   ├── layout
+│   │       │   │   │   │   ├── DealsBanner.tsx
+│   │       │   │   │   │   ├── HeroSection.tsx
+│   │       │   │   │   │   └── Navbar.tsx
+│   │       │   │   │   └── product
+│   │       │   │   │       ├── CategoryGrid.tsx
+│   │       │   │   │       ├── FeaturedProducts.tsx
+│   │       │   │   │       └── ProductCard.tsx
+│   │       │   │   ├── lib
+│   │       │   │   │   ├── api.ts
+│   │       │   │   │   └── shipping-api.ts
+│   │       │   │   ├── store
+│   │       │   │   │   └── index.ts
+│   │       │   │   └── test
+│   │       │   │       ├── basic.test.ts
+│   │       │   │       └── setup.ts
+│   │       │   ├── tailwind.config.js
+│   │       │   ├── tsconfig.json
+│   │       │   ├── vercel.json
+│   │       │   └── vitest.config.ts
+│   │       └── seller
+│   │           ├── .env.example
+│   │           ├── next-env.d.ts
+│   │           ├── next.config.js
+│   │           ├── package.json
+│   │           ├── postcss.config.js
+│   │           ├── public
+│   │           │   └── Zolexora_logo.png -> ../../public/Zolexora_logo.png
+│   │           ├── src
+│   │           │   ├── app
+│   │           │   │   ├── analytics
+│   │           │   │   │   └── page.tsx
+│   │           │   │   ├── auth
+│   │           │   │   │   ├── page.tsx
+│   │           │   │   │   └── reset-password
+│   │           │   │   │       └── page.tsx
+│   │           │   │   ├── dashboard
+│   │           │   │   │   └── page.tsx
+│   │           │   │   ├── globals.css
+│   │           │   │   ├── layout.tsx
+│   │           │   │   ├── orders
+│   │           │   │   │   ├── [id]
+│   │           │   │   │   │   └── page.tsx
+│   │           │   │   │   └── page.tsx
+│   │           │   │   ├── page.tsx
+│   │           │   │   ├── products
+│   │           │   │   │   ├── bulk
+│   │           │   │   │   │   └── page.tsx
+│   │           │   │   │   ├── new
+│   │           │   │   │   │   └── page.tsx
+│   │           │   │   │   └── page.tsx
+│   │           │   │   ├── reels
+│   │           │   │   │   └── page.tsx
+│   │           │   │   ├── settings
+│   │           │   │   │   └── page.tsx
+│   │           │   │   └── shipping
+│   │           │   │       └── page.tsx
+│   │           │   ├── components
+│   │           │   │   └── layout
+│   │           │   │       └── SellerShell.tsx
+│   │           │   ├── lib
+│   │           │   │   ├── api.ts
+│   │           │   │   └── shipping-api.ts
+│   │           │   └── store
+│   │           │       └── index.ts
+│   │           ├── tailwind.config.js
+│   │           ├── tsconfig.json
+│   │           └── vercel.json
+│   └── public
+│       ├── Zolexora_fav.png
+│       └── Zolexora_logo.png
+├── backend
+│   ├── .dockerignore
+│   ├── .env.example
+│   ├── .python-version
+│   ├── Dockerfile
+│   ├── __init__.py
+│   ├── auth
+│   │   ├── __init__.py
+│   │   ├── router.py
+│   │   ├── schemas.py
+│   │   └── services.py
+│   ├── core
+│   │   ├── __init__.py
+│   │   ├── cloudinary_client.py
+│   │   ├── config.py
+│   │   ├── database.py
+│   │   ├── deps.py
+│   │   ├── email.py
+│   │   ├── middleware.py
+│   │   ├── payments.py
+│   │   ├── security.py
+│   │   ├── seed.py
+│   │   └── supabase_client.py
+│   ├── docker-compose.yml
+│   ├── main.py
+│   ├── models
+│   │   ├── __init__.py
+│   │   └── documents.py
+│   ├── nginx-docker.conf
+│   ├── nginx.conf
+│   ├── pyproject.toml
+│   ├── requirements.txt
+│   ├── routers
+│   │   ├── __init__.py
+│   │   ├── auth.py
+│   │   ├── cart.py
+│   │   ├── other.py
+│   │   ├── products.py
+│   │   └── reels.py
+│   ├── ruff.toml
+│   ├── scripts
+│   │   ├── ensure_indexes.py
+│   │   ├── setup_indexes.py
+│   │   ├── supabase_auth_migration.sql
+│   │   ├── supabase_schema.sql
+│   │   └── supabase_schema_v2.sql
+│   ├── shared
+│   │   ├── __init__.py
+│   │   ├── database
+│   │   │   ├── __init__.py
+│   │   │   ├── mongodb.py
+│   │   │   ├── postgres.py
+│   │   │   └── redis.py
+│   │   └── security
+│   │       └── __init__.py
+│   ├── shipping
+│   │   ├── __init__.py
+│   │   ├── base.py
+│   │   ├── providers
+│   │   │   ├── __init__.py
+│   │   │   ├── delhivery.py
+│   │   │   ├── nimbuspost.py
+│   │   │   ├── others.py
+│   │   │   └── shiprocket.py
+│   │   ├── router.py
+│   │   ├── rules.py
+│   │   ├── schemas.py
+│   │   ├── service.py
+│   │   └── webhooks.py
+│   ├── tests
+│   │   ├── __init__.py
+│   │   ├── test_admin_seed.py
+│   │   ├── test_main.py
+│   │   ├── test_postgres_user_source.py
+│   │   ├── test_product_delete.py
+│   │   ├── test_product_validation.py
+│   │   ├── test_shipping_webhooks.py
+│   │   └── test_startup_config.py
+│   └── users
+│       ├── __init__.py
+│       ├── models.py
+│       ├── repositories.py
+│       └── router.py
+├── docker-compose.yml
+├── docs
+│   └── auth-token-storage-risk.md
+├── package.json
+├── packages
+│   ├── shared-api
+│   │   ├── package.json
+│   │   ├── src
+│   │   │   ├── auth.ts
+│   │   │   ├── client.ts
+│   │   │   ├── index.ts
+│   │   │   ├── services.ts
+│   │   │   └── types.ts
+│   │   └── tsconfig.json
+│   └── shared-config
+│       ├── package.json
+│       ├── tailwind.config.js
+│       └── tsconfig.base.json
+├── pnpm-lock.yaml
+├── pnpm-workspace.yaml
+├── supabase
+│   ├── .gitignore
+│   ├── config.toml
+│   └── migrations
+│       └── 20260530151849_init_schema.sql
+└── turbo.json

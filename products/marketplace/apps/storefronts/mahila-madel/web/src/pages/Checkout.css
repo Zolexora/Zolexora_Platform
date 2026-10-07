@@ -1,0 +1,683 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   Mahila Madel — Luxury Mirrored Checkout Styles (Rose & Gold Theme)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.mm-checkout-page {
+  padding-top: 30px;
+  padding-bottom: 60px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* Stepper */
+.mm-checkout-stepper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 32px;
+  margin-bottom: 32px;
+}
+
+.mm-step-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: all 0.2s;
+}
+
+.mm-step-item.active {
+  opacity: 1;
+}
+
+.mm-step-item.completed {
+  opacity: 0.85;
+}
+
+.mm-step-circle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #EDD8DC;
+  color: #2C1520;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  transition: all 0.2s;
+}
+
+.mm-step-item.active .mm-step-circle {
+  background: #B5445A;
+  color: #FFFFFF;
+  box-shadow: 0 0 0 4px rgba(181, 68, 90, 0.15);
+}
+
+.mm-step-item.completed .mm-step-circle {
+  background: #2D7A4F;
+  color: #FFFFFF;
+}
+
+.mm-step-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #2C1520;
+  font-family: 'Jost', sans-serif;
+}
+
+/* Layout Grid */
+.mm-checkout-grid {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 28px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .mm-checkout-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Cards */
+.mm-checkout-card {
+  background: #FFFFFF;
+  border-radius: 20px;
+  border: 1px solid #EDD8DC;
+  padding: 28px;
+  box-shadow: 0 4px 20px rgba(44, 21, 32, 0.03);
+}
+
+.mm-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.mm-card-header h3, .mm-checkout-card h3 {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #2C1520;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.mm-header-icon {
+  color: #B5445A;
+}
+
+.mm-btn-link {
+  background: transparent;
+  border: none;
+  color: #B5445A;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mm-btn-link:hover {
+  text-decoration: underline;
+}
+
+/* Address Cards Grid */
+.mm-address-cards-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 600px) {
+  .mm-address-cards-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.mm-addr-card {
+  background: #FDF6F7;
+  border: 2px solid #EDD8DC;
+  border-radius: 16px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.mm-addr-card:hover {
+  border-color: #D4637A;
+}
+
+.mm-addr-card.selected {
+  border-color: #B5445A;
+  background: #FFF9FA;
+  box-shadow: 0 4px 12px rgba(181, 68, 90, 0.08);
+}
+
+.mm-addr-card-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.mm-radio-indicator {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid #B5445A;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mm-radio-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #B5445A;
+}
+
+.mm-addr-name {
+  font-weight: 700;
+  font-size: 13px;
+  color: #2C1520;
+}
+
+.mm-tag-default {
+  background: #FDF0F2;
+  border: 1px solid #EDD8DC;
+  color: #B5445A;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 6px;
+  margin-left: auto;
+}
+
+.mm-addr-text {
+  font-size: 12px;
+  color: #3D2028;
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+
+.mm-addr-city {
+  font-size: 12px;
+  color: #9C7A80;
+  margin-bottom: 6px;
+}
+
+.mm-addr-phone {
+  font-size: 11px;
+  font-weight: 600;
+  color: #2C1520;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Address Form */
+.mm-address-form-box {
+  background: #FDF6F7;
+  border: 1px solid #EDD8DC;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.mm-form-row {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.mm-form-row-2 {
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 600px) {
+  .mm-form-row-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.mm-input-field label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  color: #3D2028;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.mm-select-input {
+  width: 100%;
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid #EDD8DC;
+  background: #FFFFFF;
+  padding: 0 12px;
+  font-size: 13px;
+  color: #2C1520;
+  outline: none;
+}
+
+.mm-pincode-input {
+  font-family: monospace;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.mm-loader-sm {
+  position: absolute;
+  right: 12px;
+  font-size: 11px;
+  color: #C9963C;
+  font-weight: 600;
+}
+
+.mm-field-error {
+  font-size: 11px;
+  color: #B5445A;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mm-geo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #F0FAF4;
+  border: 1px solid #C4EED0;
+  color: #2D7A4F;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 8px;
+  margin-bottom: 14px;
+}
+
+.mm-form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+/* Shipping and Payment Sections */
+.mm-card-section {
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #F5EAEC;
+}
+
+.mm-card-section:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.mm-shipping-options-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+@media (max-width: 600px) {
+  .mm-shipping-options-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.mm-option-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 2px solid #EDD8DC;
+  background: #FFFFFF;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mm-option-card.selected {
+  border-color: #B5445A;
+  background: #FFF9FA;
+}
+
+.mm-option-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.mm-option-info strong {
+  font-size: 12px;
+  color: #2C1520;
+}
+
+.mm-option-info span {
+  font-size: 11px;
+  color: #9C7A80;
+}
+
+.mm-option-price {
+  font-weight: 700;
+  font-size: 13px;
+  color: #B5445A;
+}
+
+/* Coins Box */
+.mm-coins-box {
+  background: #FDF0F2;
+  border: 1px solid #EDD8DC;
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.mm-coins-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mm-coins-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #2C1520;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+
+.mm-coins-subtitle {
+  font-size: 11px;
+  color: #9C7A80;
+  margin: 2px 0 0 0;
+}
+
+.mm-coins-saved {
+  font-size: 12px;
+  font-weight: 600;
+  color: #2D7A4F;
+  margin-top: 8px;
+}
+
+/* Payment Methods Stack */
+.mm-payment-methods-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.mm-pay-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 2px solid #EDD8DC;
+  background: #FFFFFF;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mm-pay-option.selected {
+  border-color: #B5445A;
+  background: #FFF9FA;
+  box-shadow: 0 4px 12px rgba(181, 68, 90, 0.05);
+}
+
+.mm-pay-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.mm-pay-info strong {
+  font-size: 13px;
+  color: #2C1520;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mm-pay-info span {
+  font-size: 11px;
+  color: #9C7A80;
+}
+
+.mm-pay-badge {
+  background: #F0FAF4;
+  color: #2D7A4F;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid #C4EED0;
+}
+
+/* UPI QR Section */
+.mm-upi-qr-box {
+  margin-top: 14px;
+  padding: 18px;
+  background: #FDF6F7;
+  border: 1px dashed #B5445A;
+  border-radius: 16px;
+  text-align: center;
+}
+
+.mm-upi-instruction {
+  font-size: 12px;
+  font-weight: 600;
+  color: #2C1520;
+  margin-bottom: 12px;
+}
+
+.mm-qr-frame {
+  display: inline-block;
+  padding: 8px;
+  background: #FFFFFF;
+  border-radius: 12px;
+  border: 1px solid #EDD8DC;
+  margin-bottom: 14px;
+}
+
+.mm-qr-img {
+  width: 140px;
+  height: 140px;
+  display: block;
+}
+
+.mm-utr-input-wrap {
+  text-align: left;
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+.mm-utr-input-wrap label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  color: #3D2028;
+  margin-bottom: 6px;
+}
+
+/* Review Section */
+.mm-review-box {
+  background: #FDF6F7;
+  border: 1px solid #EDD8DC;
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-top: 14px;
+}
+
+.mm-review-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: #9C7A80;
+}
+
+.mm-review-text {
+  font-size: 12px;
+  color: #2C1520;
+  line-height: 1.5;
+}
+
+/* Cart Items Preview */
+.mm-cart-items-preview {
+  margin-top: 20px;
+}
+
+.mm-cart-items-preview h4 {
+  font-size: 13px;
+  font-weight: 700;
+  color: #2C1520;
+  margin-bottom: 10px;
+}
+
+.mm-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mm-preview-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border-radius: 12px;
+  background: #FFFFFF;
+  border: 1px solid #F5EAEC;
+}
+
+.mm-preview-img {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.mm-preview-details {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.mm-preview-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #2C1520;
+}
+
+.mm-preview-qty {
+  font-size: 11px;
+  color: #9C7A80;
+}
+
+.mm-preview-subtotal {
+  font-size: 12px;
+  font-weight: 700;
+  color: #B5445A;
+}
+
+/* Footers */
+.mm-card-footer {
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid #F5EAEC;
+}
+
+.mm-footer-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mm-btn-wide {
+  min-width: 200px;
+}
+
+/* Sticky Summary Card Sidebar */
+.mm-summary-card {
+  background: #FFFFFF;
+  border-radius: 20px;
+  border: 1px solid #EDD8DC;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(44, 21, 32, 0.03);
+  position: sticky;
+  top: 20px;
+}
+
+.mm-summary-card h3 {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #2C1520;
+  margin-bottom: 18px;
+}
+
+.mm-summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #3D2028;
+  margin-bottom: 10px;
+}
+
+.mm-row-discount {
+  color: #2D7A4F;
+  font-weight: 600;
+}
+
+.mm-summary-divider {
+  height: 1px;
+  background: #EDD8DC;
+  margin: 16px 0;
+}
+
+.mm-summary-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 16px;
+  color: #2C1520;
+  margin-bottom: 18px;
+}
+
+.mm-total-amount {
+  font-size: 20px;
+  color: #B5445A;
+}
+
+.mm-secure-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #9C7A80;
+  padding: 10px;
+  background: #FDF6F7;
+  border-radius: 10px;
+}

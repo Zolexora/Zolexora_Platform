@@ -1,0 +1,18 @@
+# Global Owners
+* @Zolexora/core-team
+
+# Backend Services
+/services/marketplace-api/ @Zolexora/backend-team
+/contracts/ @Zolexora/backend-team
+
+# Frontend Storefronts & Portals
+/apps/storefronts/zolexora-shop/ @Zolexora/frontend-team
+/apps/storefronts/mahila-madel/ @Zolexora/frontend-team
+/apps/portals/seller/ @Zolexora/frontend-team
+/apps/portals/marketplace-admin/ @Zolexora/frontend-team
+/packages/ @Zolexora/frontend-team
+
+# Infrastructure & CI/CD
+/infrastructure/ @Zolexora/devops-team
+/.github/ @Zolexora/devops-team
+/docker-compose.yml @Zolexora/devops-team

@@ -1,0 +1,61 @@
+{
+  "mcpServers": {
+    "cloudflare": {
+      "url": "https://mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-api": {
+      "url": "https://mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-docs": {
+      "url": "https://docs.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-bindings": {
+      "url": "https://bindings.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-builds": {
+      "url": "https://builds.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-observability": {
+      "url": "https://observability.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-containers": {
+      "url": "https://containers.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-browser": {
+      "url": "https://browser.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-logs": {
+      "url": "https://logs.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-ai-gateway": {
+      "url": "https://ai-gateway.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-autorag": {
+      "url": "https://autorag.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-auditlogs": {
+      "url": "https://auditlogs.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-dns-analytics": {
+      "url": "https://dns-analytics.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-dex": {
+      "url": "https://dex.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-casb": {
+      "url": "https://casb.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-radar": {
+      "url": "https://radar.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-blog": {
+      "url": "https://blog.mcp.cloudflare.com/mcp"
+    },
+    "render": {
+      "url": "https://mcp.render.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${RENDER_API_KEY}"
+      }
+    }
+  }
+}

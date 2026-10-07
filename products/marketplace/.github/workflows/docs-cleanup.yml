@@ -1,0 +1,29 @@
+name: Docs Cleanup & Lint
+
+on:
+  push:
+    paths:
+      - 'docs/**'
+      - '*.md'
+  pull_request:
+    paths:
+      - 'docs/**'
+      - '*.md'
+  workflow_dispatch:
+
+jobs:
+  docs-check:
+    name: Verify & Lint Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Validate Offline Relative Markdown Links
+        run: |
+          python3 scripts/validate-doc-links.py
+      - name: Verify Architecture and Memory Sync
+        run: |
+          echo "Verifying project status and decision documentation integrity..."

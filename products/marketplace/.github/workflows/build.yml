@@ -1,0 +1,51 @@
+name: Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-frontend:
+    name: Build Frontend & Portals
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9.0.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build JS/TS workspace
+        run: pnpm build
+        env:
+          NEXT_PUBLIC_API_URL: https://api.zolexora.com/api
+      - name: Type check JS/TS packages
+        run: pnpm type-check
+
+  build-backend:
+    name: Build & Verify Backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+      - name: Install Python dependencies
+        run: |
+          pip install -r services/marketplace-api/requirements.txt
+      - name: Compile python sources
+        run: |
+          python -m compileall -q services/marketplace-api
+      - name: Verify Alembic migrations
+        run: |
+          cd services/marketplace-api
+          alembic heads
+          alembic upgrade head --sql >/dev/null

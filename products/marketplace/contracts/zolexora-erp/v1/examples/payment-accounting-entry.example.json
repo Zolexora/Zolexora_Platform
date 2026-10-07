@@ -1,0 +1,1 @@
+{"schema_version":"1.0","tenant_external_id":"customer-tenant-001","organization_external_id":"organization-001","payment_external_id":"payment-5001","order_external_id":"order-10001","payment_mode_external_id":"payment-mode-online","amount_minor":125000,"currency":"INR","status":"captured","idempotency_key":"payment:payment-5001:captured"}

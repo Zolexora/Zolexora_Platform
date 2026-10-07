@@ -1,0 +1,6 @@
+{
+  "framework": "nextjs",
+  "installCommand": "corepack enable && corepack prepare pnpm@9.0.0 --activate && pnpm install --filter @zolexora/marketplace-admin...",
+  "buildCommand": "pnpm --filter @zolexora/marketplace-admin build",
+  "outputDirectory": ".next"
+}

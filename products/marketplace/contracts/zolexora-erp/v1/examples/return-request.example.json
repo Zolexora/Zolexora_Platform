@@ -1,0 +1,1 @@
+{"schema_version":"1.0","tenant_external_id":"customer-tenant-001","organization_external_id":"organization-001","return_external_id":"return-6001","order_external_id":"order-10001","reason_code":"customer_return","amount_minor":60000,"idempotency_key":"return:return-6001:v1"}

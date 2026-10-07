@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Products — Mahila Madel</title>
+<link rel="stylesheet" href="/shared.css"/>
+</head>
+<body>
+<div id="sidebar-container"></div>
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left"><div class="topbar-title">Products</div></div>
+    <div class="topbar-right">
+      <a href="/api/products" target="_blank" class="json-btn">View JSON ↗</a>
+      <div class="time-badge" id="time">--</div>
+    </div>
+  </div>
+  <div class="content">
+    <div class="stats-grid">
+      <div class="stat-card blue"><div class="stat-top"><div class="stat-icon blue">📦</div><span class="stat-tag blue">Total</span></div><div class="stat-value" id="totalProd">--</div><div class="stat-label">Products</div></div>
+      <div class="stat-card green"><div class="stat-top"><div class="stat-icon green">✅</div><span class="stat-tag green">Available</span></div><div class="stat-value" id="inStock">--</div><div class="stat-label">In Stock</div></div>
+      <div class="stat-card orange"><div class="stat-top"><div class="stat-icon orange">❌</div><span class="stat-tag orange">Empty</span></div><div class="stat-value" id="outStock">--</div><div class="stat-label">Out of Stock</div></div>
+      <div class="stat-card purple"><div class="stat-top"><div class="stat-icon purple">⭐</div><span class="stat-tag purple">Featured</span></div><div class="stat-value" id="featCount">--</div><div class="stat-label">Featured</div></div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-title">All Products</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input class="search-input" id="searchInput" placeholder="Search..." oninput="filterProducts()"/>
+          <select class="select-box" id="catFilter" onchange="filterProducts()"><option value="">All Categories</option></select>
+          <select class="select-box" id="sortBy" onchange="filterProducts()">
+            <option value="">Sort: Default</option>
+            <option value="price-asc">Price ↑</option>
+            <option value="price-desc">Price ↓</option>
+            <option value="rating">Top Rated</option>
+          </select>
+          <a href="/api/products" target="_blank" class="json-btn">JSON ↗</a>
+        </div>
+      </div>
+      <div class="section-body">
+        <div id="productsContainer"><div class="loading"><div class="spinner"></div>Loading...</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="/shared.js"></script>
+<script>
+  initSidebar('products');
+  setInterval(() => document.getElementById('time').textContent = new Date().toLocaleTimeString(), 1000);
+  document.getElementById('time').textContent = new Date().toLocaleTimeString();
+
+  const EMOJIS = {'Jewellery':'💎','Clothing':'👗','Bags':'👜','Footwear':'👠','Accessories':'🧣','Beauty':'💄'};
+  const fmt = n => '₹' + Number(n).toLocaleString('en-IN');
+  const disc = (p,m) => Math.round(((m-p)/m)*100);
+  let allProducts = [];
+
+  async function loadProducts() {
+    try {
+      const res = await fetch('/api/products?limit=100');
+      const data = await res.json();
+      allProducts = data.products || [];
+      document.getElementById('totalProd').textContent = allProducts.length;
+      document.getElementById('inStock').textContent = allProducts.filter(p=>p.stock>0).length;
+      document.getElementById('outStock').textContent = allProducts.filter(p=>p.stock===0).length;
+      document.getElementById('featCount').textContent = allProducts.filter(p=>p.isFeatured).length;
+      const cats = [...new Set(allProducts.map(p=>p.category))];
+      const sel = document.getElementById('catFilter');
+      cats.forEach(c => { const o=document.createElement('option'); o.value=c; o.textContent=c; sel.appendChild(o); });
+      filterProducts();
+    } catch(e) {
+      document.getElementById('productsContainer').innerHTML = `<div class="loading">❌ ${e.message}</div>`;
+    }
+  }
+
+  function filterProducts() {
+    const kw = document.getElementById('searchInput').value.toLowerCase();
+    const cat = document.getElementById('catFilter').value;
+    const sort = document.getElementById('sortBy').value;
+    let filtered = allProducts.filter(p => (!kw || p.name.toLowerCase().includes(kw) || (p.brand||'').toLowerCase().includes(kw)) && (!cat || p.category===cat));
+    if(sort==='price-asc') filtered.sort((a,b)=>a.price-b.price);
+    else if(sort==='price-desc') filtered.sort((a,b)=>b.price-a.price);
+    else if(sort==='rating') filtered.sort((a,b)=>b.ratings-a.ratings);
+    if(!filtered.length){ document.getElementById('productsContainer').innerHTML='<div class="loading">No products found</div>'; return; }
+    document.getElementById('productsContainer').innerHTML = `<div class="products-grid">${filtered.map(p => {
+      const d = disc(p.price, p.mrp);
+      return `<div class="product-card">
+        <div class="product-img">${EMOJIS[p.category]||'🛍️'}${p.isFeatured?'<span class="product-badge badge-feat">⭐ Featured</span>':d>0?`<span class="product-badge badge-sale">${d}% off</span>`:''}</div>
+        <div class="product-body">
+          <div class="product-cat">${p.category}</div>
+          <div class="product-name" title="${p.name}">${p.name}</div>
+          <div class="product-brand">${p.brand||'—'}</div>
+          <div class="product-price-row">
+            <span class="product-price">${fmt(p.price)}</span>
+            ${p.mrp>p.price?`<span class="product-mrp">${fmt(p.mrp)}</span><span class="product-disc">${d}%</span>`:''}
+          </div>
+          <div class="product-footer">
+            <span class="rating-badge">${p.ratings?.toFixed(1)||'0'} ★</span>
+            <span class="stock-info ${p.stock===0?'out':p.stock<=5?'low':''}">${p.stock===0?'Out of Stock':p.stock<=5?`Only ${p.stock} left`:`${p.stock} in stock`}</span>
+          </div>
+        </div>
+      </div>`;
+    }).join('')}</div>`;
+  }
+  loadProducts();
+</script>
+</body>
+</html>

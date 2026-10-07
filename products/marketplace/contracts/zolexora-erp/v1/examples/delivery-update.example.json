@@ -1,0 +1,1 @@
+{"schema_version":"1.0","tenant_external_id":"customer-tenant-001","organization_external_id":"organization-001","order_external_id":"order-10001","delivery_external_id":"delivery-7001","status":"dispatched","occurred_at":"2026-07-15T12:30:00Z","carrier_reference":"carrier-555","idempotency_key":"delivery:delivery-7001:dispatched"}

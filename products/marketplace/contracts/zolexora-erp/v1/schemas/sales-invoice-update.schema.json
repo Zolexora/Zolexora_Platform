@@ -1,0 +1,5 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "title": "Sales invoice update", "type": "object", "additionalProperties": false,
+  "required": ["schema_version", "tenant_external_id", "organization_external_id", "order_external_id", "invoice_external_id", "status", "total_minor", "currency", "idempotency_key"],
+  "properties": {"schema_version": {"const": "1.0"}, "tenant_external_id": {"type": "string", "minLength": 1}, "organization_external_id": {"type": "string", "minLength": 1}, "order_external_id": {"type": "string", "minLength": 1}, "invoice_external_id": {"type": "string", "minLength": 1}, "status": {"enum": ["draft", "submitted", "paid", "cancelled"]}, "total_minor": {"type": "integer", "minimum": 0}, "currency": {"type": "string", "pattern": "^[A-Z]{3}$"}, "idempotency_key": {"type": "string", "minLength": 1}}
+}

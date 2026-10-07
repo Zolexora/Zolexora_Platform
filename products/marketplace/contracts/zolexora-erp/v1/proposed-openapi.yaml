@@ -1,0 +1,86 @@
+openapi: 3.1.0
+info:
+  title: Proposed Zolexora ERP Customer Integration API
+  version: 1.0.0-proposed
+  description: Proposed generic contract; not a deployed or verified ERP endpoint set.
+servers:
+  - url: https://erp-customer.example/api/integrations/v1
+paths:
+  /organizations/{organization_external_id}:
+    get:
+      operationId: getOrganization
+      parameters:
+        - $ref: '#/components/parameters/OrganizationId'
+      responses: {'200': {description: Organization reference}}
+  /items/{item_external_id}:
+    get:
+      operationId: getItem
+      parameters:
+        - {name: item_external_id, in: path, required: true, schema: {type: string}}
+      responses: {'200': {description: Item reference}}
+  /warehouses:
+    get:
+      operationId: listWarehouses
+      responses: {'200': {description: Warehouse references}}
+  /inventory-balances:
+    get:
+      operationId: getInventoryBalances
+      responses: {'200': {description: Inventory balances}}
+  /sales-orders:
+    post:
+      operationId: createSalesOrder
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: './schemas/sales-order-request.schema.json'}
+      responses: {'202': {description: Accepted idempotently}}
+  /sales-orders/{order_external_id}:
+    get:
+      operationId: getSalesOrder
+      parameters:
+        - {name: order_external_id, in: path, required: true, schema: {type: string}}
+      responses: {'200': {description: Sales order status}}
+  /returns:
+    post:
+      operationId: createReturn
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses: {'202': {description: Accepted idempotently}}
+  /accounting/payments:
+    post:
+      operationId: recordPaymentAccountingEntry
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses: {'202': {description: Accepted idempotently}}
+  /accounting/refunds:
+    post:
+      operationId: recordRefundAccountingEntry
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses: {'202': {description: Accepted idempotently}}
+  /reconciliation:
+    get:
+      operationId: getReconciliationResults
+      responses: {'200': {description: Reconciliation results}}
+components:
+  parameters:
+    OrganizationId:
+      name: organization_external_id
+      in: path
+      required: true
+      schema: {type: string, minLength: 1}
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: {type: string, minLength: 1, maxLength: 200}
+  securitySchemes:
+    customerServiceCredential:
+      type: http
+      scheme: bearer
+      description: Proposed scoped customer service credential; exact ERP mechanism remains to be agreed.
+security:
+  - customerServiceCredential: []

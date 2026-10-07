@@ -1,0 +1,63 @@
+# Clasp auth file (never commit credentials)
+.clasprc.json
+
+# Node dependencies
+node_modules/
+
+# Environment files
+.env
+.env.*
+env.local
+**/env.local
+*.env.local
+**/*.env.local
+!.env.example
+!**/.env.example
+
+# Credentials, Keys & Secrets
+*.pem
+*.key
+*.cert
+*.crt
+*.pfx
+*.p12
+*.token
+*.credentials
+credentials.json
+service_account.json
+client_secret*.json
+
+# OS and temporary files
+.DS_Store
+Thumbs.db
+
+# Wrangler local state
+.wrangler/
+**/.wrangler/
+
+# Agent local cache
+.gemini/config/.migrated
+
+# Supabase temporary files
+supabase/.temp/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+ENV/
+.pytest_cache/
+
+# Build artifacts
+dist/
+build/
+.cache/
+
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
+apps/*/backend/data/*.db
