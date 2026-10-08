@@ -37,9 +37,8 @@ Verification against the live filesystem:
 * `configs/`: Global environment configurations.
 * `docs/`: Monorepo architecture and operational documentation.
 * `scripts/`: Platform management and automation scripts.
-* `storage/`: Runtime backup staging, logs, and product asset storage (ignored from Git tracking).
 
-> **Note on "Rice Images":** `Rice Images` is NOT a root-level directory. It consists of sample storefront product image assets for ZolexoraMarketplace (`storage/ZolexoraMarketplace/Rice Images/` / `products/ZolexoraMarketplace/apps/storefronts/zolexora-shop/web/public/`).
+> **Note on "Rice Images":** `Rice Images` consists of sample storefront product image assets for ZolexoraMarketplace, now located directly in their canonical location: `products/ZolexoraMarketplace/apps/storefronts/zolexora-shop/web/public/`. The legacy root `storage/` directory has been removed.
 > **Note on Root "platform/":** There is no root-level `platform/` directory. Platform Core capabilities reside under `packages/`.
 
 ---
