@@ -1,0 +1,21 @@
+{
+  "python.defaultInterpreterPath": "/usr/local/python/current/bin/python",
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/products/ZolexoraERP/backend/frappe",
+    "${workspaceFolder}/products/ZolexoraERP/backend/erpnext",
+    "${workspaceFolder}/products/ZolexoraERP/backend/payments",
+    "${workspaceFolder}/products/ZolexoraERP/backend/zolexora_core",
+    "${workspaceFolder}/products/ZolexoraERP/backend/zolexora_branding",
+    "${workspaceFolder}/products/ZolexoraERP/backend/zolexora_platform",
+    "${workspaceFolder}/products/ZolexoraERP/backend/zolexora_integrations"
+  ],
+  "python.autoComplete.extraPaths": [
+    "${workspaceFolder}/products/ZolexoraERP/backend/frappe",
+    "${workspaceFolder}/products/ZolexoraERP/backend/erpnext",
+    "${workspaceFolder}/products/ZolexoraERP/backend/payments",
+    "${workspaceFolder}/products/ZolexoraERP/backend/zolexora_core",
+    "${workspaceFolder}/products/ZolexoraERP/backend/zolexora_branding",
+    "${workspaceFolder}/products/ZolexoraERP/backend/zolexora_platform",
+    "${workspaceFolder}/products/ZolexoraERP/backend/zolexora_integrations"
+  ]
+}
