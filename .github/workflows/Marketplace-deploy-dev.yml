@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: Development – server
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build & Package API Container
         env:
           ADMIN_URL: ${{ secrets.ADMIN_URL }}
@@ -55,7 +55,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: Development – marketplace-admin
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build & Deploy Admin Web
         env:
           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
@@ -68,7 +68,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: Development – zolexora-shop
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build & Deploy Zolexora Shop
         env:
           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
@@ -81,7 +81,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: Development – mahila-madel
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build & Deploy Mahila Madel
         env:
           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
@@ -94,7 +94,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: Development – zolexora-seller
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build & Deploy Seller Portal
         env:
           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
