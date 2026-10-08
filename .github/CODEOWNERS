@@ -4,6 +4,7 @@
 # Backend Services
 /services/marketplace-api/ @Zolexora/backend-team
 /contracts/ @Zolexora/backend-team
+/backend/ @TheTextileCare
 
 # Frontend Storefronts & Portals
 /apps/storefronts/zolexora-shop/ @Zolexora/frontend-team
@@ -11,6 +12,14 @@
 /apps/portals/seller/ @Zolexora/frontend-team
 /apps/portals/marketplace-admin/ @Zolexora/frontend-team
 /packages/ @Zolexora/frontend-team
+
+# TheTextileCare Frontend
+/apps/admin-web/ @TheTextileCare
+/apps/marketplace-web/ @TheTextileCare
+/apps/seller-web/ @TheTextileCare
+/apps/driver-mobile/ @TheTextileCare
+/apps/marketplace-mobile/ @TheTextileCare
+/apps/seller-mobile/ @TheTextileCare
 
 # Infrastructure & CI/CD
 /infrastructure/ @Zolexora/devops-team
