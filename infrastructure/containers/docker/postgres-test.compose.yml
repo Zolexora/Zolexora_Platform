@@ -1,0 +1,29 @@
+name: zolexora-postgres-test
+
+services:
+  postgres:
+    image: postgres:16.4-alpine
+    environment:
+      POSTGRES_DB: marketplace_test
+      POSTGRES_USER: marketplace_test
+      POSTGRES_PASSWORD: marketplace-test-only
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U marketplace_test -d marketplace_test"]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+    ports:
+      - "127.0.0.1:55433:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+
+  redis:
+    image: redis:7.4.1-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--databases", "2"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+    ports:
+      - "127.0.0.1:55434:6379"

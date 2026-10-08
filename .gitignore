@@ -7,7 +7,7 @@ __pycache__/
 .env.local
 .env.production
 .env.staging
-.env
+!.env
 
 # Frappe / bench
 sites/
@@ -26,13 +26,11 @@ docker-compose.override.yml
 .trivy-cache/
 .trivy-tmp/
 
-# VS Code
-.vscode/
+
 
 # OS
 .DS_Store
 .idea/
 *.swp
 
-# Agents
-.agents/
+
