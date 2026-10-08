@@ -75,7 +75,7 @@ async def test_exact_customer_hosts_resolve(host, key):
 async def test_development_hosts_and_ports_are_environment_scoped():
     dev = build_registry(development=True)
     assert (await resolve_storefront(request([("host", "shop.zolexora.local")]), dev)).key == StorefrontKey.ZOLEXORA_SHOP
-    assert dev.surface_for_host("localhost:8000") == ApplicationSurface.SHARED_API
+    assert dev.surface_for_host("localhost:4100") == ApplicationSurface.SHARED_API
     with pytest.raises(StorefrontResolutionError):
         await resolve_storefront(request([("host", "shop.zolexora.local")]), build_registry(development=False))
 

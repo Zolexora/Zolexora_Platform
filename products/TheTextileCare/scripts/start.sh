@@ -318,7 +318,7 @@ get_port_for_app() {
     admin-web) echo 3000 ;;
     marketplace-web) echo 3001 ;;
     seller-web) echo 3002 ;;
-    backend) echo 8000 ;;
+    backend) echo 4010 ;;
     driver-mobile|marketplace-mobile|seller-mobile) echo 8081 ;;
     *) echo "" ;;
   esac
@@ -407,7 +407,7 @@ if [ "$DRY_RUN" = true ]; then
   fi
 
   if [ "$BACKEND_SELECTED" = true ]; then
-    echo "  - (cd backend && $UVICORN_BIN app.main:app --reload --host 0.0.0.0 --port ${BACKEND_PORT:-8000})"
+    echo "  - (cd backend && $UVICORN_BIN app.main:app --reload --host 0.0.0.0 --port ${BACKEND_PORT:-4010})"
   fi
 
   for mobile_app in "${SELECTED_MOBILE[@]}"; do
@@ -437,11 +437,11 @@ fi
 
 # Start Backend application
 if [ "$BACKEND_SELECTED" = true ]; then
-  echo "==> Starting backend application on port ${BACKEND_PORT:-8000}..."
+  echo "==> Starting backend application on port ${BACKEND_PORT:-4010}..."
   (
     export PYTHONUNBUFFERED=1
     cd "$REPO_ROOT/backend"
-    exec $UVICORN_BIN app.main:app --reload --host 0.0.0.0 --port "${BACKEND_PORT:-8000}" 2>&1 | while IFS= read -r line; do
+    exec $UVICORN_BIN app.main:app --reload --host 0.0.0.0 --port "${BACKEND_PORT:-4010}" 2>&1 | while IFS= read -r line; do
       printf "[backend] %s\n" "$line"
     done
   ) &

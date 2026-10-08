@@ -79,21 +79,21 @@ def upgrade() -> None:
     op.create_check_constraint('users_auth_version_positive', 'users', 'auth_version >= 1')
     op.execute("""
         INSERT INTO role (id, role_key, display_name) VALUES
-        ('10000000-0000-4000-8000-000000000001', 'buyer', 'Buyer'),
-        ('20000000-0000-4000-8000-000000000002', 'seller', 'Seller'),
-        ('30000000-0000-4000-8000-000000000003', 'admin', 'Administrator')
+        ('10000000-0000-4000-4100-000000000001', 'buyer', 'Buyer'),
+        ('20000000-0000-4000-4100-000000000002', 'seller', 'Seller'),
+        ('30000000-0000-4000-4100-000000000003', 'admin', 'Administrator')
     """)
     op.execute("""
         INSERT INTO permission (id, permission_key, description) VALUES
-        ('40000000-0000-4000-8000-000000000001', 'marketplace.buy', 'Use buyer commerce features'),
-        ('40000000-0000-4000-8000-000000000002', 'marketplace.sell', 'Use seller-owned marketplace features'),
-        ('40000000-0000-4000-8000-000000000003', 'marketplace.admin', 'Use marketplace administration features')
+        ('40000000-0000-4000-4100-000000000001', 'marketplace.buy', 'Use buyer commerce features'),
+        ('40000000-0000-4000-4100-000000000002', 'marketplace.sell', 'Use seller-owned marketplace features'),
+        ('40000000-0000-4000-4100-000000000003', 'marketplace.admin', 'Use marketplace administration features')
     """)
     op.execute("""
         INSERT INTO role_permission (id, role_id, permission_id) VALUES
-        ('50000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001', '40000000-0000-4000-8000-000000000001'),
-        ('50000000-0000-4000-8000-000000000002', '20000000-0000-4000-8000-000000000002', '40000000-0000-4000-8000-000000000002'),
-        ('50000000-0000-4000-8000-000000000003', '30000000-0000-4000-8000-000000000003', '40000000-0000-4000-8000-000000000003')
+        ('50000000-0000-4000-4100-000000000001', '10000000-0000-4000-4100-000000000001', '40000000-0000-4000-4100-000000000001'),
+        ('50000000-0000-4000-4100-000000000002', '20000000-0000-4000-4100-000000000002', '40000000-0000-4000-4100-000000000002'),
+        ('50000000-0000-4000-4100-000000000003', '30000000-0000-4000-4100-000000000003', '40000000-0000-4000-4100-000000000003')
     """)
     op.execute("""
         INSERT INTO user_profile (id, user_id, name, coin_balance, picture, identity_source, created_at, updated_at)
@@ -103,9 +103,9 @@ def upgrade() -> None:
         INSERT INTO user_role (id, user_id, role_id, created_at, updated_at)
         SELECT id, id,
                CASE role
-                   WHEN 'seller' THEN '20000000-0000-4000-8000-000000000002'::uuid
-                   WHEN 'admin' THEN '30000000-0000-4000-8000-000000000003'::uuid
-                   ELSE '10000000-0000-4000-8000-000000000001'::uuid
+                   WHEN 'seller' THEN '20000000-0000-4000-4100-000000000002'::uuid
+                   WHEN 'admin' THEN '30000000-0000-4000-4100-000000000003'::uuid
+                   ELSE '10000000-0000-4000-4100-000000000001'::uuid
                END,
                created_at, updated_at
         FROM users

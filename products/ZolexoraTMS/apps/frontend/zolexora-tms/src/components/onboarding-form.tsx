@@ -133,7 +133,7 @@ export function OnboardingForm() {
   async function completeBackendOnboarding(activeSession: any) {
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/onboarding`,
+        `${import.meta.env.VITE_API_URL || 'http://localhost:4030'}/api/v1/onboarding`,
         {
           method: 'POST',
           headers: {
@@ -323,7 +323,7 @@ export function OnboardingForm() {
                 type="button"
                 onClick={async () => {
                   try {
-                    const res = await fetch("http://localhost:8000/api/v1/auth/resend-otp", {
+                    const res = await fetch("http://localhost:4030/api/v1/auth/resend-otp", {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify({ email })

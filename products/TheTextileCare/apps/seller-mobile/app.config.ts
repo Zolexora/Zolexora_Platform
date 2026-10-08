@@ -24,6 +24,6 @@ export default {
       favicon: './assets/favicon-32x32.png',
     },
     assetBundlePatterns: ['**/*'],
-    extra: { apiBaseUrl: process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:8000' },
+    extra: { apiBaseUrl: process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:4010' },
   },
 };

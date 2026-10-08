@@ -105,7 +105,7 @@ class MediatorAgent(BaseAgent):
 
     LLM call uses:
         - temperature=0.2  (deterministic merge decisions)
-        - max_tokens=8000  (large budget for multi-file output)
+        - max_tokens=4090  (large budget for multi-file output)
         - up to 3 retries  (via BaseAgent.call_llm tenacity decorator)
     """
 
@@ -159,7 +159,7 @@ class MediatorAgent(BaseAgent):
         raw_response = await self._call_llm(
             system_prompt=MEDIATOR_SYSTEM_PROMPT,
             user_prompt=user_prompt,
-            max_tokens=8000,
+            max_tokens=4090,
             model_override=kwargs.get("model", ""),
         )
 

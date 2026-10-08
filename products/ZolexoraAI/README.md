@@ -134,7 +134,7 @@ docker run -d --name redis --network swarm-net -p 6379:6379 redis:alpine
 
 # build and run backend
 docker build -f infra/Dockerfile -t swarm-factory-backend:latest .
-docker run -d --name swarm-backend --network swarm-net --env-file .env -p 8000:8000 swarm-factory-backend:latest
+docker run -d --name swarm-backend --network swarm-net --env-file .env -p 4090:4090 swarm-factory-backend:latest
 ```
 
 (Optional) Frontend (if frontend/Dockerfile exists):
@@ -151,7 +151,7 @@ docker compose -f docker.yaml up --build -d
 ```
 
 Frontend: http://localhost:8080
-Backend: http://localhost:8000
+Backend: http://localhost:4090
 
 Notes:
 - If any Dockerfile paths differ, update the -f / build.context paths accordingly.
@@ -187,7 +187,7 @@ Notes:
 
 ### Frontend Vite dev proxy (local development)
 
-The frontend uses Vite's dev proxy to forward /api and /ws to the backend on the same origin. For local/Codespace development leave the following variables empty so the frontend automatically proxies requests to the running backend (localhost:8000).
+The frontend uses Vite's dev proxy to forward /api and /ws to the backend on the same origin. For local/Codespace development leave the following variables empty so the frontend automatically proxies requests to the running backend (localhost:4090).
 
 ```env
 VITE_API_BASE_URL=
@@ -197,7 +197,7 @@ VITE_WS_URL=
 VITE_API_KEY=swarm-factory-dev-key
 ```
 
-The empty values tell Vite to proxy /api and /ws requests to the same origin — meaning the frontend automatically hits localhost:8000 without hardcoding any host. This is the correct setup for local/Codespace dev.
+The empty values tell Vite to proxy /api and /ws requests to the same origin — meaning the frontend automatically hits localhost:4090 without hardcoding any host. This is the correct setup for local/Codespace dev.
 
 What each variable means — fill only if deploying to production:
 

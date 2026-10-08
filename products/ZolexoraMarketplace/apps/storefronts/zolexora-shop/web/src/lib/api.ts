@@ -18,10 +18,10 @@ function resolveApiBaseUrl() {
   if (process.env.NODE_ENV !== "production") {
     const hostname = typeof window !== "undefined" ? window.location.hostname : "localhost";
     if (hostname.endsWith(".github.dev") || hostname.endsWith(".app.github.dev")) {
-      const apiHost = hostname.replace(/-300[0-9]/, "-8000");
+      const apiHost = hostname.replace(/-300[0-9]/, "-4100");
       return `https://${apiHost}/api`;
     }
-    return `http://${hostname}:8000/api`;
+    return `http://${hostname}:4100/api`;
   }
   throw new Error("NEXT_PUBLIC_API_URL is required for production builds.");
 }

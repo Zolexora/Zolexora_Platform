@@ -6,7 +6,7 @@ import { Send, ArrowLeft, Loader2 }  from 'lucide-react'
 import { chatAPI }                   from '@/services/api'
 import { useAuthStore }              from '@/store/authStore'
 
-const SOCKET_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
+const SOCKET_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:4020'
 
 export default function ChatPage() {
   const { roomId } = useParams<{ roomId?: string }>()

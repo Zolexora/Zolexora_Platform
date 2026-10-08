@@ -67,7 +67,7 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config)
   SwaggerModule.setup('docs', app, document)
 
-  const port = process.env.PORT ?? 8000
+  const port = process.env.PORT ?? 4020
   await app.listen(port)
   console.log(`🚀 Rent & Stay API running on http://localhost:${port}`)
   console.log(`📖 Swagger docs at http://localhost:${port}/docs`)

@@ -153,8 +153,8 @@ def build_registry(*, development: bool) -> StorefrontRegistry:
         mahila_origins.update({"http://localhost:3003", "http://127.0.0.1:3003"})
         surface_hosts.update(
             {
-                "localhost:8000": ApplicationSurface.SHARED_API,
-                "127.0.0.1:8000": ApplicationSurface.SHARED_API,
+                "localhost:4100": ApplicationSurface.SHARED_API,
+                "127.0.0.1:4100": ApplicationSurface.SHARED_API,
                 "localhost:3001": ApplicationSurface.SELLER_PORTAL,
                 "127.0.0.1:3001": ApplicationSurface.SELLER_PORTAL,
                 "localhost:3002": ApplicationSurface.MARKETPLACE_ADMIN,

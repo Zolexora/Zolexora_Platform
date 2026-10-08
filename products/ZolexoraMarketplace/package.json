@@ -2,7 +2,7 @@
   "name": "zolexora",
   "private": true,
   "scripts": {
-    "dev:backend": "cd services/marketplace-api && node ../../scripts/py-exec.mjs -m uvicorn main:app --reload --port 8000",
+    "dev:backend": "cd services/marketplace-api && node ../../scripts/py-exec.mjs -m uvicorn main:app --reload --port 4100",
     "dev:zolexora-shop": "pnpm --filter @zolexora/storefront-zolexora-shop dev",
     "dev:mahila-madel": "pnpm --filter @zolexora/storefront-mahila-madel dev",
     "dev:seller": "pnpm --filter @zolexora/seller-portal dev",

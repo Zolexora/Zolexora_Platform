@@ -8,7 +8,7 @@
  *
  * Base URL defaults to the same origin in production.
  * Override with the VITE_API_BASE_URL or VITE_API_URL env var during development:
- *   VITE_API_BASE_URL=http://localhost:8000
+ *   VITE_API_BASE_URL=http://localhost:4090
  */
 
 // ─── Config ───────────────────────────────────────────────────────────────────

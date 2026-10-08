@@ -187,7 +187,7 @@ async def compress_session(job_id: str) -> bool:
             "quality_score": session.get("quality_score"),
             "status": session.get("status", "unknown"),
         }
-        session_json = json.dumps(compact_input, indent=2)[:8000]  # cap at 8 KB
+        session_json = json.dumps(compact_input, indent=2)[:4090]  # cap at 8 KB
 
         summary = await _call_phi4(session_json)
 

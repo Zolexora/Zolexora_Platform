@@ -33,7 +33,7 @@ class FakeUserRepository:
 
     async def create_identity(self, **identity):
         self.created.append(identity)
-        return {"id": "00000000-0000-4000-8000-000000000001", **identity, "is_active": True}
+        return {"id": "00000000-0000-4000-4100-000000000001", **identity, "is_active": True}
 
     async def update_password_hash(self, user_id, password_hash, *, revoke_sessions=False):
         self.password_updates.append((user_id, password_hash, revoke_sessions))
@@ -80,7 +80,7 @@ async def test_seed_creates_canonical_postgres_admin(monkeypatch):
 @pytest.mark.asyncio
 async def test_seed_rotates_existing_admin_password_and_role(monkeypatch):
     _reset()
-    FakeUserRepository.existing = {"id": "00000000-0000-4000-8000-000000000002"}
+    FakeUserRepository.existing = {"id": "00000000-0000-4000-4100-000000000002"}
     monkeypatch.setattr(seed.settings, "DEFAULT_ADMIN_EMAIL", "admin@example.invalid")
     monkeypatch.setattr(seed.settings, "DEFAULT_ADMIN_PASSWORD", "new-test-password-1")
     monkeypatch.setattr("shared.database.postgres.is_pool_ready", lambda: True)

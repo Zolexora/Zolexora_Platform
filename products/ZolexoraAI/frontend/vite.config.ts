@@ -26,12 +26,12 @@ export default defineConfig({
     proxy: {
       // What does this do? Forwards all /api/* requests to the FastAPI backend.
       "/api": {
-        target: "http://localhost:8000",
+        target: "http://localhost:4090",
         changeOrigin: true,
       },
       // What does this do? Upgrades /ws/* requests to WebSocket connections.
       "/ws": {
-        target: "ws://localhost:8000",
+        target: "ws://localhost:4090",
         ws: true,
         changeOrigin: true,
       },

@@ -8,7 +8,7 @@ validateStorefrontKey();
 function resolveApiBaseUrl() {
   const configured = process.env.EXPO_PUBLIC_API_URL?.trim();
   if (configured) return configured;
-  if (__DEV__) return "http://localhost:8000/api";
+  if (__DEV__) return "http://localhost:4100/api";
   throw new Error("EXPO_PUBLIC_API_URL is required for production builds.");
 }
 

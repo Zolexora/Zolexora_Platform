@@ -40,7 +40,7 @@ class CoderOutput(BaseModel):
                        Example: ["fastapi==0.104.0", "sqlalchemy==2.0.0"]
         entry_point:   Relative path to the main runnable file, e.g. "main.py".
         start_command: Shell command to start the application, e.g.
-                       "uvicorn main:app --host 0.0.0.0 --port 8000".
+                       "uvicorn main:app --host 0.0.0.0 --port 4090".
     """
 
     files: dict[str, str]
@@ -67,7 +67,7 @@ class CoderAgent(BaseAgent):
 
     LLM call uses:
         - temperature=0.2  (consistent, deterministic code output)
-        - max_tokens=8000  (large budget for multi-file code generation)
+        - max_tokens=4090  (large budget for multi-file code generation)
         - up to 3 retries  (via BaseAgent.call_llm's tenacity decorator)
     """
 
@@ -118,7 +118,7 @@ class CoderAgent(BaseAgent):
         raw_response = await self._call_llm(
             system_prompt=CODER_SYSTEM_PROMPT,
             user_prompt=user_prompt,
-            max_tokens=8000,
+            max_tokens=4090,
             model_override=kwargs.get("model", ""),
         )
 

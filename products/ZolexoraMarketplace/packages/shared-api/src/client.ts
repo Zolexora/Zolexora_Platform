@@ -8,10 +8,10 @@ function resolveDefaultApiUrl() {
   if (process.env.NODE_ENV !== "production") {
     const host = typeof window !== "undefined" ? window.location.hostname : "localhost";
     if (host.endsWith(".github.dev") || host.endsWith(".app.github.dev")) {
-      const apiHost = host.replace(/-300[0-9]/, "-8000");
+      const apiHost = host.replace(/-300[0-9]/, "-4100");
       return `https://${apiHost}/api`;
     }
-    return `http://${host}:8000/api`;
+    return `http://${host}:4100/api`;
   }
   throw new Error("NEXT_PUBLIC_API_URL or EXPO_PUBLIC_API_URL is required for production builds.");
 }

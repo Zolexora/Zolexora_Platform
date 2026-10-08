@@ -414,11 +414,11 @@ async def test_readiness_fails_safely_when_redis_is_unavailable(runtime, monkeyp
 def _export() -> dict:
     return {
         "auth_users": [
-            {"id": "00000000-0000-4000-8000-000000000010", "email": "One@Example.invalid", "email_confirmed_at": "2026-01-01"},
+            {"id": "00000000-0000-4000-4100-000000000010", "email": "One@Example.invalid", "email_confirmed_at": "2026-01-01"},
             {"id": "legacy-id", "email": "two@example.invalid"},
         ],
         "public_users": [
-            {"id": "00000000-0000-4000-8000-000000000010", "name": "One", "role": "viewer"},
+            {"id": "00000000-0000-4000-4100-000000000010", "name": "One", "role": "viewer"},
             {"id": "legacy-id", "name": "Two", "role": "viewer"},
         ],
     }
@@ -428,7 +428,7 @@ def test_offline_identity_mapping_is_deterministic_and_preserves_valid_uuid():
     first = map_export(_export())
     second = map_export(json.loads(json.dumps(_export())))
     assert first == second
-    assert first["mapped"][0]["user_id"] == "00000000-0000-4000-8000-000000000010"
+    assert first["mapped"][0]["user_id"] == "00000000-0000-4000-4100-000000000010"
     assert uuid.UUID(first["mapped"][1]["user_id"]) == uuid.UUID(map_export(_export())["mapped"][1]["user_id"])
 
 

@@ -66,7 +66,7 @@ class TestAgent(BaseAgent):
 
     LLM call uses:
         - temperature=0.2  (consistent, deterministic test output)
-        - max_tokens=8000  (large budget for multi-file test generation)
+        - max_tokens=4090  (large budget for multi-file test generation)
         - up to 3 retries  (via BaseAgent.call_llm's tenacity decorator)
     """
 
@@ -123,7 +123,7 @@ class TestAgent(BaseAgent):
         raw_response = await self._call_llm(
             system_prompt=TEST_WRITER_SYSTEM_PROMPT,
             user_prompt=user_prompt,
-            max_tokens=8000,
+            max_tokens=4090,
             model_override=kwargs.get("model", ""),
         )
 

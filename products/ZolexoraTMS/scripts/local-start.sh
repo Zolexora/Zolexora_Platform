@@ -100,8 +100,8 @@ trap cleanup SIGINT SIGTERM
 
 if [[ "$SERVICES" == *"backend"* ]]; then
     ensure_backend_environment
-    echo "Starting Backend API (port 8000)..."
-    PYTHONPATH=apps/backend pnpm dotenvx run -- apps/backend/.venv/bin/python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000 --app-dir apps/backend &
+    echo "Starting Backend API (port 4030)..."
+    PYTHONPATH=apps/backend pnpm dotenvx run -- apps/backend/.venv/bin/python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 4030 --app-dir apps/backend &
     PIDS="$PIDS $!"
 fi
 
@@ -127,7 +127,7 @@ if [[ "$SERVICES" == *"admin"* ]]; then
     echo "- Admin Dashboard: http://localhost:3001"
 fi
 if [[ "$SERVICES" == *"backend"* ]]; then
-    echo "- Backend API: http://localhost:8000/docs"
+    echo "- Backend API: http://localhost:4030/docs"
 fi
 echo "======================================"
 

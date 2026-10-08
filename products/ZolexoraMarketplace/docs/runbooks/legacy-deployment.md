@@ -20,7 +20,7 @@ Create a service from this repository with:
 - Root directory: `backend`
 - Build type: Dockerfile
 - Dockerfile: `services/marketplace-api/Dockerfile`
-- Port: `8000`
+- Port: `4100`
 - Health check path: `/api/health`
 
 Set these required environment variables:

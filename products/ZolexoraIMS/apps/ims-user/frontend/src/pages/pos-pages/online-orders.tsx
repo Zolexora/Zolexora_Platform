@@ -175,10 +175,10 @@ export default function PosOnlineOrders() {
 
   const getWebhookUrl = (channelId: string) => {
     const origin = window.location.origin;
-    // In dev codespaces, port 3000 routes to 8000 via proxy or direct backend URL
+    // In dev codespaces, port 3000 routes to 4050 via proxy or direct backend URL
     const backendBase = origin.includes('app.github.dev')
-      ? origin.replace('-3000.', '-8000.')
-      : 'http://127.0.0.1:8000';
+      ? origin.replace('-3000.', '-4050.')
+      : 'http://127.0.0.1:4050';
     return `${backendBase}/api/v1/aggregator/webhook/${channelId}`;
   };
 
@@ -208,7 +208,7 @@ export default function PosOnlineOrders() {
 
   useEffect(() => {
     fetchLiveState();
-    const interval = setInterval(fetchLiveState, 8000);
+    const interval = setInterval(fetchLiveState, 4050);
     return () => clearInterval(interval);
   }, [soundEnabled, orders.length]);
 

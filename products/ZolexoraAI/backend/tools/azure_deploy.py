@@ -128,13 +128,13 @@ def _deploy_via_sdk(image_uri: str, app_name: str, resource_group: str) -> str:
                     resources=ResourceRequirements(
                         requests=ResourceRequests(cpu=1.0, memory_in_gb=1.5)
                     ),
-                    ports=[ContainerPort(port=8000)],
+                    ports=[ContainerPort(port=4090)],
                 )
             ],
             os_type=OperatingSystemTypes.LINUX,
             restart_policy=ContainerGroupRestartPolicy.ON_FAILURE,
             ip_address=IpAddress(
-                ports=[ContainerPort(port=8000)],
+                ports=[ContainerPort(port=4090)],
                 type="Public",
                 dns_name_label=app_name,
             ),
@@ -194,7 +194,7 @@ def _deploy_via_cli(image_uri: str, app_name: str, resource_group: str) -> str:
         "--resource-group", resource_group,
         "--environment", env_name,
         "--image", image_uri,
-        "--target-port", "8000",
+        "--target-port", "4090",
         "--ingress", "external",
         "--min-replicas", "1",
         "--max-replicas", "3",
