@@ -92,7 +92,6 @@
 │       ├── docs
 │       ├── infrastructure
 │       └── scripts
-├── Rice Images
 ├── scripts
 └── storage
     ├── backups
