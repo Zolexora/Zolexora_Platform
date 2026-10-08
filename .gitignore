@@ -8,6 +8,7 @@ __pycache__/
 .env.production
 .env.staging
 !.env
+.env.keys
 
 # Frappe / bench
 sites/
