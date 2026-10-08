@@ -46,7 +46,7 @@ hyperframe==6.1.0
 idna==3.11
 iniconfig==2.3.0
 ipykernel==7.2.0
-ipython==9.11.0
+ipython
 ipython_pygments_lexers==1.1.1
 isoduration==20.11.0
 jedi==0.19.2
