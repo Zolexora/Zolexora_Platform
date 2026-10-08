@@ -4,10 +4,11 @@
 FROM node:20-alpine AS deps
 RUN corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
-COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
-COPY apps/marketplace-mobile/package.json   ./apps/marketplace-mobile/
-COPY packages/api-client/package.json       ./packages/api-client/
-COPY packages/config/package.json           ./packages/config/
+COPY packages/api-contracts /packages/api-contracts
+COPY products/TheTextileCare/pnpm-workspace.yaml products/TheTextileCare/pnpm-lock.yaml products/TheTextileCare/package.json ./
+COPY products/TheTextileCare/apps/marketplace-mobile/package.json   ./apps/marketplace-mobile/
+COPY products/TheTextileCare/packages/api-client/package.json       ./packages/api-client/
+COPY products/TheTextileCare/packages/config/package.json           ./packages/config/
 RUN pnpm install --frozen-lockfile
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -16,7 +17,7 @@ RUN pnpm install --frozen-lockfile
 # ─────────────────────────────────────────────────────────────────────────────
 FROM deps AS dev
 WORKDIR /app
-COPY . .
+COPY products/TheTextileCare .
 ENV EXPO_PUBLIC_API_BASE_URL=${EXPO_PUBLIC_API_BASE_URL:-http://localhost:8000} \
     EXPO_NO_DOTENV=1
 EXPOSE 8081 19000 19001 19002

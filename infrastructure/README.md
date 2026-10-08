@@ -70,9 +70,9 @@ infrastructure/
 | **Deployment** | [`deployment/`](./deployment/) | Bare-metal/VPS deployment engine, system diagnostics, and disaster recovery. |
 | **Supabase** | [`supabase/`](./supabase/) | Centralized Supabase local development and migration management. |
 
-## Compatibility Symlinks
+## Canonical Paths and Compatibility Symlinks
 
 For seamless backward compatibility with existing build tooling and workflows:
 - `infrastructure/compose` -> `containers/compose`
 - `infrastructure/docker` -> `containers/docker`
-- `infrastructure/ZolexoraDeployment` -> `deployment`
+- `infrastructure/deployment/` is the canonical deployment directory (legacy `infrastructure/ZolexoraDeployment` removed).
