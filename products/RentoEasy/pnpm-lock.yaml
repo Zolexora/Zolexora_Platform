@@ -40,12 +40,6 @@ importers:
         specifier: ^5.4.0
         version: 5.9.3
 
-  ../../packages/api-contracts:
-    devDependencies:
-      typescript:
-        specifier: ^5.0.0
-        version: 5.9.3
-
   apps/web-admin:
     dependencies:
       '@rent-stay/types':
@@ -229,8 +223,8 @@ importers:
   packages/shared-types:
     dependencies:
       '@zolexora/api-contracts':
-        specifier: workspace:*
-        version: link:../../../../packages/api-contracts
+        specifier: file:../../../../packages/api-contracts
+        version: file:../../packages/api-contracts
 
   packages/shared-utils: {}
 
@@ -1607,6 +1601,9 @@ packages:
 
   '@xtuc/long@4.2.2':
     resolution: {integrity: sha512-NuHqBY1PB/D8xU6s/thBgOAiAP7HOYDQ32+BFZILJ8ivkUkAHQnWfn6WhL79Owj1qmUnoN/YPhktdIoucipkAQ==}
+
+  '@zolexora/api-contracts@file:../../packages/api-contracts':
+    resolution: {directory: ../../packages/api-contracts, type: directory}
 
   abort-controller@3.0.0:
     resolution: {integrity: sha512-h8lQ8tacZYnR3vNQTgibj+tODHI5/+l06Au2Pcriv/Gmet0eaj4TwWH41sO9wnHDiQsEj19q0drzdWdeAHtweg==}
@@ -5260,6 +5257,8 @@ snapshots:
   '@xtuc/ieee754@1.2.0': {}
 
   '@xtuc/long@4.2.2': {}
+
+  '@zolexora/api-contracts@file:../../packages/api-contracts': {}
 
   abort-controller@3.0.0:
     dependencies:

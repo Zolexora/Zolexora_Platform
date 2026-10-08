@@ -8,6 +8,6 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@zolexora/api-contracts": "workspace:*"
+    "@zolexora/api-contracts": "file:../../../../packages/api-contracts"
   }
 }

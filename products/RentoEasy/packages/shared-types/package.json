@@ -8,6 +8,6 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@zolexora/api-contracts": "workspace:*"
+    "@zolexora/api-contracts": "file:../../../../packages/api-contracts"
   }
 }
