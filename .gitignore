@@ -37,3 +37,4 @@ docker-compose.override.yml
 
 Dockerfile.frontend
 .env.encrypted.backup
+.pnpm-store/
