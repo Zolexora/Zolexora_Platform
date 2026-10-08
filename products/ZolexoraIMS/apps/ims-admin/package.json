@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "deploy": "npx wrangler deploy",
-    "dev": "npx wrangler dev"
+    "dev": "npx wrangler dev --port 8787"
   },
   "dependencies": {},
   "devDependencies": {

@@ -4,7 +4,7 @@
   "description": "Zolexora IMS — Multi-Tenant Business Inventory Application",
   "main": "worker.js",
   "scripts": {
-    "dev": "wrangler dev",
+    "dev": "wrangler dev --port 8788",
     "deploy": "wrangler deploy",
     "kv:create": "wrangler kv namespace create SESSION_KV",
     "kv:create:preview": "wrangler kv namespace create SESSION_KV --preview",
