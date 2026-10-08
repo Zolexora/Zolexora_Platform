@@ -21,6 +21,7 @@ class PaymentOrchestrationRepository:
             """
             INSERT INTO payment_webhook_receipt (id, storefront_id, provider, external_event_id, status, payload, signature)
             VALUES ($1, $2, $3, $4, $5, $6, $7)
+            ON CONFLICT (provider, external_event_id) DO NOTHING
             RETURNING id, status
             """,
             uuid.uuid4(), storefront_id, provider, external_event_id, status, json.dumps(payload), signature

@@ -74,7 +74,7 @@ log "INFO" "starting healthcheck for $SITE"
 check "Docker Compose services are running and healthy" bash -c \
   'docker compose -f compose.yaml ps --format json | python3 -c '"'"'import json,sys; bad=[]; [bad.append(o.get("Service","unknown")) for line in sys.stdin if line.strip() for o in [json.loads(line)] if o.get("State")!="running" or o.get("Health")=="unhealthy"]; print(",".join(bad)); sys.exit(1 if bad else 0)'"'"
 
-check "MariaDB connectivity" compose_exec mariadb mariadb-admin ping -h localhost -uroot "-p${MYSQL_ROOT_PASSWORD}"
+check "MariaDB connectivity" compose_exec mariadb env MYSQL_PWD="${MYSQL_ROOT_PASSWORD}" mariadb-admin ping -h localhost -uroot
 check "Redis cache ping" compose_exec redis-cache redis-cli ping
 check "Redis queue ping" compose_exec redis-queue redis-cli ping
 check "Redis socketio ping" compose_exec redis-socketio redis-cli ping

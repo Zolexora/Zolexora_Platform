@@ -119,61 +119,65 @@ class InventoryRepository:
         return dict(reservation)
 
     async def release_expired_reservations(self) -> int:
-        rows = await self.connection.fetch(
-            """
-            UPDATE inventory_reservation
-            SET status = 'EXPIRED', updated_at = now()
-            WHERE status = 'ACTIVE' AND expires_at < now()
-            RETURNING id, variant_id, organization_id, quantity
-            """
-        )
+        async with self.connection.transaction():
+            rows = await self.connection.fetch(
+                """
+                UPDATE inventory_reservation
+                SET status = 'EXPIRED', updated_at = now()
+                WHERE status = 'ACTIVE' AND expires_at < now()
+                RETURNING id, variant_id, organization_id, quantity
+                """
+            )
 
-        count = 0
-        for row in rows:
+            count = 0
+            for row in rows:
+                await self.connection.execute(
+                    """
+                    UPDATE inventory_ledger
+                    SET reserved_quantity = reserved_quantity - $1,
+                        updated_at = now()
+                    WHERE variant_id = $2 AND organization_id = $3
+                    """,
+                    row["quantity"], row["variant_id"], row["organization_id"],
+                )
+                count += 1
+
+            return count
+
+    async def consume_reservation(self, reservation_id: uuid.UUID, quantity: int) -> dict:
+        async with self.connection.transaction():
+            reservation = await self.connection.fetchrow(
+                """
+                UPDATE inventory_reservation
+                SET status = 'CONSUMED', updated_at = now()
+                WHERE id = $1 AND status = 'ACTIVE'
+                RETURNING id, variant_id, organization_id, quantity, reference_id
+                """,
+                reservation_id,
+            )
+
+            if not reservation:
+                raise ValueError("Reservation not found or not active")
+
+            consume_qty = min(quantity, reservation["quantity"])
+
             await self.connection.execute(
                 """
                 UPDATE inventory_ledger
                 SET reserved_quantity = reserved_quantity - $1,
+                    on_hand_quantity = on_hand_quantity - $2,
                     updated_at = now()
-                WHERE variant_id = $2 AND organization_id = $3
+                WHERE variant_id = $3 AND organization_id = $4
                 """,
-                row["quantity"], row["variant_id"], row["organization_id"],
+                reservation["quantity"], consume_qty, reservation["variant_id"], reservation["organization_id"],
             )
-            count += 1
 
-        return count
+            await self.connection.execute(
+                """
+                INSERT INTO inventory_audit_log (id, variant_id, organization_id, change_quantity, reason, reference_id)
+                VALUES ($1, $2, $3, $4, $5, $6)
+                """,
+                uuid.uuid4(), reservation["variant_id"], reservation["organization_id"], -consume_qty, "Consumed reservation", reservation["reference_id"],
+            )
 
-    async def consume_reservation(self, reservation_id: uuid.UUID, quantity: int) -> dict:
-        reservation = await self.connection.fetchrow(
-            """
-            UPDATE inventory_reservation
-            SET status = 'CONSUMED', updated_at = now()
-            WHERE id = $1 AND status = 'ACTIVE'
-            RETURNING id, variant_id, organization_id, quantity, reference_id
-            """,
-            reservation_id,
-        )
-
-        if not reservation:
-            raise ValueError("Reservation not found or not active")
-
-        await self.connection.execute(
-            """
-            UPDATE inventory_ledger
-            SET reserved_quantity = reserved_quantity - $1,
-                on_hand_quantity = on_hand_quantity - $2,
-                updated_at = now()
-            WHERE variant_id = $3 AND organization_id = $4
-            """,
-            reservation["quantity"], quantity, reservation["variant_id"], reservation["organization_id"],
-        )
-
-        await self.connection.execute(
-            """
-            INSERT INTO inventory_audit_log (id, variant_id, organization_id, change_quantity, reason, reference_id)
-            VALUES ($1, $2, $3, $4, $5, $6)
-            """,
-            uuid.uuid4(), reservation["variant_id"], reservation["organization_id"], -quantity, "Consumed reservation", reservation["reference_id"],
-        )
-
-        return await self.get_ledger(reservation["variant_id"], reservation["organization_id"])
+            return await self.get_ledger(reservation["variant_id"], reservation["organization_id"])
