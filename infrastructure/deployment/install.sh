@@ -32,7 +32,7 @@ dp__install_command_error() {
 trap dp__install_command_error ERR
 
 repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
-[[ ${repo_root##*/} == ZolexoraDeployment ]] || dp__install_command_error
+[[ ${repo_root##*/} == ZolexoraDeployment || ${repo_root##*/} == deployment ]] || dp__install_command_error
 
 # shellcheck source=core/lib/runtime.sh
 source "$repo_root/core/lib/runtime.sh"

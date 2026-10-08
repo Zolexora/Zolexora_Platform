@@ -36,7 +36,7 @@ dp__doctor_internal_error() {
 trap dp__doctor_internal_error ERR
 
 repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
-if [[ ${repo_root##*/} != ZolexoraDeployment ]]; then
+if [[ ${repo_root##*/} != ZolexoraDeployment && ${repo_root##*/} != deployment ]]; then
   printf 'ERROR: unable to resolve the diagnostics library root\n' >&2
   exit 70
 fi

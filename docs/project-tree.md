@@ -12,19 +12,27 @@
 │       ├── phases
 │       └── security
 ├── infrastructure
-│   ├── compose
-│   ├── docker
-│   └── ZolexoraDeployment
-│       ├── adapters
-│       ├── applications
-│       ├── core
-│       ├── docs
-│       ├── firewall
-│       ├── nginx
-│       ├── scripts
-│       ├── systemd
-│       ├── templates
-│       └── tests
+│   ├── cloud
+│   ├── containers
+│   │   ├── compose
+│   │   ├── docker
+│   │   └── nginx
+│   ├── database
+│   │   ├── migrations
+│   │   └── schemas
+│   ├── deployment (ZolexoraDeployment)
+│   │   ├── adapters
+│   │   ├── applications
+│   │   ├── core
+│   │   ├── docs
+│   │   ├── firewall
+│   │   ├── nginx
+│   │   ├── scripts
+│   │   ├── systemd
+│   │   ├── templates
+│   │   └── tests
+│   └── supabase
+│       └── migrations
 ├── products
 │   ├── ClarityFi
 │   │   ├── apps
