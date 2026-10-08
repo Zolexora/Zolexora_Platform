@@ -14,7 +14,7 @@ import {
 // `localhost` and `127.0.0.1` are different cookie domains.
 const sellerApiBaseUrl = typeof window !== "undefined" &&
   (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
-  ? `http://${window.location.hostname}:8000/api`
+  ? `http://${window.location.hostname}:4100/api`
   : undefined;
 
 export const api = getApiClient(sellerApiBaseUrl);

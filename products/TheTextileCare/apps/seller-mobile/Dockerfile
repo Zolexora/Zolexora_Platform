@@ -11,7 +11,7 @@ RUN pnpm install --frozen-lockfile
 FROM deps AS dev
 WORKDIR /app
 COPY products/TheTextileCare .
-ENV EXPO_PUBLIC_API_BASE_URL=${EXPO_PUBLIC_API_BASE_URL:-http://localhost:8000} \
+ENV EXPO_PUBLIC_API_BASE_URL=${EXPO_PUBLIC_API_BASE_URL:-http://localhost:4010} \
     EXPO_NO_DOTENV=1
 EXPOSE 8082 19000 19001 19002
 WORKDIR /app/apps/seller-mobile

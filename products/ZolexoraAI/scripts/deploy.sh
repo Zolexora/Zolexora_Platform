@@ -212,7 +212,7 @@ else
     --resource-group "$AZURE_RESOURCE_GROUP" \
     --environment "$AZURE_CONTAINER_APP_ENV" \
     --image "$IMAGE" \
-    --target-port 8000 \
+    --target-port 4090 \
     --ingress external \
     --min-replicas 1 \
     --max-replicas 5 \

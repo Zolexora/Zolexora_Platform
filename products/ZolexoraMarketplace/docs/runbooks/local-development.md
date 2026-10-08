@@ -35,16 +35,16 @@ Use `pnpm dev:buyer`, `pnpm dev:mahila`, `pnpm dev:seller`, and `pnpm dev:admin`
 ```bash
 .venv/bin/python -m pip install -r services/marketplace-api/requirements.txt
 cd services/marketplace-api
-../../.venv/bin/python -m uvicorn main:app --reload --host 127.0.0.1 --port 8000
+../../.venv/bin/python -m uvicorn main:app --reload --host 127.0.0.1 --port 4100
 ```
 
-Health: `http://127.0.0.1:8000/api/health`.
+Health: `http://127.0.0.1:4100/api/health`.
 
 Storefront context examples:
 
 ```bash
-curl -H 'X-Storefront-Key: zolexora-shop' http://127.0.0.1:8000/api/storefront/context
-curl -H 'X-Storefront-Key: mahila-madel' http://127.0.0.1:8000/api/storefront/context
+curl -H 'X-Storefront-Key: zolexora-shop' http://127.0.0.1:4100/api/storefront/context
+curl -H 'X-Storefront-Key: mahila-madel' http://127.0.0.1:4100/api/storefront/context
 ```
 
 The local shared API has no default storefront. Buyer mobile uses the header; Zolexora browser development resolves the exact `http://localhost:3000` or `http://127.0.0.1:3000` Origin. Seller/admin clients must not install a fixed customer header.

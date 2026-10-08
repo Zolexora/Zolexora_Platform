@@ -238,8 +238,8 @@ LOG_LEVEL=INFO
 SESSION_STORE_PATH=./sessions
 
 # ── Frontend ──────────────────────────────────────────────
-VITE_API_URL=http://localhost:8000
-VITE_WS_URL=ws://localhost:8000
+VITE_API_URL=http://localhost:4090
+VITE_WS_URL=ws://localhost:4090
 VITE_API_KEY=swarm-factory-dev-key
 ENVEOF
 

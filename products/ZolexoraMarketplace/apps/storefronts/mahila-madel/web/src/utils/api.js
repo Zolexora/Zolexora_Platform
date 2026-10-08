@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const API = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? 'https://api.zolexora.com/api' : `http://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:8000/api`),
+  baseURL: process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? 'https://api.zolexora.com/api' : `http://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:4100/api`),
   withCredentials: true,
 });
 

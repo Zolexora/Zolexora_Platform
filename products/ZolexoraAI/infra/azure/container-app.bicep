@@ -57,7 +57,7 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
     configuration: {
       ingress: {
         external: true
-        targetPort: 8000
+        targetPort: 4090
         transport: 'http'
         allowInsecure: false
       }
@@ -90,7 +90,7 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
               type: 'Liveness'
               httpGet: {
                 path: '/health'
-                port: 8000
+                port: 4090
               }
               initialDelaySeconds: 15
               periodSeconds: 30
@@ -101,7 +101,7 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
               type: 'Readiness'
               httpGet: {
                 path: '/health'
-                port: 8000
+                port: 4090
               }
               initialDelaySeconds: 10
               periodSeconds: 10

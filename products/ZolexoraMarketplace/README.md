@@ -19,7 +19,7 @@ Zolexora comprises six main applications and services that work together seamles
 | **Zolexora Buyer Mobile** | — | `http://localhost:8081` | Metro `8081` | Expo React Native | Zolexora customer binary |
 | **Mahila Buyer Mobile** | — | `http://localhost:8083` | Metro `8083` | Expo React Native | Mahila customer shell |
 | **Seller Mobile**| — | `http://localhost:8082` | Metro `8082` | Expo React Native | Mobile creator dashboard, product & reel uploads |
-| **Backend API** | `api.zolexora.com` | `http://127.0.0.1:8000`| Port `8000` | FastAPI (Python 3.12) | Core business logic, auth, payments, shipping engine |
+| **Backend API** | `api.zolexora.com` | `http://127.0.0.1:4100`| Port `4100` | FastAPI (Python 3.12) | Core business logic, auth, payments, shipping engine |
 
 ## Storefront request context
 
@@ -202,11 +202,11 @@ python -c "import secrets; print(secrets.token_hex(64))"
 Web and mobile clients must configure the API endpoints:
 
 * **Web Frontends (`apps/storefronts/*/web`, `apps/portals/*/web`)**:
-  * `NEXT_PUBLIC_API_URL`: The production API URL. During development, it falls back to `http://127.0.0.1:8000/api`.
+  * `NEXT_PUBLIC_API_URL`: The production API URL. During development, it falls back to `http://127.0.0.1:4100/api`.
   * `NEXT_PUBLIC_GOOGLE_CLIENT_ID`: OAuth Client ID.
   * `NEXT_PUBLIC_RAZORPAY_KEY` (Web Buyer only): Razorpay payment gateway key.
 * **Mobile Clients (`apps/storefronts/*/mobile`, `apps/portals/*/mobile`)**:
-  * `EXPO_PUBLIC_API_URL`: The production API URL. During development, it falls back to `http://localhost:8000/api`.
+  * `EXPO_PUBLIC_API_URL`: The production API URL. During development, it falls back to `http://localhost:4100/api`.
   * `EXPO_PUBLIC_GOOGLE_CLIENT_ID`: OAuth Client ID.
 
 ---
@@ -249,9 +249,9 @@ Open 4 terminal windows:
   ```bash
   cd backend
   source .venv/bin/activate
-  uvicorn main:app --reload --port 8000
+  uvicorn main:app --reload --port 4100
   ```
-  API Docs (Swagger UI) will load at: `http://127.0.0.1:8000/docs`
+  API Docs (Swagger UI) will load at: `http://127.0.0.1:4100/docs`
 
 * **Terminal 2: Buyer Frontend Client**
   ```bash
@@ -358,7 +358,7 @@ zolexora/
 
 To verify that the backend is configured correctly and external integrations are fully operational, execute the health check query:
 ```bash
-curl http://127.0.0.1:8000/api/health
+curl http://127.0.0.1:4100/api/health
 ```
 
 Expected output:
@@ -436,7 +436,7 @@ Deploy the backend as a combined service from the GitLab repository.
 * Branch: `zolexora-deploy`
 * Root/workdir: `backend`
 * Dockerfile: `services/marketplace-api/Dockerfile`
-* Port: `8000`
+* Port: `4100`
 * Health check: `/api/health`
 
 ### 2. Web Frontends → Vercel
@@ -517,7 +517,7 @@ To deploy the backend on a private VPS (like AWS EC2, DigitalOcean, or Hetzner):
 | **`Verification Emails not sending`** | Resend API auth failure | Ensure your Resend domain is verified at [resend.com/domains](https://resend.com/domains) and matches your `SENDER_EMAIL` |
 | **`Razorpay payment modal fails`** | Invalid merchant key loading | Ensure the development key is configured in `apps/storefronts/zolexora-shop/web/.env.local` |
 | **`Admin portal displays blank screen`** | Authentication role mismatch | Sign in using the correct administrator credentials: `admin@zolexora.com` |
-| **`Port 8000 Address Already in Use`** | Zombie python process running | Free the port by running: `lsof -ti:8000 \| xargs kill -9` |
+| **`Port 4100 Address Already in Use`** | Zombie python process running | Free the port by running: `lsof -ti:4100 \| xargs kill -9` |
 
 ---
 

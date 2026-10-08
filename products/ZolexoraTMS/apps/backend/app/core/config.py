@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     # Core Application
     PROJECT_NAME: str = "Zolexora TMS API"
     ENVIRONMENT: str = Field(default="development", validation_alias="NODE_ENV")
-    PORT: int = 8000
+    PORT: int = 4030
     API_V1_PREFIX: str = "/api/v1"
     DEBUG: bool = False
 

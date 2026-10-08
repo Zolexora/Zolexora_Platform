@@ -74,7 +74,7 @@ export function DispatchPage() {
         if (!authMe.organisation_id) return;
 
         const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsHost = window.location.hostname === 'localhost' ? 'localhost:8000' : 'api.tms.zolexora.onrender.com';
+        const wsHost = window.location.hostname === 'localhost' ? 'localhost:4030' : 'api.tms.zolexora.onrender.com';
         const wsUrl = `${wsProto}//${wsHost}/ws/ops/${authMe.organisation_id}`;
 
         ws = new WebSocket(wsUrl);

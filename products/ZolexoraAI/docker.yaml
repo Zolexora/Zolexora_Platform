@@ -11,7 +11,7 @@ services:
       target: production
     env_file: .env
     ports:
-      - "8000:8000"
+      - "4090:4090"
     environment:
       - PYTHONUNBUFFERED=1
       - PYTHONPATH=/app/backend

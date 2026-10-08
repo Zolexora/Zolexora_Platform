@@ -10,7 +10,7 @@
 
 ### Finding 1: Browser-Side Frontend API Base URL Misconfiguration (Codespaces URL Hang)
 - **Root Cause**: In `apps/storefronts/zolexora-shop/web/src/lib/api.ts` and `packages/shared-api/src/client.ts`, the development domain detector only matched `*.github.dev`. In modern GitHub Codespaces, the actual browser domain is `*.app.github.dev`.
-- **Consequence**: The browser was resolving the backend API to `http://<codespace>-3000.app.github.dev:8000/api` instead of `https://<codespace>-8000.app.github.dev/api`. The browser attempted to connect to port 8000 on an external URL, hanging for **15–20 seconds** before failing or timing out.
+- **Consequence**: The browser was resolving the backend API to `http://<codespace>-3000.app.github.dev:4100/api` instead of `https://<codespace>-4100.app.github.dev/api`. The browser attempted to connect to port 4100 on an external URL, hanging for **15–20 seconds** before failing or timing out.
 - **Status**: **RESOLVED**. Added pattern detection for both `.github.dev` and `.app.github.dev` across `lib/api.ts`, `packages/shared-api`, and admin portals.
 
 ---

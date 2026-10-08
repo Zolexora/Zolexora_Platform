@@ -34,9 +34,9 @@ _TEMPLATE_RESPONSES: dict[str, str] = {
         "COPY requirements.txt .\n"
         "RUN pip install --no-cache-dir -r requirements.txt\n"
         "COPY . .\n"
-        "EXPOSE 8000\n"
-        "HEALTHCHECK CMD curl -f http://localhost:8000/health || exit 1\n"
-        'CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]\n'
+        "EXPOSE 4090\n"
+        "HEALTHCHECK CMD curl -f http://localhost:4090/health || exit 1\n"
+        'CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "4090"]\n'
     ),
     "ci": (
         "name: CI\n"

@@ -40,8 +40,8 @@ SELLER = {"id": str(uuid.uuid4()), "name": "Seller One", "role": "seller"}
 OTHER_SELLER = {"id": str(uuid.uuid4()), "name": "Seller Two", "role": "seller"}
 ADMIN = {"id": str(uuid.uuid4()), "name": "Admin One", "role": "admin"}
 
-SF_SHOP_ID = "60000000-0000-4000-8000-000000000001"
-SF_MAHILA_ID = "60000000-0000-4000-8000-000000000002"
+SF_SHOP_ID = "60000000-0000-4000-4100-000000000001"
+SF_MAHILA_ID = "60000000-0000-4000-4100-000000000002"
 ORG_SELLER_ID = str(uuid.uuid4())
 ORG_OTHER_SELLER_ID = str(uuid.uuid4())
 

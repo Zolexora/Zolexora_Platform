@@ -102,6 +102,6 @@ if [[ -z "$SERVICES" || "$SERVICES" == *"admin"* ]]; then
     echo "- Admin Dashboard: http://localhost:3001"
 fi
 if [[ -z "$SERVICES" || "$SERVICES" == *"backend"* ]]; then
-    echo "- Backend API: http://localhost:8000/docs"
+    echo "- Backend API: http://localhost:4030/docs"
 fi
 echo "======================================"

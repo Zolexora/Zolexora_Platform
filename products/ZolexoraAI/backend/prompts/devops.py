@@ -34,7 +34,7 @@ def dockerfile_prompt(
         language: Programming language, e.g. ``"Python"``.
         framework: Web framework, e.g. ``"FastAPI"``.
         start_command: Shell command to start the app,
-            e.g. ``"uvicorn main:app --host 0.0.0.0 --port 8000"``.
+            e.g. ``"uvicorn main:app --host 0.0.0.0 --port 4090"``.
         dependencies: List of dependency strings,
             e.g. ``["fastapi==0.104.0", "uvicorn==0.24.0"]``.
 
@@ -55,9 +55,9 @@ Rules — follow ALL of these exactly:
 2. Base image for both stages: python:3.11-slim
 3. Create a non-root user: RUN useradd -m appuser  and  USER appuser
 4. WORKDIR /app
-5. EXPOSE 8000
+5. EXPOSE 4090
 6. HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \\
-     CMD curl -f http://localhost:8000/health || exit 1
+     CMD curl -f http://localhost:4090/health || exit 1
 7. Copy only what is needed into the final stage — no dev tools, no test files.
 8. Install dependencies from requirements.txt (write a COPY for it).
 9. Final CMD must use exec form (JSON array).

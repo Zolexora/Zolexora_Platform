@@ -63,7 +63,7 @@ Initial local ports:
 | Zolexora buyer web | `http://localhost:3000` |
 | Seller web | `http://localhost:3001` |
 | Admin web | `http://localhost:3002` |
-| FastAPI | `http://127.0.0.1:8000` |
+| FastAPI | `http://127.0.0.1:4100` |
 | Mahila current React client | commonly `http://localhost:3000`; use a non-conflicting port when running beside Zolexora |
 | Mahila current Express server | `http://localhost:5000` |
 

@@ -33,7 +33,7 @@ rent-and-stay/
 │   ├── web-owner/        Owner web app, Vite, port 3002
 │   └── web-admin/        Admin web app, Vite, port 3003
 ├── services/
-│   └── api/              NestJS API, Prisma, Socket.IO, port 8000
+│   └── api/              NestJS API, Prisma, Socket.IO, port 4020
 ├── packages/
 │   ├── shared-types/     Shared TypeScript domain types
 │   └── shared-utils/     Shared utility exports
@@ -61,8 +61,8 @@ The workspace packages are:
 | Tenant web | `http://localhost:3001` | Search, bookings, KYC, payments, chat, tenant profile |
 | Owner web | `http://localhost:3002` | Listings, tenant management, chat, earnings, profile |
 | Admin web | `http://localhost:3003` | Dashboard, listings, payments, config, audit logs |
-| API | `http://localhost:8000` | REST API and Socket.IO gateway |
-| Swagger | `http://localhost:8000/docs` | API documentation |
+| API | `http://localhost:4020` | REST API and Socket.IO gateway |
+| Swagger | `http://localhost:4020/docs` | API documentation |
 
 ## Tech Stack
 
@@ -135,7 +135,7 @@ File: `services/api/.env`
 Required core variables:
 
 ```env
-PORT=8000
+PORT=4020
 NODE_ENV=development
 
 DATABASE_URL="postgresql://postgres.PROJECT_REF:PASSWORD@aws-0-ap-south-1.pooler.supabase.com:6543/postgres"
@@ -162,7 +162,7 @@ Service-specific variables are documented in `services/api/.env.example` and inc
 All web apps need an API URL:
 
 ```env
-VITE_API_URL=http://localhost:8000
+VITE_API_URL=http://localhost:4020
 ```
 
 Tenant and owner apps also need Firebase web config:
@@ -655,7 +655,7 @@ Check:
 Check each web app `.env`:
 
 ```env
-VITE_API_URL=http://localhost:8000
+VITE_API_URL=http://localhost:4020
 ```
 
 Also check API CORS values:

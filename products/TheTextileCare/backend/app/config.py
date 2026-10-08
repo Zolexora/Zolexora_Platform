@@ -19,9 +19,9 @@ class Settings(BaseSettings):
 
     app_name: str = Field(default='the-textile-care-api')
     app_env: Environment = Field(default='development')
-    app_port: int = Field(default=8000)
-    app_base_url: str = Field(default='http://localhost:8000')
-    api_base_url: str = Field(default='http://localhost:8000')
+    app_port: int = Field(default=4010)
+    app_base_url: str = Field(default='http://localhost:4010')
+    api_base_url: str = Field(default='http://localhost:4010')
     database_url: str = Field(
         default='postgresql+psycopg://postgres:postgres@127.0.0.1:54322/postgres'
     )

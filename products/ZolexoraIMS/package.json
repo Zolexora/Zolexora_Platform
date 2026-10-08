@@ -7,8 +7,8 @@
   "scripts": {
     "dev:user:frontend": "pnpm --filter @zolexora/ims-user-frontend dev",
     "dev:admin:frontend": "pnpm --filter @zolexora/ims-admin-frontend dev",
-    "dev:user:backend": "cd apps/ims-user/backend && uvicorn main:app --reload --port 8000",
-    "dev:admin:backend": "cd apps/ims-admin/backend && uvicorn main:app --reload --port 8001",
+    "dev:user:backend": "cd apps/ims-user/backend && uvicorn main:app --reload --port 4050",
+    "dev:admin:backend": "cd apps/ims-admin/backend && uvicorn main:app --reload --port 4051",
     "build": "pnpm --filter \"@zolexora/*\" build",
     "build:user": "pnpm --filter @zolexora/ims-user-frontend build",
     "build:admin": "pnpm --filter @zolexora/ims-admin-frontend build",

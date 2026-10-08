@@ -149,8 +149,8 @@ def upgrade() -> None:
     # 6. Seed canonical storefronts
     op.execute("""
         INSERT INTO storefront (id, storefront_key, display_name, is_active, currency, locale) VALUES
-        ('60000000-0000-4000-8000-000000000001', 'zolexora-shop', 'Zolexora Shop', true, 'INR', 'en-IN'),
-        ('60000000-0000-4000-8000-000000000002', 'mahila-madel', 'Mahila Madel', true, 'INR', 'en-IN')
+        ('60000000-0000-4000-4100-000000000001', 'zolexora-shop', 'Zolexora Shop', true, 'INR', 'en-IN'),
+        ('60000000-0000-4000-4100-000000000002', 'mahila-madel', 'Mahila Madel', true, 'INR', 'en-IN')
         ON CONFLICT (storefront_key) DO UPDATE SET
             display_name = EXCLUDED.display_name,
             currency = EXCLUDED.currency,
@@ -161,11 +161,11 @@ def upgrade() -> None:
     # 7. Seed canonical storefront domains
     op.execute("""
         INSERT INTO storefront_domain (id, storefront_id, hostname, environment, domain_role, is_active) VALUES
-        ('70000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000001', 'shop.zolexora.com', 'production', 'primary', true),
-        ('70000000-0000-4000-8000-000000000002', '60000000-0000-4000-8000-000000000001', 'shop.zolexora.local', 'development', 'development', true),
-        ('70000000-0000-4000-8000-000000000003', '60000000-0000-4000-8000-000000000002', 'mahilamadel.store', 'production', 'primary', true),
-        ('70000000-0000-4000-8000-000000000004', '60000000-0000-4000-8000-000000000002', 'www.mahilamadel.store', 'production', 'alias', true),
-        ('70000000-0000-4000-8000-000000000005', '60000000-0000-4000-8000-000000000002', 'mahilamadel.local', 'development', 'development', true)
+        ('70000000-0000-4000-4100-000000000001', '60000000-0000-4000-4100-000000000001', 'shop.zolexora.com', 'production', 'primary', true),
+        ('70000000-0000-4000-4100-000000000002', '60000000-0000-4000-4100-000000000001', 'shop.zolexora.local', 'development', 'development', true),
+        ('70000000-0000-4000-4100-000000000003', '60000000-0000-4000-4100-000000000002', 'mahilamadel.store', 'production', 'primary', true),
+        ('70000000-0000-4000-4100-000000000004', '60000000-0000-4000-4100-000000000002', 'www.mahilamadel.store', 'production', 'alias', true),
+        ('70000000-0000-4000-4100-000000000005', '60000000-0000-4000-4100-000000000002', 'mahilamadel.local', 'development', 'development', true)
         ON CONFLICT (hostname) DO UPDATE SET
             storefront_id = EXCLUDED.storefront_id,
             environment = EXCLUDED.environment,

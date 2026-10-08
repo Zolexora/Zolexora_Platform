@@ -8,7 +8,7 @@ Date: 2026-07-14. Verdict: **PASS WITH BLOCKERS**. Root `/home/chickenman/Docume
 
 | App/service | Actual stack and commands | Evidence/status |
 |---|---|---|
-| FastAPI | Python >=3.12, FastAPI 0.115/Uvicorn; 8000; pytest/Ruff | `backend/pyproject.toml:1-9`, `requirements.txt:31,153`; 59 tests pass |
+| FastAPI | Python >=3.12, FastAPI 0.115/Uvicorn; 4100; pytest/Ruff | `backend/pyproject.toml:1-9`, `requirements.txt:31,153`; 59 tests pass |
 | Buyer web | Next 15/React 19; dev 3000/build/type/Vitest config | `apps/ZolexoraShop/web-app/buyer/package.json:1-45`; workspace-blocked |
 | Seller web | Next 15/React 19; dev 3001/build/type | `.../seller/package.json:1-39`; workspace-blocked/no test |
 | Admin web | Next 15/React 19; dev 3002/build/type | `.../adminpanal/package.json:1-35`; misspelled path/workspace-blocked |

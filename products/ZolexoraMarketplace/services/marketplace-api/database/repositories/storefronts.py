@@ -134,8 +134,8 @@ class PostgresStorefrontRepository:
         surfaces = dict(SURFACES)
         if self.development:
             surfaces |= {
-                "localhost:8000": ApplicationSurface.SHARED_API,
-                "127.0.0.1:8000": ApplicationSurface.SHARED_API,
+                "localhost:4100": ApplicationSurface.SHARED_API,
+                "127.0.0.1:4100": ApplicationSurface.SHARED_API,
                 "localhost:3001": ApplicationSurface.SELLER_PORTAL,
                 "127.0.0.1:3001": ApplicationSurface.SELLER_PORTAL,
                 "localhost:3002": ApplicationSurface.MARKETPLACE_ADMIN,
@@ -150,24 +150,24 @@ class PostgresStorefrontRepository:
 
 BOOTSTRAP = {
     "zolexora-shop": (
-        uuid.UUID("60000000-0000-4000-8000-000000000001"),
+        uuid.UUID("60000000-0000-4000-4100-000000000001"),
         "Zolexora Shop",
         "INR",
         "en-IN",
         (
-            (uuid.UUID("70000000-0000-4000-8000-000000000001"), "shop.zolexora.com", "production", "primary"),
-            (uuid.UUID("70000000-0000-4000-8000-000000000002"), "shop.zolexora.local", "development", "development"),
+            (uuid.UUID("70000000-0000-4000-4100-000000000001"), "shop.zolexora.com", "production", "primary"),
+            (uuid.UUID("70000000-0000-4000-4100-000000000002"), "shop.zolexora.local", "development", "development"),
         ),
     ),
     "mahila-madel": (
-        uuid.UUID("60000000-0000-4000-8000-000000000002"),
+        uuid.UUID("60000000-0000-4000-4100-000000000002"),
         "Mahila Madel",
         "INR",
         "en-IN",
         (
-            (uuid.UUID("70000000-0000-4000-8000-000000000003"), "mahilamadel.store", "production", "primary"),
-            (uuid.UUID("70000000-0000-4000-8000-000000000004"), "www.mahilamadel.store", "production", "alias"),
-            (uuid.UUID("70000000-0000-4000-8000-000000000005"), "mahilamadel.local", "development", "development"),
+            (uuid.UUID("70000000-0000-4000-4100-000000000003"), "mahilamadel.store", "production", "primary"),
+            (uuid.UUID("70000000-0000-4000-4100-000000000004"), "www.mahilamadel.store", "production", "alias"),
+            (uuid.UUID("70000000-0000-4000-4100-000000000005"), "mahilamadel.local", "development", "development"),
         ),
     ),
 }

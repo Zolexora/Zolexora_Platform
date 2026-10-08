@@ -162,15 +162,15 @@ async def test_canonical_seed_records_exist(db_connection):
     storefronts = dict(
         await db_connection.fetch("SELECT storefront_key, id FROM storefront ORDER BY storefront_key")
     )
-    assert uuid.UUID("60000000-0000-4000-8000-000000000001") == storefronts.get("zolexora-shop")
-    assert uuid.UUID("60000000-0000-4000-8000-000000000002") == storefronts.get("mahila-madel")
+    assert uuid.UUID("60000000-0000-4000-4100-000000000001") == storefronts.get("zolexora-shop")
+    assert uuid.UUID("60000000-0000-4000-4100-000000000002") == storefronts.get("mahila-madel")
 
     domains = await db_connection.fetch("SELECT hostname, storefront_id, environment, domain_role FROM storefront_domain ORDER BY hostname")
     domain_map = {row["hostname"]: row for row in domains}
     assert "shop.zolexora.com" in domain_map
-    assert domain_map["shop.zolexora.com"]["storefront_id"] == uuid.UUID("60000000-0000-4000-8000-000000000001")
+    assert domain_map["shop.zolexora.com"]["storefront_id"] == uuid.UUID("60000000-0000-4000-4100-000000000001")
     assert "mahilamadel.store" in domain_map
-    assert domain_map["mahilamadel.store"]["storefront_id"] == uuid.UUID("60000000-0000-4000-8000-000000000002")
+    assert domain_map["mahilamadel.store"]["storefront_id"] == uuid.UUID("60000000-0000-4000-4100-000000000002")
     assert len(domain_map) == 5
 
 
@@ -188,7 +188,7 @@ async def test_storefront_domain_storefront_id_immutability_trigger(db_connectio
     with pytest.raises(asyncpg.CheckViolationError):
         async with db_connection.transaction():
             await db_connection.execute(
-                "UPDATE storefront_domain SET storefront_id = '60000000-0000-4000-8000-000000000002' WHERE hostname = 'shop.zolexora.com'"
+                "UPDATE storefront_domain SET storefront_id = '60000000-0000-4000-4100-000000000002' WHERE hostname = 'shop.zolexora.com'"
             )
 
 
@@ -197,8 +197,8 @@ async def test_order_storefront_id_immutability_trigger(db_connection):
     seller_id = uuid.uuid4()
     buyer_id = uuid.uuid4()
     order_id = uuid.uuid4()
-    storefront_id = uuid.UUID("60000000-0000-4000-8000-000000000001")
-    other_storefront_id = uuid.UUID("60000000-0000-4000-8000-000000000002")
+    storefront_id = uuid.UUID("60000000-0000-4000-4100-000000000001")
+    other_storefront_id = uuid.UUID("60000000-0000-4000-4100-000000000002")
 
     await _insert_user(db_connection, buyer_id, "buyer-test@example.com", "Buyer Test")
     await _insert_user(db_connection, seller_id, "seller-test@example.com", "Seller Test")
@@ -225,8 +225,8 @@ async def test_order_storefront_id_immutability_trigger(db_connection):
 async def test_cart_storefront_id_immutability_trigger(db_connection):
     buyer_id = uuid.uuid4()
     cart_id = uuid.uuid4()
-    storefront_id = uuid.UUID("60000000-0000-4000-8000-000000000001")
-    other_storefront_id = uuid.UUID("60000000-0000-4000-8000-000000000002")
+    storefront_id = uuid.UUID("60000000-0000-4000-4100-000000000001")
+    other_storefront_id = uuid.UUID("60000000-0000-4000-4100-000000000002")
 
     await _insert_user(db_connection, buyer_id, "buyer-cart-test@example.com", "Buyer Cart Test")
     await db_connection.execute(
@@ -244,7 +244,7 @@ async def test_cart_storefront_id_immutability_trigger(db_connection):
 
 @pytest.mark.asyncio
 async def test_normalized_hostname_uniqueness_and_lower_constraint(db_connection):
-    storefront_id = uuid.UUID("60000000-0000-4000-8000-000000000001")
+    storefront_id = uuid.UUID("60000000-0000-4000-4100-000000000001")
     # Uppercase hostname is rejected by check constraint ck_storefront_domain_storefront_domain_hostname_lower
     with pytest.raises(asyncpg.CheckViolationError):
         async with db_connection.transaction():
@@ -270,7 +270,7 @@ async def test_normalized_hostname_uniqueness_and_lower_constraint(db_connection
 
 @pytest.mark.asyncio
 async def test_surface_domain_rejection_check_constraint(db_connection):
-    storefront_id = uuid.UUID("60000000-0000-4000-8000-000000000001")
+    storefront_id = uuid.UUID("60000000-0000-4000-4100-000000000001")
     for surface_domain in ("api.zolexora.com", "seller.zolexora.com", "admin.marketplace.zolexora.com"):
         with pytest.raises(asyncpg.CheckViolationError):
             async with db_connection.transaction():
@@ -285,7 +285,7 @@ async def test_surface_domain_rejection_check_constraint(db_connection):
 
 @pytest.mark.asyncio
 async def test_trailing_dot_domain_check_constraint(db_connection):
-    storefront_id = uuid.UUID("60000000-0000-4000-8000-000000000001")
+    storefront_id = uuid.UUID("60000000-0000-4000-4100-000000000001")
     with pytest.raises(asyncpg.CheckViolationError):
         async with db_connection.transaction():
             await db_connection.execute(
