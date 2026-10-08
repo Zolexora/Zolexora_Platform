@@ -30,10 +30,28 @@
         "ms-azuretools.vscode-docker"
       ],
       "settings": {
-        "python.defaultInterpreterPath": "/home/frappe/frappe-bench/env/bin/python",
+        "python.defaultInterpreterPath": "/usr/local/python/current/bin/python",
+        "python.analysis.extraPaths": [
+          "${workspaceFolder}/products/ZolexoraERP/backend/frappe",
+          "${workspaceFolder}/products/ZolexoraERP/backend/erpnext",
+          "${workspaceFolder}/products/ZolexoraERP/backend/payments",
+          "${workspaceFolder}/products/ZolexoraERP/backend/zolexora_core",
+          "${workspaceFolder}/products/ZolexoraERP/backend/zolexora_branding",
+          "${workspaceFolder}/products/ZolexoraERP/backend/zolexora_platform",
+          "${workspaceFolder}/products/ZolexoraERP/backend/zolexora_integrations"
+        ],
+        "python.autoComplete.extraPaths": [
+          "${workspaceFolder}/products/ZolexoraERP/backend/frappe",
+          "${workspaceFolder}/products/ZolexoraERP/backend/erpnext",
+          "${workspaceFolder}/products/ZolexoraERP/backend/payments",
+          "${workspaceFolder}/products/ZolexoraERP/backend/zolexora_core",
+          "${workspaceFolder}/products/ZolexoraERP/backend/zolexora_branding",
+          "${workspaceFolder}/products/ZolexoraERP/backend/zolexora_platform",
+          "${workspaceFolder}/products/ZolexoraERP/backend/zolexora_integrations"
+        ],
         "editor.formatOnSave": true
       }
     }
   },
-  "postCreateCommand": "cp -n .env.example .env 2>/dev/null || true"
+  "postCreateCommand": "sudo mkdir -p /home/frappe/frappe-bench/env/bin && sudo ln -sf /usr/local/python/current/bin/python /home/frappe/frappe-bench/env/bin/python && sudo ln -sf /usr/local/python/current/bin/python3 /home/frappe/frappe-bench/env/bin/python3 && sudo ln -sf /usr/local/python/current/bin/pip /home/frappe/frappe-bench/env/bin/pip 2>/dev/null || true; cp -n .env.example .env 2>/dev/null || true"
 }
