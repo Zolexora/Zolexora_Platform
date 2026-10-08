@@ -8,6 +8,9 @@ on:
 jobs:
   web:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: products/TheTextileCare
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -17,7 +20,8 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
+          cache-dependency-path: products/TheTextileCare/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter ./apps/marketplace-web build
-      - run: pnpm --filter ./apps/seller-web build
-      - run: pnpm --filter ./apps/admin-web build
+      - run: pnpm --filter @ttc/marketplace-web build
+      - run: pnpm --filter @ttc/seller-web build
+      - run: pnpm --filter @ttc/admin-web build

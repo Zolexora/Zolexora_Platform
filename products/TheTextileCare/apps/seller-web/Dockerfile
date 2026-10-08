@@ -3,19 +3,20 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 
 FROM base AS deps
 WORKDIR /app
-COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
-COPY apps/seller-web/package.json  ./apps/seller-web/
-COPY packages/ui/package.json      ./packages/ui/
-COPY packages/types/package.json   ./packages/types/
-COPY packages/config/package.json  ./packages/config/
-COPY packages/auth/package.json    ./packages/auth/
-COPY packages/tenant/package.json  ./packages/tenant/
-COPY packages/api-client/package.json ./packages/api-client/
+COPY packages/api-contracts /packages/api-contracts
+COPY products/TheTextileCare/pnpm-workspace.yaml products/TheTextileCare/pnpm-lock.yaml products/TheTextileCare/package.json ./
+COPY products/TheTextileCare/apps/seller-web/package.json  ./apps/seller-web/
+COPY products/TheTextileCare/packages/ui/package.json      ./packages/ui/
+COPY products/TheTextileCare/packages/types/package.json   ./packages/types/
+COPY products/TheTextileCare/packages/config/package.json  ./packages/config/
+COPY products/TheTextileCare/packages/auth/package.json    ./packages/auth/
+COPY products/TheTextileCare/packages/tenant/package.json  ./packages/tenant/
+COPY products/TheTextileCare/packages/api-client/package.json ./packages/api-client/
 RUN pnpm install --frozen-lockfile
 
 FROM deps AS builder
 WORKDIR /app
-COPY . .
+COPY products/TheTextileCare .
 ARG NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
 ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
 RUN pnpm --filter @ttc/seller-web build

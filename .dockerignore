@@ -1,4 +1,5 @@
 __pycache__/
+**/__pycache__
 .git/
 **/.git/
 *.pyc
@@ -8,6 +9,12 @@ __pycache__/
 .env
 .env.*
 node_modules/
+**/node_modules/
+**/.next/
+**/.turbo/
+**/dist/
+**/build/
+**/coverage/
 logs/
 assets/
 backups/

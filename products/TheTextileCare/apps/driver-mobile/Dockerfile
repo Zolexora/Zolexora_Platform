@@ -1,15 +1,16 @@
 FROM node:20-alpine AS deps
 RUN corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
-COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
-COPY apps/driver-mobile/package.json  ./apps/driver-mobile/
-COPY packages/api-client/package.json ./packages/api-client/
-COPY packages/config/package.json     ./packages/config/
+COPY packages/api-contracts /packages/api-contracts
+COPY products/TheTextileCare/pnpm-workspace.yaml products/TheTextileCare/pnpm-lock.yaml products/TheTextileCare/package.json ./
+COPY products/TheTextileCare/apps/driver-mobile/package.json  ./apps/driver-mobile/
+COPY products/TheTextileCare/packages/api-client/package.json ./packages/api-client/
+COPY products/TheTextileCare/packages/config/package.json     ./packages/config/
 RUN pnpm install --frozen-lockfile
 
 FROM deps AS dev
 WORKDIR /app
-COPY . .
+COPY products/TheTextileCare .
 ENV EXPO_PUBLIC_API_BASE_URL=${EXPO_PUBLIC_API_BASE_URL:-http://localhost:8000} \
     EXPO_NO_DOTENV=1
 EXPOSE 8083 19000 19001 19002
@@ -23,7 +24,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules             ./node_modules
 COPY --from=deps /app/apps/driver-mobile/node_modules \
                                                ./apps/driver-mobile/node_modules
-COPY . .
+COPY products/TheTextileCare .
 ARG EXPO_PUBLIC_API_BASE_URL=https://api.thetextilecare.com
 ENV EXPO_PUBLIC_API_BASE_URL=$EXPO_PUBLIC_API_BASE_URL \
     GRADLE_OPTS="-Dorg.gradle.daemon=false -Dorg.gradle.parallel=false"
