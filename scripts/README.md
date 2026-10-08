@@ -18,5 +18,4 @@ This directory houses global platform-level automation, backup, site initializat
 | [`disaster-recovery-test.sh`](./disaster-recovery-test.sh) | Automated end-to-end disaster recovery testing harness. |
 | [`payments-clean-site-test.sh`](./payments-clean-site-test.sh) | Validates clean-site payments integration behavior. |
 | [`upgrade-validation.sh`](./upgrade-validation.sh) | Runs pre- and post-upgrade validation assertions. |
-| [`cleanup_workspaces.py`](./cleanup_workspaces.py) | Garbage-collects stale build artifacts, temporary caches, and node_modules. |
 | [`yarn-wrapper.sh`](./yarn-wrapper.sh) | Corepack-compatible wrapper script for yarn inside Docker containers. |

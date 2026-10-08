@@ -31,6 +31,9 @@ class PaymentOrchestrationService:
             payload=json_payload,
             signature=signature
         )
+        if not receipt:
+            existing = await self.repository.get_webhook_receipt(provider, external_event_id)
+            return {"status": existing["status"] if existing else "processed", "message": "Already processed"}
 
         record = await self.repository.get_payment_record(payment_ref)
         if not record:
@@ -38,16 +41,17 @@ class PaymentOrchestrationService:
             raise ValueError("Payment record not found")
 
         try:
-            if event_type == "CAPTURE":
-                await self.repository.create_transaction_ledger(record["id"], "CAPTURE", record["amount_minor"], record["currency"])
-                await self.repository.update_payment_record_status(record["id"], "captured")
-                await self.repository.update_order_payment_status(record["order_id"], "paid")
-            elif event_type == "FAILURE":
-                await self.repository.create_transaction_ledger(record["id"], "FAILURE", record["amount_minor"], record["currency"])
-                await self.repository.update_payment_record_status(record["id"], "failed")
-                await self.repository.update_order_payment_status(record["order_id"], "failed")
+            async with self.connection.transaction():
+                if event_type == "CAPTURE":
+                    await self.repository.create_transaction_ledger(record["id"], "CAPTURE", record["amount_minor"], record["currency"])
+                    await self.repository.update_payment_record_status(record["id"], "captured")
+                    await self.repository.update_order_payment_status(record["order_id"], "paid")
+                elif event_type == "FAILURE":
+                    await self.repository.create_transaction_ledger(record["id"], "FAILURE", record["amount_minor"], record["currency"])
+                    await self.repository.update_payment_record_status(record["id"], "failed")
+                    await self.repository.update_order_payment_status(record["order_id"], "failed")
 
-            await self.repository.update_webhook_receipt_status(receipt["id"], "processed")
+                await self.repository.update_webhook_receipt_status(receipt["id"], "processed")
         except Exception as e:
             await self.repository.update_webhook_receipt_status(receipt["id"], "failed")
             raise e

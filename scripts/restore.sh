@@ -82,7 +82,7 @@ PY
 
 ensure_site_database_network_access() {
   step "Ensuring site database network access"
-  site_database_grant_sql | compose_exec mariadb mariadb -u"$DB_ROOT" -p"$DB_ROOT_PASS"
+  site_database_grant_sql | compose_exec mariadb env MYSQL_PWD="$DB_ROOT_PASS" mariadb -u"$DB_ROOT"
   log "INFO" "Ensured site database user can connect from Compose service containers"
 }
 

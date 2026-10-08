@@ -9,8 +9,8 @@
 
 set -eo pipefail
 
-WORKSPACE_ROOT="/workspaces/Zolexora_TMS"
-DOCS_FILE="${WORKSPACE_ROOT}/docs/ECOSYSTEM_CLI_GUIDE.md"
+WORKSPACE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
+DOCS_FILE="${WORKSPACE_ROOT}/products/ZolexoraTMS/docs/ecosystem_and_tooling/ecosystem_cli_guide.md"
 MCP_CANONICAL="${WORKSPACE_ROOT}/mcp.json"
 DOT_ENV="${WORKSPACE_ROOT}/.env"
 
