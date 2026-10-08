@@ -1,0 +1,175 @@
+{
+  "servers": {
+    "cloudflare": {
+      "type": "http",
+      "url": "https://mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-api": {
+      "type": "http",
+      "url": "https://mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-docs": {
+      "type": "http",
+      "url": "https://docs.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-bindings": {
+      "type": "http",
+      "url": "https://bindings.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-builds": {
+      "type": "http",
+      "url": "https://builds.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-observability": {
+      "type": "http",
+      "url": "https://observability.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-containers": {
+      "type": "http",
+      "url": "https://containers.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-browser": {
+      "type": "http",
+      "url": "https://browser.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-logs": {
+      "type": "http",
+      "url": "https://logs.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-ai-gateway": {
+      "type": "http",
+      "url": "https://ai-gateway.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-autorag": {
+      "type": "http",
+      "url": "https://autorag.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-auditlogs": {
+      "type": "http",
+      "url": "https://auditlogs.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-dns-analytics": {
+      "type": "http",
+      "url": "https://dns-analytics.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-dex": {
+      "type": "http",
+      "url": "https://dex.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-casb": {
+      "type": "http",
+      "url": "https://casb.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-radar": {
+      "type": "http",
+      "url": "https://radar.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-blog": {
+      "type": "http",
+      "url": "https://blog.mcp.cloudflare.com/mcp"
+    },
+    "github": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${env:GITHUB_TOKEN}"
+      }
+    },
+    "supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp"
+    },
+    "render": {
+      "type": "http",
+      "url": "https://mcp.render.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${env:RENDER_API_KEY}"
+      }
+    },
+    "zolexora-payments": {
+      "type": "stdio",
+      "command": "python3",
+      "args": ["scripts/mcp_payments_server.py"],
+      "env": {
+        "PYTHONPATH": "apps/ims-user/backend"
+      }
+    }
+  },
+  "mcpServers": {
+    "cloudflare": {
+      "url": "https://mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-api": {
+      "url": "https://mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-docs": {
+      "url": "https://docs.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-bindings": {
+      "url": "https://bindings.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-builds": {
+      "url": "https://builds.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-observability": {
+      "url": "https://observability.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-containers": {
+      "url": "https://containers.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-browser": {
+      "url": "https://browser.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-logs": {
+      "url": "https://logs.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-ai-gateway": {
+      "url": "https://ai-gateway.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-autorag": {
+      "url": "https://autorag.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-auditlogs": {
+      "url": "https://auditlogs.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-dns-analytics": {
+      "url": "https://dns-analytics.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-dex": {
+      "url": "https://dex.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-casb": {
+      "url": "https://casb.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-radar": {
+      "url": "https://radar.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-blog": {
+      "url": "https://blog.mcp.cloudflare.com/mcp"
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${env:GITHUB_TOKEN}"
+      }
+    },
+    "supabase": {
+      "url": "https://mcp.supabase.com/mcp"
+    },
+    "render": {
+      "url": "https://mcp.render.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${env:RENDER_API_KEY}"
+      }
+    },
+    "zolexora-payments": {
+      "command": "python3",
+      "args": ["scripts/mcp_payments_server.py"],
+      "env": {
+        "PYTHONPATH": "apps/ims-user/backend"
+      }
+    }
+  }
+}
