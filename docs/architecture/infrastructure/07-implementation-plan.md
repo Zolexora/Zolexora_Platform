@@ -45,11 +45,25 @@ This document outlines the step-by-step engineering plan to build the vendor-agn
 - [ ] **Exclusion Filter:** Logic to read `archive_exclusions.json` and skip any tables the admin has pinned.
 - [ ] **Dynamic Archiving Logic:** Script that calculates the target date required to drop capacity below 40%, creates the Archive DB connection, safely copies the date-filtered rows, verifies the transfer, and deletes the original rows from the Hot DB.
 
-## Phase 6: The Serverless Cloud Backup System
-*Goal: Ultimate peace-of-mind defense against cloud provider lockouts, completely automated.*
+## Phase 6: The Hybrid CI/CD & Backup Automation System
+*Goal: Build the three-platform automation engine (GitHub + GitLab + Fly.io) for CI/CD and nightly backups.*
 
-- [ ] **GitHub Actions Workflow:** Create `.github/workflows/daily-backup.yml` to trigger every night at 2:00 AM.
-- [ ] **Authentication Setup:** Add Google Drive Service Account JSON / OneDrive OAuth refresh tokens into GitHub Secrets.
+### 6a — Fly.io Self-Hosted Runner Setup
+- [ ] Create a Fly.io account and provision a free always-on VM.
+- [ ] Install the **GitHub Actions self-hosted runner** on the Fly.io VM.
+- [ ] Install the **GitLab CI/CD self-hosted runner** on the same Fly.io VM.
+- [ ] Install `rclone`, `pg_dump`, and `mongodump` on the VM.
+- [ ] Verify both runners appear as "Online" in GitHub and GitLab dashboards.
+
+### 6b — GitHub Actions Hybrid Workflow
+- [ ] Create `.github/workflows/ci.yml`: route lint/tests to `ubuntu-latest` (free cloud minutes) and Docker builds/deploys to `self-hosted` (Fly.io, zero minutes).
+- [ ] Store all Postgres and Mongo URIs as encrypted GitHub Secrets.
+
+### 6c — GitLab Backup Workflow
+- [ ] Create `.gitlab-ci.yml` with a `backup` stage scheduled at `0 2 * * *` (2:00 AM daily).
+- [ ] Route the backup job exclusively to `self-hosted` (Fly.io runner, zero minutes consumed).
 - [ ] **Postgres Backups:** Automate `pg_dump` iteration across all configured Postgres URIs.
 - [ ] **Mongo Backups:** Automate `mongodump` execution.
-- [ ] **rclone Pipeline:** Automate `rclone copy` to sync the zipped database dumps directly into the external cloud drives (GDrive, OneDrive, Nextcloud).
+- [ ] **rclone Pipeline:** Configure `rclone` remotes for GDrive, OneDrive, and Nextcloud.
+- [ ] Store Google Service Account JSON, OneDrive refresh token, and Nextcloud WebDAV credentials as GitLab CI/CD Variables.
+- [ ] Compress all dumps into a single encrypted archive and upload to all three destinations simultaneously.
