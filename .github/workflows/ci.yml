@@ -58,23 +58,23 @@ jobs:
           submodules: recursive
       - name: Configure Env Template
         run: |
-          cp .env.example .env
-          if grep -q "^INSTALL_PAYMENTS=" .env; then
-            sed -i "s/^INSTALL_PAYMENTS=.*/INSTALL_PAYMENTS=${{ matrix.install_payments }}/" .env
+          cp config/envs/zolexora-erp/erp.env.example config/envs/zolexora-erp/erp.env
+          if grep -q "^INSTALL_PAYMENTS=" config/envs/zolexora-erp/erp.env; then
+            sed -i "s/^INSTALL_PAYMENTS=.*/INSTALL_PAYMENTS=${{ matrix.install_payments }}/" config/envs/zolexora-erp/erp.env
           else
-            echo "INSTALL_PAYMENTS=${{ matrix.install_payments }}" >> .env
+            echo "INSTALL_PAYMENTS=${{ matrix.install_payments }}" >> config/envs/zolexora-erp/erp.env
           fi
-          grep "^INSTALL_PAYMENTS=" .env
+          grep "^INSTALL_PAYMENTS=" config/envs/zolexora-erp/erp.env
       - name: Build Docker images
         run: docker compose -f compose.yaml build --pull
       - name: Start Compose stack
         run: docker compose -f compose.yaml up -d
       - name: Run clean bootstrap
-        run: ./scripts/init-site.sh
+        run: ./scripts/zolexora-erp/bootstrap-frappe-site.sh
       - name: Run idempotent bootstrap
-        run: ./scripts/init-site.sh
+        run: ./scripts/zolexora-erp/bootstrap-frappe-site.sh
       - name: Run healthcheck
-        run: ./scripts/healthcheck.sh
+        run: ./scripts/zolexora-erp/check-frappe-stack-health.sh
       - name: Verify Payments matrix path
         run: |
           docker compose -f compose.yaml exec -T backend bench --site site1.example.com list-apps
@@ -90,14 +90,14 @@ jobs:
             echo "INSTALL_PAYMENTS=0 path validated"
           fi
       - name: Generate verified backup
-        run: ./scripts/backup.sh
+        run: ./scripts/zolexora-erp/backup-frappe-site.sh
       - name: Restore latest backup
         run: |
           latest_backup="$(find storage/backups -mindepth 1 -maxdepth 1 -type d | sort | tail -n 1)"
           (cd "$latest_backup" && sha256sum -c SHA256SUMS)
-          ./scripts/restore.sh "$latest_backup"
+          ./scripts/zolexora-erp/restore-frappe-site.sh "$latest_backup"
       - name: Run post-restore healthcheck
-        run: ./scripts/healthcheck.sh
+        run: ./scripts/zolexora-erp/check-frappe-stack-health.sh
       - name: Verify post-restore Payments state
         run: |
           if [ "${{ matrix.install_payments }}" = "1" ]; then
@@ -115,7 +115,7 @@ jobs:
         run: |
           docker compose -f compose.yaml exec -T backend bench --site site1.example.com execute zolexora_core.site_setup.validate_custom_app_imports
       - name: Upgrade compatibility validation
-        run: RUN_UPGRADE_BUILD=1 ./scripts/upgrade-validation.sh
+        run: RUN_UPGRADE_BUILD=1 ./scripts/zolexora-erp/tests/test-upgrade-validation.sh
       - name: Cleanup
         if: always()
         run: docker compose -f compose.yaml down -v
@@ -127,4 +127,4 @@ jobs:
     steps:
       - run: |
           echo "Full destructive DR is intentionally disabled in lightweight CI."
-          echo "Run locally or in staging with ZOLEXORA_ALLOW_DESTRUCTIVE_DR=1 ./scripts/disaster-recovery-test.sh"
+          echo "Run locally or in staging with ZOLEXORA_ALLOW_DESTRUCTIVE_DR=1 ./scripts/zolexora-erp/tests/test-disaster-recovery.sh"

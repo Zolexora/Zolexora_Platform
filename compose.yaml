@@ -1,6 +1,6 @@
 x-defaults: &defaults
   restart: unless-stopped
-  env_file: .env
+  env_file: config/envs/zolexora-erp/erp.env
   volumes:
     - sites:/home/frappe/frappe-bench/sites
     - assets:/home/frappe/frappe-bench/assets
@@ -79,7 +79,7 @@ services:
         INSTALL_PAYMENTS: ${INSTALL_PAYMENTS:-0}
     container_name: zolexora-backend
     <<: *defaults
-    command: sh -c "configure-common-site && exec bench serve --port 8000"
+    command: sh -c "configure-frappe-common-site && exec bench serve --port 8000"
     ports:
       - "${FRAPPE_PORT}:8000"
     volumes:
@@ -88,7 +88,7 @@ services:
       - apps:/home/frappe/frappe-bench/apps
       - logs:/home/frappe/frappe-bench/logs
       - ./storage/backups:/home/frappe/frappe-bench/backups
-      - ./scripts/yarn-wrapper.sh:/usr/local/bin/yarn:ro
+      - ./scripts/docker/yarn-wrapper.sh:/usr/local/bin/yarn:ro
     depends_on:
       mariadb:
         condition: service_healthy
@@ -165,7 +165,7 @@ services:
       args:
         INSTALL_PAYMENTS: ${INSTALL_PAYMENTS:-0}
     container_name: zolexora-socketio
-    command: sh -c "configure-common-site && exec bench socketio"
+    command: sh -c "configure-frappe-common-site && exec bench socketio"
     depends_on:
       backend:
         condition: service_healthy

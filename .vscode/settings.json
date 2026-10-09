@@ -1,5 +1,5 @@
 {
-  "python.defaultInterpreterPath": "/usr/local/python/current/bin/python",
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
   "python.analysis.extraPaths": [
     "${workspaceFolder}/products/ZolexoraERP/backend/frappe",
     "${workspaceFolder}/products/ZolexoraERP/backend/erpnext",
