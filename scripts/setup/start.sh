@@ -25,7 +25,7 @@ command -v pnpm >/dev/null 2>&1 || { echo -e "pnpm not found. Installing via npm
 
 # 2. Install workspace dependencies
 echo -e "\n${YELLOW}Installing monorepo dependencies (pnpm install)...${NC}"
-pnpm install --ignore-scripts
+pnpm install --ignore-scripts || true
 
 # 3. Find available products with compose.yaml
 echo -e "\n${YELLOW}Scanning for Dockerized products...${NC}"
