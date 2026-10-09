@@ -61,3 +61,4 @@ scratch/
 config/envs/**/*.env
 # Trivy Cache
 .trivy-cache/
+storage/
