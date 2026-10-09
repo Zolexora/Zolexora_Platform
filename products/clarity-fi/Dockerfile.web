@@ -1,0 +1,4 @@
+FROM nginx:alpine
+# Copy static web files directly into Nginx's default public folder
+COPY apps/web /usr/share/nginx/html
+EXPOSE 80
