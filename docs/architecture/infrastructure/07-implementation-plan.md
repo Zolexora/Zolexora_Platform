@@ -45,10 +45,11 @@ This document outlines the step-by-step engineering plan to build the vendor-agn
 - [ ] **Exclusion Filter:** Logic to read `archive_exclusions.json` and skip any tables the admin has pinned.
 - [ ] **Dynamic Archiving Logic:** Script that calculates the target date required to drop capacity below 40%, creates the Archive DB connection, safely copies the date-filtered rows, verifies the transfer, and deletes the original rows from the Hot DB.
 
-## Phase 6: The Local Offline Backup System
-*Goal: Ultimate peace-of-mind defense against cloud provider lockouts.*
+## Phase 6: The Serverless Cloud Backup System
+*Goal: Ultimate peace-of-mind defense against cloud provider lockouts, completely automated.*
 
-- [ ] **Backup Script:** Develop `scripts/setup/local_backup.sh` meant to be run locally by developers/admins.
+- [ ] **GitHub Actions Workflow:** Create `.github/workflows/daily-backup.yml` to trigger every night at 2:00 AM.
+- [ ] **Authentication Setup:** Add Google Drive Service Account JSON / OneDrive OAuth refresh tokens into GitHub Secrets.
 - [ ] **Postgres Backups:** Automate `pg_dump` iteration across all configured Postgres URIs.
 - [ ] **Mongo Backups:** Automate `mongodump` execution.
-- [ ] **R2/S3 Sync:** Automate AWS CLI `s3 sync` to download all media and files locally.
+- [ ] **rclone Pipeline:** Automate `rclone copy` to sync the zipped database dumps directly into the external cloud drives (GDrive, OneDrive, Nextcloud).
