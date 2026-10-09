@@ -8,7 +8,7 @@ import {
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { v2 as cloudinary } from 'cloudinary'
-import { v4 as uuidv4 } from 'uuid'
+import crypto from 'node:crypto'
 
 export type UploadFolder =
   | 'profiles'
@@ -57,7 +57,7 @@ export class UploadService {
   ): Promise<{ url: string; thumbnailUrl: string; publicId: string }> {
     this.validateFile(buffer, mimeType, this.ALLOWED_IMAGE_TYPES, this.MAX_IMAGE_SIZE)
 
-    const publicId = `${folder}/${uuidv4()}`
+    const publicId = `${folder}/${crypto.randomUUID()}`
 
     return new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
@@ -106,7 +106,7 @@ export class UploadService {
   ): Promise<{ key: string; url: string }> {
     this.validateFile(buffer, mimeType, this.ALLOWED_PDF_TYPES, this.MAX_PDF_SIZE)
 
-    const key    = `${folder}/${uuidv4()}${filename ? `-${filename}` : ''}.pdf`
+    const key    = `${folder}/${crypto.randomUUID()}${filename ? `-${filename}` : ''}.pdf`
     const bucket = this.config.get<string>('AWS_S3_BUCKET')!
 
     await this.s3.send(new PutObjectCommand({

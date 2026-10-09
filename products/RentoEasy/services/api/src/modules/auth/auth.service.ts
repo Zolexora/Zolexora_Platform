@@ -9,7 +9,7 @@ import { MSG91Service }   from '../../config/msg91.service'
 import { SendOtpDto, VerifyOtpDto, RefreshTokenDto, SetPasswordDto } from './dto/auth.dto'
 import { JwtPayload }     from './strategies/jwt.strategy'
 import { User }           from '@prisma/client'
-import { v4 as uuidv4 }  from 'uuid'
+import crypto from 'node:crypto'
 import * as admin         from 'firebase-admin'
 import * as bcrypt        from 'bcryptjs'
 
@@ -221,7 +221,7 @@ export class AuthService {
       secret:    this.config.get('JWT_ACCESS_SECRET'),
       expiresIn: this.config.get('JWT_ACCESS_EXPIRES') ?? '15m',
     })
-    const refreshTokenValue = uuidv4()
+    const refreshTokenValue = crypto.randomUUID()
     await this.prisma.refreshToken.create({
       data: { token: refreshTokenValue, userId: user.id, expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
     })
