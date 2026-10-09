@@ -1,4 +1,4 @@
-name: CI
+name: MaunKavach — CI
 
 on:
   push:

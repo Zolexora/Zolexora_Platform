@@ -1,4 +1,4 @@
-name: Docs Cleanup & Lint
+name: ZolexoraMarketplace — Docs Lint
 
 on:
   push:

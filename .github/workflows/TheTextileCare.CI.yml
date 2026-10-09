@@ -1,4 +1,4 @@
-name: CI
+name: TheTextileCare — CI
 
 on:
   push:

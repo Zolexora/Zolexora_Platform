@@ -1,23 +1,23 @@
-name: Deploy - Development
+name: ZolexoraMarketplace — Deploy (staging)
 
 on:
   push:
-    branches: [ main, develop, development ]
+    branches: [ 'release/*', 'staging' ]
   workflow_dispatch:
     inputs:
-      reason:
-        description: 'Reason for manual trigger'
-        required: false
-        default: 'Manual development deployment'
+      version:
+        description: 'Staging release version/tag'
+        required: true
+        default: 'latest'
 
 jobs:
   deploy-server:
-    name: Deploy API Server to Development
+    name: Deploy API Server to Staging
     runs-on: ubuntu-latest
-    environment: Development – server
+    environment: Preview – server
     steps:
       - uses: actions/checkout@v4
-      - name: Build & Package API Container
+      - name: Verify Staging Prerequisites & Deploy
         env:
           ADMIN_URL: ${{ secrets.ADMIN_URL }}
           CASHFREE_CLIENT_ID: ${{ secrets.CASHFREE_CLIENT_ID }}
@@ -47,57 +47,52 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           ZOLEXORA_SHOP_PAYMENT_PROVIDER: ${{ secrets.ZOLEXORA_SHOP_PAYMENT_PROVIDER }}
         run: |
-          echo "Packaging services/marketplace-api container image for DEV..."
-          # Deploy step here
+          echo "Deploying to staging.api.zolexora.com..."
 
   deploy-marketplace-admin:
-    name: Deploy Admin Web to Development
+    name: Deploy Admin Web to Staging
     runs-on: ubuntu-latest
-    environment: Development – marketplace-admin
+    environment: Preview – marketplace-admin
     steps:
       - uses: actions/checkout@v4
       - name: Build & Deploy Admin Web
         env:
           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
         run: |
-          echo "Deploying Admin to Development..."
-          # Build/Deploy step here
+          echo "Deploying Admin to Staging..."
 
   deploy-zolexora-shop:
-    name: Deploy Zolexora Shop to Development
+    name: Deploy Zolexora Shop to Staging
     runs-on: ubuntu-latest
-    environment: Development – zolexora-shop
+    environment: Preview – zolexora-shop
     steps:
       - uses: actions/checkout@v4
       - name: Build & Deploy Zolexora Shop
         env:
           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
         run: |
-          echo "Deploying Zolexora Shop to Development..."
-          # Build/Deploy step here
+          echo "Deploying Zolexora Shop to Staging..."
 
   deploy-mahila-madel:
-    name: Deploy Mahila Madel to Development
+    name: Deploy Mahila Madel to Staging
     runs-on: ubuntu-latest
-    environment: Development – mahila-madel
+    environment: Preview – mahila-madel
     steps:
       - uses: actions/checkout@v4
       - name: Build & Deploy Mahila Madel
         env:
           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
         run: |
-          echo "Deploying Mahila Madel to Development..."
-          # Build/Deploy step here
+          echo "Deploying Mahila Madel to Staging..."
 
   deploy-zolexora-seller:
-    name: Deploy Seller Portal to Development
+    name: Deploy Seller Portal to Staging
     runs-on: ubuntu-latest
-    environment: Development – zolexora-seller
+    environment: Preview – zolexora-seller
     steps:
       - uses: actions/checkout@v4
       - name: Build & Deploy Seller Portal
         env:
           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
         run: |
-          echo "Deploying Seller Portal to Development..."
-          # Build/Deploy step here
+          echo "Deploying Seller Portal to Staging..."
