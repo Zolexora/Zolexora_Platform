@@ -67,3 +67,28 @@ This document outlines the step-by-step engineering plan to build the vendor-agn
 - [ ] **rclone Pipeline:** Configure `rclone` remotes for GDrive, OneDrive, and Nextcloud.
 - [ ] Store Google Service Account JSON, OneDrive refresh token, and Nextcloud WebDAV credentials as GitLab CI/CD Variables.
 - [ ] Compress all dumps into a single encrypted archive and upload to all three destinations simultaneously.
+
+
+## Phase 7: Email Infrastructure (Router + Log Backup + UI Monitor)
+*Goal: Build the unified email sending router, the nightly log backup pipeline, and the Email Control Center in the Platform Admin UI.*
+
+### 7a — Email Router (Platform Admin FastAPI)
+- [ ] Create `app/email/config.py`: Map every provider account to a pool (Resend accounts, Brevo accounts, SendGrid accounts) with daily limits.
+- [ ] Create `app/email/router.py`: Build the smart routing logic — check current daily usage per account, skip full accounts, automatically failover to the next available account.
+- [ ] Create FastAPI endpoints so all 11 products can send emails via the central router without each product needing its own email credentials.
+- [ ] Store all provider API keys in Infisical under `/platform-admin/email`.
+
+### 7b — Nightly Log Backup (Fly.io GitLab Runner)
+- [ ] Add a `log-backup` stage to `.gitlab-ci.yml` scheduled at `0 1 * * *` (1:00 AM daily, before Resend's 1-day logs expire).
+- [ ] Write `scripts/email/backup_logs.py`:
+  - Pull sent email records from Resend API (`/emails` endpoint).
+  - Pull delivery events from SendGrid Activity API.
+  - Pull statistics from Brevo Transactional API.
+  - Upsert all records into MongoDB `email_logs` collection.
+- [ ] Route the job to `self-hosted` (Fly.io runner, zero GitLab minutes consumed).
+
+### 7c — Email Control Center UI (Platform Admin Next.js)
+- [ ] **Live Usage Gauges:** Query the FastAPI router's usage counters and display real-time progress bars per provider account (turns red at 90%).
+- [ ] **Delivery Health Table:** Aggregate MongoDB `email_logs` by product to show sent/delivered/bounced/open rates.
+- [ ] **Permanent Log Search:** Build a searchable, paginated table over the MongoDB `email_logs` collection — filterable by product, provider, status, and date range.
+- [ ] **Alert Rules UI:** Allow admin to configure per-product bounce rate thresholds and provider usage alerts, saving rules to `email_alert_rules.json`.

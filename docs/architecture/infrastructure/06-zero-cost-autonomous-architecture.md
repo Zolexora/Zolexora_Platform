@@ -95,3 +95,65 @@ The nightly backup workflow runs exclusively on the Fly.io self-hosted runner an
     *   **OneDrive (multiple accounts):** via offline OAuth refresh token.
     *   **Nextcloud (self-hosted):** via standard WebDAV credentials.
 5. The Fly.io VM stays running, ready for the next night.
+
+
+---
+
+## 6. Email Infrastructure (Router + Log Backup + Monitor)
+
+### The Problem with Free Email Tiers
+Resend keeps logs for **1 day only**. SendGrid keeps them for **3 days only**. If we don't pull and store them before they expire, all email delivery records are permanently lost — no audit trail, no proof of delivery for invoices or OTPs.
+
+### Free Tier Capacity Across Multiple Accounts
+
+| Provider | Free/Day | Free/Month | Accounts | **Total Free/Month** |
+| :--- | :--- | :--- | :--- | :--- |
+| **Resend** | 100 | 3,000 | 10 | **30,000** |
+| **Brevo** | 300 | 9,000 | 10 | **90,000** |
+| **SendGrid** | 100 | 3,000 | 10 | **30,000** |
+| **Grand Total** | | | | **150,000/month** |
+
+### The Email Router (Platform Admin FastAPI)
+A central routing layer in Platform Admin automatically selects the correct provider account based on daily usage. When Account 1 hits 90% of its daily limit, all new emails are transparently routed to Account 2 — no manual intervention required.
+
+```
+All 11 Products
+     │
+     ▼
+Platform Admin Email Router
+     ├── Resend Account 1  (87/100 today) → Full, skip
+     ├── Resend Account 2  (23/100 today) → ✅ Send here
+     ├── Brevo Account 1   (0/300 today)  → Fallback
+     └── SendGrid Account 1 (41/100 today) → Fallback
+```
+
+### The Nightly Log Backup (Fly.io GitLab Runner)
+Every night at 1:00 AM (before Resend's 1-day logs expire), a GitLab CI job runs on the Fly.io self-hosted runner:
+1. Calls the Resend API and pulls all sent email records for the day.
+2. Calls the SendGrid Activity API and pulls all delivery events.
+3. Calls the Brevo Transactional API and pulls all send statistics.
+4. Saves every record as a structured JSON document into **MongoDB** (`email_logs` collection) permanently.
+
+Each saved document captures:
+```json
+{
+  "message_id": "resend_01abc...",
+  "provider": "resend",
+  "account": "resend-account-2",
+  "product": "zolexora-ims",
+  "to": "customer@example.com",
+  "subject": "Invoice #INV-001",
+  "status": "delivered",
+  "opened": true,
+  "sent_at": "2026-10-09T14:30:00Z",
+  "bounce_reason": null
+}
+```
+
+### The Email Control Center UI (Platform Admin Dashboard)
+The Platform Admin Next.js frontend exposes a dedicated **Email Control Center** tab:
+
+1. **Live Usage Gauges:** Real-time progress bars showing daily limit consumption per provider account. Turns red at 90%.
+2. **Delivery Health Table:** Per-product breakdown of sent, delivered, bounced, and open rates — aggregated from MongoDB.
+3. **Permanent Log Search:** A searchable, filterable table of every email ever sent across all accounts and all time. Works for emails sent 2 years ago because logs are stored in MongoDB permanently.
+4. **Alert Rules:** Configurable webhook alerts (Slack/Discord) when an account nears its daily limit or when a product's bounce rate exceeds a set threshold.
