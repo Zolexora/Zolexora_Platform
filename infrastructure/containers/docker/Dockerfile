@@ -30,12 +30,12 @@ RUN mkdir -p /home/frappe/frappe-bench/sites && \
     echo "zolexora_platform" >> /home/frappe/frappe-bench/sites/apps.txt && \
     echo "zolexora_integrations" >> /home/frappe/frappe-bench/sites/apps.txt
 COPY ./infrastructure/containers/compose /home/frappe/frappe-bench/compose
-COPY ./scripts/configure-common-site.sh /usr/local/bin/configure-common-site
+COPY ./scripts/docker/configure-frappe-common-site.sh /usr/local/bin/configure-frappe-common-site
 
 ENV PIP_NO_CACHE_DIR=1
 USER root
 RUN groupadd -f frappe && usermod -g frappe frappe && chown -R frappe:frappe /home/frappe/frappe-bench
-RUN chmod +x /usr/local/bin/configure-common-site
+RUN chmod +x /usr/local/bin/configure-frappe-common-site
 RUN mkdir -p /etc/mysql/conf.d && printf "[client]\nssl=0\n" > /etc/mysql/conf.d/99-disable-ssl.cnf
 
 USER frappe
