@@ -17,5 +17,6 @@
     "${workspaceFolder}/products/ZolexoraERP/backend/zolexora_branding",
     "${workspaceFolder}/products/ZolexoraERP/backend/zolexora_platform",
     "${workspaceFolder}/products/ZolexoraERP/backend/zolexora_integrations"
-  ]
+  ],
+  "npm.packageManager": "pnpm"
 }
