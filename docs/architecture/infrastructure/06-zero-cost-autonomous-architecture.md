@@ -53,13 +53,45 @@ Data is managed based on capacity, not hardcoded dates.
 
 ---
 
-## 5. The Ultimate Failsafe: Serverless Cloud Backups
-To mitigate the risk of cloud providers suspending free-tier accounts, we utilize a 100% automated, serverless backup strategy that pushes physical database dumps directly to personal cloud drives (Google Drive, OneDrive, Nextcloud).
+## 5. The Hybrid CI/CD & Backup Automation Engine
 
-*   **The Ghost Server:** A GitHub Actions workflow (`daily-backup.yml`) wakes up daily at 2:00 AM, providing free automated server execution without the need for a local machine.
-*   **The Extraction:** The workflow connects to all Supabase Postgres clusters (`pg_dump`) and MongoDB Atlas clusters (`mongodump`), extracting all raw data into compressed archives.
-*   **The `rclone` Pipeline:** The workflow utilizes `rclone` (the open-source Swiss Army knife for cloud storage) to authenticate and upload the archives.
-    *   **Google Drive:** Authenticated securely via a Google Service Account JSON key stored in GitHub Secrets.
-    *   **OneDrive:** Authenticated via an offline OAuth refresh token.
-    *   **Nextcloud:** Authenticated via standard WebDAV credentials.
-*   **Result:** A 100% complete, vendor-agnostic snapshot of the entire Zolexora Platform is synced directly to an offline/personal cloud every night. The temporary GitHub server destroys itself immediately after execution, yielding zero running costs and zero local hardware dependency.
+### Three Platforms, One Unified Strategy
+We use **GitHub Actions**, **GitLab CI/CD**, and **Fly.io** together. Each platform is used for what it does best, and all free-tier minutes are preserved for light jobs only.
+
+```
+Fly.io (Always-On Self-Hosted Runner)
+    │
+    ├── GitHub Self-Hosted Runner  ── Heavy CI/CD jobs (Docker build, deploy)
+    └── GitLab Self-Hosted Runner  ── Nightly backups (pg_dump → rclone → GDrive/OneDrive)
+```
+
+### Free Minutes are Still Used (Hybrid Mode)
+Self-hosted runners on Fly.io handle heavy, long-running jobs. Fast, lightweight jobs intentionally run on the free cloud runners to conserve the Fly.io VM's resources.
+
+| Job | Runner | Free Minutes Consumed |
+| :--- | :--- | :--- |
+| Code lint & type checks | GitHub cloud (`ubuntu-latest`) | ~30 seconds each run |
+| Unit & integration tests | GitHub cloud (`ubuntu-latest`) | ~2 minutes each run |
+| Security scans | GitLab cloud | ~3 minutes each run |
+| Docker image builds | Fly.io self-hosted (`self-hosted`) | **0 minutes** |
+| Production deployments | Fly.io self-hosted (`self-hosted`) | **0 minutes** |
+| Nightly database backup | Fly.io self-hosted (`self-hosted`) | **0 minutes** |
+| rclone upload to GDrive/OneDrive | Fly.io self-hosted (`self-hosted`) | **0 minutes** |
+
+### Free Compute Budget Per Month
+| Platform | Free Minutes | After Hybrid Strategy |
+| :--- | :--- | :--- |
+| GitHub Actions | 2,000 min/month | Lasts the entire year (only lint/tests) |
+| GitLab CI/CD | 400 min/month | Lasts the entire year (only security scans) |
+| Fly.io Self-Hosted | **Unlimited** | Handles all heavy workloads |
+
+### The Backup Pipeline (Fly.io → rclone)
+The nightly backup workflow runs exclusively on the Fly.io self-hosted runner and:
+1. Runs `pg_dump` across all 4 Supabase Postgres clusters.
+2. Runs `mongodump` across all MongoDB Atlas clusters.
+3. Compresses everything into a single encrypted archive.
+4. Uses `rclone` to push the archive to all three personal cloud drives simultaneously:
+    *   **Google Drive (10 accounts × 15GB = 150GB):** via Google Service Account JSON key.
+    *   **OneDrive (multiple accounts):** via offline OAuth refresh token.
+    *   **Nextcloud (self-hosted):** via standard WebDAV credentials.
+5. The Fly.io VM stays running, ready for the next night.
