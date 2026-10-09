@@ -2,6 +2,10 @@
 # Zolexora Platform - Universal Start Script
 set -e
 
+# Always run from the repository root
+REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+cd "$REPO_ROOT"
+
 # Colors
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
