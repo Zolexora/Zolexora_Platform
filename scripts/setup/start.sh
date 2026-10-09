@@ -1,95 +1,124 @@
 #!/bin/bash
-# Zolexora Platform - Universal Start Script
+# Zolexora Platform — Universal Startup Script
+# Usage: ./scripts/setup/start.sh
 set -e
 
-# Always run from the repository root
+# Always run from repository root
 REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 cd "$REPO_ROOT"
 
 # Colors
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+GREEN='\033[0;32m'; BLUE='\033[0;34m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; NC='\033[0m'
 
 echo -e "${BLUE}"
 echo "=========================================================="
-echo "          🚀 ZOLEXORA PLATFORM STARTUP SCRIPT 🚀          "
+echo "      🚀  ZOLEXORA PLATFORM  —  STARTUP SCRIPT  🚀      "
 echo "=========================================================="
 echo -e "${NC}"
 
-# 1. Dependency Checks
-echo -e "${YELLOW}Checking dependencies...${NC}"
-command -v docker >/dev/null 2>&1 || { echo >&2 "Docker is required but not installed. Aborting."; exit 1; }
-command -v pnpm >/dev/null 2>&1 || { echo -e "pnpm not found. Installing via npm..."; npm install -g pnpm; }
+# ── 1. Dependency checks ──────────────────────────────────────
+echo -e "${YELLOW}[1/4] Checking dependencies...${NC}"
+command -v docker >/dev/null 2>&1 || { echo -e "${RED}✘ Docker not found. Install Docker first.${NC}"; exit 1; }
+echo -e "  ${GREEN}✔ Docker$(NC)"
 
-# 2. Install workspace dependencies
-echo -e "\n${YELLOW}Installing monorepo dependencies (pnpm install)...${NC}"
+command -v pnpm >/dev/null 2>&1 || { echo "  pnpm not found — installing..."; npm install -g pnpm; }
+echo -e "  ${GREEN}✔ pnpm $(pnpm --version)${NC}"
+
+# ── 2. Infisical detection ────────────────────────────────────
+echo -e "\n${YELLOW}[2/4] Secrets Manager...${NC}"
+USE_INFISICAL=false
+if command -v infisical >/dev/null 2>&1; then
+  if infisical user get >/dev/null 2>&1; then
+    USE_INFISICAL=true
+    echo -e "  ${GREEN}✔ Infisical CLI found & authenticated — secrets will be injected automatically.${NC}"
+  else
+    echo -e "  ${YELLOW}⚠ Infisical installed but not logged in.${NC}"
+    echo -e "    Run: ${BLUE}infisical login${NC} to enable automatic secret injection."
+    echo -e "    Falling back to local .env files."
+  fi
+else
+  echo -e "  ${YELLOW}⚠ Infisical CLI not installed.${NC}"
+  echo -e "    Install with: ${BLUE}curl -1sLf 'https://dl.cloudsmith.io/public/infisical/infisical-cli/setup.deb.sh' | sudo bash && sudo apt-get install -y infisical${NC}"
+  echo -e "    Falling back to local .env files."
+fi
+
+# ── 3. Install workspace dependencies ────────────────────────
+echo -e "\n${YELLOW}[3/4] Installing monorepo dependencies...${NC}"
 pnpm install --ignore-scripts || true
+echo -e "  ${GREEN}✔ Done${NC}"
 
-# 3. Find available products with compose.yaml
-echo -e "\n${YELLOW}Scanning for Dockerized products...${NC}"
-PRODUCTS=()
-PATHS=()
+# ── 4. Product menu ───────────────────────────────────────────
+echo -e "\n${YELLOW}[4/4] Scanning for Dockerized products...${NC}"
+PRODUCTS=(); PATHS=()
 
-# Include root compose for "All Products"
-PRODUCTS+=("All Products (Root Compose)")
-PATHS+=("compose.yaml")
+PRODUCTS+=("All Products (Root Compose)"); PATHS+=("compose.yaml")
 
-for file in $(find products apps -maxdepth 2 -name "compose.yaml" -o -name "docker-compose.yml" 2>/dev/null); do
-    dir=$(dirname "$file")
-    product_name=$(basename "$dir")
-    PRODUCTS+=("$product_name")
-    PATHS+=("$file")
-done
+while IFS= read -r file; do
+  dir=$(dirname "$file")
+  PRODUCTS+=("$(basename "$dir")")
+  PATHS+=("$file")
+done < <(find products -maxdepth 2 \( -name "compose.yaml" -o -name "docker-compose.yml" \) 2>/dev/null | sort)
 
-# 4. Interactive Menu
-echo -e "\nWhich product would you like to start?"
+echo -e "\nWhich product would you like to start?\n"
 for i in "${!PRODUCTS[@]}"; do
-    echo "$((i+1)). ${PRODUCTS[$i]}"
+  printf "  %2d. %s\n" "$((i+1))" "${PRODUCTS[$i]}"
 done
-echo "$(( ${#PRODUCTS[@]} + 1 )). Stop/Down all products"
-echo "$(( ${#PRODUCTS[@]} + 2 )). Exit"
+echo ""
+echo "  $((${#PRODUCTS[@]} + 1)). 🛑  Stop / Down all products"
+echo "  $((${#PRODUCTS[@]} + 2)). ✕   Exit"
+echo ""
+read -rp "Select an option [1-$((${#PRODUCTS[@]} + 2))]: " OPTION
 
-read -p "Select an option [1-$(( ${#PRODUCTS[@]} + 2 ))]: " OPTION
-
-if [ "$OPTION" -eq "$(( ${#PRODUCTS[@]} + 2 ))" ]; then
-    echo "Exiting."
-    exit 0
-elif [ "$OPTION" -eq "$(( ${#PRODUCTS[@]} + 1 ))" ]; then
-    echo -e "\n${YELLOW}Stopping all containers...${NC}"
-    for compose_file in "${PATHS[@]}"; do
-        docker compose -f "$compose_file" down 2>/dev/null || true
-    done
-    echo -e "${GREEN}All containers stopped!${NC}"
-    exit 0
+# ── Exit / Stop ───────────────────────────────────────────────
+if [ "$OPTION" -eq "$((${#PRODUCTS[@]} + 2))" ]; then
+  echo "Exiting."; exit 0
+elif [ "$OPTION" -eq "$((${#PRODUCTS[@]} + 1))" ]; then
+  echo -e "\n${YELLOW}Stopping all containers...${NC}"
+  for compose_file in "${PATHS[@]}"; do
+    docker compose -f "$compose_file" down 2>/dev/null || true
+  done
+  echo -e "${GREEN}✔ All containers stopped.${NC}"; exit 0
 fi
 
-# Validation
 if [ "$OPTION" -lt 1 ] || [ "$OPTION" -gt "${#PRODUCTS[@]}" ]; then
-    echo "Invalid option."
-    exit 1
+  echo -e "${RED}Invalid option.${NC}"; exit 1
 fi
 
-SELECTED_INDEX=$((OPTION-1))
-SELECTED_NAME="${PRODUCTS[$SELECTED_INDEX]}"
-SELECTED_PATH="${PATHS[$SELECTED_INDEX]}"
-SELECTED_DIR=$(dirname "$SELECTED_PATH")
+IDX=$((OPTION - 1))
+NAME="${PRODUCTS[$IDX]}"
+COMPOSE_FILE="${PATHS[$IDX]}"
+DIR=$(dirname "$COMPOSE_FILE")
 
-echo -e "\n${GREEN}Starting $SELECTED_NAME...${NC}"
+echo -e "\n${GREEN}Starting → $NAME${NC}"
 
-# 5. Environment variable handling
-if [ ! -f "$SELECTED_DIR/.env" ] && [ -f "$SELECTED_DIR/.env.example" ]; then
-    echo -e "${YELLOW}Missing .env file in $SELECTED_DIR. Copying from .env.example...${NC}"
-    cp "$SELECTED_DIR/.env.example" "$SELECTED_DIR/.env"
+# ── .env fallback ─────────────────────────────────────────────
+if [ "$USE_INFISICAL" = false ]; then
+  if [ ! -f "$DIR/.env" ]; then
+    # Look for .env.example in config/envs/<product>/
+    PRODUCT_KEY=$(basename "$DIR")
+    EXAMPLE=$(find "config/envs/$PRODUCT_KEY" -name "*.env.example" 2>/dev/null | head -1)
+    if [ -n "$EXAMPLE" ]; then
+      cp "$EXAMPLE" "$DIR/.env"
+      echo -e "  ${YELLOW}⚠ Copied $(basename "$EXAMPLE") → $DIR/.env (fill in real values!)${NC}"
+    else
+      echo -e "  ${YELLOW}⚠ No .env found for $NAME. Add secrets to config/envs/$PRODUCT_KEY/ or use Infisical.${NC}"
+    fi
+  fi
 fi
 
-# 6. Run Docker Compose
-cd "$SELECTED_DIR"
-docker compose up -d --build
+# ── Launch Docker Compose ─────────────────────────────────────
+if [ "$USE_INFISICAL" = true ] && [ -f "$DIR/.infisical.json" ]; then
+  SECRET_PATH=$(python3 -c "import json; d=json.load(open('$DIR/.infisical.json')); print(d.get('secretsPath','/'))" 2>/dev/null || echo "/")
+  ENV_SLUG=$(python3 -c "import json; d=json.load(open('$DIR/.infisical.json')); print(d.get('defaultEnvironment','dev'))" 2>/dev/null || echo "dev")
+  echo -e "  ${BLUE}Injecting secrets from Infisical path: $SECRET_PATH (env: $ENV_SLUG)${NC}"
+  infisical run --path="$SECRET_PATH" --env="$ENV_SLUG" -- \
+    docker compose -f "$COMPOSE_FILE" up -d --build
+else
+  docker compose -f "$COMPOSE_FILE" up -d --build
+fi
 
 echo -e "\n=========================================================="
-echo -e "${GREEN}✅ $SELECTED_NAME is now running in the background!${NC}"
-echo -e "To view logs, run: ${BLUE}docker compose -f $SELECTED_PATH logs -f${NC}"
-echo -e "To stop, run: ${BLUE}docker compose -f $SELECTED_PATH down${NC}"
+echo -e "${GREEN}✅  $NAME is now running!${NC}"
+echo -e "  Logs : ${BLUE}docker compose -f $COMPOSE_FILE logs -f${NC}"
+echo -e "  Stop : ${BLUE}docker compose -f $COMPOSE_FILE down${NC}"
 echo -e "=========================================================="
