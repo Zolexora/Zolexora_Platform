@@ -1,42 +1,61 @@
-# Python
-*.pyc
+# ============================================================
+# ZOLEXORA PLATFORM — ROOT .GITIGNORE
+# Secrets are managed via Infisical. NEVER commit real .env files.
+# ============================================================
+
+# --- Python ---
 __pycache__/
-*.pyo
-*.pyd
+*.py[cod]
+*$py.class
+*.so
+.Python
 .venv/
 env/
 venv/
-*.env
-*.env.*
-!.env.example
-!*.env.example
-*.env.keys
+ENV/
+*.egg-info/
+dist/
+build/
 
-# Frappe / bench
-sites/
-storage/backups/
-storage/logs/
-assets/
-public/files/
-private/files/
+# --- Node / pnpm ---
 node_modules/
+.next/
+.turbo/
+dist/
+.cache/
+*.tsbuildinfo
 
-# Docker
-docker-compose.override.yml
-*.log
-*.tmp
-*.pid
-.trivy-cache/
-.trivy-tmp/
+# --- Environment & Secrets (CRITICAL) ---
+.env
+.env.local
+.env.development
+.env.staging
+.env.production
+.env.test
+*.env
+!*.env.example
 
+# --- Docker ---
+.docker/
 
-
-# OS
-.DS_Store
+# --- IDE ---
+.vscode/settings.json
 .idea/
 *.swp
+*.swo
 
+# --- OS ---
+.DS_Store
+Thumbs.db
 
-Dockerfile.frontend
-.env.encrypted.backup
-.pnpm-store/
+# --- Logs ---
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# --- Temporary / Scratch ---
+scratch/
+*.env.keys
+
+# ERP specific real env files
+config/envs/**/*.env
