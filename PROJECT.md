@@ -9,3 +9,10 @@ Zolexora_Platform is the monorepo containing the Zolexora Platform.
 * **Shared packages** are located at: `packages/`
 * **Clients** are located at: `clients/`
 * **Infrastructure** is located at: `infrastructure/`
+
+## Products
+
+| Product             | Description          |
+|---------------------|----------------------|
+| ZolexoraMarketplace | Ecom marketplace app |
+| TheTextileCare      | Laundry app          |
