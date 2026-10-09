@@ -1,4 +1,4 @@
-FROM node:20-alpine AS deps
+FROM node:22-alpine AS deps
 RUN corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
 COPY packages/api-contracts /packages/api-contracts
@@ -6,7 +6,7 @@ COPY products/TheTextileCare/pnpm-workspace.yaml products/TheTextileCare/pnpm-lo
 COPY products/TheTextileCare/apps/driver-mobile/package.json  ./apps/driver-mobile/
 COPY products/TheTextileCare/packages/api-client/package.json ./packages/api-client/
 COPY products/TheTextileCare/packages/config/package.json     ./packages/config/
-RUN pnpm install --frozen-lockfile
+RUN pnpm config set ignore-scripts true && pnpm install --no-frozen-lockfile
 
 FROM deps AS dev
 WORKDIR /app

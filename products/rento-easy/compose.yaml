@@ -1,21 +1,67 @@
 services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: rento-easy-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: rento
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d rento"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  redis:
+    image: redis:7-alpine
+    container_name: rento-easy-redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
   api:
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     build:
-      context: .
-      dockerfile: Dockerfile.api
+      context: ../../
+      dockerfile: products/rento-easy/Dockerfile.api
     container_name: rento-easy-api
     environment:
     - NODE_ENV=production
     - PORT=3000
-    - DATABASE_URL=${DATABASE_URL}
-    - JWT_SECRET=${JWT_SECRET}
-    - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+    - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:password@postgres:5432/rento}
+    - JWT_ACCESS_SECRET=${JWT_ACCESS_SECRET:-local-dev-access-secret-change-in-prod}
+    - JWT_ACCESS_EXPIRES=${JWT_ACCESS_EXPIRES:-7d}
+    - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID:-your_local_project}
+    - FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL:-your_placeholder@local.iam.gserviceaccount.com}
+    - FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY:-your_placeholder}
+    - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID:-rzp_test_placeholder}
+    - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET:-placeholder_secret}
+    - RAZORPAY_WEBHOOK_SECRET=${RAZORPAY_WEBHOOK_SECRET:-placeholder_webhook}
+    - RAZORPAY_X_ACCOUNT_NUMBER=${RAZORPAY_X_ACCOUNT_NUMBER:-0000000000}
+    - REDIS_URL=${REDIS_URL:-redis://redis:6379}
+    - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-placeholder}
+    - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-placeholder}
+    - AWS_REGION=${AWS_REGION:-ap-south-1}
+    - AWS_S3_BUCKET=${AWS_S3_BUCKET:-placeholder}
+    - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME:-placeholder}
+    - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY:-placeholder}
+    - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET:-placeholder}
+    - SENDGRID_API_KEY=${SENDGRID_API_KEY:-placeholder}
+    - SENDGRID_FROM_EMAIL=${SENDGRID_FROM_EMAIL:-noreply@placeholder.com}
+    - DIGIO_CLIENT_ID=${DIGIO_CLIENT_ID:-placeholder}
+    - DIGIO_CLIENT_SECRET=${DIGIO_CLIENT_SECRET:-placeholder}
+    - DIGIO_ENV=${DIGIO_ENV:-sandbox}
+    - RSTAAY=${RSTAAY:-placeholder}
     healthcheck:
       test:
       - CMD
       - wget
       - -qO-
-      - http://localhost:3000/health
+      - http://localhost:3000/docs
       interval: 15s
       timeout: 5s
       retries: 5
@@ -29,10 +75,10 @@ services:
           memory: 128M
   web-admin:
     build:
-      context: .
-      dockerfile: Dockerfile.web
+      context: ../../
+      dockerfile: products/rento-easy/Dockerfile.web
       args:
-        APP_DIR: apps/web-admin
+        APP_DIR: products/rento-easy/apps/web-admin
     container_name: rento-easy-web-admin
     deploy:
       resources:
@@ -47,16 +93,16 @@ services:
       - CMD
       - curl
       - -f
-      - http://localhost:80/health
+      - http://localhost:80/
       interval: 30s
       timeout: 10s
       retries: 3
   web-owner:
     build:
-      context: .
-      dockerfile: Dockerfile.web
+      context: ../../
+      dockerfile: products/rento-easy/Dockerfile.web
       args:
-        APP_DIR: apps/web-owner
+        APP_DIR: products/rento-easy/apps/web-owner
     container_name: rento-easy-web-owner
     deploy:
       resources:
@@ -71,16 +117,16 @@ services:
       - CMD
       - curl
       - -f
-      - http://localhost:80/health
+      - http://localhost:80/
       interval: 30s
       timeout: 10s
       retries: 3
   web-tenant:
     build:
-      context: .
-      dockerfile: Dockerfile.web
+      context: ../../
+      dockerfile: products/rento-easy/Dockerfile.web
       args:
-        APP_DIR: apps/web-tenant
+        APP_DIR: products/rento-easy/apps/web-tenant
     container_name: rento-easy-web-tenant
     deploy:
       resources:
@@ -95,17 +141,17 @@ services:
       - CMD
       - curl
       - -f
-      - http://localhost:80/health
+      - http://localhost:80/
       interval: 30s
       timeout: 10s
       retries: 3
   nginx:
-    image: nginx:alpine
+    build:
+      context: .
+      dockerfile: Dockerfile.nginx
     container_name: rento-easy-nginx
     ports:
-    - 80:80
-    volumes:
-    - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    - "3076:80"
     depends_on:
       api:
         condition: service_healthy
@@ -122,8 +168,9 @@ services:
       - CMD
       - curl
       - -f
-      - http://localhost:80/health
+      - -H
+      - "Host: localhost"
+      - http://127.0.0.1:80/
       interval: 30s
       timeout: 10s
       retries: 3
-volumes: {}

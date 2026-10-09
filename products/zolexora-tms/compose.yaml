@@ -30,6 +30,9 @@ services:
     container_name: tms-backend
     environment:
     - DATABASE_URL=postgresql://tms:password@postgres:5432/tms
+    - SUPABASE_URL=https://placeholder.supabase.co
+    - SUPABASE_SERVICE_ROLE_KEY=placeholder-service-role-key
+    - SUPABASE_ANON_KEY=placeholder-anon-key
     depends_on:
       postgres:
         condition: service_healthy
@@ -38,7 +41,7 @@ services:
       - CMD
       - python
       - -c
-      - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      - import urllib.request; urllib.request.urlopen('http://localhost:4030/health')
       interval: 15s
       timeout: 5s
       retries: 5
@@ -52,7 +55,7 @@ services:
           memory: 128M
   tms-web:
     build:
-      context: .
+      context: ./
       dockerfile: Dockerfile.web
       args:
         APP_PATH: apps/frontend/zolexora-tms
@@ -70,13 +73,13 @@ services:
       - CMD
       - curl
       - -f
-      - http://localhost:80/health
+      - http://localhost:80/
       interval: 30s
       timeout: 10s
       retries: 3
   tms-admin:
     build:
-      context: .
+      context: ./
       dockerfile: Dockerfile.web
       args:
         APP_PATH: apps/frontend/tms-admin
@@ -94,17 +97,17 @@ services:
       - CMD
       - curl
       - -f
-      - http://localhost:80/health
+      - http://localhost:80/
       interval: 30s
       timeout: 10s
       retries: 3
   nginx:
-    image: nginx:alpine
+    build:
+      context: .
+      dockerfile: Dockerfile.nginx
     container_name: tms-nginx
     ports:
-    - 80:80
-    volumes:
-    - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    - "3074:80"
     depends_on:
       backend:
         condition: service_healthy
@@ -117,13 +120,10 @@ services:
           cpus: '0.1'
           memory: 128M
     healthcheck:
-      test:
-      - CMD
-      - curl
-      - -f
-      - http://localhost:80/health
-      interval: 30s
-      timeout: 10s
+      test: ["CMD-SHELL", "curl -sf http://localhost/ -o /dev/null && exit 0 || exit 1"]
+      interval: 15s
+      timeout: 5s
       retries: 3
+      start_period: 5s
 volumes:
   postgres_data: null

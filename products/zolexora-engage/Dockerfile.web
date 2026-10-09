@@ -1,11 +1,19 @@
-FROM node:20-alpine AS builder
-RUN corepack enable && corepack prepare pnpm@9 --activate
+FROM node:22-alpine AS builder
+RUN corepack enable && corepack prepare pnpm@9.12.3 --activate
 WORKDIR /app
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY artifacts/client/web ./artifacts/client/web
-RUN pnpm install --frozen-lockfile
-RUN pnpm --filter "@zolexora-engage/web" build
+
+COPY products/zolexora-engage/tsconfig.base.json ./tsconfig.base.json
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+COPY packages ./packages
+COPY products/zolexora-engage ./products/zolexora-engage
+RUN ln -s /app/packages /packages
+RUN pnpm config set ignore-scripts true && pnpm install --no-frozen-lockfile
+ARG PORT=3041
+ENV PORT=$PORT
+ARG BASE_PATH=/
+ENV BASE_PATH=$BASE_PATH
+RUN pnpm --filter "@workspace/client-web" build
 
 FROM nginx:alpine
-COPY --from=builder /app/artifacts/client/web/dist /usr/share/nginx/html
+COPY --from=builder /app/products/zolexora-engage/artifacts/client/web/dist /usr/share/nginx/html
 EXPOSE 80

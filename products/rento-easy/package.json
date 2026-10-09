@@ -46,14 +46,9 @@
       "uuid": "^11.1.1"
     },
     "onlyBuiltDependencies": [
-      "@firebase/util",
-      "@nestjs/core",
-      "@prisma/client",
-      "@prisma/engines",
-      "@scarf/scarf",
-      "msgpackr-extract",
-      "prisma",
-      "protobufjs"
+      "esbuild",
+      "better-sqlite3",
+      "node-gyp"
     ]
   }
 }

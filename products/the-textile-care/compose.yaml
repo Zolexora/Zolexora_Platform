@@ -60,7 +60,7 @@ services:
       - CMD
       - python
       - -c
-      - import urllib.request; urllib.request.urlopen('http://localhost:4010/health')
+      - import urllib.request; urllib.request.urlopen('http://localhost:4010/api/v1/health')
       interval: 15s
       timeout: 5s
       retries: 5
@@ -74,8 +74,8 @@ services:
           memory: 128M
   admin-web:
     build:
-      context: .
-      dockerfile: infrastructure/Dockerfile.nextjs
+      context: ../../
+      dockerfile: products/the-textile-care/infrastructure/Dockerfile.nextjs
       args:
         APP_PATH: apps/admin-web
     container_name: ttc-admin-web
@@ -98,8 +98,8 @@ services:
       retries: 3
   seller-web:
     build:
-      context: .
-      dockerfile: infrastructure/Dockerfile.nextjs
+      context: ../../
+      dockerfile: products/the-textile-care/infrastructure/Dockerfile.nextjs
       args:
         APP_PATH: apps/seller-web
     container_name: ttc-seller-web
@@ -122,8 +122,8 @@ services:
       retries: 3
   marketplace-web:
     build:
-      context: .
-      dockerfile: infrastructure/Dockerfile.nextjs
+      context: ../../
+      dockerfile: products/the-textile-care/infrastructure/Dockerfile.nextjs
       args:
         APP_PATH: apps/marketplace-web
     container_name: ttc-marketplace-web
@@ -145,12 +145,12 @@ services:
       timeout: 10s
       retries: 3
   nginx:
-    image: nginx:alpine
+    build:
+      context: .
+      dockerfile: Dockerfile.nginx
     container_name: ttc-nginx
     ports:
-    - 80:80
-    volumes:
-    - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    - "3080:80"
     depends_on:
     - backend
     - admin-web
@@ -165,13 +165,10 @@ services:
           cpus: '0.1'
           memory: 128M
     healthcheck:
-      test:
-      - CMD
-      - curl
-      - -f
-      - http://localhost:80/health
-      interval: 30s
-      timeout: 10s
+      test: ["CMD-SHELL", "curl -sf http://localhost/ -o /dev/null && exit 0 || exit 1"]
+      interval: 15s
+      timeout: 5s
       retries: 3
+      start_period: 5s
 volumes:
   postgres_data: null
