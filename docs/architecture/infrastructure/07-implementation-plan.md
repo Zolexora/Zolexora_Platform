@@ -139,3 +139,17 @@ This document outlines the step-by-step engineering plan to build the vendor-agn
 - [ ] If 3 consecutive health checks fail, the Worker automatically updates DNS routing to point to the equivalent Production-2 K3s service.
 - [ ] Send immediate alert via Email Router and webhook when failover is triggered.
 - [ ] Auto-revert to Production-1 once health checks pass again.
+
+## Phase 9: Multi-Cloud Management System (CMS) for 39 Accounts
+*Goal: Build a centralized Cloud Management System in the Platform Admin to manage 13 Cloudflare, 13 AWS, and 13 Azure accounts.*
+
+### 9a — CMS Backend (FastAPI + Pulumi/SDKs)
+- [ ] Create `app/cloud/registry.py` to securely store 39 sets of cloud provider credentials using Infisical.
+- [ ] Build background polling workers using AWS `boto3` and Azure SDK for Python to fetch live billing/quota data.
+- [ ] Write the Automated Failover logic: If an AWS account hits 90% of its EC2/Lambda limit, programmatically spin up an Azure App Service fallback and update Cloudflare routing.
+- [ ] Expose an internal API endpoint `/api/cms/deploy-target` for GitHub Actions to dynamically request the least-utilized account for its next deploy.
+
+### 9b — CMS Frontend (Platform Admin UI)
+- [ ] **Fleet Dashboard:** Create a Next.js view visualizing the health and quota usage of all 39 accounts.
+- [ ] **Zero-Cost Sentinel UI:** Build the billing dashboard that aggregates costs across all accounts, triggering giant red alerts if any account exceeds $0.00.
+- [ ] **Traffic Router UI:** A drag-and-drop interface mapping products to their active deployment accounts.
