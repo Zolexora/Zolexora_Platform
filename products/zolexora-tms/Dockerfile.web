@@ -1,0 +1,14 @@
+ARG APP_PATH=apps/frontend/zolexora-tms
+FROM node:20-alpine AS builder
+ARG APP_PATH
+WORKDIR /app
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY ${APP_PATH} ./${APP_PATH}
+RUN corepack enable && corepack prepare pnpm@9 --activate
+RUN pnpm install --frozen-lockfile
+RUN pnpm --filter "./${APP_PATH}" build
+
+FROM nginx:alpine
+ARG APP_PATH
+COPY --from=builder /app/${APP_PATH}/dist /usr/share/nginx/html
+EXPOSE 80
