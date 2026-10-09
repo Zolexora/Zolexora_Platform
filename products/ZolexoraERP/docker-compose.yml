@@ -1,0 +1,61 @@
+version: "3"
+services:
+  zolexora-erp-db:
+    image: mariadb:10.6
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --skip-character-set-client-handshake
+    environment:
+      MYSQL_ROOT_PASSWORD: admin
+    volumes:
+      - db-data:/var/lib/mysql
+
+  zolexora-erp-redis-cache:
+    image: redis:6.2-alpine
+
+  zolexora-erp-redis-queue:
+    image: redis:6.2-alpine
+
+  zolexora-erp-web:
+    build: .
+    command: bench serve --port 8000
+    environment:
+      DB_HOST: zolexora-erp-db
+      DB_PORT: "3306"
+      REDIS_CACHE: redis://zolexora-erp-redis-cache:6379
+      REDIS_QUEUE: redis://zolexora-erp-redis-queue:6379
+      MYSQL_ROOT_PASSWORD: admin
+    ports:
+      - "8000:8000"
+    depends_on:
+      - zolexora-erp-db
+      - zolexora-erp-redis-cache
+      - zolexora-erp-redis-queue
+
+  zolexora-erp-worker:
+    build: .
+    command: bench worker --queue short,default,long
+    environment:
+      DB_HOST: zolexora-erp-db
+      DB_PORT: "3306"
+      REDIS_CACHE: redis://zolexora-erp-redis-cache:6379
+      REDIS_QUEUE: redis://zolexora-erp-redis-queue:6379
+    depends_on:
+      - zolexora-erp-db
+      - zolexora-erp-redis-queue
+
+  zolexora-erp-scheduler:
+    build: .
+    command: bench schedule
+    environment:
+      DB_HOST: zolexora-erp-db
+      DB_PORT: "3306"
+      REDIS_CACHE: redis://zolexora-erp-redis-cache:6379
+      REDIS_QUEUE: redis://zolexora-erp-redis-queue:6379
+    depends_on:
+      - zolexora-erp-db
+      - zolexora-erp-redis-queue
+
+volumes:
+  db-data:
