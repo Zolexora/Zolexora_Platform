@@ -11,26 +11,37 @@
       "version": "20",
       "pnpmVersion": "latest",
       "yarnVersion": "latest"
+    },
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "17",
+      "installMaven": "false",
+      "installGradle": "false"
     }
   },
-  "forwardPorts": [8000, 8080, 8443, 3000],
+  "forwardPorts": [
+    3000, 3001, 3002, 3003,
+    4100,
+    8000, 8001, 8080, 8443,
+    5432, 6379, 27017,
+    54321, 54322, 54323, 54324
+  ],
   "portsAttributes": {
-    "8000": {
-      "label": "Frappe Backend (Dev)",
-      "onAutoForward": "notify"
-    },
-    "8080": {
-      "label": "Zolexora ERP Frontend (Nginx)",
-      "onAutoForward": "openBrowser"
-    },
-    "8443": {
-      "label": "Zolexora ERP HTTPS (Nginx)",
-      "onAutoForward": "silent"
-    },
-    "3000": {
-      "label": "Frontend / Next.js Dev",
-      "onAutoForward": "notify"
-    }
+    "3000": { "label": "Next.js / Frontend Dev", "onAutoForward": "notify" },
+    "3001": { "label": "Next.js App 2", "onAutoForward": "silent" },
+    "3002": { "label": "Next.js App 3", "onAutoForward": "silent" },
+    "3003": { "label": "Next.js App 4", "onAutoForward": "silent" },
+    "4100": { "label": "Marketplace API (FastAPI)", "onAutoForward": "notify" },
+    "8000": { "label": "Frappe Backend / FastAPI Dev", "onAutoForward": "notify" },
+    "8001": { "label": "FastAPI App 2", "onAutoForward": "silent" },
+    "8080": { "label": "Zolexora ERP Frontend (Nginx)", "onAutoForward": "openBrowser" },
+    "8443": { "label": "Zolexora ERP HTTPS (Nginx)", "onAutoForward": "silent" },
+    "5432": { "label": "PostgreSQL", "onAutoForward": "silent" },
+    "6379": { "label": "Redis", "onAutoForward": "silent" },
+    "27017": { "label": "MongoDB (ZolexoraMarketplace)", "onAutoForward": "silent" },
+    "54321": { "label": "Supabase API", "onAutoForward": "silent" },
+    "54322": { "label": "Supabase DB", "onAutoForward": "silent" },
+    "54323": { "label": "Supabase Studio", "onAutoForward": "notify" },
+    "54324": { "label": "Supabase Inbucket", "onAutoForward": "silent" }
   },
   "customizations": {
     "vscode": {
@@ -38,11 +49,22 @@
         "ms-python.python",
         "ms-python.black-formatter",
         "charliermarsh.ruff",
+        "ms-python.mypy-type-checker",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+        "dsznajder.es7-react-js-snippets",
         "ms-azuretools.vscode-docker",
-        "dbaeumer.vscode-eslint"
+        "cweijan.vscode-postgresql-client2",
+        "cweijan.vscode-redis-client",
+        "eamodio.gitlens",
+        "github.vscode-pull-request-github",
+        "humao.rest-client",
+        "mathiasfrohlich.kotlin",
+        "cloudflare.cloudflare-workers-bindings"
       ],
       "settings": {
-        "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+        "python.defaultInterpreterPath": "${workspaceFolder}/scripts/.venv/bin/python",
         "python.analysis.extraPaths": [
           "${workspaceFolder}/products/ZolexoraERP/backend/frappe",
           "${workspaceFolder}/products/ZolexoraERP/backend/erpnext",
@@ -61,7 +83,11 @@
           "${workspaceFolder}/products/ZolexoraERP/backend/zolexora_platform",
           "${workspaceFolder}/products/ZolexoraERP/backend/zolexora_integrations"
         ],
-        "editor.formatOnSave": true
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff"
+        }
       }
     }
   },
