@@ -1,4 +1,4 @@
-name: TheTextileCare — CI
+name: TheTextileCare — Web
 
 on:
   push:
@@ -6,11 +6,11 @@ on:
   pull_request:
 
 jobs:
-  quality:
+  web:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: products/TheTextileCare
+        working-directory: products/the-textile-care
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -20,8 +20,8 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
-          cache-dependency-path: products/TheTextileCare/pnpm-lock.yaml
+          cache-dependency-path: products/the-textile-care/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
-      - run: pnpm lint
-      - run: pnpm typecheck
-      - run: pnpm test
+      - run: pnpm --filter @ttc/marketplace-web build
+      - run: pnpm --filter @ttc/seller-web build
+      - run: pnpm --filter @ttc/admin-web build

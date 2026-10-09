@@ -4,18 +4,18 @@ on:
   push:
     branches: [main]
     paths:
-      - "products/MaunKavach/app/**"
-      - "products/MaunKavach/gradle/**"
-      - "products/MaunKavach/*.kts"
-      - "products/MaunKavach/*.properties"
+      - "products/maun-kavach/app/**"
+      - "products/maun-kavach/gradle/**"
+      - "products/maun-kavach/*.kts"
+      - "products/maun-kavach/*.properties"
       - ".github/workflows/MaunKavach-android.yml"
     tags:
       - "maunkavach-v*"
   pull_request:
     paths:
-      - "products/MaunKavach/app/**"
-      - "products/MaunKavach/gradle/**"
-      - "products/MaunKavach/*.kts"
+      - "products/maun-kavach/app/**"
+      - "products/maun-kavach/gradle/**"
+      - "products/maun-kavach/*.kts"
       - ".github/workflows/MaunKavach-android.yml"
   workflow_dispatch:
     inputs:
@@ -28,7 +28,7 @@ on:
 
 defaults:
   run:
-    working-directory: products/MaunKavach
+    working-directory: products/maun-kavach
 
 env:
   JAVA_VERSION: "17"
@@ -67,7 +67,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: maunkavach-debug-${{ github.sha }}
-          path: products/MaunKavach/app/build/outputs/apk/debug/*.apk
+          path: products/maun-kavach/app/build/outputs/apk/debug/*.apk
           retention-days: 7
 
       - name: Distribute to testers via Firebase App Distribution
@@ -78,7 +78,7 @@ jobs:
           appId: ${{ secrets.MAUNKAVACH_FIREBASE_APP_ID }}
           token: ${{ secrets.MAUNKAVACH_FIREBASE_TOKEN }}
           groups: internal-team, qa-team
-          file: products/MaunKavach/app/build/outputs/apk/debug/app-debug.apk
+          file: products/maun-kavach/app/build/outputs/apk/debug/app-debug.apk
           releaseNotes: |
             Branch: ${{ github.ref_name }}
             Commit: ${{ github.sha }}
@@ -155,14 +155,14 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: maunkavach-release-aab-${{ github.ref_name }}
-          path: products/MaunKavach/app/build/outputs/bundle/release/*.aab
+          path: products/maun-kavach/app/build/outputs/bundle/release/*.aab
           retention-days: 30
 
       - name: Upload release APK
         uses: actions/upload-artifact@v4
         with:
           name: maunkavach-release-apk-${{ github.ref_name }}
-          path: products/MaunKavach/app/build/outputs/apk/release/*.apk
+          path: products/maun-kavach/app/build/outputs/apk/release/*.apk
           retention-days: 30
 
       - name: Create GitHub Release
@@ -171,7 +171,7 @@ jobs:
         with:
           name: MaunKavach ${{ github.ref_name }}
           files: |
-            products/MaunKavach/app/build/outputs/bundle/release/*.aab
-            products/MaunKavach/app/build/outputs/apk/release/*.apk
+            products/maun-kavach/app/build/outputs/bundle/release/*.aab
+            products/maun-kavach/app/build/outputs/apk/release/*.apk
           generate_release_notes: true
           draft: false
