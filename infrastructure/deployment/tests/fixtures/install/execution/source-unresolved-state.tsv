@@ -1,5 +1,0 @@
-package	version	requirement	source_state	signing_key_state	install_state	desired_version
-bash	1.0.0-fixture1	required	resolved	trusted	installed	1.0.0-fixture1
-docker-ce	29.0.0-fixture1	required	unresolved	trusted	installed	29.0.0-fixture1
-docker-compose-plugin	5.0.0-fixture1	required	resolved	untrusted	installed	5.0.0-fixture1
-docker-buildx-plugin	0.20.0-fixture1	optional	unresolved	untrusted	installed	0.20.0-fixture1

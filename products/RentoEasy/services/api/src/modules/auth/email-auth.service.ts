@@ -6,7 +6,7 @@ import { JwtService }     from '@nestjs/jwt'
 import { ConfigService }  from '@nestjs/config'
 import { PrismaService }  from '../../prisma/prisma.service'
 import { EmailLoginDto, EmailRegisterDto } from './dto/email-auth.dto'
-import { v4 as uuidv4 }  from 'uuid'
+import crypto from 'node:crypto'
 import * as bcrypt        from 'bcryptjs'
 
 const SALT_ROUNDS = 12
@@ -37,7 +37,7 @@ export class EmailAuthService {
         email,
         name:         dto.name.trim(),
         role:         'owner',
-        phone:        `EMAIL_${uuidv4()}`, // placeholder — owners don't need phone
+        phone:        `EMAIL_${crypto.randomUUID()}`, // placeholder — owners don't need phone
         passwordHash,
         kycStatus:    'pending',
         isActive:     true,
@@ -87,7 +87,7 @@ export class EmailAuthService {
       { sub: user.id, phone: user.phone, role: user.role },
       { secret: this.config.get('JWT_ACCESS_SECRET'), expiresIn: this.config.get('JWT_ACCESS_EXPIRES') ?? '15m' },
     )
-    const refreshTokenValue = uuidv4()
+    const refreshTokenValue = crypto.randomUUID()
     await this.prisma.refreshToken.create({
       data: { token: refreshTokenValue, userId: user.id, expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
     })

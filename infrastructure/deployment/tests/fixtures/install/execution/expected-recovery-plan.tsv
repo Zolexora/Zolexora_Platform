@@ -1,9 +1,0 @@
-field	value
-overall_status	critical
-detected_state	partial_install
-safe_to_resume	false
-manual_review_required	true
-step_1	validate_existing_state:critical
-step_2	compare_plan_identity:critical
-step_3	preserve_partial_state:warning
-step_4	require_manual_review:critical

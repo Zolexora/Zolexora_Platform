@@ -1,3 +1,0 @@
-bash	5.2.0-fixture	install ok installed
-coreutils	9.4-fixture	install ok installed
-docker-compose-plugin	2.40.0-fixture	install ok installed
