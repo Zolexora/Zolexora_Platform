@@ -171,7 +171,7 @@ fi
 # =============================================================================
 # 10. OpenAI Codex CLI
 # =============================================================================
-log "[10/11] codex (OpenAI Codex CLI)"
+log "[10/12] codex (OpenAI Codex CLI)"
 if ! command -v codex > /dev/null 2>&1; then
     npm install -g @openai/codex --quiet 2>/dev/null \
         || echo "    ⚠ codex: auto-install failed — install manually: npm install -g @openai/codex"
@@ -180,10 +180,24 @@ else
     skip "codex $(codex --version 2>/dev/null)"
 fi
 
+
 # =============================================================================
-# 11. Environment files — copy .env.example → .env where missing
+# 11. Infisical CLI — Secrets manager for all products
 # =============================================================================
-log "[11/11] Environment files"
+log "[11/12] infisical (Secrets Manager)"
+if ! command -v infisical > /dev/null 2>&1; then
+    curl -1sLf 'https://dl.cloudsmith.io/public/infisical/infisical-cli/setup.deb.sh' \
+        | sudo bash > /dev/null 2>&1
+    sudo apt-get install -y infisical > /dev/null 2>&1
+    ok "infisical installed: $(infisical --version 2>/dev/null)"
+else
+    skip "infisical $(infisical --version 2>/dev/null)"
+fi
+
+# =============================================================================
+# 12. Environment files — copy .env.example → .env where missing
+# =============================================================================
+log "[12/12] Environment files"
 ENV_SOURCES=(
     "config/envs/zolexora-erp/erp.env"
 )
