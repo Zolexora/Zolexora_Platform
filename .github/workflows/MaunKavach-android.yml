@@ -70,6 +70,20 @@ jobs:
           path: products/MaunKavach/app/build/outputs/apk/debug/*.apk
           retention-days: 7
 
+      - name: Distribute to testers via Firebase App Distribution
+        # Only runs on push to main — not on PRs
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: wzieba/Firebase-Distribution-Github-Action@v1
+        with:
+          appId: ${{ secrets.MAUNKAVACH_FIREBASE_APP_ID }}
+          token: ${{ secrets.MAUNKAVACH_FIREBASE_TOKEN }}
+          groups: internal-team, qa-team
+          file: products/MaunKavach/app/build/outputs/apk/debug/app-debug.apk
+          releaseNotes: |
+            Branch: ${{ github.ref_name }}
+            Commit: ${{ github.sha }}
+            Message: ${{ github.event.head_commit.message }}
+
   # ─────────────────────────────────────────────────────────────────
   # Job 2: Release build — runs on version tags (maunkavach-v*)
   #         or manual workflow_dispatch with build_type=release
@@ -80,6 +94,10 @@ jobs:
   #   MAUNKAVACH_RELEASE_STORE_PASSWORD — keystore password
   #   MAUNKAVACH_RELEASE_KEY_ALIAS      — key alias inside keystore
   #   MAUNKAVACH_RELEASE_KEY_PASSWORD   — key password
+  #
+  # Required for Firebase App Distribution (debug builds on main):
+  #   MAUNKAVACH_FIREBASE_APP_ID        — Firebase Console → Project Settings → Your Apps
+  #   MAUNKAVACH_FIREBASE_TOKEN         — run: firebase login:ci  (copy the printed token)
   # ─────────────────────────────────────────────────────────────────
   build-release:
     name: Build (release AAB)
