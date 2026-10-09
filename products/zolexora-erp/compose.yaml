@@ -1,50 +1,83 @@
-# ZolexoraERP — Frappe/ERPNext stack
-# Frappe bench serves the full frontend (server-side rendered Jinja2 + Vue widgets)
-# so there is no separate frontend container.
-
 services:
   mariadb:
     image: mariadb:10.11
     container_name: erp-mariadb
     command:
-      - --character-set-server=utf8mb4
-      - --collation-server=utf8mb4_unicode_ci
-      - --skip-character-set-client-handshake
+    - --character-set-server=utf8mb4
+    - --collation-server=utf8mb4_unicode_ci
+    - --skip-character-set-client-handshake
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-admin}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-erpnext}
       MYSQL_USER: ${MYSQL_USER:-erpnext}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-admin}
     volumes:
-      - db_data:/var/lib/mysql
+    - db_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD-SHELL", "mariadb-admin ping -h localhost -uroot -p${MYSQL_ROOT_PASSWORD:-admin}"]
+      test:
+      - CMD-SHELL
+      - mariadb-admin ping -h localhost -uroot -p${MYSQL_ROOT_PASSWORD:-admin}
       interval: 10s
       timeout: 5s
       retries: 5
-
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
   redis-cache:
     image: redis:7-alpine
     container_name: erp-redis-cache
-    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    command:
+    - redis-server
+    - --save
+    - ''
+    - --appendonly
+    - 'no'
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test:
+      - CMD
+      - redis-cli
+      - ping
       interval: 10s
       timeout: 5s
       retries: 5
-
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
   redis-queue:
     image: redis:7-alpine
     container_name: erp-redis-queue
-    command: ["redis-server", "--appendonly", "yes"]
+    command:
+    - redis-server
+    - --appendonly
+    - 'yes'
     volumes:
-      - redis_queue:/data
+    - redis_queue:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test:
+      - CMD
+      - redis-cli
+      - ping
       interval: 10s
       timeout: 5s
       retries: 5
-
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
   erp-web:
     build:
       context: ../..
@@ -53,7 +86,7 @@ services:
     command: bench serve --port 8000
     environment:
       DB_HOST: mariadb
-      DB_PORT: "3306"
+      DB_PORT: '3306'
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-admin}
       REDIS_CACHE: redis://redis-cache:6379
       REDIS_QUEUE: redis://redis-queue:6379
@@ -65,11 +98,20 @@ services:
       redis-queue:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8000/api/method/ping || exit 1"]
+      test:
+      - CMD-SHELL
+      - curl -sf http://localhost:8000/api/method/ping || exit 1
       interval: 15s
       timeout: 10s
       retries: 5
-
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
   erp-worker:
     build:
       context: ../..
@@ -78,13 +120,29 @@ services:
     command: bench worker --queue short,default,long
     environment:
       DB_HOST: mariadb
-      DB_PORT: "3306"
+      DB_PORT: '3306'
       REDIS_CACHE: redis://redis-cache:6379
       REDIS_QUEUE: redis://redis-queue:6379
     depends_on:
       erp-web:
         condition: service_healthy
-
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    healthcheck:
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://localhost:80/health
+      interval: 30s
+      timeout: 10s
+      retries: 3
   erp-scheduler:
     build:
       context: ../..
@@ -93,13 +151,29 @@ services:
     command: bench schedule
     environment:
       DB_HOST: mariadb
-      DB_PORT: "3306"
+      DB_PORT: '3306'
       REDIS_CACHE: redis://redis-cache:6379
       REDIS_QUEUE: redis://redis-queue:6379
     depends_on:
       erp-web:
         condition: service_healthy
-
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    healthcheck:
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://localhost:80/health
+      interval: 30s
+      timeout: 10s
+      retries: 3
   erp-socketio:
     build:
       context: ../..
@@ -111,18 +185,50 @@ services:
     depends_on:
       erp-web:
         condition: service_healthy
-
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    healthcheck:
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://localhost:80/health
+      interval: 30s
+      timeout: 10s
+      retries: 3
   nginx:
     image: nginx:alpine
     container_name: erp-nginx
     ports:
-      - "80:80"
+    - 80:80
     volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       erp-web:
         condition: service_healthy
-
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    healthcheck:
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://localhost:80/health
+      interval: 30s
+      timeout: 10s
+      retries: 3
 volumes:
-  db_data:
-  redis_queue:
+  db_data: null
+  redis_queue: null

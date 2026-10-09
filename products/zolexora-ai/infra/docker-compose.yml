@@ -1,7 +1,5 @@
-version: "3.9"
-
+version: '3.9'
 services:
-  # ── FastAPI application ──────────────────────────────────────────────────────
   api:
     build:
       context: ..
@@ -9,43 +7,62 @@ services:
     image: swarm-factory-api:local
     container_name: swarm-factory-api
     env_file:
-      - ../.env
+    - ../.env
     environment:
-      - PYTHONPATH=/app/backend
-      - REDIS_URL=redis://redis:6379/0
+    - PYTHONPATH=/app/backend
+    - REDIS_URL=redis://redis:6379/0
     volumes:
-      - ../backend:/app/backend   # hot reload in dev
+    - ../backend:/app/backend
     ports:
-      - "4090:4090"
+    - 4090:4090
     depends_on:
       redis:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4090/health"]
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://localhost:4090/health
       interval: 30s
       timeout: 10s
       start_period: 20s
       retries: 3
     networks:
-      - swarm-net
-
-  # ── Redis (Celery broker + session store) ────────────────────────────────────
+    - swarm-net
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
   redis:
     image: redis:7-alpine
     container_name: swarm-factory-redis
     command: redis-server --save 60 1 --loglevel warning
     volumes:
-      - redis-data:/data
+    - redis-data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test:
+      - CMD
+      - redis-cli
+      - ping
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
-      - swarm-net
-
-  # ── Celery worker ────────────────────────────────────────────────────────────
+    - swarm-net
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
   worker:
     build:
       context: ..
@@ -53,37 +70,73 @@ services:
     image: swarm-factory-api:local
     container_name: swarm-factory-worker
     env_file:
-      - ../.env
+    - ../.env
     environment:
-      - PYTHONPATH=/app/backend
-      - REDIS_URL=redis://redis:6379/0
+    - PYTHONPATH=/app/backend
+    - REDIS_URL=redis://redis:6379/0
     volumes:
-      - ../backend:/app/backend
-    command: ["celery", "-A", "backend.celery_app", "worker", "--loglevel=info", "--concurrency=2"]
+    - ../backend:/app/backend
+    command:
+    - celery
+    - -A
+    - backend.celery_app
+    - worker
+    - --loglevel=info
+    - --concurrency=2
     depends_on:
       redis:
         condition: service_healthy
     restart: unless-stopped
     networks:
-      - swarm-net
-
-  # ── Nginx reverse proxy ──────────────────────────────────────────────────────
+    - swarm-net
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    healthcheck:
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://localhost:80/health
+      interval: 30s
+      timeout: 10s
+      retries: 3
   nginx:
     image: nginx:1.25-alpine
     container_name: swarm-factory-nginx
     ports:
-      - "80:80"
+    - 80:80
     volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
-      - api
+    - api
     restart: unless-stopped
     networks:
-      - swarm-net
-
+    - swarm-net
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    healthcheck:
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://localhost:80/health
+      interval: 30s
+      timeout: 10s
+      retries: 3
 volumes:
-  redis-data:
-
+  redis-data: null
 networks:
   swarm-net:
     driver: bridge

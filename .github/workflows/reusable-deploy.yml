@@ -1,0 +1,30 @@
+name: Reusable Deploy Workflow
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'Environment to deploy to (e.g. dev, staging, prod)'
+        required: true
+        type: string
+      image_tag:
+        description: 'Docker image tag to deploy'
+        required: true
+        type: string
+    secrets:
+      REGISTRY_PASSWORD:
+        required: true
+      DEPLOY_SSH_KEY:
+        required: true
+
+jobs:
+  deploy:
+    name: Deploy to ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Login to Container Registry
+        run: echo "Logging into registry..."
+      - name: Run Deploy Script
+        run: bash .github/scripts/deploy.sh --environment ${{ inputs.environment }} --image ${{ inputs.image_tag }}
