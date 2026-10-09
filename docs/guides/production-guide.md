@@ -24,7 +24,7 @@ The current repository includes vendored `frappe`, `erpnext`, and `payments` dir
 ## Local & Staging Deployment
 
 ```bash
-cp .env.example .env
+cp config/envs/zolexora-erp/erp.env.example .env
 # Set INSTALL_PAYMENTS=1 in .env to enable Payments app
 docker compose -f compose.yaml build
 docker compose -f compose.yaml up -d
@@ -41,7 +41,7 @@ docker compose -f compose.yaml up -d
 
 ## Production Deployment & Secrets
 
-Use the same Compose setup and scripts, but inject secrets through the hosting platform (e.g. Northflank / Kubernetes / Docker Swarm secrets). Never use development passwords from `.env.example`.
+Use the same Compose setup and scripts, but inject secrets through the hosting platform (e.g. Northflank / Kubernetes / Docker Swarm secrets). Never use development passwords from `config/envs/zolexora-erp/erp.env.example`.
 
 ### Key Environment Variables:
 - `SITE_NAME`: Production Frappe site name (e.g., `erp.zolexora.com`).
