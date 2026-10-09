@@ -59,3 +59,4 @@ scratch/
 
 # ERP specific real env files
 config/envs/**/*.env
+\n# Trivy Cache\n.trivy-cache/\n.trivy-cache
