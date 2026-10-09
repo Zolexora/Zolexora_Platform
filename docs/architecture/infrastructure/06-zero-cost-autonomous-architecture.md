@@ -53,11 +53,13 @@ Data is managed based on capacity, not hardcoded dates.
 
 ---
 
-## 5. The Ultimate Failsafe: Local Offline Backup
-To mitigate the risk of cloud providers suspending free-tier accounts, a `local_backup.sh` script is maintained for local execution.
+## 5. The Ultimate Failsafe: Serverless Cloud Backups
+To mitigate the risk of cloud providers suspending free-tier accounts, we utilize a 100% automated, serverless backup strategy that pushes physical database dumps directly to personal cloud drives (Google Drive, OneDrive, Nextcloud).
 
-*   When executed on a local machine, the script iterates over the central `.env` credentials.
-*   It executes `pg_dump` for all Supabase Postgres clusters.
-*   It executes `mongodump` for all MongoDB Atlas clusters.
-*   It uses the AWS CLI to sync all Cloudflare R2 buckets to a local hard drive.
-*   **Result:** A 100% complete, vendor-agnostic snapshot of the entire Zolexora Platform, completely insulated from cloud provider policies.
+*   **The Ghost Server:** A GitHub Actions workflow (`daily-backup.yml`) wakes up daily at 2:00 AM, providing free automated server execution without the need for a local machine.
+*   **The Extraction:** The workflow connects to all Supabase Postgres clusters (`pg_dump`) and MongoDB Atlas clusters (`mongodump`), extracting all raw data into compressed archives.
+*   **The `rclone` Pipeline:** The workflow utilizes `rclone` (the open-source Swiss Army knife for cloud storage) to authenticate and upload the archives.
+    *   **Google Drive:** Authenticated securely via a Google Service Account JSON key stored in GitHub Secrets.
+    *   **OneDrive:** Authenticated via an offline OAuth refresh token.
+    *   **Nextcloud:** Authenticated via standard WebDAV credentials.
+*   **Result:** A 100% complete, vendor-agnostic snapshot of the entire Zolexora Platform is synced directly to an offline/personal cloud every night. The temporary GitHub server destroys itself immediately after execution, yielding zero running costs and zero local hardware dependency.
