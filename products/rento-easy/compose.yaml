@@ -1,0 +1,54 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: rento-easy-api
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  web-admin:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+      args:
+        APP_DIR: apps/web-admin
+    container_name: rento-easy-web-admin
+
+  web-owner:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+      args:
+        APP_DIR: apps/web-owner
+    container_name: rento-easy-web-owner
+
+  web-tenant:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+      args:
+        APP_DIR: apps/web-tenant
+    container_name: rento-easy-web-tenant
+
+  nginx:
+    image: nginx:alpine
+    container_name: rento-easy-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes: {}
