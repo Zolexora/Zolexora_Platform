@@ -92,3 +92,50 @@ This document outlines the step-by-step engineering plan to build the vendor-agn
 - [ ] **Delivery Health Table:** Aggregate MongoDB `email_logs` by product to show sent/delivered/bounced/open rates.
 - [ ] **Permanent Log Search:** Build a searchable, paginated table over the MongoDB `email_logs` collection — filterable by product, provider, status, and date range.
 - [ ] **Alert Rules UI:** Allow admin to configure per-product bounce rate thresholds and provider usage alerts, saving rules to `email_alert_rules.json`.
+
+## Phase 8: Dual Production Deployment & Unified Monitoring
+*Goal: Deploy all 11 products across both Production-1 and Production-2 simultaneously with automatic failover and a single monitoring panel.*
+
+### 8a — Production-1 Setup (Free Cloud Tiers)
+- [ ] Deploy all Next.js frontends to Vercel (one project per product, auto-deploy on push).
+- [ ] Deploy Platform Admin FastAPI to Fly.io VM 1.
+- [ ] Deploy IMS + Marketplace FastAPIs to Fly.io VM 2.
+- [ ] Deploy TMS + Zolexora AI FastAPIs to Fly.io VM 3.
+- [ ] Deploy Engage, Clarity FI, Maun Kavach, Textile Care, Rento Easy backends to Render.
+- [ ] Register all Render service URLs on UptimeRobot (free, 5-min ping interval) to prevent sleep.
+- [ ] Configure one Cloudflare Worker per product as the edge API gateway.
+
+### 8b — Production-2 Setup (K3s on Oracle Cloud)
+- [ ] Create Oracle Cloud Always Free account and provision 2 VMs (4 CPU, 24GB RAM each).
+- [ ] Install K3s on VM 1 (control plane) and VM 2 (worker node).
+- [ ] Install Nginx Ingress Controller and cert-manager inside K3s.
+- [ ] Write Kubernetes Deployment and Service manifests for all 11 products.
+- [ ] Write HPA (HorizontalPodAutoscaler) configs for all backends (scale 1→5 at 70% CPU).
+- [ ] Configure GitHub Container Registry (ghcr.io) as the image registry.
+- [ ] Configure rolling update strategy (maxUnavailable: 0) for zero-downtime deploys.
+
+### 8c — CI/CD Pipeline (GitHub Actions + GitLab CI)
+- [ ] GitHub Actions: Build and push Docker images to ghcr.io on every push to `main`.
+- [ ] GitHub Actions: Deploy to Production-1 (Fly.io + Vercel) using `ubuntu-latest` runners.
+- [ ] GitLab CI: Deploy to Production-2 (K3s via kubectl) using Fly.io self-hosted runner.
+- [ ] Configure rollback trigger: if health check fails post-deploy, automatically `kubectl rollout undo`.
+
+### 8d — Monitoring Stack (K3s)
+- [ ] Install Prometheus inside K3s to scrape metrics from all 11 product containers.
+- [ ] Install Grafana inside K3s and configure dashboards for CPU, RAM, request rate, error rate.
+- [ ] Install Grafana Loki inside K3s for unified log aggregation across all containers.
+- [ ] Expose Grafana via the Nginx Ingress at `grafana.admin.zolexora.com`.
+
+### 8e — Unified Monitoring Panel (Platform Admin UI)
+- [ ] **Service Health Tab:** FastAPI endpoint polls Fly.io, Render, Vercel, and K3s health endpoints every 60 seconds and displays a live status grid.
+- [ ] **Grafana Embed Tab:** Embed the K3s Grafana dashboard inside Platform Admin via iframe.
+- [ ] **Cloudflare Traffic Tab:** Pull request and bandwidth stats from all 13 Cloudflare accounts via API.
+- [ ] **Uptime History Tab:** Pull 30-day uptime data from UptimeRobot API.
+- [ ] **Deployment History Tab:** Log every CI/CD deployment event with version, timestamp, and status.
+- [ ] **Alerts:** Send failure alerts via the Email Router (Phase 7) and configurable webhooks.
+
+### 8f — Automatic Failover (P1 → P2)
+- [ ] Create a Cloudflare Worker (CF Account 12) that pings every Production-1 service every 60 seconds.
+- [ ] If 3 consecutive health checks fail, the Worker automatically updates DNS routing to point to the equivalent Production-2 K3s service.
+- [ ] Send immediate alert via Email Router and webhook when failover is triggered.
+- [ ] Auto-revert to Production-1 once health checks pass again.
