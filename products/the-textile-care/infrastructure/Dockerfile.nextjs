@@ -1,0 +1,19 @@
+ARG APP_PATH=apps/marketplace-web
+FROM node:20-alpine AS builder
+ARG APP_PATH
+WORKDIR /app
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
+COPY packages ./packages
+COPY ${APP_PATH} ./${APP_PATH}
+RUN corepack enable && corepack prepare pnpm@9 --activate
+RUN pnpm install --frozen-lockfile
+RUN pnpm --filter "./${APP_PATH}" build
+
+FROM node:20-alpine
+WORKDIR /app
+ARG APP_PATH
+COPY --from=builder /app/${APP_PATH}/.next/standalone ./
+COPY --from=builder /app/${APP_PATH}/.next/static ./.next/static
+COPY --from=builder /app/${APP_PATH}/public ./public
+EXPOSE 3000
+CMD ["node", "server.js"]
