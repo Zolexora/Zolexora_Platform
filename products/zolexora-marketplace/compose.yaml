@@ -7,24 +7,49 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_DB: marketplace
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+    - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U zolexora -d marketplace"]
+      test:
+      - CMD-SHELL
+      - pg_isready -U zolexora -d marketplace
       interval: 5s
       timeout: 5s
       retries: 5
-
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
   backend:
     build:
       context: ./services/marketplace-api
       dockerfile: ../../../infrastructure/containers/docker/Dockerfile.api-python
     container_name: marketplace-backend
     environment:
-      - DATABASE_URL=postgresql://zolexora:password@postgres:5432/marketplace
+    - DATABASE_URL=postgresql://zolexora:password@postgres:5432/marketplace
     depends_on:
       postgres:
         condition: service_healthy
-
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    healthcheck:
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://localhost:80/health
+      interval: 30s
+      timeout: 10s
+      retries: 3
   admin-web:
     build:
       context: ../../
@@ -32,7 +57,23 @@ services:
       args:
         APP_PATH: products/zolexora-marketplace/apps/portals/marketplace-admin/web
     container_name: marketplace-admin-web
-
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    healthcheck:
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://localhost:80/health
+      interval: 30s
+      timeout: 10s
+      retries: 3
   seller-web:
     build:
       context: ../../
@@ -40,7 +81,23 @@ services:
       args:
         APP_PATH: products/zolexora-marketplace/apps/portals/seller/web
     container_name: marketplace-seller-web
-
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    healthcheck:
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://localhost:80/health
+      interval: 30s
+      timeout: 10s
+      retries: 3
   shop-web:
     build:
       context: ../../
@@ -48,7 +105,23 @@ services:
       args:
         APP_PATH: products/zolexora-marketplace/apps/storefronts/zolexora-shop/web
     container_name: marketplace-shop-web
-
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    healthcheck:
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://localhost:80/health
+      interval: 30s
+      timeout: 10s
+      retries: 3
   mahila-web:
     build:
       context: ../../
@@ -56,20 +129,52 @@ services:
       args:
         APP_PATH: products/zolexora-marketplace/apps/storefronts/mahila-madel/web
     container_name: marketplace-mahila-web
-
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    healthcheck:
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://localhost:80/health
+      interval: 30s
+      timeout: 10s
+      retries: 3
   nginx:
     image: nginx:alpine
     container_name: marketplace-nginx
     ports:
-      - "80:80"
+    - 80:80
     volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
-      - backend
-      - admin-web
-      - seller-web
-      - shop-web
-      - mahila-web
-
+    - backend
+    - admin-web
+    - seller-web
+    - shop-web
+    - mahila-web
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    healthcheck:
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://localhost:80/health
+      interval: 30s
+      timeout: 10s
+      retries: 3
 volumes:
-  postgres_data:
+  postgres_data: null

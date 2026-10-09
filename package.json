@@ -1,0 +1,6 @@
+{
+  "devDependencies": {
+    "turbo": "^2.11.7",
+    "vitest": "^5.0.3"
+  }
+}

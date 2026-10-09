@@ -1,9 +1,23 @@
 services:
   redis:
     image: redis:alpine
-    # no host port published by default; accessible by other services via 'redis:6379'
     restart: unless-stopped
-
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    healthcheck:
+      test:
+      - CMD
+      - redis-cli
+      - ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
   backend:
     build:
       context: .
@@ -11,16 +25,32 @@ services:
       target: production
     env_file: .env
     ports:
-      - "4090:4090"
+    - 4090:4090
     environment:
-      - PYTHONUNBUFFERED=1
-      - PYTHONPATH=/app/backend
-      - REDIS_URL=redis://redis:6379/0
-      - API_KEY=swarm-factory-dev-key
+    - PYTHONUNBUFFERED=1
+    - PYTHONPATH=/app/backend
+    - REDIS_URL=redis://redis:6379/0
+    - API_KEY=swarm-factory-dev-key
     depends_on:
-      - redis
+    - redis
     restart: unless-stopped
-
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    healthcheck:
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://localhost:80/health
+      interval: 30s
+      timeout: 10s
+      retries: 3
   celery:
     build:
       context: .
@@ -28,22 +58,31 @@ services:
       target: production
     env_file: .env
     environment:
-      - PYTHONUNBUFFERED=1
-      - PYTHONPATH=/app/backend
-      - REDIS_URL=redis://redis:6379/0
-      - API_KEY=swarm-factory-dev-key
+    - PYTHONUNBUFFERED=1
+    - PYTHONPATH=/app/backend
+    - REDIS_URL=redis://redis:6379/0
+    - API_KEY=swarm-factory-dev-key
     command: celery -A backend.celery_app worker --loglevel=info --concurrency=4
     depends_on:
-      - redis
-      - backend
+    - redis
+    - backend
     healthcheck:
-      test: ["CMD-SHELL", "celery -A backend.celery_app inspect ping -d celery@$$HOSTNAME | grep -q OK"]
+      test:
+      - CMD-SHELL
+      - celery -A backend.celery_app inspect ping -d celery@$$HOSTNAME | grep -q OK
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 30s
     restart: unless-stopped
-
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
   frontend:
     build:
       context: ./frontend
@@ -51,24 +90,39 @@ services:
       args:
         VITE_API_KEY: swarm-factory-dev-key
     environment:
-      - VITE_API_KEY=swarm-factory-dev-key
+    - VITE_API_KEY=swarm-factory-dev-key
     ports:
-      - "8080:80"
+    - 8080:80
     depends_on:
-      - backend
+    - backend
     restart: unless-stopped
-
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    healthcheck:
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://localhost:80/health
+      interval: 30s
+      timeout: 10s
+      retries: 3
 networks:
   default:
     name: swarm-factory-net
-
   nginx:
     image: nginx:alpine
     container_name: zolexora-ai-nginx
     ports:
-      - "80:80"
+    - 80:80
     volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
-      - backend
-      - frontend
+    - backend
+    - frontend
