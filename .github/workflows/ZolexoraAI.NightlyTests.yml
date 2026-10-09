@@ -1,4 +1,4 @@
-name: Nightly Tests
+name: ZolexoraAI — Nightly Tests
 
 on:
   schedule:

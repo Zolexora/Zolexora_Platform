@@ -1,4 +1,4 @@
-name: Dependency Review
+name: ZolexoraMarketplace — Dependency Review
 
 on:
   pull_request:

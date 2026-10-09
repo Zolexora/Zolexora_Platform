@@ -1,4 +1,4 @@
-name: Playwright E2E
+name: ZolexoraAI — E2E (Playwright)
 
 on:
   push:

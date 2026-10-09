@@ -1,4 +1,4 @@
-name: Security Scan
+name: ZolexoraMarketplace — Security Scan
 
 on:
   push:
