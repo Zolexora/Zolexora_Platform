@@ -19,7 +19,7 @@ echo -e "${NC}"
 # ── 1. Dependency checks ──────────────────────────────────────
 echo -e "${YELLOW}[1/4] Checking dependencies...${NC}"
 command -v docker >/dev/null 2>&1 || { echo -e "${RED}✘ Docker not found. Install Docker first.${NC}"; exit 1; }
-echo -e "  ${GREEN}✔ Docker$(NC)"
+echo -e "  ${GREEN}✔ Docker${NC}"
 
 command -v pnpm >/dev/null 2>&1 || { echo "  pnpm not found — installing..."; npm install -g pnpm; }
 echo -e "  ${GREEN}✔ pnpm $(pnpm --version)${NC}"
@@ -53,11 +53,17 @@ PRODUCTS=(); PATHS=()
 
 PRODUCTS+=("All Products (Root Compose)"); PATHS+=("compose.yaml")
 
-while IFS= read -r file; do
-  dir=$(dirname "$file")
-  PRODUCTS+=("$(basename "$dir")")
-  PATHS+=("$file")
-done < <(find products -maxdepth 2 \( -name "compose.yaml" -o -name "docker-compose.yml" \) 2>/dev/null | sort)
+for dir in products/*/; do
+  [ -d "$dir" ] || continue
+  pname=$(basename "$dir")
+  if [ -f "$dir/compose.yaml" ]; then
+    PRODUCTS+=("$pname")
+    PATHS+=("${dir}compose.yaml")
+  elif [ -f "$dir/docker-compose.yml" ]; then
+    PRODUCTS+=("$pname")
+    PATHS+=("${dir}docker-compose.yml")
+  fi
+done
 
 echo -e "\nWhich product would you like to start?\n"
 for i in "${!PRODUCTS[@]}"; do

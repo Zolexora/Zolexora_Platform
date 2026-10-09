@@ -1,4 +1,4 @@
-FROM node:20-alpine AS base
+FROM node:22-alpine AS base
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
 # ── deps ──────────────────────────────────────────────────────────────────────
@@ -13,7 +13,7 @@ COPY products/TheTextileCare/packages/config/package.json       ./packages/confi
 COPY products/TheTextileCare/packages/auth/package.json         ./packages/auth/
 COPY products/TheTextileCare/packages/tenant/package.json       ./packages/tenant/
 COPY products/TheTextileCare/packages/api-client/package.json   ./packages/api-client/
-RUN pnpm install --frozen-lockfile
+RUN pnpm config set ignore-scripts true && pnpm install --no-frozen-lockfile
 
 # ── builder ───────────────────────────────────────────────────────────────────
 FROM deps AS builder

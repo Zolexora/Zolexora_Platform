@@ -19,3 +19,5 @@ logs/
 assets/
 backups/
 sites/
+
+.pnpm-store/

@@ -26,5 +26,12 @@
   },
   "devDependencies": {
     "@dotenvx/dotenvx": "^2.28.2"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "better-sqlite3",
+      "node-gyp"
+    ]
   }
 }

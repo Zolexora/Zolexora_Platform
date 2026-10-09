@@ -62,3 +62,5 @@ config/envs/**/*.env
 # Trivy Cache
 .trivy-cache/
 storage/
+
+.pnpm-store/

@@ -1,8 +1,8 @@
 services:
   api:
     build:
-      context: .
-      dockerfile: Dockerfile.api
+      context: ../../
+      dockerfile: products/zolexora-engage/Dockerfile.api
     container_name: zolexora-engage-api
     environment:
     - NODE_ENV=production
@@ -16,18 +16,14 @@ services:
           cpus: '0.1'
           memory: 128M
     healthcheck:
-      test:
-      - CMD
-      - curl
-      - -f
-      - http://localhost:80/health
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/healthz || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
   web:
     build:
-      context: .
-      dockerfile: Dockerfile.web
+      context: ../../
+      dockerfile: products/zolexora-engage/Dockerfile.web
     container_name: zolexora-engage-web
     deploy:
       resources:
@@ -38,21 +34,17 @@ services:
           cpus: '0.1'
           memory: 128M
     healthcheck:
-      test:
-      - CMD
-      - curl
-      - -f
-      - http://localhost:80/health
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost/ || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
   nginx:
-    image: nginx:alpine
+    build:
+      context: .
+      dockerfile: Dockerfile.nginx
     container_name: zolexora-engage-nginx
     ports:
-    - 80:80
-    volumes:
-    - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    - "3077:80"
     depends_on:
     - api
     - web
@@ -65,11 +57,8 @@ services:
           cpus: '0.1'
           memory: 128M
     healthcheck:
-      test:
-      - CMD
-      - curl
-      - -f
-      - http://localhost:80/health
-      interval: 30s
-      timeout: 10s
+      test: ["CMD-SHELL", "curl -sf http://localhost/ -o /dev/null && exit 0 || exit 1"]
+      interval: 15s
+      timeout: 5s
       retries: 3
+      start_period: 5s
