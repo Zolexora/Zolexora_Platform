@@ -11,12 +11,16 @@ export type ContractType = 'MSA' | 'SOW' | 'NDA' | 'AMC'
 
 export type SigningMode = 'CLICKWRAP_OTP' | 'AADHAAR_ESIGN' | 'DSC_TOKEN'
 
+export type EsignProvider = 'DIGIO' | 'LEEGALITY' | 'SIGNDESK'
+
 export type AuditAction =
   | 'CREATED'
   | 'VIEWED'
   | 'DOWNLOADED'
   | 'OTP_GENERATED'
   | 'OTP_VERIFIED'
+  | 'ESIGN_INITIATED'
+  | 'ESIGN_WEBHOOK_RECEIVED'
   | 'DSC_INITIATED'
   | 'DSC_VERIFIED'
   | 'SIGNED'
@@ -31,6 +35,18 @@ export interface DscCertificateDetails {
   validTo: string
   keyAlgorithm: string
   rawSignaturePkcs7: string // Base64 encoded cryptographic signature
+}
+
+export interface AadhaarEsignDetails {
+  provider: EsignProvider
+  documentId: string
+  txnId: string
+  aadhaarLast4?: string
+  signerName: string
+  signerContact: string
+  docketId?: string
+  signedPdfUrl?: string
+  completedAt: string
 }
 
 export interface AppRequest {
@@ -58,6 +74,7 @@ export interface Contract {
   stamp_state: string | null
   signing_mode: SigningMode
   dsc_details?: DscCertificateDetails | null
+  esign_details?: AadhaarEsignDetails | null
   status: ContractStatus
   scope_summary: string | null
   total_value_inr: number | null
