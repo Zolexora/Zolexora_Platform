@@ -1,6 +1,7 @@
 packages:
   - 'products/*'
   - 'platform/*'
+  - 'platform/Authentication/User Auth/*'
   - 'products/platform-admin/frontend'
   - 'products/zolexora-marketplace/apps/*/*/*'
   - 'products/zolexora-marketplace/packages/*'
