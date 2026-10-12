@@ -1,9 +1,9 @@
 import { createZolexoraAuth, type ZolexoraUser, type StoredZolexoraUser } from '@zolexora/user-auth-zolexora'
 import { createNextAuthHelpers } from '@zolexora/user-auth-zolexora/next'
+import { SESSION_COOKIE_NAME } from '@/lib/auth-constants'
 
 export type { ZolexoraUser, StoredZolexoraUser }
-
-export const SESSION_COOKIE_NAME = 'zolexora_app_suite_session'
+export { SESSION_COOKIE_NAME }
 
 // Required env vars (set in Infisical):
 //   ZOLEXORA_AUTHENTICATION_DATABASE_URL
