@@ -1,5 +1,6 @@
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { getCurrentUser } from '@/lib/auth'
+import { query } from '@/lib/db'
 import { Badge, requestStatusColor } from '@/components/ui/badge'
 import { LinkButton } from '@/components/ui/link-button'
 import { Card } from '@/components/ui/card'
@@ -9,12 +10,16 @@ import { PlusCircle, FolderOpen } from 'lucide-react'
 export const metadata = { title: 'My Requests' }
 
 export default async function RequestsPage() {
-  const supabase = await createClient()
+  const user = await getCurrentUser()
+  const userId = user?.id
 
-  const { data: requests } = await supabase
-    .from('app_requests')
-    .select('*')
-    .order('created_at', { ascending: false })
+  const { rows: requests } = userId
+    ? await query<AppRequest>(
+        'SELECT * FROM public.app_requests WHERE user_id = $1 ORDER BY created_at DESC',
+        [userId]
+      )
+    : { rows: [] as AppRequest[] }
+
 
   return (
     <div className="space-y-6">

@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { getCurrentUser } from '@/lib/auth'
-import { createClient } from '@/lib/supabase/server'
+import { query } from '@/lib/db'
 import type { RequestStatus } from '@/lib/types'
 
 export type CreateRequestState = {
@@ -15,7 +15,7 @@ export async function createApplicationRequest(
   prevState: CreateRequestState,
   formData: FormData
 ): Promise<CreateRequestState> {
-  // Auth: use Zolexora session — not Supabase auth
+  // Auth: use Zolexora session
   const user = await getCurrentUser()
   if (!user) return { error: 'You must be signed in to submit a request.' }
 
@@ -33,17 +33,16 @@ export async function createApplicationRequest(
     ? `${description}\n\nKey Features & Requirements:\n${features}${timeline ? `\n\nTarget Timeline: ${timeline}` : ''}`
     : `${description}${timeline ? `\n\nTarget Timeline: ${timeline}` : ''}`
 
-  const supabase = await createClient()
-  const { error } = await supabase.from('app_requests').insert({
-    user_id: user.id,  // Zolexora auth user UUID
-    title,
-    category,
-    description: detailedDescription,
-    budget_range,
-    status: 'submitted' as RequestStatus,
-  })
+  try {
+    await query(
+      `INSERT INTO public.app_requests (user_id, title, category, description, budget_range, status)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [user.id, title, category, detailedDescription, budget_range, 'submitted']
+    )
+  } catch (err: unknown) {
+    return { error: err instanceof Error ? err.message : 'Failed to create request' }
+  }
 
-  if (error) return { error: error.message }
 
   revalidatePath('/dashboard')
   revalidatePath('/dashboard/requests')

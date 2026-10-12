@@ -1,7 +1,8 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
+import { getCurrentUser } from '@/lib/auth'
+import { query } from '@/lib/db'
 import { recordContractAuditEvent } from '@/lib/audit-logger'
 import { generateContractLegalHtml } from '@/lib/contract-generator'
 import { verifyIndianDscCertificate } from '@/lib/dsc-verifier'
@@ -47,25 +48,27 @@ export async function executeDigitalContract({
   esignProvider?: EsignProvider
   signerPhone?: string
 }): Promise<SignContractResult> {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
+  const user = await getCurrentUser()
   const clientEmail = user?.email || 'signatory@zolexora.com'
 
   // Fetch the contract
-  const { data: contractData, error: fetchError } = await supabase
-    .from('contracts')
-    .select('*, app_requests(title)')
-    .eq('id', contractId)
-    .single()
+  const { rows: contractRows } = await query(
+    `SELECT c.*, r.title AS app_request_title
+     FROM public.contracts c
+     LEFT JOIN public.app_requests r ON c.request_id = r.id
+     WHERE c.id = $1 LIMIT 1`,
+    [contractId]
+  )
 
-  if (fetchError || !contractData) {
+  if (!contractRows[0]) {
     return { error: 'Contract not found.' }
   }
 
-  const contract = contractData as Contract & { app_requests?: { title: string } }
+  const contract = {
+    ...contractRows[0],
+    app_requests: contractRows[0].app_request_title ? { title: contractRows[0].app_request_title } : undefined,
+  } as Contract & { app_requests?: { title: string } }
+
 
   if (contract.status === 'signed') {
     return { error: 'This contract has already been executed.' }
@@ -154,23 +157,27 @@ export async function executeDigitalContract({
   })
 
   // Update Contract in Database
-  const { error: updateError } = await supabase
-    .from('contracts')
-    .update({
-      status: 'signed' as ContractStatus,
-      signing_mode: signingMode,
-      signed_at: signedAt,
-      document_hash: originalDocHash,
-      signed_document_hash: signedDocHash,
-      scope_summary: verifiedDscDetails
-        ? `Signed via Class 3 USB DSC Token (Serial: ${verifiedDscDetails.serialNumber}, CA: ${verifiedDscDetails.certIssuer})`
-        : contract.scope_summary,
-    })
-    .eq('id', contractId)
-
-  if (updateError) {
-    return { error: updateError.message }
+  try {
+    await query(
+      `UPDATE public.contracts
+       SET status = $1, signing_mode = $2, signed_at = $3, document_hash = $4, signed_document_hash = $5, scope_summary = $6, updated_at = NOW()
+       WHERE id = $7`,
+      [
+        'signed',
+        signingMode,
+        signedAt,
+        originalDocHash,
+        signedDocHash,
+        verifiedDscDetails
+          ? `Signed via Class 3 USB DSC Token (Serial: ${verifiedDscDetails.serialNumber}, CA: ${verifiedDscDetails.certIssuer})`
+          : contract.scope_summary,
+        contractId,
+      ]
+    )
+  } catch (err: unknown) {
+    return { error: err instanceof Error ? err.message : 'Failed to update contract' }
   }
+
 
   // Record Section 65B Audit Event
   await recordContractAuditEvent({

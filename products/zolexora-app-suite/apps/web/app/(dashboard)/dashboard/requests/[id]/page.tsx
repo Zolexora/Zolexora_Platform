@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { getCurrentUser } from '@/lib/auth'
+import { query } from '@/lib/db'
 import { Badge, requestStatusColor } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { REQUEST_STATUS_LABELS, type AppRequest } from '@/lib/types'
@@ -17,15 +18,19 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function RequestDetailPage({ params }: Props) {
   const { id } = await params
-  const supabase = await createClient()
+  const user = await getCurrentUser()
+  const userId = user?.id
 
-  const { data: request } = await supabase
-    .from('app_requests')
-    .select('*')
-    .eq('id', id)
-    .single()
+  if (!userId) notFound()
 
+  const { rows } = await query<AppRequest>(
+    'SELECT * FROM public.app_requests WHERE id = $1 AND user_id = $2 LIMIT 1',
+    [id, userId]
+  )
+
+  const request = rows[0]
   if (!request) notFound()
+
 
   const req = request as AppRequest
 
