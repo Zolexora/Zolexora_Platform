@@ -5,7 +5,7 @@ export type ZolexoraUser = {
 };
 
 export type StoredZolexoraUser = ZolexoraUser & {
-  passwordHash: string;
+  passwordHash: string | null;
 };
 
 export type ZolexoraTokenPurpose = "verify-email" | "reset-password";
@@ -17,6 +17,9 @@ export type ZolexoraAuthStore = {
   setEmailVerified(userId: string, verifiedAt: Date): Promise<void>;
   /** Update the password and invalidate existing sessions where your app stores them. */
   updatePassword(userId: string, passwordHash: string): Promise<void>;
+  createSession(input: { userId: string; tokenHash: string; expiresAt: Date }): Promise<void>;
+  findUserBySession(input: { tokenHash: string; now: Date }): Promise<StoredZolexoraUser | null>;
+  deleteSession(tokenHash: string): Promise<void>;
   createToken(input: {
     userId: string;
     tokenHash: string;
@@ -32,10 +35,16 @@ export type ZolexoraAuthStore = {
 };
 
 export type ZolexoraAuthOptions = {
-  store: ZolexoraAuthStore;
-  resendApiKey: string;
-  from: string;
-  appUrl: string;
+  /** Optional custom adapter. By default, the package uses ZOLEXORA_AUTHENTICATION_DATABASE_URL. */
+  store?: ZolexoraAuthStore;
+  databaseUrl?: string;
+  resendApiKey?: string;
+  from?: string;
+  appUrl?: string;
+  verificationPath?: string;
+  passwordResetPath?: string;
   verificationTokenTtlMs?: number;
   passwordResetTokenTtlMs?: number;
+  sessionTtlMs?: number;
+  maxDbConnections?: number;
 };
