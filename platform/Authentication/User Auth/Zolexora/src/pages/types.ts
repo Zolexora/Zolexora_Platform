@@ -13,3 +13,8 @@ export type SignUpAction = (
   prev: AuthActionState,
   formData: FormData,
 ) => Promise<AuthActionState>
+
+export type VerifyOtpAction = (
+  prev: AuthActionState,
+  formData: FormData,
+) => Promise<AuthActionState>

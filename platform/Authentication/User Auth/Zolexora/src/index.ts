@@ -87,7 +87,7 @@ export function createZolexoraAuth(options: ZolexoraAuthOptions = {}) {
   const maxConnections = options.maxDbConnections ?? 5;
   if (!Number.isInteger(maxConnections) || maxConnections < 1) throw new Error("maxDbConnections must be a positive integer.");
   const pool = options.store ? null : (() => {
-    const parsed = new URL(databaseUrl);
+    const parsed = new URL(databaseUrl!);
     const isSsl = parsed.searchParams.get("sslmode") === "require" || parsed.hostname.includes("supabase.com") || parsed.hostname.includes("render.com") || parsed.hostname.includes("neon.tech");
     return new Pool({
       host: parsed.hostname,
@@ -105,24 +105,61 @@ export function createZolexoraAuth(options: ZolexoraAuthOptions = {}) {
   const resetTtl = options.passwordResetTokenTtlMs ?? DEFAULT_RESET_TTL;
   const sessionTtl = options.sessionTtlMs ?? DEFAULT_SESSION_TTL;
 
+  function generateOtp(): string {
+    const num = randomBytes(4).readUInt32BE(0) % 1000000;
+    return num.toString().padStart(6, "0");
+  }
+
   async function sendLink(user: StoredZolexoraUser, purpose: "verify-email" | "reset-password", ttl: number) {
     const token = randomBytes(TOKEN_BYTES).toString("base64url");
+    const otp = purpose === "verify-email" ? generateOtp() : null;
+
+    // Save magic link token
     await store.createToken({
       userId: user.id,
       tokenHash: digestToken(token),
       purpose,
       expiresAt: new Date(Date.now() + ttl),
     });
+
+    // Save 6-digit OTP token if verify-email
+    if (otp) {
+      await store.createToken({
+        userId: user.id,
+        tokenHash: digestToken(otp),
+        purpose: "verify-email",
+        expiresAt: new Date(Date.now() + Math.min(ttl, 15 * 60 * 1000)), // 15 min OTP TTL
+      });
+    }
+
     const path = purpose === "verify-email" ? options.verificationPath ?? "/verify-email" : options.passwordResetPath ?? "/reset-password";
     const link = new URL(path, appUrl);
     link.searchParams.set("token", token);
     const subject = purpose === "verify-email" ? "Verify your Zolexora email" : "Reset your Zolexora password";
     const action = purpose === "verify-email" ? "Verify email" : "Reset password";
+
+    const otpHtml = otp ? `
+      <div style="margin: 24px 0; padding: 16px; background-color: #f4f4f5; border-radius: 8px; text-align: center;">
+        <p style="margin: 0 0 8px 0; font-size: 14px; color: #71717a;">Your 6-digit Verification Code:</p>
+        <span style="font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #18181b; font-family: monospace;">${otp}</span>
+        <p style="margin: 8px 0 0 0; font-size: 12px; color: #a1a1aa;">Valid for 15 minutes</p>
+      </div>
+      <p style="text-align: center; color: #71717a; font-size: 14px;">— OR —</p>
+    ` : "";
+
     const { error } = await resend.emails.send({
       from,
       to: [user.email],
       subject,
-      html: `<p>Use this link to ${action.toLowerCase()}:</p><p><a href="${escapeHtml(link.toString())}">${action}</a></p><p>This link expires soon. If you did not request it, ignore this email.</p>`,
+      html: `
+        <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto;">
+          <h2>${subject}</h2>
+          ${otpHtml}
+          <p>Click below to verify via direct link:</p>
+          <p><a href="${escapeHtml(link.toString())}" style="display: inline-block; padding: 10px 20px; background-color: #4f46e5; color: #fff; text-decoration: none; border-radius: 6px;">${action}</a></p>
+          <p style="font-size: 12px; color: #71717a; margin-top: 24px;">If you did not request this, please ignore this email.</p>
+        </div>
+      `,
     }, { idempotencyKey: `${purpose}/${user.id}/${digestToken(token).slice(0, 24)}` });
     if (error) throw new Error(`Could not send authentication email: ${error.message}`);
   }
@@ -137,6 +174,16 @@ export function createZolexoraAuth(options: ZolexoraAuthOptions = {}) {
     async verifyEmail(token: string): Promise<void> {
       const userId = await store.consumeToken({ tokenHash: digestToken(token), purpose: "verify-email", now: new Date() });
       if (!userId) throw new Error("Verification link is invalid or expired.");
+      await store.setEmailVerified(userId, new Date());
+    },
+
+    async verifyEmailOtp(email: string, otp: string): Promise<void> {
+      const normalized = normalizeEmail(email);
+      const user = await store.findUserByEmail(normalized);
+      if (!user) throw new Error("No account found with this email.");
+      const cleanOtp = otp.trim();
+      const userId = await store.consumeToken({ tokenHash: digestToken(cleanOtp), purpose: "verify-email", now: new Date() });
+      if (!userId || userId !== user.id) throw new Error("Invalid or expired 6-digit OTP code.");
       await store.setEmailVerified(userId, new Date());
     },
 
