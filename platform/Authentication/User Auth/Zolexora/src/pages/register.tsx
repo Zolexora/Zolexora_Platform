@@ -1,8 +1,8 @@
 'use client'
 
 import { useActionState } from 'react'
-import type { AuthActionState, SignUpAction } from './types.js'
-import { ErrorBanner } from './login.js'
+import type { AuthActionState, SignUpAction } from './types'
+import { ErrorBanner } from './login'
 
 interface RegisterPageProps {
   signUpAction: SignUpAction

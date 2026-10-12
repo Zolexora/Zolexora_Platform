@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState } from 'react'
-import type { AuthActionState, SignInAction } from './types.js'
+import type { AuthActionState, SignInAction } from './types'
 
 interface LoginPageProps {
   signInAction: SignInAction
