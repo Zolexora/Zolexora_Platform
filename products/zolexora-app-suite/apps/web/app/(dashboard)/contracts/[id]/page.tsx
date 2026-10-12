@@ -3,7 +3,13 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { Badge, contractStatusColor } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
-import { CONTRACT_STATUS_LABELS, type Contract } from '@/lib/types'
+import { DigitalSigningModal } from '@/components/dashboard/digital-signing-modal'
+import {
+  CONTRACT_STATUS_LABELS,
+  CONTRACT_TYPE_LABELS,
+  type Contract,
+  type ContractAuditLog,
+} from '@/lib/types'
 import {
   ArrowLeft,
   FileText,
@@ -13,6 +19,8 @@ import {
   Clock,
   XCircle,
   FileEdit,
+  ShieldAlert,
+  Hash,
 } from 'lucide-react'
 
 interface Props {
@@ -40,20 +48,29 @@ export default async function ContractDetailPage({ params }: Props) {
 
   if (!user) redirect('/login')
 
-  const { data: contract } = await supabase
-    .from('contracts')
-    .select('*')
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .single()
+  const [{ data: contract }, { data: auditLogs }] = await Promise.all([
+    supabase
+      .from('contracts')
+      .select('*')
+      .eq('id', id)
+      .eq('user_id', user.id)
+      .single(),
+    supabase
+      .from('contract_audit_logs')
+      .select('*')
+      .eq('contract_id', id)
+      .order('timestamp_utc', { ascending: false }),
+  ])
 
   if (!contract) notFound()
 
   const c = contract as Contract
+  const logs = (auditLogs || []) as ContractAuditLog[]
   const StatusIcon = statusIcons[c.status]
+  const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Client'
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="max-w-3xl space-y-6">
       {/* Back */}
       <Link
         href="/dashboard/contracts"
@@ -73,7 +90,7 @@ export default async function ContractDetailPage({ params }: Props) {
               {c.title}
             </h1>
             <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
-              Created{' '}
+              {CONTRACT_TYPE_LABELS[c.contract_type] || c.contract_type} · Issued{' '}
               {new Date(c.created_at).toLocaleDateString('en-IN', {
                 day: 'numeric',
                 month: 'long',
@@ -87,91 +104,122 @@ export default async function ContractDetailPage({ params }: Props) {
         </Badge>
       </div>
 
+      {/* Indian Stamp Duty Notice Banner */}
+      <div className="rounded-xl border border-indigo-500/20 bg-indigo-950/20 p-4 text-xs text-indigo-300 flex items-start gap-3">
+        <ShieldAlert className="w-4 h-4 flex-shrink-0 text-indigo-400 mt-0.5" />
+        <div>
+          <span className="font-semibold text-white">Indian Stamp Act & Legal Enforceability:</span>{' '}
+          Governing state: {c.stamp_state || 'MAHARASHTRA'} · e-Stamp Reference:{' '}
+          <span className="font-mono text-indigo-200">{c.stamp_duty_ref || 'PENDING_ADHESIVE_DUTY'}</span>.
+          Compliant with Section 10A of the Information Technology Act, 2000.
+        </div>
+      </div>
+
       {/* Status Card */}
       <Card>
         <div className="flex items-start gap-4">
           <div className="w-10 h-10 rounded-xl bg-[var(--color-surface-hover)] flex items-center justify-center shrink-0">
             <StatusIcon className="w-5 h-5 text-[var(--color-brand-primary)]" />
           </div>
-          <div>
+          <div className="flex-1">
             <p className="font-semibold text-[var(--color-text-primary)]">
-              {c.status === 'draft' && 'Contract is being prepared'}
-              {c.status === 'sent' && 'Contract sent — awaiting your signature'}
-              {c.status === 'signed' && 'Contract signed — project is active'}
+              {c.status === 'draft' && 'Contract is being drafted with legal clauses'}
+              {c.status === 'sent' && 'Contract issued — awaiting your digital signature'}
+              {c.status === 'signed' && 'Contract digitally executed — legally active'}
               {c.status === 'declined' && 'Contract was declined'}
             </p>
             <p className="text-sm text-[var(--color-text-muted)] mt-1">
               {c.status === 'draft' &&
-                'Our team is finalising the contract terms. You will receive a notification when it is ready for your review.'}
+                'Our team is tailoring the Master Services Agreement & IP transfer clauses. You will be notified once ready.'}
               {c.status === 'sent' &&
-                'Please review and sign the contract using the link below. If you have questions, contact your project manager.'}
+                'Please review the clauses below and complete the digital execution using the sign dialog.'}
               {c.status === 'signed' &&
-                `Contract was signed on ${c.signed_at ? new Date(c.signed_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'}. Development is now underway.`}
+                `Executed on ${c.signed_at ? new Date(c.signed_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) : '—'} IST. IP transfer is conditional on full fee settlement.`}
               {c.status === 'declined' &&
-                'This contract was declined. Please reach out to our team to discuss revisions.'}
+                'This contract was declined. Reach out to discuss revisions.'}
             </p>
-          </div>
-        </div>
-      </Card>
 
-      {/* Details */}
-      <Card>
-        <h2 className="text-sm font-semibold text-[var(--color-text-primary)] mb-4">
-          Contract Information
-        </h2>
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-2.5 text-sm text-[var(--color-text-muted)]">
-            <Calendar className="w-4 h-4 shrink-0" />
-            <span>
-              <span className="text-[var(--color-text-primary)] font-medium">
-                Date Created:
-              </span>{' '}
-              {new Date(c.created_at).toLocaleDateString('en-IN', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric',
-              })}
-            </span>
-          </div>
-          {c.signed_at && (
-            <div className="flex items-center gap-2.5 text-sm text-[var(--color-text-muted)]">
-              <CheckCircle2 className="w-4 h-4 shrink-0 text-green-400" />
-              <span>
-                <span className="text-[var(--color-text-primary)] font-medium">
-                  Date Signed:
-                </span>{' '}
-                {new Date(c.signed_at).toLocaleDateString('en-IN', {
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric',
-                })}
-              </span>
+            <div className="mt-4 flex gap-3">
+              <a
+                href={`/api/contracts/${c.id}/document`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs text-[var(--color-brand-primary)] bg-[var(--color-brand-primary)]/10 px-3 py-1.5 rounded-lg hover:bg-[var(--color-brand-primary)]/20 transition-colors"
+              >
+                <ExternalLink className="w-3.5 h-3.5" /> View Printable Legal Document
+              </a>
             </div>
-          )}
+          </div>
         </div>
       </Card>
 
-      {/* Document Link */}
-      {c.document_url && (
+      {/* Digital Execution Area (if awaiting signature) */}
+      {c.status === 'sent' && (
+        <DigitalSigningModal contractId={c.id} defaultSignerName={userName} />
+      )}
+
+      {/* Cryptographic Hashes (Section 65B Certificate Data) */}
+      {(c.document_hash || c.signed_document_hash) && (
         <Card>
-          <h2 className="text-sm font-semibold text-[var(--color-text-primary)] mb-3">
-            Contract Document
-          </h2>
-          <a
-            href={c.document_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-lg border border-[var(--color-brand-primary)]/30 bg-[var(--color-brand-primary)]/10 px-4 py-2.5 text-sm font-medium text-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary)]/20 transition-colors"
-          >
-            <FileText className="w-4 h-4" />
-            {c.status === 'sent' ? 'Review & Sign Contract' : 'View Contract Document'}
-            <ExternalLink className="w-3.5 h-3.5" />
-          </a>
-          <p className="text-xs text-[var(--color-text-muted)] mt-2">
-            Opens in a new tab. Contact us if you have trouble accessing the document.
-          </p>
+          <div className="flex items-center gap-2 mb-3">
+            <Hash className="w-4 h-4 text-[var(--color-brand-primary)]" />
+            <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">
+              Cryptographic Integrity Hashes (Sec 65B Indian Evidence Act)
+            </h2>
+          </div>
+          <div className="space-y-2 text-xs font-mono">
+            {c.document_hash && (
+              <div className="p-2.5 rounded-lg bg-[var(--color-surface-hover)] break-all">
+                <span className="text-[var(--color-text-muted)] block font-sans text-[11px] mb-0.5">Pre-Signature SHA-256 Hash:</span>
+                <span className="text-indigo-300">{c.document_hash}</span>
+              </div>
+            )}
+            {c.signed_document_hash && (
+              <div className="p-2.5 rounded-lg bg-[var(--color-surface-hover)] break-all">
+                <span className="text-[var(--color-text-muted)] block font-sans text-[11px] mb-0.5">Executed Document SHA-256 Hash:</span>
+                <span className="text-green-400">{c.signed_document_hash}</span>
+              </div>
+            )}
+          </div>
         </Card>
       )}
+
+      {/* Immutable Audit Log Trail */}
+      <Card>
+        <h2 className="text-sm font-semibold text-[var(--color-text-primary)] mb-3">
+          Chain of Custody & Audit Trail ({logs.length} Events)
+        </h2>
+        {logs.length === 0 ? (
+          <p className="text-xs text-[var(--color-text-muted)]">
+            No audit events logged yet. Events will appear when viewed, downloaded, or executed.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {logs.map((log) => (
+              <div
+                key={log.id}
+                className="flex items-start justify-between p-3 rounded-lg bg-[var(--color-surface-hover)] border border-[var(--color-border)] text-xs"
+              >
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-white uppercase text-[11px] bg-slate-800 px-2 py-0.5 rounded">
+                      {log.action}
+                    </span>
+                    <span className="text-[var(--color-text-primary)]">{log.signer_name}</span>
+                    <span className="text-[var(--color-text-muted)]">({log.signer_email})</span>
+                  </div>
+                  <p className="text-[11px] text-[var(--color-text-muted)] mt-1">
+                    IP: {log.ip_address} · Method: {log.verification_method}
+                  </p>
+                </div>
+                <span className="text-[11px] text-[var(--color-text-muted)] whitespace-nowrap ml-4">
+                  {new Date(log.timestamp_utc).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
     </div>
   )
 }
