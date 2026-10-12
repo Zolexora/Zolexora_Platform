@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { query } from '@/lib/db'
 import { verifyAndParseEsignWebhook } from '@/lib/esign-gateway'
 import { recordContractAuditEvent } from '@/lib/audit-logger'
-import type { ContractStatus } from '@/lib/types'
 
 /**
  * Public Webhook Endpoint — Digio / Leegality Aadhaar eSign callback.
@@ -33,23 +32,20 @@ export async function POST(request: Request) {
       )
     }
 
-    const supabase = await createClient()
-
-    // Update contract status to signed with Aadhaar eSign details
-    const { error: dbError } = await supabase
-      .from('contracts')
-      .update({
-        status: 'signed' as ContractStatus,
-        signing_mode: 'AADHAAR_ESIGN',
-        signed_at: details.completedAt,
-        document_url: details.signedPdfUrl || null,
-        scope_summary: `Executed via ${details.provider} Aadhaar eSign (Txn: ${details.txnId}, Aadhaar: ****${details.aadhaarLast4})`,
-      })
-      .eq('id', contractId)
-
-    if (dbError) {
-      return NextResponse.json({ error: dbError.message }, { status: 500 })
-    }
+    // Update contract status to signed with Aadhaar eSign details in PostgreSQL
+    await query(
+      `UPDATE public.contracts
+       SET status = $1, signing_mode = $2, signed_at = $3, document_url = $4, scope_summary = $5, updated_at = NOW()
+       WHERE id = $6`,
+      [
+        'signed',
+        'AADHAAR_ESIGN',
+        details.completedAt,
+        details.signedPdfUrl || null,
+        `Executed via ${details.provider} Aadhaar eSign (Txn: ${details.txnId}, Aadhaar: ****${details.aadhaarLast4})`,
+        contractId,
+      ]
+    )
 
     // Log Section 65B Audit Trail
     await recordContractAuditEvent({
@@ -68,7 +64,10 @@ export async function POST(request: Request) {
     })
 
     return NextResponse.json({ success: true, txnId: details.txnId })
-  } catch {
-    return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 })
+  } catch (err: unknown) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : 'Webhook processing failed' },
+      { status: 500 }
+    )
   }
 }

@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { getCurrentUser } from '@/lib/auth'
+import { query } from '@/lib/db'
 import { Badge, contractStatusColor } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { DigitalSigningModal } from '@/components/dashboard/digital-signing-modal'
@@ -41,22 +42,25 @@ const statusIcons = {
 
 export default async function ContractDetailPage({ params }: Props) {
   const { id } = await params
-  const supabase = await createClient()
+  const user = await getCurrentUser()
+  const userId = user?.id
 
-  const [{ data: contract }, { data: auditLogs }] = await Promise.all([
-    supabase
-      .from('contracts')
-      .select('*')
-      .eq('id', id)
-      .single(),
-    supabase
-      .from('contract_audit_logs')
-      .select('*')
-      .eq('contract_id', id)
-      .order('timestamp_utc', { ascending: false }),
+  if (!userId) notFound()
+
+  const [{ rows: contracts }, { rows: auditLogs }] = await Promise.all([
+    query<Contract>(
+      'SELECT * FROM public.contracts WHERE id = $1 AND user_id = $2 LIMIT 1',
+      [id, userId]
+    ),
+    query<ContractAuditLog>(
+      'SELECT * FROM public.contract_audit_logs WHERE contract_id = $1 ORDER BY timestamp_utc DESC',
+      [id]
+    ),
   ])
 
+  const contract = contracts[0]
   if (!contract) notFound()
+
 
   const c = contract as Contract
   const logs = (auditLogs || []) as ContractAuditLog[]

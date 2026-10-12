@@ -1,5 +1,6 @@
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { getCurrentUser } from '@/lib/auth'
+import { query } from '@/lib/db'
 import { Card } from '@/components/ui/card'
 import { Badge, requestStatusColor, contractStatusColor } from '@/components/ui/badge'
 import { LinkButton } from '@/components/ui/link-button'
@@ -14,20 +15,24 @@ import { PlusCircle, ArrowRight, FileText, FolderOpen } from 'lucide-react'
 export const metadata = { title: 'Dashboard' }
 
 export default async function DashboardPage() {
-  const supabase = await createClient()
+  const user = await getCurrentUser()
+  const userId = user?.id
 
-  const [{ data: requests }, { data: contracts }] = await Promise.all([
-    supabase
-      .from('app_requests')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(5),
-    supabase
-      .from('contracts')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(3),
+  const [{ rows: requests }, { rows: contracts }] = await Promise.all([
+    userId
+      ? query<AppRequest>(
+          'SELECT * FROM public.app_requests WHERE user_id = $1 ORDER BY created_at DESC LIMIT 5',
+          [userId]
+        )
+      : Promise.resolve({ rows: [] as AppRequest[] }),
+    userId
+      ? query<Contract>(
+          'SELECT * FROM public.contracts WHERE user_id = $1 ORDER BY created_at DESC LIMIT 3',
+          [userId]
+        )
+      : Promise.resolve({ rows: [] as Contract[] }),
   ])
+
 
   return (
     <div className="space-y-8">

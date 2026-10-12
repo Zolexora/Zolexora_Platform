@@ -1,6 +1,7 @@
 import { createHash } from 'crypto'
 import { headers } from 'next/headers'
-import { createClient } from '@/lib/supabase/server'
+import { getCurrentUser } from '@/lib/auth'
+import { query } from '@/lib/db'
 import type { AuditAction } from '@/lib/types'
 
 export function computeSHA256(content: string): string {
@@ -38,23 +39,25 @@ export async function recordContractAuditEvent({
   documentHash?: string
   metadata?: Record<string, unknown>
 }) {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
+  const user = await getCurrentUser()
   const { ipAddress, userAgent } = await getClientConnectionInfo()
 
-  await supabase.from('contract_audit_logs').insert({
-    contract_id: contractId,
-    user_id: user?.id || null,
-    signer_name: signerName,
-    signer_email: signerEmail,
-    action,
-    ip_address: ipAddress,
-    user_agent: userAgent,
-    verification_method: verificationMethod,
-    document_hash_at_event: documentHash || null,
-    metadata,
-  })
+  await query(
+    `INSERT INTO public.contract_audit_logs 
+     (contract_id, user_id, signer_name, signer_email, action, ip_address, user_agent, verification_method, document_hash_at_event, metadata)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+    [
+      contractId,
+      user?.id || null,
+      signerName,
+      signerEmail,
+      action,
+      ipAddress,
+      userAgent,
+      verificationMethod,
+      documentHash || null,
+      JSON.stringify(metadata),
+    ]
+  )
 }
+

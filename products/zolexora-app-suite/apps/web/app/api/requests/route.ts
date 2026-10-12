@@ -1,22 +1,24 @@
 import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth'
-import { createClient } from '@/lib/supabase/server'
-import type { RequestStatus } from '@/lib/types'
+import { query } from '@/lib/db'
+import type { AppRequest } from '@/lib/types'
 
 export async function GET() {
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const supabase = await createClient()
-  const { data, error } = await supabase
-    .from('app_requests')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false })
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-
-  return NextResponse.json({ data })
+  try {
+    const { rows } = await query<AppRequest>(
+      'SELECT * FROM public.app_requests WHERE user_id = $1 ORDER BY created_at DESC',
+      [user.id]
+    )
+    return NextResponse.json({ data: rows })
+  } catch (error: unknown) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Database error' },
+      { status: 500 }
+    )
+  }
 }
 
 export async function POST(request: Request) {
@@ -34,24 +36,18 @@ export async function POST(request: Request) {
       )
     }
 
-    const supabase = await createClient()
-    const { data, error } = await supabase
-      .from('app_requests')
-      .insert({
-        user_id: user.id,
-        title,
-        description,
-        category: category ?? null,
-        budget_range: budget_range ?? null,
-        status: 'submitted' as RequestStatus,
-      })
-      .select()
-      .single()
+    const { rows } = await query<AppRequest>(
+      `INSERT INTO public.app_requests (user_id, title, description, category, budget_range, status)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING *`,
+      [user.id, title, description, category ?? null, budget_range ?? null, 'submitted']
+    )
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-
-    return NextResponse.json({ data }, { status: 201 })
-  } catch {
-    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+    return NextResponse.json({ data: rows[0] }, { status: 201 })
+  } catch (error: unknown) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Invalid request' },
+      { status: 400 }
+    )
   }
 }

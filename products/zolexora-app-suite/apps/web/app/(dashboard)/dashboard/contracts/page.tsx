@@ -1,5 +1,6 @@
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { getCurrentUser } from '@/lib/auth'
+import { query } from '@/lib/db'
 import { Badge, contractStatusColor } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { CONTRACT_STATUS_LABELS, type Contract } from '@/lib/types'
@@ -8,12 +9,16 @@ import { FileText, ExternalLink } from 'lucide-react'
 export const metadata = { title: 'Contracts' }
 
 export default async function ContractsPage() {
-  const supabase = await createClient()
+  const user = await getCurrentUser()
+  const userId = user?.id
 
-  const { data: contracts } = await supabase
-    .from('contracts')
-    .select('*')
-    .order('created_at', { ascending: false })
+  const { rows: contracts } = userId
+    ? await query<Contract>(
+        'SELECT * FROM public.contracts WHERE user_id = $1 ORDER BY created_at DESC',
+        [userId]
+      )
+    : { rows: [] as Contract[] }
+
 
   return (
     <div className="space-y-6">
