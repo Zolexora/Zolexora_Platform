@@ -86,7 +86,19 @@ export function createZolexoraAuth(options: ZolexoraAuthOptions = {}) {
   if (appUrl.protocol !== "https:" && appUrl.hostname !== "localhost") throw new Error("appUrl must use HTTPS.");
   const maxConnections = options.maxDbConnections ?? 5;
   if (!Number.isInteger(maxConnections) || maxConnections < 1) throw new Error("maxDbConnections must be a positive integer.");
-  const pool = options.store ? null : new Pool({ connectionString: databaseUrl, max: maxConnections });
+  const pool = options.store ? null : (() => {
+    const parsed = new URL(databaseUrl);
+    const isSsl = parsed.searchParams.get("sslmode") === "require" || parsed.hostname.includes("supabase.com") || parsed.hostname.includes("render.com") || parsed.hostname.includes("neon.tech");
+    return new Pool({
+      host: parsed.hostname,
+      port: Number(parsed.port) || 5432,
+      database: parsed.pathname.replace(/^\//, "") || "postgres",
+      user: decodeURIComponent(parsed.username),
+      password: decodeURIComponent(parsed.password),
+      max: maxConnections,
+      ssl: isSsl ? { rejectUnauthorized: false } : undefined,
+    });
+  })();
   const store = options.store ?? createPostgresAuthStore(pool!);
   const resend = new Resend(resendApiKey);
   const verificationTtl = options.verificationTokenTtlMs ?? DEFAULT_VERIFY_TTL;
