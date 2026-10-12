@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "pnpm --filter @zas/web dev",
+    "dev:infisical": "pnpm --filter @zas/web dev:infisical",
     "build": "pnpm --filter @zas/web build",
     "start": "pnpm --filter @zas/web start",
     "lint": "pnpm --filter @zas/web lint",
