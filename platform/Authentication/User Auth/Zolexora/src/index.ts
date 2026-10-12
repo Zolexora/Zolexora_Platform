@@ -1,11 +1,11 @@
 import { randomBytes, scrypt as scryptCallback, timingSafeEqual, createHash } from "node:crypto";
 import { Pool } from "pg";
 import { Resend } from "resend";
-import { createPostgresAuthStore } from "./postgres.js";
-import type { StoredZolexoraUser, ZolexoraAuthOptions, ZolexoraUser } from "./types.js";
+import { createPostgresAuthStore } from "./postgres";
+import type { StoredZolexoraUser, ZolexoraAuthOptions, ZolexoraUser } from "./types";
 
-export type { StoredZolexoraUser, ZolexoraAuthOptions, ZolexoraAuthStore, ZolexoraTokenPurpose, ZolexoraUser } from "./types.js";
-export { createPostgresAuthStore } from "./postgres.js";
+export type { StoredZolexoraUser, ZolexoraAuthOptions, ZolexoraAuthStore, ZolexoraTokenPurpose, ZolexoraUser } from "./types";
+export { createPostgresAuthStore } from "./postgres";
 
 const scrypt = (password: string, salt: Buffer, keyLength: number, options: { N: number; r: number; p: number; maxmem: number }) =>
   new Promise<Buffer>((resolve, reject) => {
