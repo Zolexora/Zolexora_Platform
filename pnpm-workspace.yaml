@@ -1,5 +1,6 @@
 packages:
   - 'products/*'
+  - 'platform/*'
   - 'products/platform-admin/frontend'
   - 'products/zolexora-marketplace/apps/*/*/*'
   - 'products/zolexora-marketplace/packages/*'
