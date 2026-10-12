@@ -5,13 +5,22 @@ import { createClient } from '@/lib/supabase/server'
 import { recordContractAuditEvent } from '@/lib/audit-logger'
 import { generateContractLegalHtml } from '@/lib/contract-generator'
 import { verifyIndianDscCertificate } from '@/lib/dsc-verifier'
-import type { Contract, ContractStatus, SigningMode, DscCertificateDetails } from '@/lib/types'
+import { initiateAadhaarEsignSession } from '@/lib/esign-gateway'
+import type {
+  Contract,
+  ContractStatus,
+  SigningMode,
+  DscCertificateDetails,
+  EsignProvider,
+} from '@/lib/types'
 
 export type SignContractResult = {
   error?: string
   success?: boolean
   signedAt?: string
   signedHash?: string
+  gatewayUrl?: string
+  documentId?: string
 }
 
 export async function executeDigitalContract({
@@ -20,6 +29,8 @@ export async function executeDigitalContract({
   signingMode = 'CLICKWRAP_OTP',
   otpCode,
   dscPayload,
+  esignProvider = 'DIGIO',
+  signerPhone,
 }: {
   contractId: string
   signerName: string
@@ -33,6 +44,8 @@ export async function executeDigitalContract({
     validFrom?: string
     validTo?: string
   }
+  esignProvider?: EsignProvider
+  signerPhone?: string
 }): Promise<SignContractResult> {
   const supabase = await createClient()
   const {
@@ -60,9 +73,56 @@ export async function executeDigitalContract({
     return { error: 'This contract has already been executed.' }
   }
 
+  const clientEmail = user.email || 'client@zolexora.com'
+  const projectTitle = contract.app_requests?.title || contract.title
+
+  // Compute pre-signature document hash
+  const { documentHash: originalDocHash } = generateContractLegalHtml({
+    contract,
+    clientName: signerName,
+    clientEmail,
+    projectTitle,
+  })
+
+  // 1. MODE: AADHAAR eSign (Digio / Leegality)
+  if (signingMode === 'AADHAAR_ESIGN') {
+    const session = await initiateAadhaarEsignSession({
+      contractId,
+      signerName,
+      signerContact: signerPhone || clientEmail,
+      documentHash: originalDocHash,
+      provider: esignProvider,
+    })
+
+    if (!session.success) {
+      return { error: session.error || 'Failed to initiate Aadhaar eSign session.' }
+    }
+
+    // Record Audit Event: ESIGN_INITIATED
+    await recordContractAuditEvent({
+      contractId,
+      signerName,
+      signerEmail: clientEmail,
+      action: 'ESIGN_INITIATED',
+      verificationMethod: `${esignProvider}_GATEWAY_DISPATCH`,
+      documentHash: originalDocHash,
+      metadata: {
+        provider: esignProvider,
+        documentId: session.documentId,
+        signerContact: signerPhone || clientEmail,
+      },
+    })
+
+    return {
+      success: true,
+      gatewayUrl: session.gatewayUrl,
+      documentId: session.documentId,
+    }
+  }
+
   let verifiedDscDetails: DscCertificateDetails | null = null
 
-  // 1. Process DSC Token Mode if selected
+  // 2. MODE: CLASS 3 USB DSC TOKEN
   if (signingMode === 'DSC_TOKEN') {
     if (!dscPayload) {
       return { error: 'No hardware cryptographic token signature provided.' }
@@ -74,21 +134,11 @@ export async function executeDigitalContract({
     }
     verifiedDscDetails = dscVerification.certificateDetails
   } else if (signingMode === 'CLICKWRAP_OTP') {
+    // 3. MODE: EMAIL OTP / CLICKWRAP
     if (otpCode && otpCode.trim().length !== 6) {
       return { error: 'Invalid 6-digit confirmation code.' }
     }
   }
-
-  const clientEmail = user.email || 'client@zolexora.com'
-  const projectTitle = contract.app_requests?.title || contract.title
-
-  // Compute document hash before & after signing
-  const { documentHash: originalDocHash } = generateContractLegalHtml({
-    contract,
-    clientName: signerName,
-    clientEmail,
-    projectTitle,
-  })
 
   const signedAt = new Date().toISOString()
   const signedContractObj: Contract = {

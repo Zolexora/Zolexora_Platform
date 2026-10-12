@@ -7,8 +7,16 @@ import { RECOGNIZED_INDIAN_CAS } from '@/lib/dsc-verifier'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
-import { CheckCircle2, ShieldCheck, AlertCircle, Usb, Mail } from 'lucide-react'
-import type { SigningMode } from '@/lib/types'
+import {
+  CheckCircle2,
+  ShieldCheck,
+  AlertCircle,
+  Usb,
+  Mail,
+  Fingerprint,
+  ExternalLink,
+} from 'lucide-react'
+import type { SigningMode, EsignProvider } from '@/lib/types'
 
 export function DigitalSigningModal({
   contractId,
@@ -21,13 +29,21 @@ export function DigitalSigningModal({
   const [signingMode, setSigningMode] = useState<SigningMode>('CLICKWRAP_OTP')
   const [signerName, setSignerName] = useState(defaultSignerName)
   const [acceptedTerms, setAcceptedTerms] = useState(false)
-  const [otpCode, setOtpCode] = useState('')
-  const [otpSent, setOtpSent] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
 
-  // Hardware DSC Specific States
+  // 1. Email OTP State
+  const [otpCode, setOtpCode] = useState('')
+  const [otpSent, setOtpSent] = useState(false)
+
+  // 2. Aadhaar eSign State
+  const [esignProvider, setEsignProvider] = useState<EsignProvider>('DIGIO')
+  const [signerPhone, setSignerPhone] = useState('')
+  const [gatewayRedirectUrl, setGatewayRedirectUrl] = useState<string | null>(null)
+
+  // 3. Hardware USB DSC State
   const [selectedCa, setSelectedCa] = useState(RECOGNIZED_INDIAN_CAS[0])
   const [tokenPin, setTokenPin] = useState('')
   const [dscSerialNumber, setDscSerialNumber] = useState('')
@@ -36,8 +52,6 @@ export function DigitalSigningModal({
   async function handleConnectUsbToken() {
     setLoading(true)
     setError(null)
-
-    // Simulating token detection & PKCS#11 local bridge query (ePass2003 / ProxKey)
     setTimeout(() => {
       setDscConnected(true)
       const generatedSerial = 'IN-' + Math.random().toString(36).substring(2, 10).toUpperCase()
@@ -93,6 +107,8 @@ export function DigitalSigningModal({
       signingMode,
       otpCode: otpCode || '123456',
       dscPayload,
+      esignProvider,
+      signerPhone,
     })
 
     if (res.error) {
@@ -101,7 +117,23 @@ export function DigitalSigningModal({
       return
     }
 
+    // Handle Aadhaar eSign Gateway Redirect
+    if (signingMode === 'AADHAAR_ESIGN' && res.gatewayUrl) {
+      setGatewayRedirectUrl(res.gatewayUrl)
+      setSuccess(true)
+      setSuccessMessage(
+        `Aadhaar eSign session created on ${esignProvider}. Click below to complete biometric / UIDAI OTP verification.`
+      )
+      setLoading(false)
+      return
+    }
+
     setSuccess(true)
+    setSuccessMessage(
+      signingMode === 'DSC_TOKEN'
+        ? 'Class 3 USB DSC Token Successfully Verified & Signed! Presumption of validity applies under Section 85B of the Indian Evidence Act.'
+        : 'Your signature has been cryptographically recorded under Section 10A of the IT Act, 2000. An audit certificate has been generated.'
+    )
     setLoading(false)
     router.refresh()
   }
@@ -110,16 +142,21 @@ export function DigitalSigningModal({
     return (
       <div className="rounded-xl border border-green-500/30 bg-green-950/20 p-6 text-center">
         <CheckCircle2 className="w-10 h-10 text-green-400 mx-auto mb-3" />
-        <h3 className="text-lg font-semibold text-white">
-          {signingMode === 'DSC_TOKEN'
-            ? 'Class 3 USB DSC Token Successfully Verified & Signed!'
-            : 'Contract Digitally Executed!'}
-        </h3>
-        <p className="text-sm text-[var(--color-text-muted)] mt-1">
-          {signingMode === 'DSC_TOKEN'
-            ? 'Cryptographic PKCS#7 signature and X.509 CCA certificate stored. Presumption of validity applies under Section 85B of the Indian Evidence Act.'
-            : 'Your signature has been cryptographically recorded under Section 10A of the IT Act, 2000. An audit certificate has been generated.'}
-        </p>
+        <h3 className="text-lg font-semibold text-white">Digital Signature Process Initiated!</h3>
+        <p className="text-sm text-[var(--color-text-muted)] mt-1">{successMessage}</p>
+
+        {gatewayRedirectUrl && (
+          <div className="mt-4">
+            <a
+              href={gatewayRedirectUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 bg-[var(--color-brand-primary)] text-white text-sm font-medium px-5 py-2.5 rounded-lg hover:opacity-90 transition-opacity"
+            >
+              Open {esignProvider} Aadhaar eSign Gateway <ExternalLink className="w-4 h-4" />
+            </a>
+          </div>
+        )}
       </div>
     )
   }
@@ -133,26 +170,40 @@ export function DigitalSigningModal({
         <div>
           <h3 className="font-semibold text-white">Execute Digital Contract</h3>
           <p className="text-xs text-[var(--color-text-muted)]">
-            Legally binding under the Information Technology Act, 2000 & Indian Evidence Act
+            Legally valid in India under the IT Act, 2000 & Indian Evidence Act (Sec 65B & 85B)
           </p>
         </div>
       </div>
 
-      {/* Signing Mode Selector Tabs */}
-      <div className="grid grid-cols-2 gap-2 p-1 bg-[var(--color-surface-hover)] rounded-lg mb-5 border border-[var(--color-border)]">
+      {/* 3 Signature Method Tabs */}
+      <div className="grid grid-cols-3 gap-1.5 p-1 bg-[var(--color-surface-hover)] rounded-lg mb-5 border border-[var(--color-border)]">
         <button
           type="button"
           onClick={() => {
             setSigningMode('CLICKWRAP_OTP')
             setError(null)
           }}
-          className={`flex items-center justify-center gap-2 py-2 text-xs font-medium rounded-md transition-all ${
+          className={`flex items-center justify-center gap-1.5 py-2 text-xs font-medium rounded-md transition-all ${
             signingMode === 'CLICKWRAP_OTP'
               ? 'bg-[var(--color-brand-primary)] text-white shadow'
               : 'text-[var(--color-text-muted)] hover:text-white'
           }`}
         >
-          <Mail className="w-3.5 h-3.5" /> Email OTP (Sec 10A)
+          <Mail className="w-3.5 h-3.5" /> Email OTP
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setSigningMode('AADHAAR_ESIGN')
+            setError(null)
+          }}
+          className={`flex items-center justify-center gap-1.5 py-2 text-xs font-medium rounded-md transition-all ${
+            signingMode === 'AADHAAR_ESIGN'
+              ? 'bg-[var(--color-brand-primary)] text-white shadow'
+              : 'text-[var(--color-text-muted)] hover:text-white'
+          }`}
+        >
+          <Fingerprint className="w-3.5 h-3.5" /> Aadhaar eSign
         </button>
         <button
           type="button"
@@ -160,13 +211,13 @@ export function DigitalSigningModal({
             setSigningMode('DSC_TOKEN')
             setError(null)
           }}
-          className={`flex items-center justify-center gap-2 py-2 text-xs font-medium rounded-md transition-all ${
+          className={`flex items-center justify-center gap-1.5 py-2 text-xs font-medium rounded-md transition-all ${
             signingMode === 'DSC_TOKEN'
               ? 'bg-[var(--color-brand-primary)] text-white shadow'
               : 'text-[var(--color-text-muted)] hover:text-white'
           }`}
         >
-          <Usb className="w-3.5 h-3.5" /> Class 3 USB Token (CCA)
+          <Usb className="w-3.5 h-3.5" /> USB Token (CCA)
         </button>
       </div>
 
@@ -206,7 +257,40 @@ export function DigitalSigningModal({
           </>
         )}
 
-        {/* Mode 2: Hardware USB DSC Token */}
+        {/* Mode 2: Aadhaar eSign (Digio / Leegality) */}
+        {signingMode === 'AADHAAR_ESIGN' && (
+          <div className="space-y-3 p-4 rounded-lg bg-[var(--color-surface-hover)] border border-[var(--color-border)]">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-white flex items-center gap-1.5">
+                <Fingerprint className="w-4 h-4 text-orange-400" /> Aadhaar eSign (UIDAI ESP Gateway)
+              </span>
+              <span className="text-[10px] bg-orange-950 text-orange-300 border border-orange-800 px-2 py-0.5 rounded font-mono">
+                IT ACT SEC 3A
+              </span>
+            </div>
+
+            <Select
+              label="Select eSign Provider Gateway"
+              value={esignProvider}
+              onChange={(e) => setEsignProvider(e.target.value as EsignProvider)}
+              options={[
+                { value: 'DIGIO', label: 'Digio (Aadhaar OTP / Biometric ESP)' },
+                { value: 'LEEGALITY', label: 'Leegality (eSign + e-Stamp Gateway)' },
+                { value: 'SIGNDESK', label: 'SignDesk (Enterprise eSign Gateway)' },
+              ]}
+            />
+
+            <Input
+              label="Aadhaar-Linked Mobile Number (Optional)"
+              value={signerPhone}
+              onChange={(e) => setSignerPhone(e.target.value)}
+              placeholder="10-digit mobile number"
+              hint="You will receive the UIDAI OTP on the phone number linked with your Aadhaar."
+            />
+          </div>
+        )}
+
+        {/* Mode 3: Hardware USB DSC Token */}
         {signingMode === 'DSC_TOKEN' && (
           <div className="space-y-3 p-4 rounded-lg bg-[var(--color-surface-hover)] border border-[var(--color-border)]">
             <div className="flex items-center justify-between">
@@ -269,7 +353,7 @@ export function DigitalSigningModal({
             className="mt-1 h-4 w-4 rounded border-gray-700 bg-gray-900 text-[var(--color-brand-primary)] focus:ring-[var(--color-brand-primary)]"
           />
           <span className="text-xs text-[var(--color-text-muted)] leading-relaxed">
-            I confirm that I am authorized to bind the client, acknowledge the IP transfer terms upon full settlement, and consent to electronic execution under Section 10A of the Information Technology Act, 2000.
+            I confirm that I am authorized to bind the client, acknowledge the IP transfer terms upon full settlement, and consent to electronic execution under Section 10A & Section 3A of the Information Technology Act, 2000.
           </span>
         </label>
 
@@ -287,7 +371,11 @@ export function DigitalSigningModal({
           disabled={!acceptedTerms}
           className="w-full"
         >
-          {signingMode === 'DSC_TOKEN' ? 'Authorize & Sign with USB Token' : 'Digitally Sign & Execute'}
+          {signingMode === 'AADHAAR_ESIGN'
+            ? `Proceed to ${esignProvider} Aadhaar eSign`
+            : signingMode === 'DSC_TOKEN'
+            ? 'Authorize & Sign with USB Token'
+            : 'Digitally Sign & Execute'}
         </Button>
       </div>
     </div>
