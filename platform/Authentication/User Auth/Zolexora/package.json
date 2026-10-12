@@ -11,12 +11,13 @@
     "build": "tsc --noEmit",
     "type-check": "tsc --noEmit"
   },
-  "peerDependencies": {
-    "resend": ">=6.14.0 <7"
-  },
   "devDependencies": {
     "@types/node": "^26.2.0",
-    "resend": "^6.14.0",
+    "@types/pg": "^8.23.1",
     "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "pg": "^8.23.1",
+    "resend": "^6.14.0"
   }
 }
