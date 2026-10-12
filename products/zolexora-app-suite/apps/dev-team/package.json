@@ -1,0 +1,34 @@
+{
+  "name": "@zas/dev-team",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --port 3071",
+    "dev:infisical": "infisical run --env=dev -- next dev --port 3071",
+    "build": "next build",
+    "start": "next start --port 3071",
+    "lint": "next lint",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@zolexora/user-auth-zolexora": "workspace:^",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.545.0",
+    "next": "^15.3.0",
+    "pg": "^8.13.3",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "tailwind-merge": "^3.3.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.14",
+    "@types/node": "^25.0.0",
+    "@types/pg": "^8.11.11",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "eslint": "^9.0.0",
+    "eslint-config-next": "^15.3.0",
+    "tailwindcss": "^4.1.14",
+    "typescript": "^5.8.0"
+  }
+}
