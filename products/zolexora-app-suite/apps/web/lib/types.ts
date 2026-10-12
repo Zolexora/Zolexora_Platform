@@ -17,9 +17,21 @@ export type AuditAction =
   | 'DOWNLOADED'
   | 'OTP_GENERATED'
   | 'OTP_VERIFIED'
+  | 'DSC_INITIATED'
+  | 'DSC_VERIFIED'
   | 'SIGNED'
   | 'DECLINED'
   | 'STAMPED'
+
+export interface DscCertificateDetails {
+  certSubject: string // e.g. CN=John Doe, O=Acme Corp, C=IN
+  certIssuer: string // e.g. (CCA CA) eMudhra / Capricorn / VSign / Pantasign
+  serialNumber: string
+  validFrom: string
+  validTo: string
+  keyAlgorithm: string
+  rawSignaturePkcs7: string // Base64 encoded cryptographic signature
+}
 
 export interface AppRequest {
   id: string
@@ -45,6 +57,7 @@ export interface Contract {
   stamp_duty_ref: string | null
   stamp_state: string | null
   signing_mode: SigningMode
+  dsc_details?: DscCertificateDetails | null
   status: ContractStatus
   scope_summary: string | null
   total_value_inr: number | null
