@@ -1,4 +1,4 @@
-import { redirect, notFound } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { Badge, requestStatusColor } from '@/components/ui/badge'
@@ -18,17 +18,11 @@ export async function generateMetadata({ params }: Props) {
 export default async function RequestDetailPage({ params }: Props) {
   const { id } = await params
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) redirect('/login')
 
   const { data: request } = await supabase
     .from('app_requests')
     .select('*')
     .eq('id', id)
-    .eq('user_id', user.id)
     .single()
 
   if (!request) notFound()

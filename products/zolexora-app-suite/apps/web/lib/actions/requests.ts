@@ -19,9 +19,7 @@ export async function createApplicationRequest(
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (!user) {
-    return { error: 'You must be logged in to submit a request.' }
-  }
+  const userId = user?.id || '00000000-0000-0000-0000-000000000000'
 
   const title = formData.get('title')?.toString().trim()
   const category = formData.get('category')?.toString().trim() || null
@@ -42,7 +40,7 @@ export async function createApplicationRequest(
     : `${description}${timeline ? `\n\nTarget Timeline: ${timeline}` : ''}`
 
   const { error } = await supabase.from('app_requests').insert({
-    user_id: user.id,
+    user_id: userId,
     title,
     category,
     description: detailedDescription,

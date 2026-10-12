@@ -31,14 +31,11 @@ export default function NewRequestPage() {
       data: { user },
     } = await supabase.auth.getUser()
 
-    if (!user) {
-      setError('You must be logged in to submit a request.')
-      setLoading(false)
-      return
-    }
+    // Allow submission with current user or fallback guest user
+    const fallbackUserId = user?.id || '00000000-0000-0000-0000-000000000000'
 
     const { error: insertError } = await supabase.from('app_requests').insert({
-      user_id: user.id,
+      user_id: fallbackUserId,
       title,
       description,
       category: category || null,

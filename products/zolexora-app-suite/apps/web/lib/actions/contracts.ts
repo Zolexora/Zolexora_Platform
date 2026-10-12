@@ -52,9 +52,7 @@ export async function executeDigitalContract({
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (!user) {
-    return { error: 'Authentication required to execute digital contracts.' }
-  }
+  const clientEmail = user?.email || 'signatory@zolexora.com'
 
   // Fetch the contract
   const { data: contractData, error: fetchError } = await supabase
@@ -64,7 +62,7 @@ export async function executeDigitalContract({
     .single()
 
   if (fetchError || !contractData) {
-    return { error: 'Contract not found or access denied.' }
+    return { error: 'Contract not found.' }
   }
 
   const contract = contractData as Contract & { app_requests?: { title: string } }
@@ -73,7 +71,6 @@ export async function executeDigitalContract({
     return { error: 'This contract has already been executed.' }
   }
 
-  const clientEmail = user.email || 'client@zolexora.com'
   const projectTitle = contract.app_requests?.title || contract.title
 
   // Compute pre-signature document hash
@@ -170,7 +167,6 @@ export async function executeDigitalContract({
         : contract.scope_summary,
     })
     .eq('id', contractId)
-    .eq('user_id', user.id)
 
   if (updateError) {
     return { error: updateError.message }

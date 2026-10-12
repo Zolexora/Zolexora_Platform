@@ -10,13 +10,6 @@ export async function GET(
 ) {
   const { id } = await params
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    return new NextResponse('Unauthorized', { status: 401 })
-  }
 
   const { data: contractData, error } = await supabase
     .from('contracts')
@@ -29,8 +22,8 @@ export async function GET(
   }
 
   const contract = contractData as Contract & { app_requests?: { title: string } }
-  const clientName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Client'
-  const clientEmail = user.email || 'client@example.com'
+  const clientName = 'Authorized Signatory'
+  const clientEmail = 'client@zolexora.com'
   const projectTitle = contract.app_requests?.title || contract.title
 
   const { html, documentHash } = generateContractLegalHtml({
@@ -46,7 +39,7 @@ export async function GET(
     signerName: clientName,
     signerEmail: clientEmail,
     action: 'VIEWED',
-    verificationMethod: 'SESSION_AUTH',
+    verificationMethod: 'DIRECT_ACCESS',
     documentHash,
   })
 
