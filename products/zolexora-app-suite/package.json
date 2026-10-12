@@ -3,13 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "pnpm --filter @zas/web dev",
-    "dev:infisical": "pnpm --filter @zas/web dev:infisical",
+    "dev": "pnpm --filter @zas/client dev",
+    "dev:infisical": "pnpm --filter @zas/client dev:infisical",
+    "dev:client": "pnpm --filter @zas/client dev",
+    "dev:client:infisical": "pnpm --filter @zas/client dev:infisical",
     "dev:team": "pnpm --filter @zas/dev-team dev",
     "dev:team:infisical": "pnpm --filter @zas/dev-team dev:infisical",
-    "build": "pnpm --filter @zas/web build && pnpm --filter @zas/dev-team build",
-    "start": "pnpm --filter @zas/web start",
-    "lint": "pnpm --filter @zas/web lint && pnpm --filter @zas/dev-team lint",
-    "type-check": "pnpm --filter @zas/web type-check && pnpm --filter @zas/dev-team type-check"
+    "build": "pnpm --filter @zas/client build && pnpm --filter @zas/dev-team build",
+    "start": "pnpm --filter @zas/client start",
+    "lint": "pnpm --filter @zas/client lint && pnpm --filter @zas/dev-team lint",
+    "type-check": "pnpm --filter @zas/client type-check && pnpm --filter @zas/dev-team type-check"
   }
 }
