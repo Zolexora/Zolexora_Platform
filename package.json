@@ -5,7 +5,8 @@
   "scripts": {
     "dev:suite": "pnpm --filter @zas/client dev:infisical",
     "dev:suite:client": "pnpm --filter @zas/client dev:infisical",
-    "dev:suite:team": "pnpm --filter @zas/dev-team dev:infisical"
+    "dev:suite:team": "pnpm --filter @zas/dev-team dev:infisical",
+    "dev:suite:api": "pnpm --filter @zas/backend dev:infisical"
   },
   "devDependencies": {
     "turbo": "^2.11.7",

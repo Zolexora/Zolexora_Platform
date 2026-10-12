@@ -9,9 +9,11 @@
     "dev:client:infisical": "pnpm --filter @zas/client dev:infisical",
     "dev:team": "pnpm --filter @zas/dev-team dev",
     "dev:team:infisical": "pnpm --filter @zas/dev-team dev:infisical",
-    "build": "pnpm --filter @zas/client build && pnpm --filter @zas/dev-team build",
+    "dev:api": "pnpm --filter @zas/backend dev",
+    "dev:api:infisical": "pnpm --filter @zas/backend dev:infisical",
+    "build": "pnpm --filter @zas/client build && pnpm --filter @zas/dev-team build && pnpm --filter @zas/backend build",
     "start": "pnpm --filter @zas/client start",
     "lint": "pnpm --filter @zas/client lint && pnpm --filter @zas/dev-team lint",
-    "type-check": "pnpm --filter @zas/client type-check && pnpm --filter @zas/dev-team type-check"
+    "type-check": "pnpm --filter @zas/client type-check && pnpm --filter @zas/dev-team type-check && pnpm --filter @zas/backend type-check"
   }
 }
