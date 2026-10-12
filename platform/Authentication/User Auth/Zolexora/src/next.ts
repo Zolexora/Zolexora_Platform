@@ -25,9 +25,11 @@ type ZolexoraAuth = ReturnType<typeof createZolexoraAuth>
  * export const { getCurrentUser } = createNextAuthHelpers(auth, 'zolexora_app_suite_session')
  */
 export function createNextAuthHelpers(
-  auth: ZolexoraAuth,
+  authOrGetter: ZolexoraAuth | (() => ZolexoraAuth),
   cookieName: string,
 ) {
+  const getAuth = typeof authOrGetter === 'function' ? authOrGetter : () => authOrGetter
+
   return {
     /**
      * Reads the HTTP-only session cookie and returns the authenticated user,
@@ -38,7 +40,7 @@ export function createNextAuthHelpers(
       const cookieStore = await cookies()
       const sessionToken = cookieStore.get(cookieName)?.value
       if (!sessionToken) return null
-      return auth.getUser(sessionToken)
+      return getAuth().getUser(sessionToken)
     },
   }
 }

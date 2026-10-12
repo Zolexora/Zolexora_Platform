@@ -24,8 +24,8 @@ export function getZolexoraAuth() {
   return globalForAuth.zolexoraAuth
 }
 
-// getCurrentUser() lives in @zolexora/user-auth-zolexora/next — reusable across all Zolexora Next.js apps
+// getCurrentUser() lives in @zolexora/user-auth-zolexora/next — lazy evaluated
 export const { getCurrentUser } = createNextAuthHelpers(
-  getZolexoraAuth(),
+  getZolexoraAuth,
   SESSION_COOKIE_NAME,
 )
