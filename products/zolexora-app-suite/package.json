@@ -1,0 +1,12 @@
+{
+  "name": "zolexora-app-suite",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter @zas/web dev",
+    "build": "pnpm --filter @zas/web build",
+    "start": "pnpm --filter @zas/web start",
+    "lint": "pnpm --filter @zas/web lint",
+    "type-check": "pnpm --filter @zas/web type-check"
+  }
+}
