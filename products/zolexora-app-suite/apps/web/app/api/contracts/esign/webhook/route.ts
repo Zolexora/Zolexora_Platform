@@ -5,7 +5,12 @@ import { recordContractAuditEvent } from '@/lib/audit-logger'
 import type { ContractStatus } from '@/lib/types'
 
 /**
- * Public Webhook Endpoint for Digio and Leegality
+ * Public Webhook Endpoint — Digio / Leegality Aadhaar eSign callback.
+ *
+ * ⚠️  Intentionally has NO session cookie auth — this is called by Digio/Leegality
+ * servers, not by users. Security is enforced by verifyAndParseEsignWebhook()
+ * which validates the provider HMAC/signature on the raw payload.
+ *
  * POST /api/contracts/esign/webhook
  */
 export async function POST(request: Request) {
