@@ -3,7 +3,8 @@
   "private": true,
   "packageManager": "pnpm@9.12.3",
   "scripts": {
-    "dev:suite": "pnpm --filter @zas/web dev:infisical"
+    "dev:suite": "pnpm --filter @zas/web dev:infisical",
+    "dev:suite:team": "pnpm --filter @zas/dev-team dev:infisical"
   },
   "devDependencies": {
     "turbo": "^2.11.7",
