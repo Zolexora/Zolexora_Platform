@@ -2,6 +2,9 @@
   "name": "zolexora-platform",
   "private": true,
   "packageManager": "pnpm@9.12.3",
+  "scripts": {
+    "dev:suite": "pnpm --filter @zas/web dev:infisical"
+  },
   "devDependencies": {
     "turbo": "^2.11.7",
     "vitest": "^5.0.3"
