@@ -1,9 +1,7 @@
-import Link from 'next/link'
 import {
   ArrowRight,
   MessageSquare,
   FileCheck,
-  Code2,
   Rocket,
   Globe,
   Smartphone,
@@ -130,10 +128,10 @@ export default function HomePage() {
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <LinkButton size="lg" href="/register" className="flex items-center gap-2">
+          <LinkButton size="lg" href="/dashboard/new-request" className="flex items-center gap-2">
             Start Your Project <ArrowRight className="w-4 h-4" />
           </LinkButton>
-          <LinkButton variant="outline" size="lg" href="/login">
+          <LinkButton variant="outline" size="lg" href="/dashboard">
             Sign In to Dashboard
           </LinkButton>
         </div>
@@ -258,10 +256,10 @@ export default function HomePage() {
             </p>
             <LinkButton
               size="lg"
-              href="/register"
+              href="/dashboard/new-request"
               className="inline-flex items-center gap-2"
             >
-              Create Free Account <ArrowRight className="w-4 h-4" />
+              Get Started <ArrowRight className="w-4 h-4" />
             </LinkButton>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-6 text-sm text-[var(--color-text-muted)]">
               {[

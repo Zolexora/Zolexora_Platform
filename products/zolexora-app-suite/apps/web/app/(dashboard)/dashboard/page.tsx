@@ -1,4 +1,3 @@
-import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { Card } from '@/components/ui/card'
@@ -16,29 +15,19 @@ export const metadata = { title: 'Dashboard' }
 
 export default async function DashboardPage() {
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) redirect('/login')
 
   const [{ data: requests }, { data: contracts }] = await Promise.all([
     supabase
       .from('app_requests')
       .select('*')
-      .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(5),
     supabase
       .from('contracts')
       .select('*')
-      .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(3),
   ])
-
-  const userName =
-    user.user_metadata?.full_name?.split(' ')[0] ?? user.email?.split('@')[0] ?? 'there'
 
   return (
     <div className="space-y-8">
@@ -46,7 +35,7 @@ export default async function DashboardPage() {
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">
-            Good morning, {userName} 👋
+            App Suite Workspace 👋
           </h1>
           <p className="text-sm text-[var(--color-text-muted)] mt-1">
             Here&apos;s an overview of your projects and contracts.

@@ -1,4 +1,3 @@
-import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { Badge, requestStatusColor } from '@/components/ui/badge'
@@ -11,16 +10,10 @@ export const metadata = { title: 'My Requests' }
 
 export default async function RequestsPage() {
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) redirect('/login')
 
   const { data: requests } = await supabase
     .from('app_requests')
     .select('*')
-    .eq('user_id', user.id)
     .order('created_at', { ascending: false })
 
   return (

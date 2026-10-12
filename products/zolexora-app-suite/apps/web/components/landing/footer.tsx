@@ -39,7 +39,7 @@ export function Footer() {
                 Services
               </Link>
               <Link
-                href="/register"
+                href="/dashboard/new-request"
                 className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
               >
                 Get Started
@@ -47,25 +47,25 @@ export function Footer() {
             </div>
             <div className="flex flex-col gap-2">
               <p className="font-medium text-[var(--color-text-primary)] mb-1">
-                Account
+                Workspace
               </p>
-              <Link
-                href="/login"
-                className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
-              >
-                Sign In
-              </Link>
-              <Link
-                href="/register"
-                className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
-              >
-                Register
-              </Link>
               <Link
                 href="/dashboard"
                 className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
               >
-                Dashboard
+                Overview
+              </Link>
+              <Link
+                href="/dashboard/requests"
+                className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
+              >
+                My Requests
+              </Link>
+              <Link
+                href="/dashboard/contracts"
+                className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
+              >
+                Contracts
               </Link>
             </div>
           </div>

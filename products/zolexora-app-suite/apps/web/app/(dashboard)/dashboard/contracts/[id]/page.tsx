@@ -1,4 +1,4 @@
-import { redirect, notFound } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { Badge, contractStatusColor } from '@/components/ui/badge'
@@ -42,18 +42,12 @@ const statusIcons = {
 export default async function ContractDetailPage({ params }: Props) {
   const { id } = await params
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) redirect('/login')
 
   const [{ data: contract }, { data: auditLogs }] = await Promise.all([
     supabase
       .from('contracts')
       .select('*')
       .eq('id', id)
-      .eq('user_id', user.id)
       .single(),
     supabase
       .from('contract_audit_logs')
@@ -67,7 +61,7 @@ export default async function ContractDetailPage({ params }: Props) {
   const c = contract as Contract
   const logs = (auditLogs || []) as ContractAuditLog[]
   const StatusIcon = statusIcons[c.status]
-  const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Client'
+  const defaultSigner = 'Authorized Signatory'
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -155,7 +149,7 @@ export default async function ContractDetailPage({ params }: Props) {
 
       {/* Digital Execution Area (if awaiting signature) */}
       {c.status === 'sent' && (
-        <DigitalSigningModal contractId={c.id} defaultSignerName={userName} />
+        <DigitalSigningModal contractId={c.id} defaultSignerName={defaultSigner} />
       )}
 
       {/* Cryptographic Hashes (Section 65B Certificate Data) */}

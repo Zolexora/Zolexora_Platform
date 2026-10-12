@@ -29,13 +29,25 @@ export function Navbar() {
           >
             Services
           </Link>
+          <Link
+            href="/dashboard/requests"
+            className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
+          >
+            My Requests
+          </Link>
+          <Link
+            href="/dashboard/contracts"
+            className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
+          >
+            Contracts
+          </Link>
         </nav>
 
         <div className="flex items-center gap-3">
-          <LinkButton variant="ghost" size="sm" href="/login">
+          <LinkButton variant="ghost" size="sm" href="/dashboard">
             Sign In
           </LinkButton>
-          <LinkButton size="sm" href="/register">
+          <LinkButton size="sm" href="/dashboard/new-request">
             Get Started
           </LinkButton>
         </div>

@@ -1,4 +1,3 @@
-import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { Badge, contractStatusColor } from '@/components/ui/badge'
@@ -10,16 +9,10 @@ export const metadata = { title: 'Contracts' }
 
 export default async function ContractsPage() {
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) redirect('/login')
 
   const { data: contracts } = await supabase
     .from('contracts')
     .select('*')
-    .eq('user_id', user.id)
     .order('created_at', { ascending: false })
 
   return (
