@@ -7,6 +7,20 @@ export type RequestStatus =
 
 export type ContractStatus = 'draft' | 'sent' | 'signed' | 'declined'
 
+export type ContractType = 'MSA' | 'SOW' | 'NDA' | 'AMC'
+
+export type SigningMode = 'CLICKWRAP_OTP' | 'AADHAAR_ESIGN' | 'DSC_TOKEN'
+
+export type AuditAction =
+  | 'CREATED'
+  | 'VIEWED'
+  | 'DOWNLOADED'
+  | 'OTP_GENERATED'
+  | 'OTP_VERIFIED'
+  | 'SIGNED'
+  | 'DECLINED'
+  | 'STAMPED'
+
 export interface AppRequest {
   id: string
   user_id: string
@@ -24,10 +38,34 @@ export interface Contract {
   request_id: string | null
   user_id: string
   title: string
+  contract_type: ContractType
   document_url: string | null
+  document_hash: string | null
+  signed_document_hash: string | null
+  stamp_duty_ref: string | null
+  stamp_state: string | null
+  signing_mode: SigningMode
   status: ContractStatus
+  scope_summary: string | null
+  total_value_inr: number | null
   signed_at: string | null
   created_at: string
+  updated_at: string
+}
+
+export interface ContractAuditLog {
+  id: string
+  contract_id: string
+  user_id: string | null
+  signer_name: string
+  signer_email: string
+  action: AuditAction
+  ip_address: string
+  user_agent: string
+  verification_method: string
+  document_hash_at_event: string | null
+  metadata: Record<string, unknown>
+  timestamp_utc: string
 }
 
 export const REQUEST_STATUS_LABELS: Record<RequestStatus, string> = {
@@ -41,8 +79,15 @@ export const REQUEST_STATUS_LABELS: Record<RequestStatus, string> = {
 export const CONTRACT_STATUS_LABELS: Record<ContractStatus, string> = {
   draft: 'Draft',
   sent: 'Sent for Review',
-  signed: 'Signed',
+  signed: 'Signed & Legally Executed',
   declined: 'Declined',
+}
+
+export const CONTRACT_TYPE_LABELS: Record<ContractType, string> = {
+  MSA: 'Master Services Agreement (MSA)',
+  SOW: 'Statement of Work (SOW)',
+  NDA: 'Non-Disclosure Agreement (NDA)',
+  AMC: 'Annual Maintenance Contract (AMC)',
 }
 
 export const BUDGET_RANGES = [
