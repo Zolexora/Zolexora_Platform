@@ -4,7 +4,8 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { recordContractAuditEvent } from '@/lib/audit-logger'
 import { generateContractLegalHtml } from '@/lib/contract-generator'
-import type { Contract, ContractStatus, SigningMode } from '@/lib/types'
+import { verifyIndianDscCertificate } from '@/lib/dsc-verifier'
+import type { Contract, ContractStatus, SigningMode, DscCertificateDetails } from '@/lib/types'
 
 export type SignContractResult = {
   error?: string
@@ -18,11 +19,20 @@ export async function executeDigitalContract({
   signerName,
   signingMode = 'CLICKWRAP_OTP',
   otpCode,
+  dscPayload,
 }: {
   contractId: string
   signerName: string
   signingMode?: SigningMode
   otpCode?: string
+  dscPayload?: {
+    certSubject: string
+    certIssuer: string
+    serialNumber: string
+    rawSignaturePkcs7: string
+    validFrom?: string
+    validTo?: string
+  }
 }): Promise<SignContractResult> {
   const supabase = await createClient()
   const {
@@ -50,10 +60,23 @@ export async function executeDigitalContract({
     return { error: 'This contract has already been executed.' }
   }
 
-  // In production with Email OTP, verify otpCode against session/table.
-  // For standard Clickwrap OTP mode, validate presence or session confirmation.
-  if (signingMode === 'CLICKWRAP_OTP' && otpCode && otpCode.trim().length !== 6) {
-    return { error: 'Invalid 6-digit confirmation code.' }
+  let verifiedDscDetails: DscCertificateDetails | null = null
+
+  // 1. Process DSC Token Mode if selected
+  if (signingMode === 'DSC_TOKEN') {
+    if (!dscPayload) {
+      return { error: 'No hardware cryptographic token signature provided.' }
+    }
+
+    const dscVerification = verifyIndianDscCertificate(dscPayload)
+    if (!dscVerification.isValid || !dscVerification.certificateDetails) {
+      return { error: dscVerification.error || 'DSC token verification failed.' }
+    }
+    verifiedDscDetails = dscVerification.certificateDetails
+  } else if (signingMode === 'CLICKWRAP_OTP') {
+    if (otpCode && otpCode.trim().length !== 6) {
+      return { error: 'Invalid 6-digit confirmation code.' }
+    }
   }
 
   const clientEmail = user.email || 'client@zolexora.com'
@@ -73,6 +96,7 @@ export async function executeDigitalContract({
     status: 'signed',
     signed_at: signedAt,
     signing_mode: signingMode,
+    dsc_details: verifiedDscDetails,
   }
 
   const { documentHash: signedDocHash } = generateContractLegalHtml({
@@ -91,6 +115,9 @@ export async function executeDigitalContract({
       signed_at: signedAt,
       document_hash: originalDocHash,
       signed_document_hash: signedDocHash,
+      scope_summary: verifiedDscDetails
+        ? `Signed via Class 3 USB DSC Token (Serial: ${verifiedDscDetails.serialNumber}, CA: ${verifiedDscDetails.certIssuer})`
+        : contract.scope_summary,
     })
     .eq('id', contractId)
     .eq('user_id', user.id)
@@ -104,7 +131,7 @@ export async function executeDigitalContract({
     contractId,
     signerName,
     signerEmail: clientEmail,
-    action: 'SIGNED',
+    action: signingMode === 'DSC_TOKEN' ? 'DSC_VERIFIED' : 'SIGNED',
     verificationMethod: signingMode,
     documentHash: signedDocHash,
     metadata: {
@@ -112,6 +139,8 @@ export async function executeDigitalContract({
       signedHash: signedDocHash,
       it_act_sec10a_accepted: true,
       indian_evidence_act_sec65b: true,
+      cca_dsc_verified: signingMode === 'DSC_TOKEN',
+      dsc_details: verifiedDscDetails || undefined,
     },
   })
 
