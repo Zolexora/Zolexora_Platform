@@ -7,8 +7,8 @@
  *   import { createNextAuthHelpers } from '@zolexora/user-auth-zolexora/next'
  */
 import { cookies } from 'next/headers'
-import type { ZolexoraUser } from './types.js'
-import type { createZolexoraAuth } from './index.js'
+import type { ZolexoraUser } from './types'
+import type { createZolexoraAuth } from './index'
 
 type ZolexoraAuth = ReturnType<typeof createZolexoraAuth>
 

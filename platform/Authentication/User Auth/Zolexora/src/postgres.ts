@@ -1,5 +1,5 @@
 import type { Pool } from 'pg'
-import type { StoredZolexoraUser, ZolexoraAuthStore, ZolexoraTokenPurpose } from './types.js'
+import type { StoredZolexoraUser, ZolexoraAuthStore, ZolexoraTokenPurpose } from './types'
 
 type UserRow = {
   id: string
