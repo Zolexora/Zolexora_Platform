@@ -64,6 +64,24 @@ export async function signUpAction(
   }
 }
 
+// ── Verify Email OTP ────────────────────────────────────────────────────────
+export async function verifyOtpAction(
+  _prev: AuthActionState,
+  formData: FormData,
+): Promise<AuthActionState> {
+  const email = formData.get('email')?.toString().trim() ?? ''
+  const otp = formData.get('otp')?.toString().trim() ?? ''
+
+  if (!email || !otp) return { error: 'Email and 6-digit code are required.', email }
+
+  try {
+    await getZolexoraAuth().verifyEmailOtp(email, otp)
+    return { success: true, email }
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Invalid code.', email }
+  }
+}
+
 // ── Sign Out ───────────────────────────────────────────────────────────────
 export async function signOutAction(): Promise<never> {
   const cookieStore = await cookies()

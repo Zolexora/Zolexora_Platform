@@ -1,5 +1,5 @@
 export { LoginPage } from './login'
 export { RegisterPage } from './register'
 export { VerifyEmailView } from './verify-email'
-export type { AuthActionState, SignInAction, SignUpAction } from './types'
+export type { AuthActionState, SignInAction, SignUpAction, VerifyOtpAction } from './types'
 export type { VerifyEmailStatus } from './verify-email'
