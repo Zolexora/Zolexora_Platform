@@ -14,6 +14,7 @@ packages:
   - 'products/the-textile-care/apps/*'
   - 'products/the-textile-care/packages/*'
   - 'products/the-textile-care/platform/*'
+  - 'products/zolexora-app-suite/apps/*'
   - 'packages/*'
   - 'apps/*'
 allowBuilds:
