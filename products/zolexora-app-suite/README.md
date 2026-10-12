@@ -1,17 +1,15 @@
 # Zolexora App Suite
 
-Client portal for submitting application development requests, managing contracts, and tracking legal documentation.
+Client intake portal & DevTeam operations console for commissioning custom software applications, managing legal contracts, and tracking development milestones.
 
 ## Getting Started
 
 ```bash
-pnpm dev    # starts web app on http://localhost:3070
+pnpm dev:client:infisical    # starts Client Portal on http://localhost:3070
+pnpm dev:team:infisical      # starts DevTeam Console on http://localhost:3071
 ```
-
-## Environment Variables
-
-Copy `.env.example` to `.env.local` in `apps/web/` and fill in your Supabase credentials.
 
 ## Structure
 
-- `apps/web/` — Next.js 15 frontend (port 3070)
+- `apps/client/` — Client Portal (port 3070)
+- `apps/dev-team/` — Internal Engineering & Legal Console (port 3071)
