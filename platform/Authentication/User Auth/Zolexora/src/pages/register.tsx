@@ -1,8 +1,8 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import type { AuthActionState, SignUpAction, VerifyOtpAction } from './types'
-import { ErrorBanner } from './login'
+import { ErrorBanner, EyeIcon, EyeOffIcon } from './login'
 
 interface RegisterPageProps {
   signUpAction: SignUpAction
@@ -19,6 +19,8 @@ export function RegisterPage({
   loginHref = '/login',
   minPasswordLength = 12,
 }: RegisterPageProps) {
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
   const [state, formAction, pending] = useActionState<AuthActionState, FormData>(
     signUpAction,
     {},
@@ -221,27 +223,53 @@ export function RegisterPage({
           </Field>
 
           <Field label={`Password (min. ${minPasswordLength} characters)`}>
-            <input
-              name="password"
-              type="password"
-              placeholder="••••••••••••"
-              required
-              minLength={minPasswordLength}
-              autoComplete="new-password"
-              style={inputStyle}
-            />
+            <div style={{ position: 'relative', width: '100%' }}>
+              <input
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="••••••••••••"
+                required
+                minLength={minPasswordLength}
+                autoComplete="new-password"
+                style={{
+                  ...inputStyle,
+                  paddingRight: '2.5rem',
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={eyeButtonStyle}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+              </button>
+            </div>
           </Field>
 
           <Field label="Confirm Password">
-            <input
-              name="confirm"
-              type="password"
-              placeholder="••••••••••••"
-              required
-              minLength={minPasswordLength}
-              autoComplete="new-password"
-              style={inputStyle}
-            />
+            <div style={{ position: 'relative', width: '100%' }}>
+              <input
+                name="confirm"
+                type={showConfirm ? 'text' : 'password'}
+                placeholder="••••••••••••"
+                required
+                minLength={minPasswordLength}
+                autoComplete="new-password"
+                style={{
+                  ...inputStyle,
+                  paddingRight: '2.5rem',
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirm(!showConfirm)}
+                style={eyeButtonStyle}
+                aria-label={showConfirm ? 'Hide password' : 'Show password'}
+              >
+                {showConfirm ? <EyeOffIcon /> : <EyeIcon />}
+              </button>
+            </div>
           </Field>
 
           {state.error && <ErrorBanner message={state.error} />}
@@ -339,3 +367,20 @@ const inputStyle: React.CSSProperties = {
   outline: 'none',
   boxSizing: 'border-box',
 }
+
+const eyeButtonStyle: React.CSSProperties = {
+  position: 'absolute',
+  right: '0.5rem',
+  top: '50%',
+  transform: 'translateY(-50%)',
+  background: 'none',
+  border: 'none',
+  padding: '0.25rem',
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  color: 'var(--color-muted, oklch(0.60 0.03 270))',
+  borderRadius: '0.25rem',
+}
+
