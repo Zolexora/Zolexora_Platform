@@ -1,6 +1,12 @@
 export {
   ZolexoraAuthCard,
+  ZolexoraSignIn,
+  ZolexoraSignUp,
+  ZolexoraOnboarding,
   type ZolexoraAuthCardProps,
+  type ZolexoraSignInProps,
+  type ZolexoraSignUpProps,
+  type ZolexoraOnboardingProps,
   type AuthMode,
 } from "./AuthCard";
 

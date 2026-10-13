@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ZolexoraAuthProvider } from '@zolexora/user-auth-firebase';
 import { LoginForm } from './components/login-form';
 import { OnboardingForm } from './components/onboarding-form';
 import { ProtectedRoute } from './routes/ProtectedRoute';
@@ -53,52 +54,54 @@ function AuthPageWrapper({ children }: { children: React.ReactNode }) {
 export function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <Routes>
-          {/* Public Landing & Authentication */}
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<AuthPageWrapper><LoginForm /></AuthPageWrapper>} />
-          <Route path="/onboarding" element={<AuthPageWrapper><OnboardingForm /></AuthPageWrapper>} />
-          <Route path="/auth/callback" element={<AuthCallback />} />
+      <ZolexoraAuthProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* Public Landing & Authentication */}
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/login" element={<AuthPageWrapper><LoginForm /></AuthPageWrapper>} />
+            <Route path="/onboarding" element={<AuthPageWrapper><OnboardingForm /></AuthPageWrapper>} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
 
-          {/* Protected Workspace Navigation */}
-          <Route element={<ProtectedRoute />}>
-            <Route element={<ApplicationRuntimeProvider><DashboardLayout /></ApplicationRuntimeProvider>}>
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/bookings" element={<BookingsPage />} />
-              <Route path="/duties" element={<DutiesPage />} />
-              <Route path="/dispatch" element={<DispatchPage />} />
-              <Route path="/settings/operating-units" element={<OperatingUnitsPage />} />
-              <Route path="/compliance/vehicles" element={<VehiclesPage />} />
-              <Route path="/compliance/drivers" element={<DriversPage />} />
-              <Route path="/compliance/customers" element={<CustomersPage />} />
-              <Route path="/compliance/vendors" element={<VendorsPage />} />
-              <Route path="/rate-cards/customers" element={<RateCardsPage type="customer" />} />
-              <Route path="/rate-cards/vendors" element={<RateCardsPage type="vendor" />} />
-              <Route path="/billing" element={<BillingPage />} />
-              <Route path="/invoices" element={<InvoicesPage />} />
-              <Route path="/payments" element={<PaymentsPage />} />
-              <Route path="/payables" element={<PayablesPage />} />
-              <Route path="/vendor-settlements" element={<VendorSettlementsPage />} />
-              <Route path="/vendor-payments" element={<VendorPaymentHistoryPage />} />
-              <Route path="/receivables" element={<ReceivablesAgeingPage />} />
-              <Route path="/financial-periods" element={<FinancialPeriodsPage />} />
-              <Route path="/expenses" element={<ExpensesPage />} />
-              <Route path="/reports/pnl" element={<PnLReportsPage />} />
-              <Route path="/compliance" element={<CompliancePage />} />
-              <Route path="/settings" element={<WorkspaceSettingsPage />} />
-              <Route path="/settings/roles" element={<RolesPage />} />
-              <Route path="/settings/members" element={<MembersPage />} />
+            {/* Protected Workspace Navigation */}
+            <Route element={<ProtectedRoute />}>
+              <Route element={<ApplicationRuntimeProvider><DashboardLayout /></ApplicationRuntimeProvider>}>
+                <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/bookings" element={<BookingsPage />} />
+                <Route path="/duties" element={<DutiesPage />} />
+                <Route path="/dispatch" element={<DispatchPage />} />
+                <Route path="/settings/operating-units" element={<OperatingUnitsPage />} />
+                <Route path="/compliance/vehicles" element={<VehiclesPage />} />
+                <Route path="/compliance/drivers" element={<DriversPage />} />
+                <Route path="/compliance/customers" element={<CustomersPage />} />
+                <Route path="/compliance/vendors" element={<VendorsPage />} />
+                <Route path="/rate-cards/customers" element={<RateCardsPage type="customer" />} />
+                <Route path="/rate-cards/vendors" element={<RateCardsPage type="vendor" />} />
+                <Route path="/billing" element={<BillingPage />} />
+                <Route path="/invoices" element={<InvoicesPage />} />
+                <Route path="/payments" element={<PaymentsPage />} />
+                <Route path="/payables" element={<PayablesPage />} />
+                <Route path="/vendor-settlements" element={<VendorSettlementsPage />} />
+                <Route path="/vendor-payments" element={<VendorPaymentHistoryPage />} />
+                <Route path="/receivables" element={<ReceivablesAgeingPage />} />
+                <Route path="/financial-periods" element={<FinancialPeriodsPage />} />
+                <Route path="/expenses" element={<ExpensesPage />} />
+                <Route path="/reports/pnl" element={<PnLReportsPage />} />
+                <Route path="/compliance" element={<CompliancePage />} />
+                <Route path="/settings" element={<WorkspaceSettingsPage />} />
+                <Route path="/settings/roles" element={<RolesPage />} />
+                <Route path="/settings/members" element={<MembersPage />} />
 
-              
-              {/* Customer Specific Extensions */}
-              <Route path="/operations/r1rcm/tikri" element={<R1TikriOperationsPage />} />
+                
+                {/* Customer Specific Extensions */}
+                <Route path="/operations/r1rcm/tikri" element={<R1TikriOperationsPage />} />
+              </Route>
             </Route>
-          </Route>
 
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </ZolexoraAuthProvider>
     </QueryClientProvider>
   );
 }
