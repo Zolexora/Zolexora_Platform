@@ -18,7 +18,7 @@ import sys
 import time
 
 TRANSCRIPT_PATH = "/home/vscode/.gemini/antigravity-cli/brain/9a799708-eac2-4bfc-a833-9d9ae6dc99dd/.system_generated/logs/transcript_full.jsonl"
-DEFAULT_OUTPUT_MD = "/workspaces/Zolexora_Platform/CHAT_HISTORY.md"
+DEFAULT_OUTPUT_MD = "/workspaces/Zolexora_Platform/docs/CHAT_HISTORY.md"
 
 def get_transcript_path():
     if os.path.exists(TRANSCRIPT_PATH):
