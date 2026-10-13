@@ -1,3 +1,4 @@
+from typing import Optional
 from fastapi import APIRouter, HTTPException, status, Request
 from pydantic import BaseModel, EmailStr
 import redis.asyncio as redis
@@ -10,7 +11,12 @@ router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 redis_client = redis.from_url(settings.REDIS_URL, decode_responses=True)
 
 # Initialize Supabase Admin client
-supabase: Client = create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_KEY)
+supabase: Optional[Client] = None
+if settings.SUPABASE_SERVICE_ROLE_KEY:
+    try:
+        supabase = create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_KEY)
+    except Exception:
+        supabase = None
 
 class ResendOTPRequest(BaseModel):
     email: EmailStr
@@ -34,6 +40,11 @@ async def resend_otp(request: ResendOTPRequest, req: Request):
 
     # 2. Trigger Supabase OTP Resend
     # Note: To route this through Resend, Custom SMTP must be configured in the Supabase Dashboard!
+    if not supabase:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Supabase service role client is not configured.",
+        )
     try:
         # We use the admin client or anon client to trigger resend. 
         # Actually, resend requires standard auth API

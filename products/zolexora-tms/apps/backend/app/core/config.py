@@ -26,11 +26,17 @@ class Settings(BaseSettings):
         "http://127.0.0.1:3000",
         "http://localhost:3001",
         "http://127.0.0.1:3001",
+        "http://localhost:3031",
+        "http://127.0.0.1:3031",
+        "http://localhost:3032",
+        "http://127.0.0.1:3032",
+        "http://localhost:3074",
+        "http://127.0.0.1:3074",
     ]
 
     # Database
     DATABASE_URL: str = Field(
-        default="postgresql://postgres:postgres@localhost:5432/postgres",
+        default="postgresql://tms:password@localhost:5432/tms",
         validation_alias="DATABASE_URL",
     )
 

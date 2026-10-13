@@ -2,3 +2,7 @@ packages:
   - 'apps/*'
   - 'apps/frontend/*'
   - 'packages/*'
+allowBuilds:
+  esbuild: true
+  better-sqlite3: true
+  node-gyp: true

@@ -1,6 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ShieldCheck, Truck, ArrowRight } from 'lucide-react';
 import { LoginForm } from './components/login-form';
 import { OnboardingForm } from './components/onboarding-form';
 import { ProtectedRoute } from './routes/ProtectedRoute';
@@ -32,6 +31,7 @@ import { R1TikriOperationsPage } from './features/extensions/r1rcm/R1TikriOperat
 import { AuthCallback } from './features/auth/AuthCallback';
 import CompliancePage from './pages/compliance/CompliancePage';
 import { ApplicationRuntimeProvider } from './providers/ApplicationRuntimeProvider';
+import { LandingPage } from './pages/LandingPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -41,43 +41,6 @@ const queryClient = new QueryClient({
     },
   },
 });
-
-function HomePage() {
-  return (
-    <div className="flex min-h-screen flex-col items-center justify-center p-6 text-center">
-      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-600/20 text-indigo-400 mb-6 border border-indigo-500/30 shadow-xl">
-        <Truck className="h-8 w-8" />
-      </div>
-      <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
-        Zolexora TMS
-      </h1>
-      <p className="mt-4 max-w-xl text-lg text-slate-400">
-        Production-grade Transport Management System managing complete operational and financial workflows.
-      </p>
-      
-      <div className="mt-8 flex gap-4">
-        <Link 
-          to="/login" 
-          className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-6 py-3 font-semibold text-white transition hover:bg-indigo-500 shadow-lg shadow-indigo-600/20"
-        >
-          Sign In
-          <ArrowRight className="h-4 w-4" />
-        </Link>
-        <Link 
-          to="/onboarding" 
-          className="inline-flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-900 px-6 py-3 font-semibold text-slate-200 transition hover:bg-slate-800"
-        >
-          Register Organisation
-        </Link>
-      </div>
-
-      <div className="mt-12 flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-1 text-xs font-medium text-emerald-400">
-        <ShieldCheck className="h-3.5 w-3.5" />
-        Render Canonical API: https://api.tms.zolexora.onrender.com
-      </div>
-    </div>
-  );
-}
 
 function AuthPageWrapper({ children }: { children: React.ReactNode }) {
   return (
@@ -93,7 +56,7 @@ export function App() {
       <BrowserRouter>
         <Routes>
           {/* Public Landing & Authentication */}
-          <Route path="/" element={<HomePage />} />
+          <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<AuthPageWrapper><LoginForm /></AuthPageWrapper>} />
           <Route path="/onboarding" element={<AuthPageWrapper><OnboardingForm /></AuthPageWrapper>} />
           <Route path="/auth/callback" element={<AuthCallback />} />
