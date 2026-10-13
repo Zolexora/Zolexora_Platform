@@ -25,12 +25,64 @@ import {
 import type { FirebaseClientConfig, ZolexoraUserProfile } from "./types";
 import { generateZolexoraId } from "./zolexora-id";
 
-export function getWebFirebaseAuth(config: FirebaseClientConfig): Auth {
+/**
+ * Resolves Firebase configuration from parameters or environment variables.
+ * Works seamlessly across Vite, Next.js, Create-React-App, and Node.js runtimes.
+ */
+export function resolveFirebaseConfig(customConfig?: Partial<FirebaseClientConfig>): FirebaseClientConfig {
+  const getEnv = (key: string): string => {
+    try {
+      // @ts-ignore
+      if (typeof import.meta !== "undefined" && import.meta?.env?.[key]) {
+        // @ts-ignore
+        return String(import.meta.env[key]);
+      }
+    } catch {}
+    try {
+      if (typeof process !== "undefined" && process?.env?.[key]) {
+        return String(process.env[key]);
+      }
+    } catch {}
+    return "";
+  };
+
+  return {
+    apiKey: customConfig?.apiKey || getEnv("VITE_FIREBASE_API_KEY") || getEnv("NEXT_PUBLIC_FIREBASE_API_KEY") || getEnv("FIREBASE_API_KEY") || "AIzaSyDummyKeyForZolexoraPlatform2026",
+    authDomain: customConfig?.authDomain || getEnv("VITE_FIREBASE_AUTH_DOMAIN") || getEnv("NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN") || getEnv("FIREBASE_AUTH_DOMAIN") || "zolexora-platform.firebaseapp.com",
+    projectId: customConfig?.projectId || getEnv("VITE_FIREBASE_PROJECT_ID") || getEnv("NEXT_PUBLIC_FIREBASE_PROJECT_ID") || getEnv("FIREBASE_PROJECT_ID") || "zolexora-platform",
+    appId: customConfig?.appId || getEnv("VITE_FIREBASE_APP_ID") || getEnv("NEXT_PUBLIC_FIREBASE_APP_ID") || getEnv("FIREBASE_APP_ID") || "1:1234567890:web:abcdef123456",
+    messagingSenderId: customConfig?.messagingSenderId || getEnv("VITE_FIREBASE_MESSAGING_SENDER_ID") || getEnv("NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID") || getEnv("FIREBASE_MESSAGING_SENDER_ID"),
+    storageBucket: customConfig?.storageBucket || getEnv("VITE_FIREBASE_STORAGE_BUCKET") || getEnv("NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET") || getEnv("FIREBASE_STORAGE_BUCKET"),
+  };
+}
+
+let cachedAuth: Auth | null = null;
+
+/**
+ * Returns the initialized Web Firebase Auth instance.
+ * If called without arguments, automatically resolves config from environment.
+ * Reuses the singleton instance across the application.
+ */
+export function getWebFirebaseAuth(config?: Partial<FirebaseClientConfig>): Auth {
+  if (cachedAuth && !config) {
+    return cachedAuth;
+  }
+  const resolved = resolveFirebaseConfig(config);
   const appName = "zolexora-user-auth-firebase";
   const app = getApps().some((candidate) => candidate.name === appName)
     ? getApp(appName)
-    : initializeApp(config, appName);
-  return getAuth(app);
+    : initializeApp(resolved, appName);
+  cachedAuth = getAuth(app);
+  return cachedAuth;
+}
+
+/**
+ * Convenience helper to get the active Firebase ID token without passing an Auth instance.
+ */
+export async function getIdToken(forceRefresh = false): Promise<string | null> {
+  const auth = getWebFirebaseAuth();
+  if (!auth.currentUser) return null;
+  return auth.currentUser.getIdToken(forceRefresh);
 }
 
 const phoneVerifiers = new Map<string, RecaptchaVerifier>();
@@ -65,56 +117,104 @@ const googleProvider = () => {
   return provider;
 };
 
+function isAuth(val: unknown): val is Auth {
+  return typeof val === "object" && val !== null && "currentUser" in val;
+}
+
+/**
+ * High-level auth actions. Can be called with (auth, ...) or directly with (...)
+ * defaulting to the global singleton Auth instance.
+ */
 export const webAuth = {
-  signInWithEmail: async (auth: Auth, email: string, password: string) => {
+  signInWithEmail: async (arg1: Auth | string, arg2?: string, arg3?: string) => {
+    const auth = isAuth(arg1) ? arg1 : getWebFirebaseAuth();
+    const email = (isAuth(arg1) ? arg2 : arg1) as string;
+    const password = (isAuth(arg1) ? arg3 : arg2) as string;
     const credential = await signInWithEmailAndPassword(auth, email.trim().toLowerCase(), password);
     return withAuthResult(credential.user);
   },
-  createEmailAccount: async (auth: Auth, email: string, password: string, displayName?: string) => {
+
+  createEmailAccount: async (arg1: Auth | string, arg2?: string, arg3?: string, arg4?: string) => {
+    const auth = isAuth(arg1) ? arg1 : getWebFirebaseAuth();
+    const email = (isAuth(arg1) ? arg2 : arg1) as string;
+    const password = (isAuth(arg1) ? arg3 : arg2) as string;
+    const displayName = isAuth(arg1) ? arg4 : arg3;
     const credential = await createUserWithEmailAndPassword(auth, email.trim().toLowerCase(), password);
     const zolexoraId = generateZolexoraId();
-    // Persist displayName and zolexoraId
     await updateProfile(credential.user, {
       displayName: displayName ? `${displayName} [${zolexoraId}]` : zolexoraId,
     });
     return withAuthResult(credential.user, zolexoraId);
   },
+
   sendEmailVerification: (user: User) => sendEmailVerification(user),
-  sendPasswordReset: (auth: Auth, email: string) => sendPasswordResetEmail(auth, email.trim().toLowerCase()),
-  signInWithGoogle: async (auth: Auth) => {
+
+  sendPasswordReset: async (arg1: Auth | string, arg2?: string) => {
+    const auth = isAuth(arg1) ? arg1 : getWebFirebaseAuth();
+    const email = (isAuth(arg1) ? arg2 : arg1) as string;
+    return sendPasswordResetEmail(auth, email.trim().toLowerCase());
+  },
+
+  signInWithGoogle: async (arg1?: Auth) => {
+    const auth = isAuth(arg1) ? arg1 : getWebFirebaseAuth();
     const credential = await signInWithPopup(auth, googleProvider());
     return withAuthResult(credential.user);
   },
+
   linkGoogle: async (user: User) => {
     const credential = await linkWithPopup(user, googleProvider());
     return withAuthResult(credential.user);
   },
-  beginGoogleRedirect: (auth: Auth) => signInWithRedirect(auth, googleProvider()),
-  getGoogleRedirectResult: async (auth: Auth) => {
+
+  beginGoogleRedirect: (arg1?: Auth) => {
+    const auth = isAuth(arg1) ? arg1 : getWebFirebaseAuth();
+    return signInWithRedirect(auth, googleProvider());
+  },
+
+  getGoogleRedirectResult: async (arg1?: Auth) => {
+    const auth = isAuth(arg1) ? arg1 : getWebFirebaseAuth();
     const result = await getRedirectResult(auth);
     return result ? withAuthResult(result.user) : null;
   },
-  createPhoneConfirmation: (auth: Auth, containerId: string, phone: string, linkCurrentUser = false) => {
+
+  createPhoneConfirmation: (arg1: Auth | string, arg2: string, arg3?: string, arg4 = false) => {
+    const auth = isAuth(arg1) ? arg1 : getWebFirebaseAuth();
+    const containerId = (isAuth(arg1) ? arg2 : arg1) as string;
+    const phone = (isAuth(arg1) ? arg3 : arg2) as string;
+    const linkCurrentUser = isAuth(arg1) ? arg4 : Boolean(arg3);
+
     phoneVerifiers.get(containerId)?.clear();
     const verifier = new RecaptchaVerifier(auth, containerId, { size: "invisible" });
     phoneVerifiers.set(containerId, verifier);
     if (linkCurrentUser && auth.currentUser) return linkWithPhoneNumber(auth.currentUser, phone, verifier);
     return signInWithPhoneNumber(auth, phone, verifier);
   },
+
   confirmPhone: async (confirmation: { confirm(code: string): Promise<{ user: User }> }, code: string) => {
     const result = await confirmation.confirm(code);
     return withAuthResult(result.user);
   },
+
   linkEmail: async (user: User, email: string, password: string) => {
     const credential = await linkWithCredential(user, EmailAuthProvider.credential(email.trim().toLowerCase(), password));
     return withAuthResult(credential.user);
   },
-  unlinkEmail: async (auth: Auth) => {
+
+  unlinkEmail: async (arg1?: Auth) => {
+    const auth = isAuth(arg1) ? arg1 : getWebFirebaseAuth();
     const user = auth.currentUser;
     if (user?.providerData.some((item) => item.providerId === EmailAuthProvider.PROVIDER_ID)) {
       await unlink(user, EmailAuthProvider.PROVIDER_ID);
     }
   },
-  deleteCurrentUser: (auth: Auth) => auth.currentUser ? deleteUser(auth.currentUser) : Promise.resolve(),
-  signOut: (auth: Auth) => signOut(auth),
+
+  deleteCurrentUser: (arg1?: Auth) => {
+    const auth = isAuth(arg1) ? arg1 : getWebFirebaseAuth();
+    return auth.currentUser ? deleteUser(auth.currentUser) : Promise.resolve();
+  },
+
+  signOut: async (arg1?: Auth) => {
+    const auth = isAuth(arg1) ? arg1 : getWebFirebaseAuth();
+    return signOut(auth);
+  },
 };

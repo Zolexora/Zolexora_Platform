@@ -7,6 +7,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./web": "./src/web.ts",
+    "./react": "./src/react.tsx",
+    "./client": "./src/client.ts",
     "./native": "./src/native.ts",
     "./session": "./src/session.ts",
     "./expo": "./expo-config.cjs"
@@ -18,7 +20,9 @@
   "peerDependencies": {
     "@react-native-firebase/app": ">=26 <27",
     "@react-native-firebase/auth": ">=26 <27",
-    "firebase": ">=12 <13"
+    "firebase": ">=12 <13",
+    "react": ">=18",
+    "react-dom": ">=18"
   },
   "peerDependenciesMeta": {
     "@react-native-firebase/app": {
@@ -28,6 +32,12 @@
       "optional": true
     },
     "firebase": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
       "optional": true
     }
   },
