@@ -10,7 +10,7 @@ This document defines the production, backup, and testing authentication systems
 | :--- | :--- | :--- | :--- |
 | **Primary Production Auth** | `@zolexora/user-auth-firebase` | **Live Production (100%)** | Handles Web & Expo Native apps with Email/Password, Google OAuth, and Phone OTP. |
 | **Hot Backup / Failover Auth** | `@zolexora/user-auth-supabase` | **Failover Standby** | **100% API Identical** to Firebase. Swapped with zero code change in apps. |
-| **Offline & CI/CD Testing Auth**| `@zolexora/user-auth-zolexora` | **Testing & Local Dev** | Self-hosted PostgreSQL + Resend with `mockEmail: true` for zero-cost offline CI. |
+| **Dedicated Testing Auth** | `@zolexora/user-auth-zolexora` | **Testing & Staging** | Live assigned PostgreSQL database + assigned Resend API key for verification and reset emails. |
 
 ---
 
@@ -102,23 +102,24 @@ const session = await exchangeFirebaseToken({
 
 ---
 
-## 5. Testing & Local Dev: Zolexora Auth (`@zolexora/user-auth-zolexora`)
+## 5. Testing & Staging Auth: Zolexora Auth (`@zolexora/user-auth-zolexora`)
 
-Dedicated for local development and CI/CD pipelines without needing external cloud credentials:
-* **Zero External Dependencies:** Runs directly on local PostgreSQL.
-* **Offline Mocking:** Setting `mockEmail: true` or `ZOLEXORA_AUTH_MOCK_EMAIL=true` bypasses Resend network calls and enables instant automated testing.
-* **Scrypt Security:** Industry-standard password hashing (`N: 32768, r: 8, p: 3`) with SHA-256 digested tokens.
-* **Zolexora ID Built-in:** Generates and stores `zolexora_id` on the `zolexora_auth_users` table.
+Dedicated for testing and staging environments with your dedicated PostgreSQL database and verified Resend API key:
+* **Assigned Database Connection:** Directly connects to `ZOLEXORA_AUTHENTICATION_DATABASE_URL` via PostgreSQL connection pool.
+* **Live Resend Email Delivery:** Directly sends verification links and 6-digit OTP codes via `ZOLEXORA_PRODUCTION_RESEND_API_KEY`.
+* **Scrypt Security:** Industry-standard password hashing (`N: 32768, r: 8, p: 3`) with SHA-256 digested session and verification tokens.
+* **Zolexora ID Built-in:** Automatically generates and stores `zolexora_id` on the `zolexora_auth_users` table for every new registration.
 
 ```typescript
 import { createZolexoraAuth } from "@zolexora/user-auth-zolexora";
 
 const auth = createZolexoraAuth({
-  databaseUrl: process.env.TEST_DATABASE_URL,
-  mockEmail: true, // 100% offline testing
+  databaseUrl: process.env.ZOLEXORA_AUTHENTICATION_DATABASE_URL,
+  resendApiKey: process.env.ZOLEXORA_PRODUCTION_RESEND_API_KEY,
 });
 
-const user = await auth.signUp("test@zolexora.com", "password123456");
+// Sends real email with 6-digit code and Zolexora ID
+const user = await auth.signUp("tester@zolexora.com", "password123456");
 console.log(user.zolexoraId); // "ZX-9B1D-4F82-C0E1"
 ```
 

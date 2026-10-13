@@ -49,6 +49,4 @@ export type ZolexoraAuthOptions = {
   passwordResetTokenTtlMs?: number;
   sessionTtlMs?: number;
   maxDbConnections?: number;
-  /** Set to true for offline / CI/CD testing without live Resend calls. */
-  mockEmail?: boolean;
 };
