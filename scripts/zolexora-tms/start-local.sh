@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Always execute from the repository root
-cd "$(dirname "$0")/.."
+REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+cd "$REPO_ROOT"
 
 echo "======================================"
 echo " Zolexora TMS - Local Development"
@@ -69,15 +70,21 @@ esac
             sudo apt-get install -y python3.12 python3.12-venv
         fi
 
-        if [ ! -x apps/backend/.venv/bin/python ]; then
+        if [ ! -x products/zolexora-tms/apps/backend/.venv/bin/python ]; then
             echo "Creating backend Python 3.12 virtual environment..."
-            python3.12 -m venv apps/backend/.venv
+            python3.12 -m venv products/zolexora-tms/apps/backend/.venv
         fi
 
-        if ! apps/backend/.venv/bin/python -c "import uvicorn" >/dev/null 2>&1; then
+        if ! products/zolexora-tms/apps/backend/.venv/bin/python -c "import uvicorn" >/dev/null 2>&1; then
             echo "Installing backend Python dependencies..."
-            apps/backend/.venv/bin/python -m pip install --upgrade pip
-            apps/backend/.venv/bin/python -m pip install -e apps/backend
+            products/zolexora-tms/apps/backend/.venv/bin/python -m pip install --upgrade pip
+            products/zolexora-tms/apps/backend/.venv/bin/python -m pip install -e products/zolexora-tms/apps/backend
+            products/zolexora-tms/apps/backend/.venv/bin/python -m pip install greenlet
+        fi
+
+        if command -v docker >/dev/null 2>&1; then
+            echo "Ensuring PostgreSQL container is up..."
+            docker compose -f products/zolexora-tms/compose.yaml up -d postgres >/dev/null 2>&1 || true
         fi
     }
 
@@ -101,19 +108,19 @@ trap cleanup SIGINT SIGTERM
 if [[ "$SERVICES" == *"backend"* ]]; then
     ensure_backend_environment
     echo "Starting Backend API (port 4030)..."
-    PYTHONPATH=apps/backend pnpm dotenvx run --env-file config/envs/zolexora-erp/erp.env -- apps/backend/.venv/bin/python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 4030 --app-dir apps/backend &
+    PYTHONPATH=products/zolexora-tms/apps/backend products/zolexora-tms/apps/backend/.venv/bin/python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 4030 --app-dir products/zolexora-tms/apps/backend &
     PIDS="$PIDS $!"
 fi
 
 if [[ "$SERVICES" == *"tms"* ]]; then
     echo "Starting TMS Frontend..."
-    pnpm dotenvx run --env-file config/envs/zolexora-erp/erp.env -- pnpm --filter zolexora-tms run dev &
+    pnpm --filter zolexora-tms run dev &
     PIDS="$PIDS $!"
 fi
 
 if [[ "$SERVICES" == *"admin"* ]]; then
     echo "Starting Admin Dashboard..."
-    pnpm dotenvx run --env-file config/envs/zolexora-erp/erp.env -- pnpm --filter zolexora-tms-admin run dev &
+    pnpm --filter zolexora-tms-admin run dev &
     PIDS="$PIDS $!"
 fi
 
@@ -121,10 +128,10 @@ echo "======================================"
 echo "Services are starting! (Press Ctrl+C to stop all)"
 
 if [[ "$SERVICES" == *"tms"* ]]; then
-    echo "- TMS Frontend: http://localhost:3000"
+    echo "- TMS Frontend: http://localhost:3031 (or http://localhost:3000)"
 fi
 if [[ "$SERVICES" == *"admin"* ]]; then
-    echo "- Admin Dashboard: http://localhost:3001"
+    echo "- Admin Dashboard: http://localhost:3032 (or http://localhost:3001)"
 fi
 if [[ "$SERVICES" == *"backend"* ]]; then
     echo "- Backend API: http://localhost:4030/docs"
