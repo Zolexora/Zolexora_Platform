@@ -6,7 +6,7 @@ from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import get_current_active_organisation, CurrentUserContext
-from app.auth.jwks import verify_supabase_jwt
+from app.auth.jwks import verify_firebase_jwt
 from app.core.websocket import ws_manager
 from app.db.session import get_db
 from app.modules.operations.duties.models import Duty, DutyStatus
@@ -73,7 +73,7 @@ async def websocket_ops_endpoint(
         return
 
     try:
-        claims = await verify_supabase_jwt(token)
+        claims = await verify_firebase_jwt(token)
         if not claims.get("sub"):
             await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
             return

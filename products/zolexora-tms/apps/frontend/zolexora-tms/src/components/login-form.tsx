@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { PasswordField } from "./password-field";
-import { supabase } from "../lib/supabase";
+import { auth, webAuth } from "../lib/firebase";
 
 export function LoginForm() {
   const [email, setEmail] = useState("");
@@ -12,26 +12,29 @@ export function LoginForm() {
 
   async function signInWithGoogle() {
     setMessage("");
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
-    });
-    if (error) setMessage(error.message);
+    setIsSubmitting(true);
+    try {
+      await webAuth.signInWithGoogle(auth);
+      navigate("/dashboard");
+    } catch (error: any) {
+      setMessage(error.message || "Unable to sign in with Google");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   async function signInWithPassword() {
     setIsSubmitting(true);
     setMessage("");
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setIsSubmitting(false);
-
-    if (error) {
-      setMessage(`Unable to sign in: ${error.message}`);
-      return;
+    try {
+      await webAuth.signInWithEmail(auth, email, password);
+      navigate("/dashboard");
+    } catch (error: any) {
+      setMessage(`Unable to sign in: ${error.message || "Invalid email or password"}`);
+    } finally {
+      setIsSubmitting(false);
     }
-
-    navigate("/dashboard");
   }
 
   return (
@@ -51,8 +54,9 @@ export function LoginForm() {
 
       <button
         type="button"
+        disabled={isSubmitting}
         onClick={() => void signInWithGoogle()}
-        className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-800/80 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700"
+        className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-800/80 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:opacity-50"
       >
         Continue with Google
       </button>

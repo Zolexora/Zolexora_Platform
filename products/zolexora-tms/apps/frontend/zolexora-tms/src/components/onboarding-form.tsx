@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { PasswordField } from "./password-field";
-import { supabase } from "../lib/supabase";
+import { auth, webAuth } from "../lib/firebase";
 import { useAuth } from "../features/auth/useAuth";
 
 const organisationTypes = [
@@ -69,68 +69,29 @@ export function OnboardingForm() {
     password === confirmPassword;
 
   const { session } = useAuth();
-  const [otp, setOtp] = useState("");
-  const [showOtpInput, setShowOtpInput] = useState(false);
 
   async function createAccount() {
     setIsSubmitting(true);
     setMessage("");
 
-    let currentSession = session;
+    let currentToken = session?.access_token;
 
-    if (!currentSession) {
-      // Step A: Not authenticated yet. Sign up with Supabase.
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-            organisation_name: organisationName,
-            organisation_type: organisationType,
-          },
-        },
-      });
-
-      if (error) {
+    if (!currentToken) {
+      try {
+        const { user, idToken } = await webAuth.createEmailAccount(auth, email, password, fullName);
+        await webAuth.sendEmailVerification(user);
+        currentToken = idToken;
+      } catch (error: any) {
         setIsSubmitting(false);
-        setMessage(`Unable to create account: ${error.message}`);
-        return;
-      }
-
-      if (data.session) {
-        currentSession = data.session;
-      } else {
-        // Require OTP verification
-        setIsSubmitting(false);
-        setShowOtpInput(true);
-        setMessage("A verification code has been sent to your email.");
+        setMessage(`Unable to create account: ${error.message || "Registration failed"}`);
         return;
       }
     }
 
-    await completeBackendOnboarding(currentSession);
+    await completeBackendOnboarding(currentToken);
   }
 
-  async function verifyOtpAndComplete() {
-    setIsSubmitting(true);
-    setMessage("");
-    const { data, error } = await supabase.auth.verifyOtp({
-      email,
-      token: otp,
-      type: 'signup'
-    });
-
-    if (error || !data.session) {
-      setIsSubmitting(false);
-      setMessage(error?.message || "Invalid or expired OTP code.");
-      return;
-    }
-
-    await completeBackendOnboarding(data.session);
-  }
-
-  async function completeBackendOnboarding(activeSession: any) {
+  async function completeBackendOnboarding(token: string) {
     try {
       const res = await fetch(
         `${import.meta.env.VITE_API_URL || 'http://localhost:4030'}/api/v1/onboarding`,
@@ -138,7 +99,7 @@ export function OnboardingForm() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${activeSession.access_token}`,
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             name: organisationName,
@@ -296,79 +257,23 @@ export function OnboardingForm() {
             placeholder="Re-enter password"
           />
 
-          {showOtpInput ? (
-            <div className="flex flex-col gap-3 pt-2">
-              <label htmlFor="otp" className="text-sm font-medium text-slate-300">
-                Enter 6-digit Verification Code
-              </label>
-              <input
-                id="otp"
-                type="text"
-                maxLength={6}
-                value={otp}
-                onChange={(event) => setOtp(event.target.value.replace(/\D/g, ''))}
-                placeholder="000000"
-                className="w-full text-center tracking-widest text-xl rounded-lg border border-slate-700 bg-slate-900/80 px-3.5 py-3 font-mono text-white placeholder-slate-600 focus:border-indigo-500 focus:outline-none"
-              />
-              <button
-                type="button"
-                onClick={() => void verifyOtpAndComplete()}
-                disabled={otp.length < 6 || isSubmitting}
-                className="w-full mt-2 rounded-lg bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:opacity-50"
-              >
-                {isSubmitting ? "Verifying..." : "Verify & Create Workspace"}
-              </button>
-              
-              <button
-                type="button"
-                onClick={async () => {
-                  try {
-                    const res = await fetch("http://localhost:4030/api/v1/auth/resend-otp", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ email })
-                    });
-                    const data = await res.json();
-                    if (!res.ok) {
-                      setMessage(data.detail || "Failed to resend OTP");
-                    } else {
-                      setMessage(`OTP resent. ${data.attempts_remaining} attempts remaining.`);
-                    }
-                  } catch (err) {
-                    setMessage("Failed to reach server to resend OTP.");
-                  }
-                }}
-                disabled={isSubmitting}
-                className="w-full mt-1 rounded-lg border border-slate-700 bg-transparent px-4 py-2 text-xs font-semibold text-slate-300 transition hover:bg-slate-800 disabled:opacity-50"
-              >
-                Resend Code
-              </button>
-            </div>
-          ) : (
-            <div className="flex gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setStep(1)}
-                className="w-1/3 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-300 transition hover:bg-slate-700"
-              >
-                Back
-              </button>
-              <button
-                type="button"
-                disabled={!isStepTwoValid || isSubmitting}
-                onClick={() => {
-                  if (session) {
-                    void createAccount();
-                  } else {
-                    void createAccount();
-                  }
-                }}
-                className="w-2/3 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:opacity-50"
-              >
-                {isSubmitting ? "Creating..." : "Create Workspace"}
-              </button>
-            </div>
-          )}
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => setStep(1)}
+              className="w-1/3 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-300 transition hover:bg-slate-700"
+            >
+              Back
+            </button>
+            <button
+              type="button"
+              disabled={!isStepTwoValid || isSubmitting}
+              onClick={() => void createAccount()}
+              className="w-2/3 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:opacity-50"
+            >
+              {isSubmitting ? "Creating..." : "Create Workspace"}
+            </button>
+          </div>
         </>
       )}
 

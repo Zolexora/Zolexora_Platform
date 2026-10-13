@@ -11,4 +11,4 @@ export {
   normalizeZolexoraId,
 } from "./zolexora-id";
 export { getWebFirebaseAuth, webAuth, buildZolexoraProfile } from "./web";
-export { nativeAuth, createNativeMarketplaceAuth } from "./native";
+

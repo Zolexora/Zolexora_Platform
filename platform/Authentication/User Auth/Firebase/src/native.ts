@@ -12,7 +12,6 @@ import {
   type User,
 } from "@react-native-firebase/auth";
 import { exchangeFirebaseToken } from "./session";
-import type { MarketplaceSession } from "./types";
 import { generateZolexoraId } from "./zolexora-id";
 
 export interface NativeAuthOptions {

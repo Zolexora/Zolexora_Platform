@@ -1,16 +1,16 @@
-import { supabase } from './supabase';
+import { getIdToken } from './firebase';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
   (import.meta.env.DEV ? '' : 'https://api.tms.zolexora.onrender.com');
 
 export async function apiClient<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const { data: { session } } = await supabase.auth.getSession();
+  const token = await getIdToken();
   
   const headers = new Headers(options.headers || {});
   headers.set('Content-Type', 'application/json');
   
-  if (session?.access_token) {
-    headers.set('Authorization', `Bearer ${session.access_token}`);
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
   }
   
   // Inject explicit tenant context for the backend

@@ -50,7 +50,12 @@ class Settings(BaseSettings):
             return url.replace("postgres://", "postgresql+asyncpg://", 1)
         return url
 
-    # Supabase Auth
+    # Firebase Auth
+    FIREBASE_PROJECT_ID: str = Field(
+        default="zolexora-platform",
+        validation_alias="FIREBASE_PROJECT_ID",
+    )
+    # Supabase (Legacy / DB Storage)
     SUPABASE_URL: str = Field(
         default="https://culeiqroofltvizgfzim.supabase.co",
         validation_alias="SUPABASE_URL",
