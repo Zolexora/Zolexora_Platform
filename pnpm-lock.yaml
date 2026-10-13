@@ -158,7 +158,7 @@ importers:
         specifier: ^5.4.5
         version: 5.9.3
 
-  products/clarity-fi:
+  products/clarityfi:
     devDependencies:
       '@zolexora/tsconfig':
         specifier: workspace:*
@@ -210,7 +210,7 @@ importers:
         specifier: ^5.4.5
         version: 5.9.3
 
-  products/rento-easy:
+  products/rentoeasy:
     dependencies:
       '@nestjs/common':
         specifier: 11.1.24
@@ -241,7 +241,7 @@ importers:
         specifier: ^5.4.0
         version: 5.9.3
 
-  products/rento-easy/apps/web-admin:
+  products/rentoeasy/apps/web-admin:
     dependencies:
       '@rent-stay/types':
         specifier: workspace:*
@@ -293,7 +293,7 @@ importers:
         specifier: ^8.0.14
         version: 8.3.3(@types/node@20.19.43)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
 
-  products/rento-easy/apps/web-owner:
+  products/rentoeasy/apps/web-owner:
     dependencies:
       '@rent-stay/types':
         specifier: workspace:*
@@ -357,7 +357,7 @@ importers:
         specifier: ^8.0.14
         version: 8.3.3(@types/node@20.19.43)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
 
-  products/rento-easy/apps/web-tenant:
+  products/rentoeasy/apps/web-tenant:
     dependencies:
       '@rent-stay/types':
         specifier: workspace:*
@@ -421,13 +421,13 @@ importers:
         specifier: ^8.0.14
         version: 8.3.3(@types/node@20.19.43)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
 
-  products/rento-easy/packages/shared-types:
+  products/rentoeasy/packages/shared-types:
     dependencies:
       '@zolexora/api-contracts':
         specifier: file:../../../../packages/api-contracts
         version: link:../../../../packages/api-contracts
 
-  products/rento-easy/packages/shared-utils: {}
+  products/rentoeasy/packages/shared-utils: {}
 
   products/the-textile-care:
     devDependencies:
@@ -797,9 +797,9 @@ importers:
         specifier: ^18.3.1
         version: 18.3.7(@types/react@18.3.31)
 
-  products/zolexora-app-suite: {}
+  products/zolexora-appsuite: {}
 
-  products/zolexora-app-suite/apps/backend:
+  products/zolexora-appsuite/apps/backend:
     dependencies:
       '@zolexora/user-auth-zolexora':
         specifier: workspace:^
@@ -836,7 +836,7 @@ importers:
         specifier: ^5.8.0
         version: 5.9.3
 
-  products/zolexora-app-suite/apps/client:
+  products/zolexora-appsuite/apps/client:
     dependencies:
       '@zolexora/user-auth-zolexora':
         specifier: workspace:^
@@ -891,7 +891,7 @@ importers:
         specifier: ^5.8.0
         version: 5.9.3
 
-  products/zolexora-app-suite/apps/dev-team:
+  products/zolexora-appsuite/apps/dev-team:
     dependencies:
       '@zolexora/user-auth-zolexora':
         specifier: workspace:^

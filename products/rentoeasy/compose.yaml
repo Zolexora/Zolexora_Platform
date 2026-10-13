@@ -27,7 +27,7 @@ services:
         condition: service_healthy
     build:
       context: ../../
-      dockerfile: products/rento-easy/Dockerfile.api
+      dockerfile: products/rentoeasy/Dockerfile.api
     container_name: rento-easy-api
     environment:
     - NODE_ENV=production
@@ -76,9 +76,9 @@ services:
   web-admin:
     build:
       context: ../../
-      dockerfile: products/rento-easy/Dockerfile.web
+      dockerfile: products/rentoeasy/Dockerfile.web
       args:
-        APP_DIR: products/rento-easy/apps/web-admin
+        APP_DIR: products/rentoeasy/apps/web-admin
     container_name: rento-easy-web-admin
     deploy:
       resources:
@@ -100,9 +100,9 @@ services:
   web-owner:
     build:
       context: ../../
-      dockerfile: products/rento-easy/Dockerfile.web
+      dockerfile: products/rentoeasy/Dockerfile.web
       args:
-        APP_DIR: products/rento-easy/apps/web-owner
+        APP_DIR: products/rentoeasy/apps/web-owner
     container_name: rento-easy-web-owner
     deploy:
       resources:
@@ -124,9 +124,9 @@ services:
   web-tenant:
     build:
       context: ../../
-      dockerfile: products/rento-easy/Dockerfile.web
+      dockerfile: products/rentoeasy/Dockerfile.web
       args:
-        APP_DIR: products/rento-easy/apps/web-tenant
+        APP_DIR: products/rentoeasy/apps/web-tenant
     container_name: rento-easy-web-tenant
     deploy:
       resources:

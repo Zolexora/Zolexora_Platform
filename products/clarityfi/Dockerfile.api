@@ -4,20 +4,20 @@ RUN corepack enable && corepack prepare pnpm@9 --activate
 WORKDIR /app
 
 # Copy workspace config
-COPY products/clarity-fi/package.json ./package.json
-COPY products/clarity-fi/pnpm-lock.yaml ./pnpm-lock.yaml
-COPY products/clarity-fi/pnpm-workspace.yaml ./pnpm-workspace.yaml
-COPY products/clarity-fi/tsconfig.base.json ./tsconfig.base.json
-COPY products/clarity-fi/tsconfig.json ./tsconfig.json
+COPY products/clarityfi/package.json ./package.json
+COPY products/clarityfi/pnpm-lock.yaml ./pnpm-lock.yaml
+COPY products/clarityfi/pnpm-workspace.yaml ./pnpm-workspace.yaml
+COPY products/clarityfi/tsconfig.base.json ./tsconfig.base.json
+COPY products/clarityfi/tsconfig.json ./tsconfig.json
 
 # Copy clarity-fi's own packages
-COPY products/clarity-fi/packages ./packages
+COPY products/clarityfi/packages ./packages
 
 # Inject root shared packages into local packages/ so workspace:* resolves
 COPY packages/tsconfig ./packages/tsconfig
 
 # Copy apps
-COPY products/clarity-fi/apps/api-server ./apps/api-server
+COPY products/clarityfi/apps/api-server ./apps/api-server
 
 # Install dependencies and build
 RUN pnpm config set ignore-scripts true && pnpm install --no-frozen-lockfile

@@ -1,10 +1,10 @@
-ARG APP_DIR=products/rento-easy/apps/web-tenant
+ARG APP_DIR=products/rentoeasy/apps/web-tenant
 FROM node:22-alpine AS builder
 ARG APP_DIR
 WORKDIR /app
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 COPY packages ./packages
-COPY products/rento-easy ./products/rento-easy
+COPY products/rentoeasy ./products/rentoeasy
 RUN corepack enable && corepack prepare pnpm@10 --activate
 RUN ln -s /app/packages /packages
 RUN pnpm config set ignore-scripts true && pnpm install --no-frozen-lockfile
