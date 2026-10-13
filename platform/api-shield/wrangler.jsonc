@@ -1,0 +1,38 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "zolexora-api-shield",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-13",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1
+    },
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 0.05
+    }
+  },
+  "vars": {
+    "ENVIRONMENT": "production",
+    "TMS_ORIGIN": "http://127.0.0.1:4030",
+    "MARKETPLACE_ORIGIN": "http://127.0.0.1:8000",
+    "ADMIN_ORIGIN": "http://127.0.0.1:4000",
+    "DEFAULT_ORIGIN": "http://127.0.0.1:4030",
+    "GENERAL_RATE_LIMIT": "100",
+    "SENSITIVE_RATE_LIMIT": "15",
+    "RATE_LIMIT_WINDOW_SECONDS": "60",
+    "MAX_THREAT_SCORE": "40"
+  },
+  "kv_namespaces": [
+    {
+      "binding": "RATE_LIMIT_KV",
+      "id": "rate_limit_kv_prod",
+      "preview_id": "rate_limit_kv_preview"
+    }
+  ]
+}
