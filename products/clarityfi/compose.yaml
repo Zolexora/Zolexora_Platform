@@ -2,7 +2,7 @@ services:
   backend:
     build:
       context: ../../
-      dockerfile: products/clarity-fi/Dockerfile.api
+      dockerfile: products/clarityfi/Dockerfile.api
     container_name: clarity-fi-backend
     environment:
     - PORT=8080

@@ -13,7 +13,7 @@ Clients submit software specifications, review structured milestone proposals, a
 ## Repository & Monorepo Structure
 
 ```
-products/zolexora-app-suite/
+products/zolexora-appsuite/
 ├── package.json                   # Product package metadata & scripts
 ├── README.md                      # Quickstart guide
 ├── schema.sql                     # Supabase/PostgreSQL schema with RLS & audit trails
@@ -102,7 +102,7 @@ flowchart TD
 
 ## Core Contract Templates & Clauses
 
-Pre-configured in [`lib/legal-clauses.ts`](file:///workspaces/Zolexora_Platform/products/zolexora-app-suite/apps/web/lib/legal-clauses.ts):
+Pre-configured in [`lib/legal-clauses.ts`](file:///workspaces/Zolexora_Platform/products/zolexora-appsuite/apps/web/lib/legal-clauses.ts):
 
 1. **Master Services Agreement (MSA):**
    - **IP Transfer Condition Precedent:** Intellectual property transfers only upon full payment settlement.
@@ -127,7 +127,7 @@ Pre-configured in [`lib/legal-clauses.ts`](file:///workspaces/Zolexora_Platform/
 
 ```bash
 # 1. Navigate to the App Suite web application
-cd /workspaces/Zolexora_Platform/products/zolexora-app-suite/apps/web
+cd /workspaces/Zolexora_Platform/products/zolexora-appsuite/apps/web
 
 # 2. Configure environment variables
 cp .env.example .env.local
@@ -165,4 +165,4 @@ pnpm --filter @zas/web build
 ## Database Migrations
 
 To apply schema updates and Row Level Security policies, execute the SQL definitions in:
-👉 [`products/zolexora-app-suite/schema.sql`](file:///workspaces/Zolexora_Platform/products/zolexora-app-suite/schema.sql) in your Supabase SQL editor or migration pipeline.
+👉 [`products/zolexora-appsuite/schema.sql`](file:///workspaces/Zolexora_Platform/products/zolexora-appsuite/schema.sql) in your Supabase SQL editor or migration pipeline.

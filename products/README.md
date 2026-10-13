@@ -10,6 +10,6 @@
 | ZolexoraAI             | AI product                | `products/zolexora-ai/`      |
 | ZolexoraEngage         | Engagement platform       | `products/zolexora-engage/`  |
 | ZolexoraMineOps        | Mining operations         | `products/zolexora-mine-ops/` |
-| ClarityFi              | Fintech product           | `products/clarity-fi/`       |
-| MaunKavach             | Security product          | `products/maun-kavach/`      |
-| RentoEasy              | Rental platform           | `products/rento-easy/`       |
+| ClarityFi              | Fintech product           | `products/clarityfi/`        |
+| MaunKavach             | Security product          | `products/maunkavach/`       |
+| RentoEasy              | Rental platform           | `products/rentoeasy/`        |
