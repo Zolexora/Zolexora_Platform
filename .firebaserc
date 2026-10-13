@@ -1,5 +1,25 @@
 {
   "projects": {
-    "default": "zolexoramarketplace"
+    "default": "zx-admin-prod",
+    "tms-prod": "zx-tms-prod",
+    "ims-prod": "zx-ims-prod",
+    "mkt-prod": "zx-mkt-prod",
+    "erp-prod": "zx-erp-prod",
+    "engage-prod": "zx-engage-prod",
+    "clarity-prod": "zx-clarity-prod",
+    "kavach-prod": "zx-kavach-prod",
+    "textile-prod": "zx-textile-prod",
+    "rento-prod": "zx-rento-prod",
+    "ai-prod": "zx-ai-prod",
+    "admin-prod": "zx-admin-prod",
+    "stage-logistics": "zx-stage-logistics",
+    "stage-commerce": "zx-stage-commerce",
+    "stage-fintech": "zx-stage-fintech",
+    "stage-security": "zx-stage-security",
+    "stage-core": "zx-stage-core",
+    "vault-mkt": "zx-vault-mkt",
+    "vault-tms": "zx-vault-tms",
+    "vault-docs": "zx-vault-docs",
+    "vault-cold": "zx-vault-cold"
   }
 }
