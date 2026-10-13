@@ -101,8 +101,10 @@ export function SettingsPage() {
             <button
               type="button"
               onClick={async () => {
-                const { supabase } = await import('../../lib/supabase');
-                await supabase.auth.linkIdentity({ provider: 'google', options: { redirectTo: `${window.location.origin}/auth/callback` }});
+                const { auth, webAuth } = await import('../../lib/firebase');
+                if (auth.currentUser) {
+                  await webAuth.linkGoogle(auth.currentUser);
+                }
               }}
               className="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800/80 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700"
             >

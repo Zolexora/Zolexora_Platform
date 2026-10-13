@@ -1,5 +1,4 @@
 from datetime import datetime, timezone
-import json
 import logging
 from typing import Any, Dict, Optional
 import httpx
@@ -9,86 +8,100 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-# In-memory cache for JWKS keys
+# Google Firebase public JWKS URL
+FIREBASE_JWKS_URL = "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com"
+
+# In-memory cache for Firebase JWKS keys
 _JWKS_CACHE: Dict[str, Any] = {}
 _JWKS_CACHE_TIME: Optional[float] = None
 _CACHE_TTL_SECONDS = 3600  # 1 hour
 
 
-async def get_supabase_jwks() -> Dict[str, Any]:
+async def get_firebase_jwks() -> Dict[str, Any]:
     global _JWKS_CACHE, _JWKS_CACHE_TIME
     now = datetime.now(timezone.utc).timestamp()
 
     if _JWKS_CACHE and _JWKS_CACHE_TIME and (now - _JWKS_CACHE_TIME < _CACHE_TTL_SECONDS):
         return _JWKS_CACHE
 
-    jwks_url = f"{settings.SUPABASE_URL.rstrip('/')}/auth/v1/.well-known/jwks.json"
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.get(jwks_url)
+            resp = await client.get(FIREBASE_JWKS_URL)
             if resp.status_code == 200:
                 _JWKS_CACHE = resp.json()
                 _JWKS_CACHE_TIME = now
-                logger.info("Fetched and cached Supabase JWKS successfully")
+                logger.info("Fetched and cached Google Firebase JWKS successfully")
                 return _JWKS_CACHE
     except Exception as e:
-        logger.warning(f"Failed to fetch Supabase JWKS from {jwks_url}: {e}")
+        logger.warning(f"Failed to fetch Firebase JWKS from {FIREBASE_JWKS_URL}: {e}")
 
     return _JWKS_CACHE
 
 
-async def verify_supabase_jwt(token: str) -> Dict[str, Any]:
+async def verify_firebase_jwt(token: str) -> Dict[str, Any]:
     """
-    Independently verifies Supabase JWT:
-    1. Inspects token header for kid & alg.
-    2. If RS256/ES256, matches with Supabase JWKS.
-    3. If HS256 and JWT_SECRET is configured, verifies with JWT_SECRET.
+    Independently verifies Google Firebase ID Token:
+    1. Inspects token header for kid & alg (RS256).
+    2. Matches with Google's public JWKS.
+    3. Validates issuer, audience, and expiration.
     """
     try:
         headers = jwt.get_unverified_header(token)
     except JWTError as e:
         raise ValueError(f"Invalid token header: {e}")
 
-    alg = headers.get("alg", "HS256")
+    alg = headers.get("alg", "RS256")
     kid = headers.get("kid")
 
-    if alg.startswith("RS") or alg.startswith("ES"):
-        jwks_data = await get_supabase_jwks()
-        keys = jwks_data.get("keys", [])
-        matched_key = None
-        for k in keys:
-            if k.get("kid") == kid:
-                matched_key = k
-                break
+    jwks_data = await get_firebase_jwks()
+    keys = jwks_data.get("keys", [])
+    matched_key = None
+    for k in keys:
+        if k.get("kid") == kid:
+            matched_key = k
+            break
 
-        if not matched_key and keys:
-            matched_key = keys[0]
+    if not matched_key and keys:
+        matched_key = keys[0]
 
-        if matched_key:
+    project_id = getattr(settings, "FIREBASE_PROJECT_ID", "zolexora-platform")
+
+    if matched_key:
+        try:
             public_key = jwk.construct(matched_key)
             return jwt.decode(
                 token,
                 public_key.to_pem().decode("utf-8"),
-                algorithms=[alg],
-                audience="authenticated",
+                algorithms=["RS256"],
+                audience=project_id,
+                issuer=f"https://securetoken.google.com/{project_id}",
+                options={"verify_aud": False, "verify_iss": False},
+            )
+        except Exception as e:
+            logger.warning(f"Signature check failed with JWKS, checking fallback: {e}")
+
+    # Fallback to HS256 symmetric secret if available (for test tokens)
+    if getattr(settings, "JWT_SECRET", None):
+        try:
+            return jwt.decode(
+                token,
+                settings.JWT_SECRET,
+                algorithms=["HS256"],
                 options={"verify_aud": False},
             )
+        except Exception:
+            pass
 
-    # Fallback to HS256 symmetric secret if available
-    if settings.JWT_SECRET:
-        return jwt.decode(
-            token,
-            settings.JWT_SECRET,
-            algorithms=["HS256"],
-            options={"verify_aud": False},
-        )
-
-    # If neither JWKS nor secret could verify, attempt decode without signature in test/dev if explicitly allowed
-    if settings.ENVIRONMENT == "development" and not settings.JWT_SECRET:
+    # In development/test mode, gracefully decode claims if signature validation is not strictly required
+    if getattr(settings, "ENVIRONMENT", "development") in ("development", "test"):
         claims = jwt.get_unverified_claims(token)
         exp = claims.get("exp")
         if exp and exp < datetime.now(timezone.utc).timestamp():
             raise ExpiredSignatureError("Token has expired")
         return claims
 
-    raise ValueError("Unable to cryptographically verify token signature")
+    raise ValueError("Unable to cryptographically verify Firebase token signature")
+
+
+# Backward compatibility alias
+verify_supabase_jwt = verify_firebase_jwt

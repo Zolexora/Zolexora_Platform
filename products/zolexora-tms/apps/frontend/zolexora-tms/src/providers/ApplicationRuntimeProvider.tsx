@@ -11,7 +11,7 @@ export function ApplicationRuntimeProvider({ children }: { children: ReactNode }
   const { session } = useAuth();
   
   const { data: runtimeConfig, isLoading, error } = useQuery<RuntimeConfiguration>({
-    queryKey: ['application-runtime', session?.user?.id],
+    queryKey: ['application-runtime', session?.user?.uid],
     queryFn: () => apiClient<RuntimeConfiguration>('/api/v1/application/runtime'),
     enabled: !!session, // Only fetch when authenticated
     staleTime: 1000 * 60 * 5, // Cache for 5 mins

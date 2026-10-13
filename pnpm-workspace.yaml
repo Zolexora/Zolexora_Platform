@@ -18,6 +18,8 @@ packages:
   - 'products/the-textile-care/packages/*'
   - 'products/the-textile-care/platform/*'
   - 'products/zolexora-appsuite/apps/*'
+  - 'products/zolexora-tms/apps/frontend/*'
+  - 'products/zolexora-tms/apps/*'
   - 'packages/*'
   - 'apps/*'
 allowBuilds:

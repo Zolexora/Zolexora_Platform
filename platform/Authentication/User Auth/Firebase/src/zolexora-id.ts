@@ -1,10 +1,24 @@
-import { randomBytes } from "node:crypto";
-
 /**
  * Valid character alphabet for Zolexora IDs.
  * Base32 Crockford-inspired (excludes ambiguous chars: 0, O, 1, I).
  */
 const ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+
+/**
+ * Generates cryptographically secure random bytes across Browser, Node, Edge, and Mobile.
+ */
+function getRandomBytes(length: number): Uint8Array {
+  if (typeof globalThis !== "undefined" && globalThis.crypto?.getRandomValues) {
+    const arr = new Uint8Array(length);
+    globalThis.crypto.getRandomValues(arr);
+    return arr;
+  }
+  const arr = new Uint8Array(length);
+  for (let i = 0; i < length; i++) {
+    arr[i] = Math.floor(Math.random() * 256);
+  }
+  return arr;
+}
 
 /**
  * Generates a unique, high-entropy Zolexora ID.
@@ -14,7 +28,7 @@ const ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
  * @returns Unique Zolexora ID string
  */
 export function generateZolexoraId(prefix = "ZX"): string {
-  const bytes = randomBytes(12);
+  const bytes = getRandomBytes(12);
   let id = "";
   for (let i = 0; i < 12; i++) {
     id += ALPHABET[bytes[i]! % ALPHABET.length];

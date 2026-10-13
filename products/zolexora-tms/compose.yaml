@@ -32,9 +32,7 @@ services:
     container_name: tms-backend
     environment:
     - DATABASE_URL=postgresql://tms:password@postgres:5432/tms
-    - SUPABASE_URL=https://placeholder.supabase.co
-    - SUPABASE_SERVICE_ROLE_KEY=placeholder-service-role-key
-    - SUPABASE_ANON_KEY=placeholder-anon-key
+    - FIREBASE_PROJECT_ID=zolexora-platform
     depends_on:
       postgres:
         condition: service_healthy

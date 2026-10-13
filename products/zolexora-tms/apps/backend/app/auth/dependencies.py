@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.tenant import TenantContext
 from app.modules.core.platform.models import ProviderType
-from app.auth.jwks import verify_supabase_jwt
+from app.auth.jwks import verify_firebase_jwt
 from app.db.session import get_db
 
 security = HTTPBearer(auto_error=False)
@@ -48,7 +48,7 @@ async def get_current_claims(
             headers={"WWW-Authenticate": "Bearer"},
         )
     try:
-        claims = await verify_supabase_jwt(credentials.credentials)
+        claims = await verify_firebase_jwt(credentials.credentials)
         return claims
     except Exception as e:
         raise HTTPException(
@@ -60,7 +60,7 @@ async def get_current_claims(
 async def get_current_identity(
     claims: Dict[str, Any] = Depends(get_current_claims),
 ) -> AuthenticatedIdentity:
-    sub = claims.get("sub")
+    sub = claims.get("sub") or claims.get("user_id")
     if not sub:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -69,12 +69,14 @@ async def get_current_identity(
     try:
         user_uuid = uuid.UUID(sub)
     except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid user ID format in token",
-        )
+        # Deterministically map Firebase string UID to UUID
+        user_uuid = uuid.uuid5(uuid.NAMESPACE_URL, f"firebase://{sub}")
 
-    full_name = claims.get("user_metadata", {}).get("full_name")
+    full_name = (
+        claims.get("name")
+        or claims.get("display_name")
+        or claims.get("user_metadata", {}).get("full_name")
+    )
     return AuthenticatedIdentity(
         id=user_uuid,
         email=claims.get("email"),
