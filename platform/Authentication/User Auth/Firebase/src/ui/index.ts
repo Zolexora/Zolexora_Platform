@@ -27,4 +27,5 @@ export {
   CheckCircleIcon,
   EyeIcon,
   EyeOffIcon,
+  BuildingIcon,
 } from "./Icons";

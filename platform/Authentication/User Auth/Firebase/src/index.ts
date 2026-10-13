@@ -3,6 +3,8 @@ export type {
   MarketplaceSession,
   SessionExchangeOptions,
   ZolexoraUserProfile,
+  ZolexoraOrgProfile,
+  ZolexoraAuthSession,
 } from "./types";
 
 export { exchangeFirebaseToken } from "./session";
@@ -11,6 +13,8 @@ export {
   generateZolexoraId,
   isValidZolexoraId,
   normalizeZolexoraId,
+  generateZolexoraOrgId,
+  isValidZolexoraOrgId,
 } from "./zolexora-id";
 
 export {
@@ -49,6 +53,7 @@ export {
   OtpInput,
   PasswordRequirements,
   checkPasswordRules,
+  BuildingIcon,
   type ZolexoraAuthCardProps,
   type AuthMode,
   type OtpInputProps,
