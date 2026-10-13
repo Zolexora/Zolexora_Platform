@@ -43,3 +43,15 @@ export {
   type ZolexoraAuthContextValue,
   type ZolexoraAuthProviderProps,
 } from "./react";
+
+export {
+  ZolexoraAuthCard,
+  OtpInput,
+  PasswordRequirements,
+  checkPasswordRules,
+  type ZolexoraAuthCardProps,
+  type AuthMode,
+  type OtpInputProps,
+  type PasswordRulesResult,
+} from "./ui";
+
