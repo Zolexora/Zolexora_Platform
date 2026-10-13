@@ -9,7 +9,8 @@ import {
 } from "react";
 import { onAuthStateChanged, type Auth, type User } from "firebase/auth";
 import { getWebFirebaseAuth, webAuth, buildZolexoraProfile } from "./web";
-import type { FirebaseClientConfig, ZolexoraUserProfile } from "./types";
+import type { FirebaseClientConfig, ZolexoraUserProfile, ZolexoraOrgProfile } from "./types";
+import { generateZolexoraOrgId } from "./zolexora-id";
 
 export interface ZolexoraAuthContextValue {
   // Authentication State
@@ -42,9 +43,15 @@ export interface ZolexoraAuthContextValue {
   signOut: () => Promise<void>;
   sendPasswordReset: (email: string) => Promise<void>;
 
-  // Multi-Tenant Context
+  // Dual Profile Model: Organization / Workspace State
+  org: ZolexoraOrgProfile | null;
+  organisations: ZolexoraOrgProfile[];
   activeOrgId: string | null;
   setActiveOrgId: (orgId: string | null) => void;
+  createOrganisation: (name: string, metadata?: Record<string, unknown>) => Promise<ZolexoraOrgProfile>;
+  switchOrganisation: (orgId: string) => void;
+
+  // Multi-Tenant RBAC Context (policed later)
   isCommander: boolean;
   permissions: string[];
   hasPermission: (permission: string) => boolean;
@@ -61,8 +68,10 @@ export interface ZolexoraAuthProviderProps {
   authInstance?: Auth;
   /** Optional initial active organization ID */
   initialOrgId?: string;
+  /** Optional initial organisations */
+  initialOrgs?: ZolexoraOrgProfile[];
   /** Optional callback fired when auth state resolves */
-  onAuthStateChange?: (user: ZolexoraUserProfile | null) => void;
+  onAuthStateChange?: (user: ZolexoraUserProfile | null, org?: ZolexoraOrgProfile | null) => void;
   children: ReactNode;
 }
 
@@ -74,6 +83,7 @@ export function ZolexoraAuthProvider({
   config,
   authInstance,
   initialOrgId,
+  initialOrgs,
   onAuthStateChange,
   children,
 }: ZolexoraAuthProviderProps) {
@@ -87,10 +97,40 @@ export function ZolexoraAuthProvider({
   const [token, setToken] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
+  const [organisations, setOrganisations] = useState<ZolexoraOrgProfile[]>(() => {
+    if (initialOrgs && initialOrgs.length > 0) return initialOrgs;
+    if (typeof localStorage !== "undefined") {
+      try {
+        const stored = localStorage.getItem("zolexora_org_profiles");
+        if (stored) return JSON.parse(stored);
+      } catch {}
+    }
+    return [];
+  });
+
   const [activeOrgId, setActiveOrgIdState] = useState<string | null>(() => {
     if (initialOrgId) return initialOrgId;
     if (typeof localStorage !== "undefined") {
       return localStorage.getItem("zolexora_active_org_id");
+    }
+    return null;
+  });
+
+  const [org, setOrg] = useState<ZolexoraOrgProfile | null>(() => {
+    const currentOrgId = initialOrgId || (typeof localStorage !== "undefined" ? localStorage.getItem("zolexora_active_org_id") : null);
+    if (!currentOrgId) return null;
+    const match = organisations.find((o) => o.zolexora_org_id === currentOrgId || o.id === currentOrgId);
+    if (match) return match;
+    const storedName = typeof localStorage !== "undefined" ? localStorage.getItem("zolexora_org_name") : null;
+    if (storedName) {
+      return {
+        id: currentOrgId,
+        zolexora_org_id: currentOrgId,
+        name: storedName,
+        slug: storedName.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+        role: "owner",
+        permissions: ["*"],
+      };
     }
     return null;
   });
@@ -105,9 +145,76 @@ export function ZolexoraAuthProvider({
         localStorage.setItem("zolexora_active_org_id", orgId);
       } else {
         localStorage.removeItem("zolexora_active_org_id");
+        localStorage.removeItem("zolexora_org_name");
       }
     }
-  }, []);
+    if (orgId) {
+      const match = organisations.find((o) => o.zolexora_org_id === orgId || o.id === orgId);
+      if (match) {
+        setOrg(match);
+      }
+    } else {
+      setOrg(null);
+    }
+  }, [organisations]);
+
+  const createOrganisation = useCallback(
+    async (name: string, metadata?: Record<string, unknown>): Promise<ZolexoraOrgProfile> => {
+      const cleanName = name.trim();
+      const orgId = generateZolexoraOrgId();
+      const slug = cleanName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "org";
+      const newOrg: ZolexoraOrgProfile = {
+        id: orgId,
+        zolexora_org_id: orgId,
+        name: cleanName,
+        slug,
+        role: "owner",
+        permissions: ["*"],
+        created_at: new Date().toISOString(),
+        metadata,
+      };
+
+      setOrganisations((prev) => {
+        const next = [...prev.filter((o) => o.zolexora_org_id !== orgId), newOrg];
+        if (typeof localStorage !== "undefined") {
+          try {
+            localStorage.setItem("zolexora_org_profiles", JSON.stringify(next));
+          } catch {}
+        }
+        return next;
+      });
+
+      if (typeof localStorage !== "undefined") {
+        localStorage.setItem("zolexora_active_org_id", orgId);
+        localStorage.setItem("zolexora_org_name", cleanName);
+      }
+
+      setOrg(newOrg);
+      setActiveOrgIdState(orgId);
+      return newOrg;
+    },
+    []
+  );
+
+  const switchOrganisation = useCallback(
+    (orgId: string) => {
+      const match = organisations.find((o) => o.zolexora_org_id === orgId || o.id === orgId);
+      if (match) {
+        setOrg(match);
+        setActiveOrgIdState(match.zolexora_org_id);
+        if (typeof localStorage !== "undefined") {
+          localStorage.setItem("zolexora_active_org_id", match.zolexora_org_id);
+          localStorage.setItem("zolexora_org_name", match.name);
+        }
+      } else {
+        setActiveOrgIdState(orgId);
+        if (typeof localStorage !== "undefined") {
+          localStorage.setItem("zolexora_active_org_id", orgId);
+        }
+      }
+    },
+    [organisations]
+  );
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (current) => {
@@ -120,22 +227,22 @@ export function ZolexoraAuthProvider({
           ]);
           setToken(idToken);
           setUser(profile);
-          onAuthStateChange?.(profile);
+          onAuthStateChange?.(profile, org);
         } catch {
           setToken(null);
           setUser(null);
-          onAuthStateChange?.(null);
+          onAuthStateChange?.(null, null);
         }
       } else {
         setToken(null);
         setUser(null);
-        onAuthStateChange?.(null);
+        onAuthStateChange?.(null, null);
       }
       setIsLoaded(true);
     });
 
     return () => unsubscribe();
-  }, [auth, onAuthStateChange]);
+  }, [auth, onAuthStateChange, org]);
 
   const signInWithEmail = useCallback(
     async (email: string, password: string) => {
@@ -172,6 +279,7 @@ export function ZolexoraAuthProvider({
     setToken(null);
     setUser(null);
     setFirebaseUser(null);
+    setOrg(null);
     setActiveOrgId(null);
     setPermissions([]);
     setIsCommander(false);
@@ -216,8 +324,12 @@ export function ZolexoraAuthProvider({
       signInWithGoogle,
       signOut,
       sendPasswordReset,
+      org,
+      organisations,
       activeOrgId,
       setActiveOrgId,
+      createOrganisation,
+      switchOrganisation,
       isCommander,
       permissions,
       hasPermission,
@@ -236,8 +348,12 @@ export function ZolexoraAuthProvider({
       signInWithGoogle,
       signOut,
       sendPasswordReset,
+      org,
+      organisations,
       activeOrgId,
       setActiveOrgId,
+      createOrganisation,
+      switchOrganisation,
       isCommander,
       permissions,
       hasPermission,
@@ -285,8 +401,12 @@ export function useUser() {
  */
 export function useOrganization() {
   const {
+    org,
+    organisations,
     activeOrgId,
     setActiveOrgId,
+    createOrganisation,
+    switchOrganisation,
     isCommander,
     permissions,
     hasPermission,
@@ -295,8 +415,16 @@ export function useOrganization() {
   } = useAuth();
 
   return {
+    org,
+    organization: org,
+    organisations,
+    organizations: organisations,
     activeOrgId,
     setActiveOrgId,
+    createOrganisation,
+    createOrganization: createOrganisation,
+    switchOrganisation,
+    switchOrganization: switchOrganisation,
     isCommander,
     permissions,
     hasPermission,
@@ -351,11 +479,13 @@ export function Protect({
 export function UserButton({
   className = "",
   showZolexoraId = true,
+  showOrg = true,
 }: {
   className?: string;
   showZolexoraId?: boolean;
+  showOrg?: boolean;
 }) {
-  const { user, signOut } = useAuth();
+  const { user, org, signOut } = useAuth();
   if (!user) return null;
 
   const initial = (user.display_name || user.email || "Z")[0]?.toUpperCase() || "Z";
@@ -389,17 +519,34 @@ export function UserButton({
         <span style={{ fontWeight: 500, color: "inherit" }}>
           {user.display_name?.split(" [")[0] || user.email}
         </span>
-        {showZolexoraId && (
-          <span
-            style={{
-              fontFamily: "monospace",
-              fontSize: "0.75rem",
-              color: "#818cf8",
-            }}
-          >
-            {user.zolexora_id}
-          </span>
-        )}
+        <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
+          {showZolexoraId && (
+            <span
+              style={{
+                fontFamily: "monospace",
+                fontSize: "0.75rem",
+                color: "#818cf8",
+              }}
+            >
+              {user.zolexora_id}
+            </span>
+          )}
+          {showOrg && org && (
+            <span
+              style={{
+                fontSize: "0.6875rem",
+                padding: "0.05rem 0.35rem",
+                borderRadius: "0.25rem",
+                background: "rgba(99, 102, 241, 0.2)",
+                color: "#a5b4fc",
+                fontWeight: 600,
+              }}
+              title={org.zolexora_org_id}
+            >
+              {org.name}
+            </span>
+          )}
+        </div>
       </div>
       <button
         type="button"

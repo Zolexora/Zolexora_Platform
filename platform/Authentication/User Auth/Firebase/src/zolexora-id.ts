@@ -55,3 +55,21 @@ export function normalizeZolexoraId(id: string): string {
   }
   return clean;
 }
+
+/**
+ * Generates a unique, high-entropy Zolexora Organization ID.
+ * Format: ZX-ORG-XXXX-XXXX-XXXX
+ */
+export function generateZolexoraOrgId(): string {
+  return generateZolexoraId("ZX-ORG");
+}
+
+/**
+ * Validates whether an ID matches the official Zolexora Organization ID format.
+ */
+export function isValidZolexoraOrgId(id: string): boolean {
+  if (!id || typeof id !== "string") return false;
+  const regex = /^ZX-ORG-[2-9A-HJ-NP-Z]{4}-[2-9A-HJ-NP-Z]{4}-[2-9A-HJ-NP-Z]{4}$/i;
+  return regex.test(id.trim());
+}
+

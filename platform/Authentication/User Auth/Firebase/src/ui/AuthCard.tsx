@@ -9,11 +9,13 @@ import {
   ArrowLeftIcon,
   EyeIcon,
   EyeOffIcon,
+  BuildingIcon,
 } from "./Icons";
 import { OtpInput } from "./OtpInput";
 import { PasswordRequirements, checkPasswordRules } from "./PasswordRules";
 import { webAuth, getWebFirebaseAuth } from "../web";
-import type { ZolexoraUserProfile } from "../types";
+import type { ZolexoraUserProfile, ZolexoraOrgProfile, ZolexoraAuthSession } from "../types";
+import { generateZolexoraOrgId } from "../zolexora-id";
 
 export type AuthMode =
   | "select"
@@ -24,7 +26,8 @@ export type AuthMode =
   | "phone_login"
   | "phone_register"
   | "google_profile"
-  | "forgot";
+  | "forgot"
+  | "org_setup";
 
 export interface ZolexoraAuthCardProps {
   /** Visual theme */
@@ -35,8 +38,12 @@ export interface ZolexoraAuthCardProps {
   brandTagline?: string;
   /** Initial mode (default: "select") */
   initialMode?: AuthMode;
+  /** Whether an organisation is required for this app (default: false) */
+  requiresOrg?: boolean;
+  /** Optional pre-existing organisations user can pick from */
+  existingOrgs?: ZolexoraOrgProfile[];
   /** Callback fired upon successful authentication */
-  onSuccess?: (profile: ZolexoraUserProfile, token: string) => void;
+  onSuccess?: (session: ZolexoraAuthSession) => void;
   /** Optional URL to redirect to upon success */
   redirectUrl?: string;
   /** Whether to allow Google OAuth (default: true) */
@@ -54,6 +61,8 @@ export function ZolexoraAuthCard({
   brandName = "Zolexora",
   brandTagline = "Unified Platform Identity & Access",
   initialMode = "select",
+  requiresOrg = false,
+  existingOrgs,
   onSuccess,
   redirectUrl,
   allowGoogle = true,
@@ -95,6 +104,11 @@ export function ZolexoraAuthCard({
   // Google Profile completion state
   const [googleUser, setGoogleUser] = useState<any>(null);
 
+  // Organization setup states
+  const [authenticatedUser, setAuthenticatedUser] = useState<ZolexoraUserProfile | null>(null);
+  const [authToken, setAuthToken] = useState<string | null>(null);
+  const [orgNameInput, setOrgNameInput] = useState("");
+
   // Timer countdown hook
   useEffect(() => {
     if (emailLoginExpiresIn === 0 && emailRegExpiresIn === 0 && phoneExpiresIn === 0) return;
@@ -114,15 +128,105 @@ export function ZolexoraAuthCard({
     setSuccessMessage("");
   };
 
-  const handleAuthSuccess = useCallback(
-    (profile: ZolexoraUserProfile, token: string) => {
-      onSuccess?.(profile, token);
+  const handleFinalSuccess = useCallback(
+    (session: ZolexoraAuthSession) => {
+      onSuccess?.(session);
       if (redirectUrl && typeof window !== "undefined") {
         window.location.href = redirectUrl;
       }
     },
     [onSuccess, redirectUrl]
   );
+
+  const handleAuthSuccess = useCallback(
+    (profile: ZolexoraUserProfile, token: string) => {
+      if (!requiresOrg) {
+        // Individual User / Shopper Flow: Login immediately
+        const session: ZolexoraAuthSession = {
+          user: profile,
+          org: null,
+          token,
+        };
+        handleFinalSuccess(session);
+        return;
+      }
+
+      // Enterprise / SaaS Flow: Transition to Organisation Setup
+      setAuthenticatedUser(profile);
+      setAuthToken(token);
+      setMode("org_setup");
+    },
+    [requiresOrg, handleFinalSuccess]
+  );
+
+  const handleSelectExistingOrg = (org: ZolexoraOrgProfile) => {
+    if (!authenticatedUser || !authToken) return;
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem("zolexora_active_org_id", org.zolexora_org_id);
+      localStorage.setItem("zolexora_org_name", org.name);
+    }
+    const session: ZolexoraAuthSession = {
+      user: authenticatedUser,
+      org,
+      token: authToken,
+    };
+    setSuccessMessage(`Entering workspace ${org.name}...`);
+    handleFinalSuccess(session);
+  };
+
+  const handleOrgSetupSubmit = (e?: FormEvent) => {
+    e?.preventDefault();
+    clearMessages();
+    const cleanOrgName = orgNameInput.trim();
+    if (!cleanOrgName) {
+      setErrorMessage("Please enter an organisation name");
+      return;
+    }
+    if (!authenticatedUser || !authToken) {
+      setErrorMessage("Session expired. Please sign in again.");
+      setMode("select");
+      return;
+    }
+
+    setBusy(true);
+    try {
+      const orgId = generateZolexoraOrgId();
+      const slug = cleanOrgName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "org";
+      const orgProfile: ZolexoraOrgProfile = {
+        id: orgId,
+        zolexora_org_id: orgId,
+        name: cleanOrgName,
+        slug,
+        role: "owner",
+        permissions: ["*"],
+        created_at: new Date().toISOString(),
+      };
+
+      if (typeof localStorage !== "undefined") {
+        try {
+          localStorage.setItem("zolexora_active_org_id", orgId);
+          localStorage.setItem("zolexora_org_name", cleanOrgName);
+          const existing = localStorage.getItem("zolexora_org_profiles");
+          const orgList = existing ? JSON.parse(existing) : [];
+          orgList.push(orgProfile);
+          localStorage.setItem("zolexora_org_profiles", JSON.stringify(orgList));
+        } catch {}
+      }
+
+      const session: ZolexoraAuthSession = {
+        user: authenticatedUser,
+        org: orgProfile,
+        token: authToken,
+      };
+
+      setSuccessMessage(`Organisation "${cleanOrgName}" registered! Entering workspace...`);
+      handleFinalSuccess(session);
+    } catch (err: any) {
+      setErrorMessage(err?.message || "Failed to create organisation profile");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   // ────────────────────────────────────────────────────────────────────────────
   // PATH A: Google Sign-In
@@ -437,6 +541,12 @@ export function ZolexoraAuthCard({
             type="button"
             onClick={() => {
               clearMessages();
+              if (mode === "org_setup") {
+                setMode("select");
+                setAuthenticatedUser(null);
+                setAuthToken(null);
+                return;
+              }
               setMode(mode === "email_register" && emailVerified ? "email_register" : "select");
             }}
             style={{
@@ -1203,6 +1313,232 @@ export function ZolexoraAuthCard({
             }}
           >
             {busy ? "Saving..." : "Confirm & Enter"}
+          </button>
+        </form>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {/* MODE: ORGANISATION SETUP (DUAL PROFILE WORKSPACE ONBOARDING) */}
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {mode === "org_setup" && authenticatedUser && (
+        <form
+          onSubmit={handleOrgSetupSubmit}
+          style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}
+        >
+          <div style={{ textAlign: "center" }}>
+            <span style={{ fontSize: "1.125rem", fontWeight: 700, color: colors.text }}>
+              Organisation Workspace
+            </span>
+            <p style={{ fontSize: "0.8125rem", color: colors.muted, margin: "0.25rem 0 0" }}>
+              Continue by naming your organisation to activate your workspace profile.
+            </p>
+          </div>
+
+          {/* User Profile Badge (Dual Profile Part 1: Individual Identity) */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.75rem",
+              padding: "0.875rem 1rem",
+              borderRadius: "0.75rem",
+              background: colors.secondaryBg,
+              border: `1px solid ${colors.inputBorder}`,
+            }}
+          >
+            <div
+              style={{
+                width: "2.5rem",
+                height: "2.5rem",
+                borderRadius: "9999px",
+                background: colors.primary,
+                color: "#ffffff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontWeight: 700,
+                fontSize: "0.9375rem",
+                flexShrink: 0,
+              }}
+            >
+              {(authenticatedUser.display_name || authenticatedUser.email || "U")[0]?.toUpperCase()}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <span
+                  style={{
+                    fontSize: "0.875rem",
+                    fontWeight: 600,
+                    color: colors.text,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {authenticatedUser.display_name?.split(" [")[0] || authenticatedUser.email}
+                </span>
+                <span
+                  style={{
+                    fontSize: "0.625rem",
+                    padding: "0.125rem 0.375rem",
+                    borderRadius: "0.25rem",
+                    background: "rgba(99, 102, 241, 0.15)",
+                    color: colors.accent,
+                    fontWeight: 600,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  User Profile
+                </span>
+              </div>
+              <span
+                style={{
+                  fontFamily: "monospace",
+                  fontSize: "0.6875rem",
+                  color: colors.muted,
+                  letterSpacing: "0.02em",
+                  marginTop: "0.125rem",
+                }}
+              >
+                {authenticatedUser.zolexora_id}
+              </span>
+            </div>
+          </div>
+
+          {/* Existing Organisation Picker (if available) */}
+          {existingOrgs && existingOrgs.length > 0 && (
+            <div>
+              <label
+                style={{
+                  fontSize: "0.8125rem",
+                  fontWeight: 600,
+                  color: colors.muted,
+                  display: "block",
+                  marginBottom: "0.5rem",
+                }}
+              >
+                Existing Organisations
+              </label>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                {existingOrgs.map((org) => (
+                  <button
+                    key={org.zolexora_org_id}
+                    type="button"
+                    onClick={() => handleSelectExistingOrg(org)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "0.75rem 1rem",
+                      borderRadius: "0.5rem",
+                      border: `1px solid ${colors.inputBorder}`,
+                      background: colors.inputBg,
+                      color: colors.text,
+                      cursor: "pointer",
+                      textAlign: "left",
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: "0.875rem" }}>{org.name}</div>
+                      <div style={{ fontSize: "0.6875rem", fontFamily: "monospace", color: colors.muted }}>
+                        {org.zolexora_org_id}
+                      </div>
+                    </div>
+                    <ArrowRightIcon size={16} />
+                  </button>
+                ))}
+              </div>
+              <div
+                style={{
+                  textAlign: "center",
+                  fontSize: "0.75rem",
+                  color: colors.muted,
+                  margin: "0.75rem 0",
+                }}
+              >
+                <span>— or create a new organisation —</span>
+              </div>
+            </div>
+          )}
+
+          {/* Dual Profile Part 2: Org Profile Setup */}
+          <div>
+            <label
+              style={{
+                fontSize: "0.8125rem",
+                fontWeight: 600,
+                color: colors.muted,
+                display: "block",
+                marginBottom: "0.375rem",
+              }}
+            >
+              Name of Organisation
+            </label>
+            <div style={{ position: "relative" }}>
+              <input
+                type="text"
+                required
+                autoFocus
+                placeholder="e.g. Acme Logistics, Apex Corp, Mahila Mandal"
+                value={orgNameInput}
+                onChange={(e) => setOrgNameInput(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "0.75rem 1rem 0.75rem 2.5rem",
+                  borderRadius: "0.5rem",
+                  border: `1px solid ${colors.inputBorder}`,
+                  background: colors.inputBg,
+                  color: colors.text,
+                  fontSize: "0.875rem",
+                  outline: "none",
+                  boxSizing: "border-box",
+                }}
+              />
+              <span
+                style={{
+                  position: "absolute",
+                  left: "0.875rem",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  color: colors.muted,
+                }}
+              >
+                <BuildingIcon size={16} />
+              </span>
+            </div>
+            <p
+              style={{
+                fontSize: "0.6875rem",
+                color: colors.muted,
+                marginTop: "0.375rem",
+                marginBottom: 0,
+              }}
+            >
+              A unique Canonical Org ID (<code>ZX-ORG-XXXX-XXXX-XXXX</code>) will be created automatically.
+            </p>
+          </div>
+
+          <button
+            type="submit"
+            disabled={busy || !orgNameInput.trim()}
+            style={{
+              padding: "0.8125rem",
+              borderRadius: "0.5rem",
+              border: "none",
+              background: colors.primary,
+              color: "#ffffff",
+              fontSize: "0.875rem",
+              fontWeight: 600,
+              cursor: busy || !orgNameInput.trim() ? "not-allowed" : "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "0.5rem",
+              boxShadow: "0 4px 14px rgba(99, 102, 241, 0.35)",
+            }}
+          >
+            {busy ? "Activating Workspace..." : "Continue to Workspace"}
+            <ArrowRightIcon size={16} />
           </button>
         </form>
       )}
