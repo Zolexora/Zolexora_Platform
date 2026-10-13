@@ -65,18 +65,25 @@ async def verify_firebase_jwt(token: str) -> Dict[str, Any]:
         matched_key = keys[0]
 
     project_id = getattr(settings, "FIREBASE_PROJECT_ID", "zolexora-platform")
+    allowed_projects = set(
+        getattr(settings, "FIREBASE_ALLOWED_PROJECTS", [project_id, "zx-tms-prod", "zx-stage-logistics", "zolexora-platform"])
+    )
 
     if matched_key:
         try:
             public_key = jwk.construct(matched_key)
-            return jwt.decode(
+            claims = jwt.decode(
                 token,
                 public_key.to_pem().decode("utf-8"),
                 algorithms=["RS256"],
-                audience=project_id,
-                issuer=f"https://securetoken.google.com/{project_id}",
                 options={"verify_aud": False, "verify_iss": False},
             )
+            aud = claims.get("aud")
+            if aud and aud not in allowed_projects:
+                logger.warning(f"Token audience '{aud}' not in allowed projects: {allowed_projects}")
+                if getattr(settings, "ENVIRONMENT", "development") not in ("development", "test"):
+                    raise ValueError(f"Token issued for unauthorized Firebase audience: {aud}")
+            return claims
         except Exception as e:
             logger.warning(f"Signature check failed with JWKS, checking fallback: {e}")
 
