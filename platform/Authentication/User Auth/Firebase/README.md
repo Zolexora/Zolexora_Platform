@@ -1,45 +1,141 @@
-# Zolexora User Auth Firebase
+# @zolexora/user-auth-firebase
 
-Reusable Firebase Authentication client module for Zolexora applications. Add
-`@zolexora/user-auth-firebase` as a workspace dependency, then import the
-platform entry point:
+Unified Firebase Authentication & Identity SDK for the Zolexora Platform.
 
-```ts
-import { getWebFirebaseAuth, webAuth } from "@zolexora/user-auth-firebase/web";
-import { exchangeFirebaseToken } from "@zolexora/user-auth-firebase/session";
+Designed to integrate into any web app, mobile app, or backend **natively and seamlessly** with the developer experience of **Clerk, Supabase, and Firebase**.
+
+---
+
+## 1. Quick Start: Native React Web Integration
+
+### A. Wrap Your App in `<ZolexoraAuthProvider>`
+Zero configuration needed — automatically resolves `VITE_FIREBASE_*`, `NEXT_PUBLIC_FIREBASE_*`, or `FIREBASE_*` environment variables:
+
+```tsx
+import { ZolexoraAuthProvider } from "@zolexora/user-auth-firebase";
+
+export function App() {
+  return (
+    <ZolexoraAuthProvider>
+      <Dashboard />
+    </ZolexoraAuthProvider>
+  );
+}
 ```
 
-Expo native applications use `@zolexora/user-auth-firebase/native` and can use
-the shared sign-in + Marketplace session flow:
+### B. Use Native Hooks Anywhere
+```tsx
+import { 
+  useAuth, 
+  useUser, 
+  useOrganization, 
+  SignedIn, 
+  SignedOut, 
+  Protect, 
+  UserButton 
+} from "@zolexora/user-auth-firebase";
+
+export function Header() {
+  const { isSignedIn, signOut } = useAuth();
+  const { user, zolexoraId } = useUser(); // Canonical ZX-XXXX-XXXX-XXXX
+  const { activeOrgId, isCommander } = useOrganization();
+
+  return (
+    <header className="flex justify-between p-4">
+      <SignedOut>
+        <a href="/login">Sign In</a>
+      </SignedOut>
+
+      <SignedIn>
+        <div className="flex items-center gap-4">
+          <span>{user?.display_name} ({zolexoraId})</span>
+
+          {/* RBAC Capability Guard */}
+          <Protect permission="fleet.trucks.create">
+            <button>Add Truck</button>
+          </Protect>
+
+          {/* Drop-in User Profile Badge & Sign Out */}
+          <UserButton />
+        </div>
+      </SignedIn>
+    </header>
+  );
+}
+```
+
+---
+
+## 2. Universal Authenticated HTTP Client (`zolexoraFetch`)
+
+Zero boilerplate fetch client that automatically attaches the current Firebase ID token and active organization headers:
 
 ```ts
-import { createNativeMarketplaceAuth } from "@zolexora/user-auth-firebase/native";
+import { zolexoraFetch } from "@zolexora/user-auth-firebase";
+
+// Automatically injects:
+// Authorization: Bearer <fresh_id_token>
+// X-Organisation-ID: <active_org_id>
+// X-Zolexora-ID: <zolexora_id>
+// Automatically refreshes token on 401
+const response = await zolexoraFetch("/api/v1/trips");
+```
+
+---
+
+## 3. Direct / Headless Web Usage
+
+```ts
+import { getWebFirebaseAuth, webAuth, getIdToken } from "@zolexora/user-auth-firebase";
+
+// Global singleton instance
+const auth = getWebFirebaseAuth();
+
+// Direct sign-in actions (auth parameter is optional!)
+await webAuth.signInWithEmail("driver@zolexora.com", "SecretPass123!");
+await webAuth.signInWithGoogle();
+await webAuth.signOut();
+
+// Token helper
+const token = await getIdToken();
+```
+
+---
+
+## 4. Expo / React Native Mobile Apps
+
+Import directly from `@zolexora/user-auth-firebase/native`:
+
+```ts
+import { createNativeMarketplaceAuth, nativeAuth } from "@zolexora/user-auth-firebase/native";
 
 const auth = createNativeMarketplaceAuth({
   apiBaseUrl: process.env.EXPO_PUBLIC_API_URL!,
-  allowBuyerRegistration: true, // false for seller/admin clients
+  allowBuyerRegistration: true,
 });
+
 const session = await auth.signInWithEmail(email, password);
 // Persist session.session_token using expo-secure-store.
 ```
 
-The app must include the React Native Firebase app/auth config plugins and
-Firebase's platform configuration files. Email/password, Google credentials, and phone
-verification are handled by Firebase. After sign-in, send the Firebase ID token
-to `exchangeFirebaseToken`; the API verifies it and returns the consuming
-product's session. Native callers store only that opaque session in
-`expo-secure-store`. Browser callers use the API's host-only HttpOnly cookie.
+---
 
-## Configuration
+## 5. Canonical Zolexora ID (`ZX-XXXX-XXXX-XXXX`)
 
-Web apps provide their Firebase web app configuration through their existing
-`NEXT_PUBLIC_FIREBASE_*` or equivalent public build variables. Native builds
-provide `GOOGLE_SERVICES_JSON` and `GOOGLE_SERVICE_INFO_PLIST` as build-time
-file paths. Expo Google sign-in uses `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`,
-`EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID`, and `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`.
-Keep the platform files and any server credentials outside source control.
+```ts
+import { generateZolexoraId, isValidZolexoraId, normalizeZolexoraId } from "@zolexora/user-auth-firebase";
 
-This module does not decide Marketplace roles, seller access, admin permissions,
-or application data ownership. The consuming API remains authoritative for
-those decisions. Do not share web cookies across domains or use this module to
-connect Marketplace identity to Zolexora ERP.
+const id = generateZolexoraId(); // "ZX-8K9M-4P2W-7Y3X"
+isValidZolexoraId(id); // true
+```
+
+---
+
+## 6. Environment Variables
+
+| Variable | Description |
+| :--- | :--- |
+| `VITE_FIREBASE_API_KEY` / `NEXT_PUBLIC_FIREBASE_API_KEY` | Firebase Web API Key |
+| `VITE_FIREBASE_AUTH_DOMAIN` / `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` | `*.firebaseapp.com` auth domain |
+| `VITE_FIREBASE_PROJECT_ID` / `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | Firebase Project ID |
+| `VITE_FIREBASE_APP_ID` / `NEXT_PUBLIC_FIREBASE_APP_ID` | Firebase Web App ID |
