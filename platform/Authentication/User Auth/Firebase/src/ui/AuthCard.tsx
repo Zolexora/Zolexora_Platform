@@ -42,6 +42,10 @@ export interface ZolexoraAuthCardProps {
   requiresOrg?: boolean;
   /** Optional pre-existing organisations user can pick from */
   existingOrgs?: ZolexoraOrgProfile[];
+  /** Optional backend API endpoint for organisation onboarding sync (e.g. "/api/v1/onboarding") */
+  onboardingEndpoint?: string;
+  /** Optional custom handler called when organisation profile is created */
+  onOrgCreate?: (org: ZolexoraOrgProfile, token: string) => Promise<void>;
   /** Callback fired upon successful authentication */
   onSuccess?: (session: ZolexoraAuthSession) => void;
   /** Optional URL to redirect to upon success */
@@ -63,6 +67,8 @@ export function ZolexoraAuthCard({
   initialMode = "select",
   requiresOrg = false,
   existingOrgs,
+  onboardingEndpoint,
+  onOrgCreate,
   onSuccess,
   redirectUrl,
   allowGoogle = true,
@@ -174,7 +180,7 @@ export function ZolexoraAuthCard({
     handleFinalSuccess(session);
   };
 
-  const handleOrgSetupSubmit = (e?: FormEvent) => {
+  const handleOrgSetupSubmit = async (e?: FormEvent) => {
     e?.preventDefault();
     clearMessages();
     const cleanOrgName = orgNameInput.trim();
@@ -201,6 +207,48 @@ export function ZolexoraAuthCard({
         permissions: ["*"],
         created_at: new Date().toISOString(),
       };
+
+      // Backend sync integration
+      if (onOrgCreate) {
+        await onOrgCreate(orgProfile, authToken);
+      } else if (onboardingEndpoint) {
+        let apiUrl = "";
+        try {
+          // @ts-ignore
+          if (typeof import.meta !== "undefined" && import.meta?.env?.VITE_API_URL) {
+            // @ts-ignore
+            apiUrl = String(import.meta.env.VITE_API_URL);
+          }
+        } catch {}
+        if (!apiUrl && typeof process !== "undefined" && process?.env?.VITE_API_URL) {
+          apiUrl = String(process.env.VITE_API_URL);
+        }
+        const finalUrl = onboardingEndpoint.startsWith("http")
+          ? onboardingEndpoint
+          : `${apiUrl.replace(/\/$/, "")}/${onboardingEndpoint.replace(/^\//, "")}`;
+
+        try {
+          const res = await fetch(finalUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${authToken}`,
+            },
+            body: JSON.stringify({
+              name: cleanOrgName,
+              organisation_type: "Private Limited Company",
+            }),
+          });
+          if (res.ok) {
+            const data = await res.json().catch(() => null);
+            if (data?.organisation?.id) {
+              orgProfile.id = String(data.organisation.id);
+            }
+          }
+        } catch (syncErr) {
+          console.warn("[ZolexoraAuth] Onboarding sync error:", syncErr);
+        }
+      }
 
       if (typeof localStorage !== "undefined") {
         try {
@@ -1544,4 +1592,19 @@ export function ZolexoraAuthCard({
       )}
     </div>
   );
+}
+
+export type ZolexoraSignInProps = ZolexoraAuthCardProps;
+export function ZolexoraSignIn(props: ZolexoraSignInProps) {
+  return <ZolexoraAuthCard initialMode="select" {...props} />;
+}
+
+export type ZolexoraSignUpProps = ZolexoraAuthCardProps;
+export function ZolexoraSignUp(props: ZolexoraSignUpProps) {
+  return <ZolexoraAuthCard initialMode="email_register" {...props} />;
+}
+
+export type ZolexoraOnboardingProps = ZolexoraAuthCardProps;
+export function ZolexoraOnboarding(props: ZolexoraOnboardingProps) {
+  return <ZolexoraAuthCard initialMode="org_setup" requiresOrg={true} {...props} />;
 }

@@ -50,11 +50,17 @@ export {
 
 export {
   ZolexoraAuthCard,
+  ZolexoraSignIn,
+  ZolexoraSignUp,
+  ZolexoraOnboarding,
   OtpInput,
   PasswordRequirements,
   checkPasswordRules,
   BuildingIcon,
   type ZolexoraAuthCardProps,
+  type ZolexoraSignInProps,
+  type ZolexoraSignUpProps,
+  type ZolexoraOnboardingProps,
   type AuthMode,
   type OtpInputProps,
   type PasswordRulesResult,
