@@ -3,9 +3,11 @@ import { Pool } from "pg";
 import { Resend } from "resend";
 import { createPostgresAuthStore } from "./postgres";
 import type { StoredZolexoraUser, ZolexoraAuthOptions, ZolexoraUser } from "./types";
+import { generateZolexoraId, isValidZolexoraId, normalizeZolexoraId } from "./zolexora-id";
 
 export type { StoredZolexoraUser, ZolexoraAuthOptions, ZolexoraAuthStore, ZolexoraTokenPurpose, ZolexoraUser } from "./types";
 export { createPostgresAuthStore } from "./postgres";
+export { generateZolexoraId, isValidZolexoraId, normalizeZolexoraId } from "./zolexora-id";
 
 const scrypt = (password: string, salt: Buffer, keyLength: number, options: { N: number; r: number; p: number; maxmem: number }) =>
   new Promise<Buffer>((resolve, reject) => {
@@ -63,7 +65,7 @@ async function verifyPassword(password: string, encoded: string): Promise<boolea
 }
 
 function publicUser(user: StoredZolexoraUser): ZolexoraUser {
-  return { id: user.id, email: user.email, emailVerifiedAt: user.emailVerifiedAt };
+  return { id: user.id, zolexoraId: user.zolexoraId, email: user.email, emailVerifiedAt: user.emailVerifiedAt };
 }
 
 function digestToken(token: string): string {
@@ -77,11 +79,13 @@ function escapeHtml(value: string): string {
 export function createZolexoraAuth(options: ZolexoraAuthOptions = {}) {
   const databaseUrl = options.databaseUrl ?? process.env.ZOLEXORA_AUTHENTICATION_DATABASE_URL;
   if (!options.store && !databaseUrl) throw new Error("Set ZOLEXORA_AUTHENTICATION_DATABASE_URL.");
+  
+  const isMock = options.mockEmail ?? process.env.ZOLEXORA_AUTH_MOCK_EMAIL === "true";
   const resendApiKey = options.resendApiKey ?? process.env.ZOLEXORA_PRODUCTION_RESEND_API_KEY;
-  if (!resendApiKey) throw new Error("Set ZOLEXORA_PRODUCTION_RESEND_API_KEY.");
+  if (!isMock && !resendApiKey) throw new Error("Set ZOLEXORA_PRODUCTION_RESEND_API_KEY or set mockEmail: true for testing.");
+  
   const from = options.from ?? process.env.AUTH_FROM_EMAIL ?? "Zolexora <auth@zolexora.com>";
-  const configuredAppUrl = options.appUrl ?? process.env.AUTH_APP_URL;
-  if (!configuredAppUrl) throw new Error("Set AUTH_APP_URL or pass appUrl.");
+  const configuredAppUrl = options.appUrl ?? process.env.AUTH_APP_URL ?? "https://auth.zolexora.com";
   const appUrl = new URL(configuredAppUrl);
   if (appUrl.protocol !== "https:" && appUrl.hostname !== "localhost") throw new Error("appUrl must use HTTPS.");
   const maxConnections = options.maxDbConnections ?? 5;
@@ -100,7 +104,7 @@ export function createZolexoraAuth(options: ZolexoraAuthOptions = {}) {
     });
   })();
   const store = options.store ?? createPostgresAuthStore(pool!);
-  const resend = new Resend(resendApiKey);
+  const resend = isMock ? null : new Resend(resendApiKey!);
   const verificationTtl = options.verificationTokenTtlMs ?? DEFAULT_VERIFY_TTL;
   const resetTtl = options.passwordResetTokenTtlMs ?? DEFAULT_RESET_TTL;
   const sessionTtl = options.sessionTtlMs ?? DEFAULT_SESSION_TTL;
@@ -132,6 +136,11 @@ export function createZolexoraAuth(options: ZolexoraAuthOptions = {}) {
       });
     }
 
+    if (isMock) {
+      // In offline / testing mode, avoid network calls
+      return;
+    }
+
     const path = purpose === "verify-email" ? options.verificationPath ?? "/verify-email" : options.passwordResetPath ?? "/reset-password";
     const link = new URL(path, appUrl);
     link.searchParams.set("token", token);
@@ -147,13 +156,14 @@ export function createZolexoraAuth(options: ZolexoraAuthOptions = {}) {
       <p style="text-align: center; color: #71717a; font-size: 14px;">— OR —</p>
     ` : "";
 
-    const { error } = await resend.emails.send({
+    const { error } = await resend!.emails.send({
       from,
       to: [user.email],
       subject,
       html: `
         <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto;">
           <h2>${subject}</h2>
+          <p>Your Zolexora ID: <strong>${user.zolexoraId}</strong></p>
           ${otpHtml}
           <p>Click below to verify via direct link:</p>
           <p><a href="${escapeHtml(link.toString())}" style="display: inline-block; padding: 10px 20px; background-color: #4f46e5; color: #fff; text-decoration: none; border-radius: 6px;">${action}</a></p>
@@ -166,7 +176,12 @@ export function createZolexoraAuth(options: ZolexoraAuthOptions = {}) {
 
   return {
     async signUp(email: string, password: string): Promise<ZolexoraUser> {
-      const user = await store.createUser({ email: normalizeEmail(email), passwordHash: await hashPassword(password) });
+      const zolexoraId = generateZolexoraId();
+      const user = await store.createUser({
+        email: normalizeEmail(email),
+        passwordHash: await hashPassword(password),
+        zolexoraId,
+      });
       await sendLink(user, "verify-email", verificationTtl);
       return publicUser(user);
     },
@@ -204,6 +219,12 @@ export function createZolexoraAuth(options: ZolexoraAuthOptions = {}) {
 
     async getUser(sessionToken: string): Promise<ZolexoraUser | null> {
       const user = await store.findUserBySession({ tokenHash: digestToken(sessionToken), now: new Date() });
+      return user ? publicUser(user) : null;
+    },
+
+    async getUserByZolexoraId(zolexoraId: string): Promise<ZolexoraUser | null> {
+      if (!store.findUserByZolexoraId) return null;
+      const user = await store.findUserByZolexoraId(zolexoraId);
       return user ? publicUser(user) : null;
     },
 

@@ -1,5 +1,6 @@
 export type ZolexoraUser = {
   id: string;
+  zolexoraId: string;
   email: string;
   emailVerifiedAt: Date | null;
 };
@@ -13,7 +14,8 @@ export type ZolexoraTokenPurpose = "verify-email" | "reset-password";
 /** Implement these methods with your database. Email uniqueness and token consumption must be atomic. */
 export type ZolexoraAuthStore = {
   findUserByEmail(email: string): Promise<StoredZolexoraUser | null>;
-  createUser(input: { email: string; passwordHash: string }): Promise<StoredZolexoraUser>;
+  findUserByZolexoraId?(zolexoraId: string): Promise<StoredZolexoraUser | null>;
+  createUser(input: { email: string; passwordHash: string; zolexoraId?: string }): Promise<StoredZolexoraUser>;
   setEmailVerified(userId: string, verifiedAt: Date): Promise<void>;
   /** Update the password and invalidate existing sessions where your app stores them. */
   updatePassword(userId: string, passwordHash: string): Promise<void>;
@@ -47,4 +49,6 @@ export type ZolexoraAuthOptions = {
   passwordResetTokenTtlMs?: number;
   sessionTtlMs?: number;
   maxDbConnections?: number;
+  /** Set to true for offline / CI/CD testing without live Resend calls. */
+  mockEmail?: boolean;
 };
