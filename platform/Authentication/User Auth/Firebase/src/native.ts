@@ -13,6 +13,7 @@ import {
 } from "@react-native-firebase/auth";
 import { exchangeFirebaseToken } from "./session";
 import type { MarketplaceSession } from "./types";
+import { generateZolexoraId } from "./zolexora-id";
 
 export interface NativeAuthOptions {
   apiBaseUrl: string;
@@ -33,12 +34,13 @@ export const nativeAuth = {
   signOut: () => signOut(getAuth()),
 };
 
-/** Firebase credential plus Marketplace's opaque native session in one call. */
+/** Firebase credential plus Marketplace's opaque native session with Zolexora ID. */
 export function createNativeMarketplaceAuth(options: NativeAuthOptions) {
-  const exchange = async (user: User, registrationName?: string) =>
+  const exchange = async (user: User, registrationName?: string, zolexoraId?: string) =>
     exchangeFirebaseToken({
       idToken: await user.getIdToken(),
       apiBaseUrl: options.apiBaseUrl,
+      zolexora_id: zolexoraId,
       registrationName,
       allowBuyerRegistration: options.allowBuyerRegistration,
       native: true,
@@ -51,9 +53,11 @@ export function createNativeMarketplaceAuth(options: NativeAuthOptions) {
     },
     createEmailAccount: async (email: string, password: string, name: string) => {
       const credential = await nativeAuth.createEmailAccount(email, password);
-      if (name.trim()) await updateProfile(credential.user, { displayName: name.trim() });
+      const zolexoraId = generateZolexoraId();
+      const displayName = name.trim() ? `${name.trim()} [${zolexoraId}]` : zolexoraId;
+      await updateProfile(credential.user, { displayName });
       await nativeAuth.sendEmailVerification(credential.user);
-      return { user: credential.user, registrationName: name };
+      return { user: credential.user, registrationName: name, zolexoraId };
     },
     signInWithGoogleIdToken: async (idToken: string) => {
       const credential = await nativeAuth.signInWithGoogleIdToken(idToken);

@@ -1,8 +1,10 @@
 import type { Pool } from 'pg'
 import type { StoredZolexoraUser, ZolexoraAuthStore, ZolexoraTokenPurpose } from './types'
+import { generateZolexoraId } from './zolexora-id'
 
 type UserRow = {
   id: string
+  zolexora_id: string
   email: string
   password_hash: string
   email_verified_at: Date | null
@@ -11,6 +13,7 @@ type UserRow = {
 function toUser(row: UserRow): StoredZolexoraUser {
   return {
     id: row.id,
+    zolexoraId: row.zolexora_id,
     email: row.email,
     passwordHash: row.password_hash,
     emailVerifiedAt: row.email_verified_at ? new Date(row.email_verified_at) : null,
@@ -22,22 +25,31 @@ export function createPostgresAuthStore(pool: Pool): ZolexoraAuthStore {
   return {
     async findUserByEmail(email) {
       const { rows } = await pool.query<UserRow>(
-        'SELECT id, email, password_hash, email_verified_at FROM public.zolexora_auth_users WHERE email = $1 LIMIT 1',
+        'SELECT id, zolexora_id, email, password_hash, email_verified_at FROM public.zolexora_auth_users WHERE email = $1 LIMIT 1',
         [email],
       )
       return rows[0] ? toUser(rows[0]) : null
     },
 
+    async findUserByZolexoraId(zolexoraId) {
+      const { rows } = await pool.query<UserRow>(
+        'SELECT id, zolexora_id, email, password_hash, email_verified_at FROM public.zolexora_auth_users WHERE zolexora_id = $1 LIMIT 1',
+        [zolexoraId],
+      )
+      return rows[0] ? toUser(rows[0]) : null
+    },
+
     async createUser(input) {
+      const zolexoraId = input.zolexoraId ?? generateZolexoraId()
       try {
         const { rows } = await pool.query<UserRow>(
-          'INSERT INTO public.zolexora_auth_users (email, password_hash) VALUES ($1, $2) RETURNING id, email, password_hash, email_verified_at',
-          [input.email, input.passwordHash],
+          'INSERT INTO public.zolexora_auth_users (zolexora_id, email, password_hash) VALUES ($1, $2, $3) RETURNING id, zolexora_id, email, password_hash, email_verified_at',
+          [zolexoraId, input.email, input.passwordHash],
         )
-        return toUser(rows[0])
+        return toUser(rows[0]!)
       } catch (error) {
         if ((error as { code?: string }).code === '23505') {
-          throw new Error('An account with this email already exists.')
+          throw new Error('An account with this email or Zolexora ID already exists.')
         }
         throw error
       }
@@ -73,7 +85,7 @@ export function createPostgresAuthStore(pool: Pool): ZolexoraAuthStore {
 
     async findUserBySession(input) {
       const { rows } = await pool.query<UserRow>(
-        `SELECT u.id, u.email, u.password_hash, u.email_verified_at
+        `SELECT u.id, u.zolexora_id, u.email, u.password_hash, u.email_verified_at
          FROM public.zolexora_auth_sessions s
          JOIN public.zolexora_auth_users u ON u.id = s.user_id
          WHERE s.token_hash = $1 AND s.expires_at > $2

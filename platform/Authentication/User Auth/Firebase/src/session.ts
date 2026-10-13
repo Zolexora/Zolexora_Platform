@@ -12,10 +12,12 @@ export async function exchangeFirebaseToken<User = Record<string, unknown>>(
     headers: {
       "Content-Type": "application/json",
       ...(options.native ? { "X-Session-Transport": "native" } : {}),
+      ...(options.zolexora_id ? { "X-Zolexora-Id": options.zolexora_id } : {}),
     },
     credentials: options.native ? "omit" : "include",
     body: JSON.stringify({
       id_token: options.idToken,
+      zolexora_id: options.zolexora_id,
       registration_name: options.registrationName,
       allow_buyer_registration: options.allowBuyerRegistration ?? false,
     }),

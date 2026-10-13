@@ -1,11 +1,13 @@
 -- Run once on the dedicated Zolexora authentication PostgreSQL database.
 CREATE TABLE IF NOT EXISTS public.zolexora_auth_users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  zolexora_id TEXT NOT NULL UNIQUE,
   email TEXT NOT NULL UNIQUE CHECK (email = lower(email)),
   password_hash TEXT NOT NULL,
   email_verified_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+CREATE INDEX IF NOT EXISTS zolexora_auth_users_zx_id_idx ON public.zolexora_auth_users(zolexora_id);
 
 CREATE TABLE IF NOT EXISTS public.zolexora_auth_tokens (
   token_hash TEXT PRIMARY KEY,

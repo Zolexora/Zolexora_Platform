@@ -95,6 +95,15 @@ importers:
 
   packages/tsconfig: {}
 
+  platform/Authentication/Organization Auth:
+    devDependencies:
+      '@types/node':
+        specifier: ^26.2.0
+        version: 26.6.4
+      typescript:
+        specifier: ^5.4.5
+        version: 5.9.3
+
   platform/Authentication/User Auth/Firebase:
     dependencies:
       '@react-native-firebase/app':

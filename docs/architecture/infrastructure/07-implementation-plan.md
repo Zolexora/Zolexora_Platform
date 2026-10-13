@@ -153,3 +153,14 @@ This document outlines the step-by-step engineering plan to build the vendor-agn
 - [ ] **Fleet Dashboard:** Create a Next.js view visualizing the health and quota usage of all 39 accounts.
 - [ ] **Zero-Cost Sentinel UI:** Build the billing dashboard that aggregates costs across all accounts, triggering giant red alerts if any account exceeds $0.00.
 - [ ] **Traffic Router UI:** A drag-and-drop interface mapping products to their active deployment accounts.
+
+## Phase 10: Authentication, Multi-Tenancy & Zolexora ID
+*Goal: Enforce strict product-isolated auth with universal Zolexora ID generation across production (Firebase), backup (Supabase), and testing (Zolexora).*
+
+### 10a — Production & Backup Parity (Completed)
+- [x] **Firebase Production Auth (`@zolexora/user-auth-firebase`):** Implement `webAuth`, `nativeAuth`, and `exchangeFirebaseToken` with Zolexora ID generator.
+- [x] **Supabase 100% Identical Backup (`@zolexora/user-auth-supabase`):** Re-architected with identical method signatures and session exchange to serve as an instant hot backup.
+- [x] **Offline Testing Engine (`@zolexora/user-auth-zolexora`):** Self-hosted scrypt + PostgreSQL with `mockEmail: true` for zero-cost offline CI.
+- [x] **Organization Multi-Tenancy (`@zolexora/organization-auth`):** Created reusable RBAC models, PostgreSQL schema, and `ZX-ORG-XXXX-XXXX-XXXX` generator.
+- [x] **Universal Zolexora ID:** Built canonical `ZX-XXXX-XXXX-XXXX` generator and validator across all authentication packages.
+
