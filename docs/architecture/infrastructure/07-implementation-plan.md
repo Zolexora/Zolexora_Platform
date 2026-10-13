@@ -160,7 +160,7 @@ This document outlines the step-by-step engineering plan to build the vendor-agn
 ### 10a — Production & Backup Parity (Completed)
 - [x] **Firebase Production Auth (`@zolexora/user-auth-firebase`):** Implement `webAuth`, `nativeAuth`, and `exchangeFirebaseToken` with Zolexora ID generator.
 - [x] **Supabase 100% Identical Backup (`@zolexora/user-auth-supabase`):** Re-architected with identical method signatures and session exchange to serve as an instant hot backup.
-- [x] **Offline Testing Engine (`@zolexora/user-auth-zolexora`):** Self-hosted scrypt + PostgreSQL with `mockEmail: true` for zero-cost offline CI.
+- [x] **Testing & Staging Engine (`@zolexora/user-auth-zolexora`):** Connects to assigned PostgreSQL auth database + Resend API for real email delivery, verification, and Zolexora ID persistence.
 - [x] **Organization Multi-Tenancy (`@zolexora/organization-auth`):** Created reusable RBAC models, PostgreSQL schema, and `ZX-ORG-XXXX-XXXX-XXXX` generator.
 - [x] **Universal Zolexora ID:** Built canonical `ZX-XXXX-XXXX-XXXX` generator and validator across all authentication packages.
 

@@ -79,11 +79,10 @@ function escapeHtml(value: string): string {
 export function createZolexoraAuth(options: ZolexoraAuthOptions = {}) {
   const databaseUrl = options.databaseUrl ?? process.env.ZOLEXORA_AUTHENTICATION_DATABASE_URL;
   if (!options.store && !databaseUrl) throw new Error("Set ZOLEXORA_AUTHENTICATION_DATABASE_URL.");
-  
-  const isMock = options.mockEmail ?? process.env.ZOLEXORA_AUTH_MOCK_EMAIL === "true";
+
   const resendApiKey = options.resendApiKey ?? process.env.ZOLEXORA_PRODUCTION_RESEND_API_KEY;
-  if (!isMock && !resendApiKey) throw new Error("Set ZOLEXORA_PRODUCTION_RESEND_API_KEY or set mockEmail: true for testing.");
-  
+  if (!resendApiKey) throw new Error("Set ZOLEXORA_PRODUCTION_RESEND_API_KEY.");
+
   const from = options.from ?? process.env.AUTH_FROM_EMAIL ?? "Zolexora <auth@zolexora.com>";
   const configuredAppUrl = options.appUrl ?? process.env.AUTH_APP_URL ?? "https://auth.zolexora.com";
   const appUrl = new URL(configuredAppUrl);
@@ -104,7 +103,7 @@ export function createZolexoraAuth(options: ZolexoraAuthOptions = {}) {
     });
   })();
   const store = options.store ?? createPostgresAuthStore(pool!);
-  const resend = isMock ? null : new Resend(resendApiKey!);
+  const resend = new Resend(resendApiKey);
   const verificationTtl = options.verificationTokenTtlMs ?? DEFAULT_VERIFY_TTL;
   const resetTtl = options.passwordResetTokenTtlMs ?? DEFAULT_RESET_TTL;
   const sessionTtl = options.sessionTtlMs ?? DEFAULT_SESSION_TTL;
@@ -136,11 +135,6 @@ export function createZolexoraAuth(options: ZolexoraAuthOptions = {}) {
       });
     }
 
-    if (isMock) {
-      // In offline / testing mode, avoid network calls
-      return;
-    }
-
     const path = purpose === "verify-email" ? options.verificationPath ?? "/verify-email" : options.passwordResetPath ?? "/reset-password";
     const link = new URL(path, appUrl);
     link.searchParams.set("token", token);
@@ -156,7 +150,7 @@ export function createZolexoraAuth(options: ZolexoraAuthOptions = {}) {
       <p style="text-align: center; color: #71717a; font-size: 14px;">— OR —</p>
     ` : "";
 
-    const { error } = await resend!.emails.send({
+    const { error } = await resend.emails.send({
       from,
       to: [user.email],
       subject,
