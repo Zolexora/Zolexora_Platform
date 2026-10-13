@@ -8,6 +8,7 @@
     ".": "./src/index.ts",
     "./web": "./src/web.ts",
     "./react": "./src/react.tsx",
+    "./ui": "./src/ui/index.ts",
     "./client": "./src/client.ts",
     "./native": "./src/native.ts",
     "./session": "./src/session.ts",

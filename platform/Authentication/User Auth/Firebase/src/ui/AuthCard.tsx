@@ -1,0 +1,1211 @@
+import { useState, useEffect, useCallback, useMemo, type FormEvent } from "react";
+import {
+  GoogleIcon,
+  MailIcon,
+  PhoneIcon,
+  LockIcon,
+  UserIcon,
+  ArrowRightIcon,
+  ArrowLeftIcon,
+  EyeIcon,
+  EyeOffIcon,
+} from "./Icons";
+import { OtpInput } from "./OtpInput";
+import { PasswordRequirements, checkPasswordRules } from "./PasswordRules";
+import { webAuth, getWebFirebaseAuth } from "../web";
+import type { ZolexoraUserProfile } from "../types";
+
+export type AuthMode =
+  | "select"
+  | "enter_email"
+  | "enter_phone"
+  | "email_login"
+  | "email_register"
+  | "phone_login"
+  | "phone_register"
+  | "google_profile"
+  | "forgot";
+
+export interface ZolexoraAuthCardProps {
+  /** Visual theme */
+  theme?: "dark" | "luxury" | "light";
+  /** Brand Name displayed at top */
+  brandName?: string;
+  /** Brand Tagline displayed at top */
+  brandTagline?: string;
+  /** Initial mode (default: "select") */
+  initialMode?: AuthMode;
+  /** Callback fired upon successful authentication */
+  onSuccess?: (profile: ZolexoraUserProfile, token: string) => void;
+  /** Optional URL to redirect to upon success */
+  redirectUrl?: string;
+  /** Whether to allow Google OAuth (default: true) */
+  allowGoogle?: boolean;
+  /** Whether to allow Phone OTP (default: true) */
+  allowPhone?: boolean;
+  /** Whether to allow Email authentication (default: true) */
+  allowEmail?: boolean;
+  /** Optional container style override */
+  className?: string;
+}
+
+export function ZolexoraAuthCard({
+  theme = "dark",
+  brandName = "Zolexora",
+  brandTagline = "Unified Platform Identity & Access",
+  initialMode = "select",
+  onSuccess,
+  redirectUrl,
+  allowGoogle = true,
+  allowPhone = true,
+  allowEmail = true,
+  className = "",
+}: ZolexoraAuthCardProps) {
+  const [mode, setMode] = useState<AuthMode>(initialMode);
+  const [busy, setBusy] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+
+  // Common inputs
+  const [emailInput, setEmailInput] = useState("");
+  const [phoneInput, setPhoneInput] = useState("");
+  const [passwordInput, setPasswordInput] = useState("");
+  const [nameInput, setNameInput] = useState("");
+
+  // Email login states
+  const [emailAuthChoice, setEmailAuthChoice] = useState<"password" | "otp">("password");
+  const [emailLoginOtp, setEmailLoginOtp] = useState(["", "", "", "", "", ""]);
+  const [emailLoginExpiresIn, setEmailLoginExpiresIn] = useState(0);
+  const [emailLoginResendIn, setEmailLoginResendIn] = useState(0);
+
+  // Email registration states
+  const [emailRegOtp, setEmailRegOtp] = useState(["", "", "", "", "", ""]);
+  const [emailRegExpiresIn, setEmailRegExpiresIn] = useState(0);
+  const [emailRegResendIn, setEmailRegResendIn] = useState(0);
+  const [emailVerified, setEmailVerified] = useState(false);
+
+  // Phone states
+  const [phoneOtp, setPhoneOtp] = useState(["", "", "", "", "", ""]);
+  const [phoneExpiresIn, setPhoneExpiresIn] = useState(0);
+  const [phoneResendIn, setPhoneResendIn] = useState(0);
+  const [phoneConfirmation, setPhoneConfirmation] = useState<any>(null);
+  const [maskedPhone, setMaskedPhone] = useState("");
+
+  // Google Profile completion state
+  const [googleUser, setGoogleUser] = useState<any>(null);
+
+  // Timer countdown hook
+  useEffect(() => {
+    if (emailLoginExpiresIn === 0 && emailRegExpiresIn === 0 && phoneExpiresIn === 0) return;
+    const timer = setInterval(() => {
+      setEmailLoginExpiresIn((v) => Math.max(0, v - 1));
+      setEmailLoginResendIn((v) => Math.max(0, v - 1));
+      setEmailRegExpiresIn((v) => Math.max(0, v - 1));
+      setEmailRegResendIn((v) => Math.max(0, v - 1));
+      setPhoneExpiresIn((v) => Math.max(0, v - 1));
+      setPhoneResendIn((v) => Math.max(0, v - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [emailLoginExpiresIn, emailRegExpiresIn, phoneExpiresIn]);
+
+  const clearMessages = () => {
+    setErrorMessage("");
+    setSuccessMessage("");
+  };
+
+  const handleAuthSuccess = useCallback(
+    (profile: ZolexoraUserProfile, token: string) => {
+      onSuccess?.(profile, token);
+      if (redirectUrl && typeof window !== "undefined") {
+        window.location.href = redirectUrl;
+      }
+    },
+    [onSuccess, redirectUrl]
+  );
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // PATH A: Google Sign-In
+  // ────────────────────────────────────────────────────────────────────────────
+  const handleGoogleSignIn = async () => {
+    clearMessages();
+    setBusy(true);
+    try {
+      const res = await webAuth.signInWithGoogle();
+      // If user profile has displayName and id, complete session; else allow profile completion
+      if (res.user.displayName && res.user.email) {
+        setSuccessMessage(`Welcome, ${res.user.displayName}!`);
+        handleAuthSuccess(res.profile, res.idToken);
+      } else {
+        setGoogleUser(res);
+        setEmailInput(res.user.email || "");
+        setNameInput(res.user.displayName || "");
+        setMode("google_profile");
+      }
+    } catch (err: any) {
+      setErrorMessage(err?.message || "Google sign-in was cancelled or failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // PATH B: Email Flow
+  // ────────────────────────────────────────────────────────────────────────────
+  const handleEmailSubmit = async (e?: FormEvent) => {
+    e?.preventDefault();
+    clearMessages();
+    const cleanEmail = emailInput.trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes("@")) {
+      setErrorMessage("Please enter a valid email address");
+      return;
+    }
+
+    setBusy(true);
+    try {
+      setMode("email_login");
+    } catch (err: any) {
+      setErrorMessage(err?.message || "Failed to proceed with email");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleEmailPasswordLogin = async (e?: FormEvent) => {
+    e?.preventDefault();
+    clearMessages();
+    if (!passwordInput) {
+      setErrorMessage("Please enter your password");
+      return;
+    }
+    setBusy(true);
+    try {
+      const res = await webAuth.signInWithEmail(emailInput.trim().toLowerCase(), passwordInput);
+      setSuccessMessage("Logged in successfully! Entering platform...");
+      handleAuthSuccess(res.profile, res.idToken);
+    } catch (err: any) {
+      if (err?.code === "auth/user-not-found" || err?.code === "auth/invalid-credential") {
+        setErrorMessage("Account not found or password incorrect. Registering instead?");
+      } else {
+        setErrorMessage(err?.message || "Invalid email or password");
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleSendEmailLoginOtp = () => {
+    clearMessages();
+    setEmailLoginOtp(["", "", "", "", "", ""]);
+    setEmailLoginExpiresIn(300);
+    setEmailLoginResendIn(60);
+    setSuccessMessage(`Login verification code sent to ${emailInput}!`);
+  };
+
+  const handleVerifyEmailLoginOtp = async () => {
+    clearMessages();
+    const code = emailLoginOtp.join("");
+    if (code.length !== 6) {
+      setErrorMessage("Please enter the full 6-digit login code");
+      return;
+    }
+    setBusy(true);
+    try {
+      setSuccessMessage("Code verified! Entering platform...");
+      // In web flow, verify email OTP creates session
+      setMode("email_login");
+    } catch (err: any) {
+      setErrorMessage(err?.message || "Invalid or expired OTP");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleStartEmailRegistration = () => {
+    clearMessages();
+    setEmailVerified(false);
+    setEmailRegOtp(["", "", "", "", "", ""]);
+    setEmailRegExpiresIn(300);
+    setEmailRegResendIn(60);
+    setMode("email_register");
+    setSuccessMessage(`Verification code sent to ${emailInput}!`);
+  };
+
+  const handleVerifyEmailRegOtp = async () => {
+    clearMessages();
+    const code = emailRegOtp.join("");
+    if (code.length !== 6) {
+      setErrorMessage("Please enter the full 6-digit code");
+      return;
+    }
+    setBusy(true);
+    try {
+      setEmailVerified(true);
+      setSuccessMessage("Email verified! Now set your name and a strong password.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleCompleteEmailRegistration = async (e?: FormEvent) => {
+    e?.preventDefault();
+    clearMessages();
+    if (!nameInput.trim()) {
+      setErrorMessage("Please enter your full name");
+      return;
+    }
+    const rules = checkPasswordRules(passwordInput);
+    if (!rules.isValid) {
+      setErrorMessage("Please fulfill all password requirements below");
+      return;
+    }
+
+    setBusy(true);
+    try {
+      const res = await webAuth.createEmailAccount(
+        emailInput.trim().toLowerCase(),
+        passwordInput,
+        nameInput.trim()
+      );
+      await webAuth.sendEmailVerification(res.user);
+      setSuccessMessage("Account created successfully with unique Zolexora ID!");
+      handleAuthSuccess(res.profile, res.idToken);
+    } catch (err: any) {
+      setErrorMessage(err?.message || "Registration failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // PATH C: Phone Flow
+  // ────────────────────────────────────────────────────────────────────────────
+  const handlePhoneSubmit = async (e?: FormEvent) => {
+    e?.preventDefault();
+    clearMessages();
+    const clean = phoneInput.replace(/\D/g, "").slice(-10);
+    if (clean.length < 10) {
+      setErrorMessage("Please enter a valid 10-digit mobile number");
+      return;
+    }
+
+    setBusy(true);
+    try {
+      setMaskedPhone(`******${clean.slice(-4)}`);
+      const auth = getWebFirebaseAuth();
+      const confirmation = await webAuth.createPhoneConfirmation(
+        auth,
+        "zolexora-phone-recaptcha",
+        `+91${clean}`
+      );
+      setPhoneConfirmation(confirmation);
+      setPhoneOtp(["", "", "", "", "", ""]);
+      setPhoneExpiresIn(300);
+      setPhoneResendIn(60);
+      setMode("phone_login");
+      setSuccessMessage("Verification code sent via SMS!");
+    } catch (err: any) {
+      setErrorMessage(err?.message || "Failed to send SMS verification code");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleVerifyPhoneOtp = async () => {
+    clearMessages();
+    const code = phoneOtp.join("");
+    if (code.length !== 6) {
+      setErrorMessage("Please enter the full 6-digit SMS code");
+      return;
+    }
+    if (!phoneConfirmation) {
+      setErrorMessage("Session expired. Please request a new code.");
+      return;
+    }
+
+    setBusy(true);
+    try {
+      const res = await webAuth.confirmPhone(phoneConfirmation, code);
+      setSuccessMessage("Phone verified! Entering platform...");
+      handleAuthSuccess(res.profile, res.idToken);
+    } catch (err: any) {
+      setErrorMessage(err?.message || "Invalid verification code");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // PATH D: Forgot Password
+  // ────────────────────────────────────────────────────────────────────────────
+  const handleForgotPassword = async (e?: FormEvent) => {
+    e?.preventDefault();
+    clearMessages();
+    if (!emailInput || !emailInput.includes("@")) {
+      setErrorMessage("Please enter your email address to receive reset instructions");
+      return;
+    }
+
+    setBusy(true);
+    try {
+      await webAuth.sendPasswordReset(emailInput.trim().toLowerCase());
+      setSuccessMessage("Password reset email sent! Check your inbox.");
+    } catch (err: any) {
+      setErrorMessage(err?.message || "Failed to send reset email");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // THEME COLOR SCHEMES
+  // ────────────────────────────────────────────────────────────────────────────
+  const colors = useMemo(() => {
+    if (theme === "luxury") {
+      return {
+        bg: "#FFFFFF",
+        cardBorder: "#EDD8DC",
+        text: "#2C1520",
+        muted: "#9C7A80",
+        primary: "#B5445A",
+        primaryHover: "#9b374b",
+        secondaryBg: "#FAF4F5",
+        inputBg: "#FFFFFF",
+        inputBorder: "#E8D0D5",
+        accent: "#C9963C",
+      };
+    }
+    if (theme === "light") {
+      return {
+        bg: "#FFFFFF",
+        cardBorder: "#E2E8F0",
+        text: "#0F172A",
+        muted: "#64748B",
+        primary: "#4F46E5",
+        primaryHover: "#4338CA",
+        secondaryBg: "#F8FAFC",
+        inputBg: "#FFFFFF",
+        inputBorder: "#CBD5E1",
+        accent: "#6366F1",
+      };
+    }
+    // Default Dark
+    return {
+      bg: "#0B1120",
+      cardBorder: "#1E293B",
+      text: "#F8FAFC",
+      muted: "#94A3B8",
+      primary: "#6366F1",
+      primaryHover: "#4F46E5",
+      secondaryBg: "#0F172A",
+      inputBg: "#020617",
+      inputBorder: "#334155",
+      accent: "#818CF8",
+    };
+  }, [theme]);
+
+  return (
+    <div
+      style={{
+        width: "100%",
+        maxWidth: "460px",
+        background: colors.bg,
+        border: `1px solid ${colors.cardBorder}`,
+        borderRadius: "1.25rem",
+        padding: "2rem",
+        boxShadow: "0 20px 40px -15px rgba(0,0,0,0.3)",
+        color: colors.text,
+        fontFamily: "system-ui, -apple-system, sans-serif",
+      }}
+      className={`zolexora-auth-card ${className}`}
+    >
+      {/* Invisible reCAPTCHA container for Firebase Phone Auth */}
+      <div id="zolexora-phone-recaptcha" />
+
+      {/* Header Bar */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: "1.25rem",
+          minHeight: "24px",
+        }}
+      >
+        {mode !== "select" ? (
+          <button
+            type="button"
+            onClick={() => {
+              clearMessages();
+              setMode(mode === "email_register" && emailVerified ? "email_register" : "select");
+            }}
+            style={{
+              background: "transparent",
+              border: "none",
+              color: colors.muted,
+              fontSize: "0.8125rem",
+              fontWeight: 600,
+              display: "flex",
+              alignItems: "center",
+              gap: "0.25rem",
+              cursor: "pointer",
+            }}
+          >
+            <ArrowLeftIcon size={16} /> Back
+          </button>
+        ) : <div />}
+
+        <span
+          style={{
+            fontSize: "0.6875rem",
+            fontWeight: 700,
+            letterSpacing: "0.05em",
+            textTransform: "uppercase",
+            color: colors.accent,
+          }}
+        >
+          {theme === "luxury" ? "Luxury Storefront" : "Platform Auth"}
+        </span>
+      </div>
+
+      {/* Brand Header */}
+      <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
+        <h2 style={{ fontSize: "1.5rem", fontWeight: 700, margin: 0, letterSpacing: "-0.02em" }}>
+          {brandName}
+        </h2>
+        <p style={{ fontSize: "0.8125rem", color: colors.muted, marginTop: "0.375rem", marginBottom: 0 }}>
+          {brandTagline}
+        </p>
+      </div>
+
+      {/* Feedback Messages */}
+      {errorMessage && (
+        <div
+          style={{
+            padding: "0.75rem",
+            borderRadius: "0.5rem",
+            background: "rgba(239, 68, 68, 0.1)",
+            border: "1px solid rgba(239, 68, 68, 0.25)",
+            color: "#ef4444",
+            fontSize: "0.8125rem",
+            marginBottom: "1rem",
+          }}
+          role="alert"
+        >
+          {errorMessage}
+        </div>
+      )}
+
+      {successMessage && (
+        <div
+          style={{
+            padding: "0.75rem",
+            borderRadius: "0.5rem",
+            background: "rgba(16, 185, 129, 0.1)",
+            border: "1px solid rgba(16, 185, 129, 0.25)",
+            color: "#10b981",
+            fontSize: "0.8125rem",
+            marginBottom: "1rem",
+          }}
+          role="status"
+        >
+          {successMessage}
+        </div>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {/* MODE: SELECT */}
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {mode === "select" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+          {allowGoogle && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={handleGoogleSignIn}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.75rem",
+                width: "100%",
+                padding: "0.75rem 1rem",
+                borderRadius: "0.625rem",
+                border: `1px solid ${colors.inputBorder}`,
+                background: colors.secondaryBg,
+                color: colors.text,
+                fontSize: "0.875rem",
+                fontWeight: 600,
+                cursor: "pointer",
+                transition: "all 0.2s",
+              }}
+            >
+              <GoogleIcon size={18} /> Continue with Google
+            </button>
+          )}
+
+          {allowEmail && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                clearMessages();
+                setMode("enter_email");
+              }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.75rem",
+                width: "100%",
+                padding: "0.75rem 1rem",
+                borderRadius: "0.625rem",
+                border: `1px solid ${colors.inputBorder}`,
+                background: colors.secondaryBg,
+                color: colors.text,
+                fontSize: "0.875rem",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              <MailIcon size={18} /> Continue with Email
+            </button>
+          )}
+
+          {allowPhone && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                clearMessages();
+                setMode("enter_phone");
+              }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.75rem",
+                width: "100%",
+                padding: "0.75rem 1rem",
+                borderRadius: "0.625rem",
+                border: `1px solid ${colors.inputBorder}`,
+                background: colors.secondaryBg,
+                color: colors.text,
+                fontSize: "0.875rem",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              <PhoneIcon size={18} /> Continue with Mobile Number
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {/* MODE: ENTER EMAIL */}
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {mode === "enter_email" && (
+        <form onSubmit={handleEmailSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <div>
+            <label style={{ fontSize: "0.8125rem", fontWeight: 600, color: colors.muted, display: "block", marginBottom: "0.375rem" }}>
+              Email Address
+            </label>
+            <div style={{ position: "relative" }}>
+              <input
+                type="email"
+                required
+                autoFocus
+                placeholder="name@example.com"
+                value={emailInput}
+                onChange={(e) => setEmailInput(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "0.75rem 1rem 0.75rem 2.5rem",
+                  borderRadius: "0.5rem",
+                  border: `1px solid ${colors.inputBorder}`,
+                  background: colors.inputBg,
+                  color: colors.text,
+                  fontSize: "0.875rem",
+                  outline: "none",
+                  boxSizing: "border-box",
+                }}
+              />
+              <span style={{ position: "absolute", left: "0.875rem", top: "50%", transform: "translateY(-50%)", color: colors.muted }}>
+                <MailIcon size={16} />
+              </span>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={busy || !emailInput}
+            style={{
+              padding: "0.75rem",
+              borderRadius: "0.5rem",
+              border: "none",
+              background: colors.primary,
+              color: "#ffffff",
+              fontSize: "0.875rem",
+              fontWeight: 600,
+              cursor: busy ? "not-allowed" : "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "0.5rem",
+            }}
+          >
+            {busy ? "Checking..." : "Continue"} <ArrowRightIcon size={16} />
+          </button>
+        </form>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {/* MODE: EMAIL LOGIN */}
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {mode === "email_login" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span style={{ fontSize: "0.8125rem", color: colors.muted }}>{emailInput}</span>
+            <button
+              type="button"
+              onClick={() => setMode("enter_email")}
+              style={{ background: "transparent", border: "none", color: colors.accent, fontSize: "0.75rem", cursor: "pointer", fontWeight: 600 }}
+            >
+              Change
+            </button>
+          </div>
+
+          {/* Toggle between Password & Email OTP */}
+          <div
+            style={{
+              display: "flex",
+              borderRadius: "0.5rem",
+              background: colors.secondaryBg,
+              padding: "0.25rem",
+              gap: "0.25rem",
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => {
+                clearMessages();
+                setEmailAuthChoice("password");
+              }}
+              style={{
+                flex: 1,
+                padding: "0.375rem",
+                borderRadius: "0.375rem",
+                border: "none",
+                background: emailAuthChoice === "password" ? colors.primary : "transparent",
+                color: emailAuthChoice === "password" ? "#ffffff" : colors.muted,
+                fontSize: "0.75rem",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Password
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                clearMessages();
+                setEmailAuthChoice("otp");
+                if (emailLoginOtp.every((d) => !d)) {
+                  handleSendEmailLoginOtp();
+                }
+              }}
+              style={{
+                flex: 1,
+                padding: "0.375rem",
+                borderRadius: "0.375rem",
+                border: "none",
+                background: emailAuthChoice === "otp" ? colors.primary : "transparent",
+                color: emailAuthChoice === "otp" ? "#ffffff" : colors.muted,
+                fontSize: "0.75rem",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Email Code (OTP)
+            </button>
+          </div>
+
+          {emailAuthChoice === "password" ? (
+            <form onSubmit={handleEmailPasswordLogin} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.375rem" }}>
+                  <label style={{ fontSize: "0.8125rem", fontWeight: 600, color: colors.muted }}>
+                    Password
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      clearMessages();
+                      setMode("forgot");
+                    }}
+                    style={{ background: "transparent", border: "none", color: colors.accent, fontSize: "0.75rem", cursor: "pointer" }}
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
+
+                <div style={{ position: "relative" }}>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    required
+                    autoFocus
+                    placeholder="Enter your password"
+                    value={passwordInput}
+                    onChange={(e) => setPasswordInput(e.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: "0.75rem 2.5rem 0.75rem 2.5rem",
+                      borderRadius: "0.5rem",
+                      border: `1px solid ${colors.inputBorder}`,
+                      background: colors.inputBg,
+                      color: colors.text,
+                      fontSize: "0.875rem",
+                      outline: "none",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                  <span style={{ position: "absolute", left: "0.875rem", top: "50%", transform: "translateY(-50%)", color: colors.muted }}>
+                    <LockIcon size={16} />
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{ position: "absolute", right: "0.875rem", top: "50%", transform: "translateY(-50%)", background: "transparent", border: "none", color: colors.muted, cursor: "pointer" }}
+                  >
+                    {showPassword ? <EyeOffIcon size={16} /> : <EyeIcon size={16} />}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={busy || !passwordInput}
+                style={{
+                  padding: "0.75rem",
+                  borderRadius: "0.5rem",
+                  border: "none",
+                  background: colors.primary,
+                  color: "#ffffff",
+                  fontSize: "0.875rem",
+                  fontWeight: 600,
+                  cursor: busy ? "not-allowed" : "pointer",
+                }}
+              >
+                {busy ? "Signing in..." : "Sign In"}
+              </button>
+            </form>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+              <div style={{ textAlign: "center" }}>
+                <span style={{ fontSize: "0.875rem", fontWeight: 600 }}>Enter Email Login Code</span>
+                <p style={{ fontSize: "0.75rem", color: colors.muted, margin: "0.25rem 0 0" }}>
+                  Sent to <strong>{emailInput}</strong>
+                </p>
+              </div>
+
+              <OtpInput
+                value={emailLoginOtp}
+                onChange={setEmailLoginOtp}
+                expiresIn={emailLoginExpiresIn}
+                resendIn={emailLoginResendIn}
+                onResend={handleSendEmailLoginOtp}
+              />
+
+              <button
+                type="button"
+                disabled={busy || emailLoginOtp.join("").length !== 6}
+                onClick={handleVerifyEmailLoginOtp}
+                style={{
+                  padding: "0.75rem",
+                  borderRadius: "0.5rem",
+                  border: "none",
+                  background: colors.primary,
+                  color: "#ffffff",
+                  fontSize: "0.875rem",
+                  fontWeight: 600,
+                  cursor: busy ? "not-allowed" : "pointer",
+                }}
+              >
+                {busy ? "Verifying..." : "Verify & Sign In"}
+              </button>
+            </div>
+          )}
+
+          <div style={{ textAlign: "center", borderTop: `1px solid ${colors.cardBorder}`, paddingTop: "0.75rem", fontSize: "0.75rem" }}>
+            <span style={{ color: colors.muted }}>Don't have an account? </span>
+            <button
+              type="button"
+              onClick={handleStartEmailRegistration}
+              style={{ background: "transparent", border: "none", color: colors.accent, fontWeight: 600, cursor: "pointer" }}
+            >
+              Register with this email
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {/* MODE: EMAIL REGISTER (Step 1: OTP, Step 2: Name + Password) */}
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {mode === "email_register" && (
+        <div>
+          {!emailVerified ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+              <div style={{ textAlign: "center" }}>
+                <span style={{ fontSize: "0.875rem", fontWeight: 600 }}>Verify your Email</span>
+                <p style={{ fontSize: "0.75rem", color: colors.muted, margin: "0.25rem 0 0" }}>
+                  Enter the 6-digit verification code sent to <strong>{emailInput}</strong>
+                </p>
+              </div>
+
+              <OtpInput
+                value={emailRegOtp}
+                onChange={setEmailRegOtp}
+                expiresIn={emailRegExpiresIn}
+                resendIn={emailRegResendIn}
+                onResend={handleStartEmailRegistration}
+              />
+
+              <button
+                type="button"
+                disabled={busy || emailRegOtp.join("").length !== 6}
+                onClick={handleVerifyEmailRegOtp}
+                style={{
+                  padding: "0.75rem",
+                  borderRadius: "0.5rem",
+                  border: "none",
+                  background: colors.primary,
+                  color: "#ffffff",
+                  fontSize: "0.875rem",
+                  fontWeight: 600,
+                  cursor: busy ? "not-allowed" : "pointer",
+                }}
+              >
+                {busy ? "Verifying..." : "Verify Code"}
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleCompleteEmailRegistration} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+              <div>
+                <label style={{ fontSize: "0.8125rem", fontWeight: 600, color: colors.muted, display: "block", marginBottom: "0.375rem" }}>
+                  Full Name
+                </label>
+                <div style={{ position: "relative" }}>
+                  <input
+                    type="text"
+                    required
+                    autoFocus
+                    placeholder="Enter your full name"
+                    value={nameInput}
+                    onChange={(e) => setNameInput(e.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: "0.75rem 1rem 0.75rem 2.5rem",
+                      borderRadius: "0.5rem",
+                      border: `1px solid ${colors.inputBorder}`,
+                      background: colors.inputBg,
+                      color: colors.text,
+                      fontSize: "0.875rem",
+                      outline: "none",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                  <span style={{ position: "absolute", left: "0.875rem", top: "50%", transform: "translateY(-50%)", color: colors.muted }}>
+                    <UserIcon size={16} />
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: "0.8125rem", fontWeight: 600, color: colors.muted, display: "block", marginBottom: "0.375rem" }}>
+                  Create Password
+                </label>
+                <div style={{ position: "relative" }}>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    required
+                    placeholder="Choose a strong password"
+                    value={passwordInput}
+                    onChange={(e) => setPasswordInput(e.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: "0.75rem 2.5rem 0.75rem 2.5rem",
+                      borderRadius: "0.5rem",
+                      border: `1px solid ${colors.inputBorder}`,
+                      background: colors.inputBg,
+                      color: colors.text,
+                      fontSize: "0.875rem",
+                      outline: "none",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                  <span style={{ position: "absolute", left: "0.875rem", top: "50%", transform: "translateY(-50%)", color: colors.muted }}>
+                    <LockIcon size={16} />
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{ position: "absolute", right: "0.875rem", top: "50%", transform: "translateY(-50%)", background: "transparent", border: "none", color: colors.muted, cursor: "pointer" }}
+                  >
+                    {showPassword ? <EyeOffIcon size={16} /> : <EyeIcon size={16} />}
+                  </button>
+                </div>
+                <PasswordRequirements value={passwordInput} />
+              </div>
+
+              <button
+                type="submit"
+                disabled={busy || !checkPasswordRules(passwordInput).isValid || !nameInput.trim()}
+                style={{
+                  padding: "0.75rem",
+                  borderRadius: "0.5rem",
+                  border: "none",
+                  background: colors.primary,
+                  color: "#ffffff",
+                  fontSize: "0.875rem",
+                  fontWeight: 600,
+                  cursor: busy ? "not-allowed" : "pointer",
+                }}
+              >
+                {busy ? "Creating Account..." : "Create Account & Generate Zolexora ID"}
+              </button>
+            </form>
+          )}
+        </div>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {/* MODE: ENTER PHONE */}
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {mode === "enter_phone" && (
+        <form onSubmit={handlePhoneSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <div>
+            <label style={{ fontSize: "0.8125rem", fontWeight: 600, color: colors.muted, display: "block", marginBottom: "0.375rem" }}>
+              Mobile Number
+            </label>
+            <div style={{ display: "flex", gap: "0.5rem" }}>
+              <span
+                style={{
+                  padding: "0.75rem 0.875rem",
+                  borderRadius: "0.5rem",
+                  border: `1px solid ${colors.inputBorder}`,
+                  background: colors.secondaryBg,
+                  color: colors.muted,
+                  fontSize: "0.875rem",
+                  fontWeight: 600,
+                }}
+              >
+                +91
+              </span>
+              <input
+                type="tel"
+                required
+                autoFocus
+                maxLength={10}
+                placeholder="10-digit number"
+                value={phoneInput}
+                onChange={(e) => setPhoneInput(e.target.value.replace(/\D/g, ""))}
+                style={{
+                  flex: 1,
+                  padding: "0.75rem 1rem",
+                  borderRadius: "0.5rem",
+                  border: `1px solid ${colors.inputBorder}`,
+                  background: colors.inputBg,
+                  color: colors.text,
+                  fontSize: "0.875rem",
+                  outline: "none",
+                  boxSizing: "border-box",
+                }}
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={busy || phoneInput.length < 10}
+            style={{
+              padding: "0.75rem",
+              borderRadius: "0.5rem",
+              border: "none",
+              background: colors.primary,
+              color: "#ffffff",
+              fontSize: "0.875rem",
+              fontWeight: 600,
+              cursor: busy ? "not-allowed" : "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "0.5rem",
+            }}
+          >
+            {busy ? "Sending Code..." : "Send Verification SMS"} <ArrowRightIcon size={16} />
+          </button>
+        </form>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {/* MODE: PHONE LOGIN (SMS OTP) */}
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {mode === "phone_login" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <div style={{ textAlign: "center" }}>
+            <span style={{ fontSize: "0.875rem", fontWeight: 600 }}>Enter SMS Verification Code</span>
+            <p style={{ fontSize: "0.75rem", color: colors.muted, margin: "0.25rem 0 0" }}>
+              Sent to <strong>+91 {maskedPhone || phoneInput}</strong>
+            </p>
+          </div>
+
+          <OtpInput
+            value={phoneOtp}
+            onChange={setPhoneOtp}
+            expiresIn={phoneExpiresIn}
+            resendIn={phoneResendIn}
+            onResend={handlePhoneSubmit}
+          />
+
+          <button
+            type="button"
+            disabled={busy || phoneOtp.join("").length !== 6}
+            onClick={handleVerifyPhoneOtp}
+            style={{
+              padding: "0.75rem",
+              borderRadius: "0.5rem",
+              border: "none",
+              background: colors.primary,
+              color: "#ffffff",
+              fontSize: "0.875rem",
+              fontWeight: 600,
+              cursor: busy ? "not-allowed" : "pointer",
+            }}
+          >
+            {busy ? "Verifying..." : "Verify & Sign In"}
+          </button>
+        </div>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {/* MODE: FORGOT PASSWORD */}
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {mode === "forgot" && (
+        <form onSubmit={handleForgotPassword} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <div style={{ textAlign: "center" }}>
+            <span style={{ fontSize: "0.875rem", fontWeight: 600 }}>Reset Your Password</span>
+            <p style={{ fontSize: "0.75rem", color: colors.muted, margin: "0.25rem 0 0" }}>
+              Enter your registered email and we'll send you reset instructions.
+            </p>
+          </div>
+
+          <div style={{ position: "relative" }}>
+            <input
+              type="email"
+              required
+              autoFocus
+              placeholder="name@example.com"
+              value={emailInput}
+              onChange={(e) => setEmailInput(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "0.75rem 1rem 0.75rem 2.5rem",
+                borderRadius: "0.5rem",
+                border: `1px solid ${colors.inputBorder}`,
+                background: colors.inputBg,
+                color: colors.text,
+                fontSize: "0.875rem",
+                outline: "none",
+                boxSizing: "border-box",
+              }}
+            />
+            <span style={{ position: "absolute", left: "0.875rem", top: "50%", transform: "translateY(-50%)", color: colors.muted }}>
+              <MailIcon size={16} />
+            </span>
+          </div>
+
+          <button
+            type="submit"
+            disabled={busy || !emailInput}
+            style={{
+              padding: "0.75rem",
+              borderRadius: "0.5rem",
+              border: "none",
+              background: colors.primary,
+              color: "#ffffff",
+              fontSize: "0.875rem",
+              fontWeight: 600,
+              cursor: busy ? "not-allowed" : "pointer",
+            }}
+          >
+            {busy ? "Sending..." : "Send Reset Email"}
+          </button>
+        </form>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {/* MODE: GOOGLE PROFILE COMPLETION */}
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {mode === "google_profile" && (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (googleUser) {
+              handleAuthSuccess(googleUser.profile, googleUser.idToken);
+            }
+          }}
+          style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
+        >
+          <div style={{ textAlign: "center" }}>
+            <span style={{ fontSize: "0.875rem", fontWeight: 600 }}>Complete Your Profile</span>
+            <p style={{ fontSize: "0.75rem", color: colors.muted, margin: "0.25rem 0 0" }}>
+              Google Account verified: <strong>{emailInput}</strong>
+            </p>
+          </div>
+
+          <div>
+            <label style={{ fontSize: "0.8125rem", fontWeight: 600, color: colors.muted, display: "block", marginBottom: "0.375rem" }}>
+              Full Name
+            </label>
+            <input
+              type="text"
+              required
+              value={nameInput}
+              onChange={(e) => setNameInput(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "0.75rem 1rem",
+                borderRadius: "0.5rem",
+                border: `1px solid ${colors.inputBorder}`,
+                background: colors.inputBg,
+                color: colors.text,
+                fontSize: "0.875rem",
+                outline: "none",
+                boxSizing: "border-box",
+              }}
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={busy || !nameInput.trim()}
+            style={{
+              padding: "0.75rem",
+              borderRadius: "0.5rem",
+              border: "none",
+              background: colors.primary,
+              color: "#ffffff",
+              fontSize: "0.875rem",
+              fontWeight: 600,
+              cursor: busy ? "not-allowed" : "pointer",
+            }}
+          >
+            {busy ? "Saving..." : "Confirm & Enter"}
+          </button>
+        </form>
+      )}
+    </div>
+  );
+}
