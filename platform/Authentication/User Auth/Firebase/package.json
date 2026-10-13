@@ -21,12 +21,20 @@
     "firebase": ">=12 <13"
   },
   "peerDependenciesMeta": {
-    "@react-native-firebase/app": { "optional": true },
-    "@react-native-firebase/auth": { "optional": true },
-    "firebase": { "optional": true }
+    "@react-native-firebase/app": {
+      "optional": true
+    },
+    "@react-native-firebase/auth": {
+      "optional": true
+    },
+    "firebase": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@types/node": "^26.2.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "typescript": "^5.4.5"
   }
 }
