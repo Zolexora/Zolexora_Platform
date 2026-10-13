@@ -138,6 +138,17 @@ async def get_current_active_organisation(
                 detail="User does not belong to any active organisation. Onboarding required."
             )
 
+    # Establish transaction-scoped PostgreSQL session context for Row-Level Security (RLS)
+    org_id_str = str(row["organisation_id"])
+    await db.execute(
+        text("SELECT set_config('app.current_organisation_id', :org_id, true)"),
+        {"org_id": org_id_str}
+    )
+    if row.get("is_commander"):
+        commander_bypass = request.headers.get("X-Commander-Bypass-RLS", "").lower()
+        if commander_bypass == "true":
+            await db.execute(text("SELECT set_config('app.bypass_rls', 'on', true)"))
+
     return AuthenticatedUser(
         id=identity.id,
         email=identity.email,
