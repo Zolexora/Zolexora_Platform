@@ -5,7 +5,32 @@ import { RuntimeConfiguration } from '../types/runtime';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '../features/auth/useAuth';
 
-const ApplicationRuntimeContext = createContext<RuntimeConfiguration | null>(null);
+const defaultRuntimeConfig: RuntimeConfiguration = {
+  application: { id: 'zolexora-tms', name: 'Zolexora TMS', type: 'STANDARD', version: '1.0.0', status: 'ACTIVE' },
+  branding: { application_name: 'Zolexora TMS', logo_url: null, theme: {} },
+  modules: {
+    bookings: { name: 'Bookings', enabled: true, pages: {} },
+    duties: { name: 'Duties', enabled: true, pages: {} },
+    billing: { name: 'Billing', enabled: true, pages: {} },
+    fleet: { name: 'Fleet', enabled: true, pages: {} },
+    dispatch: { name: 'Dispatch', enabled: true, pages: {} },
+  },
+  features: {},
+  navigation: [],
+  terminology: {},
+  forms: {},
+  workflows: {},
+  rules: {},
+  approvals: {},
+  dashboard: {},
+  reports: {},
+  notifications: {},
+  documents: {},
+  numbering: {},
+  extensions: {},
+};
+
+const ApplicationRuntimeContext = createContext<RuntimeConfiguration>(defaultRuntimeConfig);
 
 export function ApplicationRuntimeProvider({ children }: { children: ReactNode }) {
   const { session } = useAuth();
@@ -18,7 +43,11 @@ export function ApplicationRuntimeProvider({ children }: { children: ReactNode }
   });
 
   if (!session) {
-    return <>{children}</>;
+    return (
+      <ApplicationRuntimeContext.Provider value={defaultRuntimeConfig}>
+        {children}
+      </ApplicationRuntimeContext.Provider>
+    );
   }
 
   if (isLoading) {
@@ -30,34 +59,16 @@ export function ApplicationRuntimeProvider({ children }: { children: ReactNode }
     );
   }
 
-  if (error || !runtimeConfig) {
-    return (
-      <div className="flex h-screen w-full flex-col items-center justify-center bg-slate-950 text-slate-400">
-        <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-6 text-center">
-          <h2 className="text-lg font-semibold text-red-400 mb-2">Application Error</h2>
-          <p className="text-sm text-red-300">Failed to load application runtime configuration.</p>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="mt-4 rounded bg-slate-800 px-4 py-2 text-sm text-white hover:bg-slate-700"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const activeConfig = (!error && runtimeConfig) ? runtimeConfig : defaultRuntimeConfig;
 
   return (
-    <ApplicationRuntimeContext.Provider value={runtimeConfig}>
+    <ApplicationRuntimeContext.Provider value={activeConfig}>
       {children}
     </ApplicationRuntimeContext.Provider>
   );
 }
 
-export function useApplicationRuntime() {
+export function useApplicationRuntime(): RuntimeConfiguration {
   const context = useContext(ApplicationRuntimeContext);
-  if (context === null) {
-    throw new Error('useApplicationRuntime must be used within an ApplicationRuntimeProvider');
-  }
-  return context as RuntimeConfiguration;
+  return context || defaultRuntimeConfig;
 }
