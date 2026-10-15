@@ -1,0 +1,23 @@
+# Node & pnpm
+node_modules/
+dist/
+.turbo/
+*.tsbuildinfo
+
+# Python & venv
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.coverage
+
+# Expo & React Native
+.expo/
+*.orig.*
+web-build/
+
+# Logs & temp
+*.log
+.DS_Store
+.env.local

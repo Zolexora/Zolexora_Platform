@@ -20,6 +20,8 @@ packages:
   - 'products/zolexora-appsuite/apps/*'
   - 'products/zolexora-tms/apps/frontend/*'
   - 'products/zolexora-tms/apps/*'
+  - 'products/zolexora-ironclub/apps/*'
+  - 'products/zolexora-ironclub/packages/*'
   - 'packages/*'
   - 'apps/*'
 allowBuilds:

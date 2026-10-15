@@ -13,3 +13,4 @@
 | ClarityFi              | Fintech product           | `products/clarityfi/`        |
 | MaunKavach             | Security product          | `products/maunkavach/`       |
 | RentoEasy              | Rental platform           | `products/rentoeasy/`        |
+| ZolexoraIronClub        | Smart gym management      | `products/zolexora-ironclub/`|

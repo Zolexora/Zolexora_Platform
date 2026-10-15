@@ -16,3 +16,4 @@ Zolexora_Platform is the monorepo containing the Zolexora Platform.
 |---------------------|----------------------|
 | ZolexoraMarketplace | Ecom marketplace app |
 | TheTextileCare      | Laundry app          |
+| ZolexoraIronClub    | Smart Gym & Fitness  |
