@@ -1,0 +1,83 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ironclub-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ironclub
+      POSTGRES_PASSWORD: ironclubpass
+      POSTGRES_DB: ironclub_db
+    ports:
+      - "${IRONCLUB_POSTGRES_PORT:-5452}:5432"
+    volumes:
+      - ironclub_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ironclub -d ironclub_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ironclub-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: ironclub-redis
+    restart: unless-stopped
+    ports:
+      - "${IRONCLUB_REDIS_PORT:-6382}:6379"
+    volumes:
+      - ironclub_redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ironclub-net
+
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    container_name: ironclub-backend
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://ironclub:ironclubpass@postgres:5432/ironclub_db
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=ironclub-super-secret-jwt-key-2026-secure
+    ports:
+      - "4060:4060"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4060/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    networks:
+      - ironclub-net
+
+  nginx:
+    image: nginx:alpine
+    container_name: ironclub-proxy
+    restart: unless-stopped
+    ports:
+      - "8085:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx-conf.d:/etc/nginx/conf.d:ro
+    depends_on:
+      - backend
+    networks:
+      - ironclub-net
+
+volumes:
+  ironclub_pgdata:
+  ironclub_redisdata:
+
+networks:
+  ironclub-net:
+    driver: bridge

@@ -1,0 +1,18 @@
+{
+  "name": "zolexora-ironclub",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Zolexora IronClub — Smart Gym & Athletic Health Club Management System",
+  "scripts": {
+    "dev:admin": "pnpm --filter @zolexora/ironclub-admin-web dev",
+    "dev:manager": "pnpm --filter @zolexora/ironclub-manager-web dev",
+    "dev:marketing": "pnpm --filter @zolexora/ironclub-marketing-web dev",
+    "dev:mobile:manager": "pnpm --filter @zolexora/ironclub-manager-mobile start",
+    "dev:mobile:member": "pnpm --filter @zolexora/ironclub-member-mobile start",
+    "dev:api": "apps/backend/.venv/bin/python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 4060 --app-dir apps/backend",
+    "test:backend": "apps/backend/.venv/bin/pytest apps/backend/tests/",
+    "build": "pnpm --filter \"@zolexora/ironclub-*\" build",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down"
+  }
+}
