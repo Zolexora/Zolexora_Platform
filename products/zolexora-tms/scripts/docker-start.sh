@@ -14,7 +14,7 @@ case "$ACTION" in
     echo "======================================"
     if [ -n "$INFISICAL_TOKEN" ] || { command -v infisical >/dev/null 2>&1 && infisical login status >/dev/null 2>&1; }; then
       echo "🔐 Infisical credentials detected - starting with runtime injection..."
-      infisical run --env=dev --path=/zolexora-tms -- docker compose -f "$COMPOSE_FILE" up -d
+      infisical run --env=dev --path=/Zolexora_Auth_TMS -- docker compose -f "$COMPOSE_FILE" up -d
     else
       echo "⚠️  Infisical not authenticated. Run 'infisical login' or export INFISICAL_TOKEN."
       echo "ℹ️  Starting containers with existing environment..."
