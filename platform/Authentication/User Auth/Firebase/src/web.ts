@@ -46,13 +46,53 @@ export function resolveFirebaseConfig(customConfig?: Partial<FirebaseClientConfi
     return "";
   };
 
+  const resolveKey = (suffix: string, fallback: string): string => {
+    // 1. Direct match for TMS Account 1 (Infisical alias)
+    const tmsVal = getEnv(`NEXT_PUBLIC_FIREBASE_ACC1_TMS_${suffix}`) || getEnv(`VITE_FIREBASE_ACC1_TMS_${suffix}`);
+    if (tmsVal) return tmsVal;
+
+    // 2. Standard product-level env vars
+    const standardVal =
+      getEnv(`VITE_FIREBASE_${suffix}`) ||
+      getEnv(`NEXT_PUBLIC_FIREBASE_${suffix}`) ||
+      getEnv(`FIREBASE_${suffix}`);
+    if (standardVal) return standardVal;
+
+    // 3. Dynamic scan for any account-scoped key in runtime environment (e.g., ACC2_MKT_*, etc.)
+    try {
+      // @ts-ignore
+      const metaEnv = typeof import.meta !== "undefined" && import.meta?.env;
+      if (metaEnv) {
+        for (const k of Object.keys(metaEnv)) {
+          if ((k.startsWith("NEXT_PUBLIC_FIREBASE_ACC") || k.startsWith("VITE_FIREBASE_ACC")) && k.endsWith(`_${suffix}`)) {
+            const v = String(metaEnv[k]);
+            if (v) return v;
+          }
+        }
+      }
+    } catch {}
+
+    try {
+      if (typeof process !== "undefined" && process?.env) {
+        for (const k of Object.keys(process.env)) {
+          if ((k.startsWith("NEXT_PUBLIC_FIREBASE_ACC") || k.startsWith("VITE_FIREBASE_ACC")) && k.endsWith(`_${suffix}`)) {
+            const v = String(process.env[k]);
+            if (v) return v;
+          }
+        }
+      }
+    } catch {}
+
+    return fallback;
+  };
+
   return {
-    apiKey: customConfig?.apiKey || getEnv("VITE_FIREBASE_API_KEY") || getEnv("NEXT_PUBLIC_FIREBASE_API_KEY") || getEnv("FIREBASE_API_KEY") || "AIzaSyDummyKeyForZolexoraPlatform2026",
-    authDomain: customConfig?.authDomain || getEnv("VITE_FIREBASE_AUTH_DOMAIN") || getEnv("NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN") || getEnv("FIREBASE_AUTH_DOMAIN") || "zolexora-platform.firebaseapp.com",
-    projectId: customConfig?.projectId || getEnv("VITE_FIREBASE_PROJECT_ID") || getEnv("NEXT_PUBLIC_FIREBASE_PROJECT_ID") || getEnv("FIREBASE_PROJECT_ID") || "zolexora-platform",
-    appId: customConfig?.appId || getEnv("VITE_FIREBASE_APP_ID") || getEnv("NEXT_PUBLIC_FIREBASE_APP_ID") || getEnv("FIREBASE_APP_ID") || "1:1234567890:web:abcdef123456",
-    messagingSenderId: customConfig?.messagingSenderId || getEnv("VITE_FIREBASE_MESSAGING_SENDER_ID") || getEnv("NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID") || getEnv("FIREBASE_MESSAGING_SENDER_ID"),
-    storageBucket: customConfig?.storageBucket || getEnv("VITE_FIREBASE_STORAGE_BUCKET") || getEnv("NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET") || getEnv("FIREBASE_STORAGE_BUCKET"),
+    apiKey: customConfig?.apiKey || resolveKey("API_KEY", "AIzaSyDummyKeyForZolexoraPlatform2026"),
+    authDomain: customConfig?.authDomain || resolveKey("AUTH_DOMAIN", "zolexora-platform.firebaseapp.com"),
+    projectId: customConfig?.projectId || resolveKey("PROJECT_ID", "zolexora-platform"),
+    appId: customConfig?.appId || resolveKey("APP_ID", "1:1234567890:web:abcdef123456"),
+    messagingSenderId: customConfig?.messagingSenderId || resolveKey("MESSAGING_SENDER_ID", "") || undefined,
+    storageBucket: customConfig?.storageBucket || resolveKey("STORAGE_BUCKET", "") || undefined,
   };
 }
 

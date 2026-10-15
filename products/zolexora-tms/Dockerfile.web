@@ -2,9 +2,13 @@ ARG APP_PATH=apps/frontend/zolexora-tms
 FROM node:22-alpine AS builder
 ARG APP_PATH
 WORKDIR /app
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY ${APP_PATH} ./${APP_PATH}
+
 RUN corepack enable && corepack prepare pnpm@9 --activate
+
+COPY products/zolexora-tms/package.json products/zolexora-tms/pnpm-workspace.yaml ./
+COPY ["platform/Authentication/User Auth/Firebase", "./platform/Authentication/User Auth/Firebase"]
+COPY products/zolexora-tms/apps/frontend ./apps/frontend
+
 RUN pnpm config set ignore-scripts true && pnpm install --no-frozen-lockfile
 RUN pnpm --filter "./${APP_PATH}" build
 
@@ -12,3 +16,4 @@ FROM nginx:alpine
 ARG APP_PATH
 COPY --from=builder /app/${APP_PATH}/dist /usr/share/nginx/html
 EXPOSE 80
+

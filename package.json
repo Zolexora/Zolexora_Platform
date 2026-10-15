@@ -8,8 +8,11 @@
     "dev:suite:team": "pnpm --filter @zas/dev-team dev:infisical",
     "dev:suite:api": "pnpm --filter @zas/backend dev:infisical",
     "dev:tms": "pnpm --filter zolexora-tms dev",
+    "dev:tms:infisical": "infisical run --env=dev --path=/zolexora-tms -- pnpm --filter zolexora-tms dev",
     "dev:tms:admin": "pnpm --filter zolexora-tms-admin dev",
+    "dev:tms:admin:infisical": "infisical run --env=dev --path=/zolexora-tms -- pnpm --filter zolexora-tms-admin dev",
     "dev:tms:api": "PYTHONPATH=products/zolexora-tms/apps/backend products/zolexora-tms/apps/backend/.venv/bin/python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 4030 --app-dir products/zolexora-tms/apps/backend",
+    "dev:tms:api:infisical": "infisical run --env=dev --path=/zolexora-tms -- python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 4030 --app-dir products/zolexora-tms/apps/backend",
     "start:tms": "bash scripts/zolexora-tms/start-local.sh"
   },
   "devDependencies": {
