@@ -60,6 +60,13 @@ services:
       args:
         APP_PATH: apps/frontend/zolexora-tms
     container_name: tms-web
+    environment:
+      - NEXT_PUBLIC_FIREBASE_ACC1_TMS_API_KEY
+      - NEXT_PUBLIC_FIREBASE_ACC1_TMS_AUTH_DOMAIN
+      - NEXT_PUBLIC_FIREBASE_ACC1_TMS_PROJECT_ID
+      - NEXT_PUBLIC_FIREBASE_ACC1_TMS_STORAGE_BUCKET
+      - NEXT_PUBLIC_FIREBASE_ACC1_TMS_MESSAGING_SENDER_ID
+      - NEXT_PUBLIC_FIREBASE_ACC1_TMS_APP_ID
     deploy:
       resources:
         limits:
@@ -84,6 +91,13 @@ services:
       args:
         APP_PATH: apps/frontend/tms-admin
     container_name: tms-admin
+    environment:
+      - NEXT_PUBLIC_FIREBASE_ACC1_TMS_API_KEY
+      - NEXT_PUBLIC_FIREBASE_ACC1_TMS_AUTH_DOMAIN
+      - NEXT_PUBLIC_FIREBASE_ACC1_TMS_PROJECT_ID
+      - NEXT_PUBLIC_FIREBASE_ACC1_TMS_STORAGE_BUCKET
+      - NEXT_PUBLIC_FIREBASE_ACC1_TMS_MESSAGING_SENDER_ID
+      - NEXT_PUBLIC_FIREBASE_ACC1_TMS_APP_ID
     deploy:
       resources:
         limits:
