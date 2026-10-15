@@ -9,7 +9,7 @@ services:
     volumes:
     - postgres_data:/var/lib/postgresql/data
     ports:
-    - "5432:5432"
+    - "${TMS_POSTGRES_PORT:-5448}:5432"
     healthcheck:
       test:
       - CMD-SHELL
@@ -55,8 +55,8 @@ services:
           memory: 128M
   tms-web:
     build:
-      context: ./
-      dockerfile: Dockerfile.web
+      context: ../../
+      dockerfile: products/zolexora-tms/Dockerfile.web
       args:
         APP_PATH: apps/frontend/zolexora-tms
     container_name: tms-web
@@ -79,8 +79,8 @@ services:
       retries: 3
   tms-admin:
     build:
-      context: ./
-      dockerfile: Dockerfile.web
+      context: ../../
+      dockerfile: products/zolexora-tms/Dockerfile.web
       args:
         APP_PATH: apps/frontend/tms-admin
     container_name: tms-admin
@@ -107,7 +107,7 @@ services:
       dockerfile: Dockerfile.nginx
     container_name: tms-nginx
     ports:
-    - "3074:80"
+    - "${TMS_PORT:-3084}:80"
     depends_on:
       backend:
         condition: service_healthy

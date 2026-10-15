@@ -38,11 +38,12 @@ dist/
 # --- Docker ---
 .docker/
 
-# --- IDE ---
+# --- IDE & Dev Container ---
 .vscode/settings.json
 .idea/
 *.swp
 *.swo
+.devcontainer/devcontainer-lock.json
 
 # --- OS ---
 .DS_Store
