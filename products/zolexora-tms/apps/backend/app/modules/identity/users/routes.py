@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
 import uuid
 from typing import List, Optional
+from sqlalchemy import text
 
-from app.auth.dependencies import AuthenticatedUser, get_current_user
+from app.auth.dependencies import AuthenticatedIdentity, get_current_identity, AuthenticatedUser, get_current_user
 from app.db.session import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -30,16 +31,50 @@ class UserMeResponse(BaseModel):
 
 @router.get("/me", response_model=UserMeResponse)
 async def get_current_user_profile(
-    user: AuthenticatedUser = Depends(get_current_user),
+    request: Request,
+    identity: AuthenticatedIdentity = Depends(get_current_identity),
+    db: AsyncSession = Depends(get_db),
 ):
+    requested_org_id_str = request.headers.get("X-Organization-Id")
+    row = None
+    if requested_org_id_str:
+        try:
+            requested_org_id = uuid.UUID(requested_org_id_str)
+            query = text("""
+                SELECT 
+                    m.organisation_id,
+                    m.is_creator,
+                    m.is_commander
+                FROM public.organisation_members m
+                WHERE m.user_id = :user_id AND m.organisation_id = :org_id AND m.status = 'ACTIVE'
+            """)
+            result = await db.execute(query, {"user_id": identity.id, "org_id": requested_org_id})
+            row = result.mappings().first()
+        except ValueError:
+            pass
+
+    if not row:
+        query = text("""
+            SELECT 
+                m.organisation_id,
+                m.is_creator,
+                m.is_commander
+            FROM public.organisation_members m
+            WHERE m.user_id = :user_id AND m.status = 'ACTIVE'
+            ORDER BY m.created_at ASC
+            LIMIT 1
+        """)
+        result = await db.execute(query, {"user_id": identity.id})
+        row = result.mappings().first()
+
     return UserMeResponse(
-        id=user.id,
-        user_id=user.id,
-        email=user.email,
-        full_name=user.full_name,
-        organisation_id=user.organisation_id,
-        is_creator=user.is_creator,
-        is_commander=user.is_commander,
+        id=identity.id,
+        user_id=identity.id,
+        email=identity.email,
+        full_name=identity.full_name,
+        organisation_id=row["organisation_id"] if row else None,
+        is_creator=row["is_creator"] if row else False,
+        is_commander=row["is_commander"] if row else False,
     )
 
 
