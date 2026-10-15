@@ -1,10 +1,26 @@
 import { getIdToken } from './firebase';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
-  (import.meta.env.DEV ? '' : 'https://api.tms.zolexora.onrender.com');
+export function getApiBaseUrl(): string {
+  try {
+    // @ts-ignore
+    if (typeof window !== 'undefined' && window.__ENV__?.VITE_API_BASE_URL !== undefined) {
+      // @ts-ignore
+      return String(window.__ENV__.VITE_API_BASE_URL);
+    }
+  } catch {}
+
+  try {
+    if (import.meta.env.VITE_API_BASE_URL !== undefined) {
+      return String(import.meta.env.VITE_API_BASE_URL);
+    }
+  } catch {}
+
+  return '';
+}
 
 export async function apiClient<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = await getIdToken();
+  const baseUrl = getApiBaseUrl();
   
   const headers = new Headers(options.headers || {});
   headers.set('Content-Type', 'application/json');
@@ -19,7 +35,7 @@ export async function apiClient<T>(endpoint: string, options: RequestInit = {}):
     headers.set('X-Organization-Id', activeOrgId);
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  const response = await fetch(`${baseUrl}${endpoint}`, {
     ...options,
     headers,
   });
