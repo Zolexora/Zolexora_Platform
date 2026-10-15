@@ -33,6 +33,13 @@ export function resolveFirebaseConfig(customConfig?: Partial<FirebaseClientConfi
   const getEnv = (key: string): string => {
     try {
       // @ts-ignore
+      if (typeof window !== "undefined" && window.__ENV__?.[key]) {
+        // @ts-ignore
+        return String(window.__ENV__[key]);
+      }
+    } catch {}
+    try {
+      // @ts-ignore
       if (typeof import.meta !== "undefined" && import.meta?.env?.[key]) {
         // @ts-ignore
         return String(import.meta.env[key]);
@@ -59,6 +66,19 @@ export function resolveFirebaseConfig(customConfig?: Partial<FirebaseClientConfi
     if (standardVal) return standardVal;
 
     // 3. Dynamic scan for any account-scoped key in runtime environment (e.g., ACC2_MKT_*, etc.)
+    try {
+      // @ts-ignore
+      const winEnv = typeof window !== "undefined" && window.__ENV__;
+      if (winEnv) {
+        for (const k of Object.keys(winEnv)) {
+          if ((k.startsWith("NEXT_PUBLIC_FIREBASE_ACC") || k.startsWith("VITE_FIREBASE_ACC")) && k.endsWith(`_${suffix}`)) {
+            const v = String(winEnv[k]);
+            if (v) return v;
+          }
+        }
+      }
+    } catch {}
+
     try {
       // @ts-ignore
       const metaEnv = typeof import.meta !== "undefined" && import.meta?.env;
