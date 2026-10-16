@@ -23,3 +23,5 @@ export interface ApiError {
 }
 
 export type HealthStatus = 'ok' | 'degraded' | 'error';
+
+export * from './auth';
