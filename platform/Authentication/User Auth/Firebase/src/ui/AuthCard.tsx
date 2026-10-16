@@ -13,7 +13,7 @@ import {
 } from "./Icons";
 import { OtpInput } from "./OtpInput";
 import { PasswordRequirements, checkPasswordRules } from "./PasswordRules";
-import { webAuth, getWebFirebaseAuth } from "../web";
+import { webAuth, getWebFirebaseAuth, buildZolexoraProfile } from "../web";
 import type { ZolexoraUserProfile, ZolexoraOrgProfile, ZolexoraAuthSession } from "../types";
 import { generateZolexoraOrgId } from "../zolexora-id";
 
@@ -38,6 +38,10 @@ export interface ZolexoraAuthCardProps {
   brandTagline?: string;
   /** Initial mode (default: "select") */
   initialMode?: AuthMode;
+  /** Optional pre-authenticated user profile */
+  initialUser?: ZolexoraUserProfile | null;
+  /** Optional pre-authenticated auth token */
+  initialToken?: string | null;
   /** Whether an organisation is required for this app (default: false) */
   requiresOrg?: boolean;
   /** Optional pre-existing organisations user can pick from */
@@ -65,6 +69,8 @@ export function ZolexoraAuthCard({
   brandName = "Zolexora",
   brandTagline = "Unified Platform Identity & Access",
   initialMode = "select",
+  initialUser,
+  initialToken,
   requiresOrg = false,
   existingOrgs,
   onboardingEndpoint,
@@ -111,9 +117,57 @@ export function ZolexoraAuthCard({
   const [googleUser, setGoogleUser] = useState<any>(null);
 
   // Organization setup states
-  const [authenticatedUser, setAuthenticatedUser] = useState<ZolexoraUserProfile | null>(null);
-  const [authToken, setAuthToken] = useState<string | null>(null);
+  const [authenticatedUser, setAuthenticatedUser] = useState<ZolexoraUserProfile | null>(initialUser || null);
+  const [authToken, setAuthToken] = useState<string | null>(initialToken || null);
   const [orgNameInput, setOrgNameInput] = useState("");
+
+  // Sync initialUser and initialToken props when they update
+  useEffect(() => {
+    if (initialUser && !authenticatedUser) {
+      setAuthenticatedUser(initialUser);
+    }
+    if (initialToken && !authToken) {
+      setAuthToken(initialToken);
+    }
+  }, [initialUser, initialToken, authenticatedUser, authToken]);
+
+  // Auto-detect existing Firebase authentication session if in org_setup or without credentials
+  useEffect(() => {
+    if (authenticatedUser && authToken) return;
+    try {
+      const auth = getWebFirebaseAuth();
+
+      const syncSession = async (user: any) => {
+        if (!user) return;
+        try {
+          const [token, profile] = await Promise.all([
+            user.getIdToken(),
+            buildZolexoraProfile(user),
+          ]);
+          setAuthenticatedUser((prev) => prev || profile);
+          setAuthToken((prev) => prev || token);
+        } catch (err) {
+          console.warn("[ZolexoraAuth] Session hydration error:", err);
+        }
+      };
+
+      if (auth.currentUser) {
+        syncSession(auth.currentUser);
+      }
+
+      const unsubscribe = auth.onAuthStateChanged((user) => {
+        if (user) {
+          syncSession(user);
+        } else if (mode === "org_setup" && !initialUser) {
+          setMode("select");
+        }
+      });
+
+      return () => unsubscribe();
+    } catch {
+      // Ignored if firebase is initializing
+    }
+  }, [mode, initialUser, authenticatedUser, authToken]);
 
   // Timer countdown hook
   useEffect(() => {
@@ -188,7 +242,20 @@ export function ZolexoraAuthCard({
       setErrorMessage("Please enter an organisation name");
       return;
     }
-    if (!authenticatedUser || !authToken) {
+    let token = authToken;
+    if (!token) {
+      try {
+        const auth = getWebFirebaseAuth();
+        if (auth.currentUser) {
+          token = await auth.currentUser.getIdToken(true);
+          setAuthToken(token);
+        }
+      } catch (e) {
+        console.warn("[ZolexoraAuth] Failed to acquire fresh token:", e);
+      }
+    }
+
+    if (!authenticatedUser || !token) {
       setErrorMessage("Session expired. Please sign in again.");
       setMode("select");
       return;
@@ -210,7 +277,7 @@ export function ZolexoraAuthCard({
 
       // Backend sync integration
       if (onOrgCreate) {
-        await onOrgCreate(orgProfile, authToken);
+        await onOrgCreate(orgProfile, token);
       } else if (onboardingEndpoint) {
         let apiUrl = "";
         try {
@@ -232,7 +299,7 @@ export function ZolexoraAuthCard({
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${authToken}`,
+              Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify({
               name: cleanOrgName,
@@ -243,16 +310,26 @@ export function ZolexoraAuthCard({
             const data = await res.json().catch(() => null);
             if (data?.organisation?.id) {
               orgProfile.id = String(data.organisation.id);
+              orgProfile.zolexora_org_id = String(data.organisation.id);
             }
+          } else {
+            const errorBody = await res.json().catch(() => null);
+            const msg = errorBody?.detail || `Workspace creation failed (HTTP ${res.status})`;
+            setErrorMessage(msg);
+            setBusy(false);
+            return;
           }
-        } catch (syncErr) {
+        } catch (syncErr: any) {
           console.warn("[ZolexoraAuth] Onboarding sync error:", syncErr);
+          setErrorMessage(syncErr?.message || "Failed to reach workspace onboarding service");
+          setBusy(false);
+          return;
         }
       }
 
       if (typeof localStorage !== "undefined") {
         try {
-          localStorage.setItem("zolexora_active_org_id", orgId);
+          localStorage.setItem("zolexora_active_org_id", orgProfile.id);
           localStorage.setItem("zolexora_org_name", cleanOrgName);
           const existing = localStorage.getItem("zolexora_org_profiles");
           const orgList = existing ? JSON.parse(existing) : [];
@@ -264,7 +341,7 @@ export function ZolexoraAuthCard({
       const session: ZolexoraAuthSession = {
         user: authenticatedUser,
         org: orgProfile,
-        token: authToken,
+        token: token,
       };
 
       setSuccessMessage(`Organisation "${cleanOrgName}" registered! Entering workspace...`);
@@ -1368,6 +1445,34 @@ export function ZolexoraAuthCard({
       {/* ─────────────────────────────────────────────────────────────────── */}
       {/* MODE: ORGANISATION SETUP (DUAL PROFILE WORKSPACE ONBOARDING) */}
       {/* ─────────────────────────────────────────────────────────────────── */}
+      {mode === "org_setup" && !authenticatedUser && (
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "2.5rem 1rem",
+            gap: "0.875rem",
+            color: colors.muted,
+          }}
+        >
+          <div
+            style={{
+              width: "1.75rem",
+              height: "1.75rem",
+              borderRadius: "9999px",
+              border: `2px solid ${colors.inputBorder}`,
+              borderTopColor: colors.primary,
+              animation: "spin 1s linear infinite",
+            }}
+          />
+          <span style={{ fontSize: "0.875rem", fontWeight: 500 }}>
+            Verifying account identity...
+          </span>
+        </div>
+      )}
+
       {mode === "org_setup" && authenticatedUser && (
         <form
           onSubmit={handleOrgSetupSubmit}

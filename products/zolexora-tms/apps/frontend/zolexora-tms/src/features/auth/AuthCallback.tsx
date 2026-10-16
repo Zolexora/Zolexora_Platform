@@ -23,7 +23,7 @@ export function AuthCallback() {
       if (user) {
         navigate('/dashboard', { replace: true });
       } else {
-        navigate('/login', { replace: true });
+        navigate('/authentication', { replace: true });
       }
     });
 

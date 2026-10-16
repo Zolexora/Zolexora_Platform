@@ -26,6 +26,7 @@ RUN uv sync --no-dev --frozen
 COPY app ./app
 COPY alembic ./alembic
 COPY alembic.ini ./
+COPY init_db.py ./
 
 EXPOSE 4030
 

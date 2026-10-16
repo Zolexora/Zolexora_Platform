@@ -1,8 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ZolexoraAuthProvider } from '@zolexora/user-auth-firebase';
-import { LoginForm } from './components/login-form';
-import { OnboardingForm } from './components/onboarding-form';
+import { AuthenticationForm } from './components/authentication-form';
 import { ProtectedRoute } from './routes/ProtectedRoute';
 import { DashboardLayout } from './layouts/DashboardLayout';
 import { DashboardPage } from './features/dashboard/DashboardPage';
@@ -59,8 +58,10 @@ export function App() {
           <Routes>
             {/* Public Landing & Authentication */}
             <Route path="/" element={<LandingPage />} />
-            <Route path="/login" element={<AuthPageWrapper><LoginForm /></AuthPageWrapper>} />
-            <Route path="/onboarding" element={<AuthPageWrapper><OnboardingForm /></AuthPageWrapper>} />
+            <Route path="/authentication" element={<AuthPageWrapper><AuthenticationForm /></AuthPageWrapper>} />
+            <Route path="/login" element={<Navigate to="/authentication" replace />} />
+            <Route path="/onboarding" element={<Navigate to="/authentication" replace />} />
+            <Route path="/auth" element={<Navigate to="/authentication" replace />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
 
             {/* Protected Workspace Navigation */}
