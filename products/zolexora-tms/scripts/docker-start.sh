@@ -7,22 +7,26 @@ cd "$REPO_ROOT"
 COMPOSE_FILE="products/zolexora-tms/compose.yaml"
 ACTION="${1:-start}"
 
+start_containers() {
+  echo "======================================"
+  echo "🚀 Starting Zolexora TMS Containers"
+  echo "======================================"
+  if [ -n "$INFISICAL_TOKEN" ] || { command -v infisical >/dev/null 2>&1 && infisical login status >/dev/null 2>&1; }; then
+    echo "🔐 Infisical credentials detected - starting with runtime injection..."
+    infisical run --env=dev --path=/Zolexora_Auth_TMS -- docker compose -f "$COMPOSE_FILE" up -d
+  else
+    echo "⚠️  Infisical not authenticated. Run 'infisical login' or export INFISICAL_TOKEN."
+    echo "ℹ️  Starting containers with existing environment..."
+    docker compose -f "$COMPOSE_FILE" up -d
+  fi
+  echo ""
+  echo "✅ TMS Containers running:"
+  docker compose -f "$COMPOSE_FILE" ps
+}
+
 case "$ACTION" in
   start|up)
-    echo "======================================"
-    echo "🚀 Starting Zolexora TMS Containers"
-    echo "======================================"
-    if [ -n "$INFISICAL_TOKEN" ] || { command -v infisical >/dev/null 2>&1 && infisical login status >/dev/null 2>&1; }; then
-      echo "🔐 Infisical credentials detected - starting with runtime injection..."
-      infisical run --env=dev --path=/Zolexora_Auth_TMS -- docker compose -f "$COMPOSE_FILE" up -d
-    else
-      echo "⚠️  Infisical not authenticated. Run 'infisical login' or export INFISICAL_TOKEN."
-      echo "ℹ️  Starting containers with existing environment..."
-      docker compose -f "$COMPOSE_FILE" up -d
-    fi
-    echo ""
-    echo "✅ TMS Containers running:"
-    docker compose -f "$COMPOSE_FILE" ps
+    start_containers
     ;;
   stop|down)
     echo "🛑 Stopping Zolexora TMS Containers..."
@@ -31,7 +35,7 @@ case "$ACTION" in
   restart)
     echo "🔄 Restarting Zolexora TMS Containers..."
     docker compose -f "$COMPOSE_FILE" down
-    "$0" start
+    start_containers
     ;;
   logs)
     docker compose -f "$COMPOSE_FILE" logs -f
