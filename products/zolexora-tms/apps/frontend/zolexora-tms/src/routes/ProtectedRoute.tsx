@@ -3,7 +3,7 @@ import { useAuth } from '../features/auth/useAuth';
 import { Loader2 } from 'lucide-react';
 
 export function ProtectedRoute() {
-  const { user, isLoading, authMe } = useAuth();
+  const { user, isLoading, authMe, error } = useAuth();
 
   if (isLoading) {
     return (
@@ -17,12 +17,17 @@ export function ProtectedRoute() {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/authentication" replace />;
   }
 
-  // If user is authenticated but has no organisation assigned yet, redirect to onboarding
+  // If auth validation threw an error, redirect to authentication
+  if (error) {
+    return <Navigate to="/authentication" replace />;
+  }
+
+  // If user is authenticated but has no organisation assigned yet, redirect to authentication (workspace setup)
   if (authMe && !authMe.organisation_id) {
-    return <Navigate to="/onboarding" replace />;
+    return <Navigate to="/authentication" replace />;
   }
 
   return <Outlet />;

@@ -49,7 +49,7 @@ async def create_organisation_and_commander(
 
 @router.get("/organisations/me", response_model=OrganisationResponse)
 async def get_my_organisation(
-    user: AuthenticatedIdentity = Depends(get_current_identity),
+    user: AuthenticatedUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     return await get_organisation_by_id(

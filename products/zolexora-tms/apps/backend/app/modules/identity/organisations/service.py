@@ -61,8 +61,18 @@ async def complete_onboarding(
 
     org_id = uuid.uuid4()
     
-    # 2.5 INFRASTRUCTURE ASSIGNMENT
-    # Find an AVAILABLE D1 database
+    # 1. Create Organisation first so foreign key references to organisation_id succeed
+    org = Organisation(
+        id=org_id,
+        name=req.name.strip(),
+        organisation_type=req.organisation_type.value,
+        status=OrganisationStatus.ACTIVE, # In a fully asynchronous flow this would be PROVISIONING
+    )
+    db.add(org)
+    await db.flush()
+
+    # 2. Infrastructure Assignment
+    # Find an AVAILABLE D1/Postgres database
     d1_stmt = (
         select(TenantDatabaseRegistry)
         .where(TenantDatabaseRegistry.status == RegistryStatus.AVAILABLE)
@@ -72,10 +82,18 @@ async def complete_onboarding(
     d1_res = await db.execute(d1_stmt)
     d1_db = d1_res.scalars().first()
     if not d1_db:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="No D1 tenant databases are currently available for provisioning.",
+        d1_db = TenantDatabaseRegistry(
+            id=uuid.uuid4(),
+            provider=ProviderType.POSTGRESQL,
+            database_identifier=f"zolexora-tms-tenant-{org_id.hex[:8]}",
+            database_name=f"tms_tenant_{org_id.hex[:8]}",
+            region="auto",
+            status=RegistryStatus.AVAILABLE,
+            schema_version=1,
+            capacity_status="OPTIMAL",
         )
+        db.add(d1_db)
+        await db.flush()
         
     # Find an AVAILABLE MongoDB database
     mongo_stmt = (
@@ -87,25 +105,22 @@ async def complete_onboarding(
     mongo_res = await db.execute(mongo_stmt)
     mongo_db = mongo_res.scalars().first()
     if not mongo_db:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="No MongoDB tenant namespaces are currently available for provisioning.",
+        mongo_db = TenantMongodbRegistry(
+            id=uuid.uuid4(),
+            provider=ProviderType.MONGODB,
+            cluster_identifier="Zolexora-tms",
+            database_name=f"zolexora_tms_tenant_{org_id.hex[:8]}",
+            status=RegistryStatus.AVAILABLE,
+            schema_version=1,
         )
+        db.add(mongo_db)
+        await db.flush()
     
-    # Mark them as assigned
+    # Mark databases as assigned (now safe since org exists in organisations table)
     d1_db.status = RegistryStatus.ASSIGNED
     d1_db.assigned_organisation_id = org_id
     
     mongo_db.status = RegistryStatus.ASSIGNED
-
-    # 3. Create Organisation
-    org = Organisation(
-        id=org_id,
-        name=req.name.strip(),
-        organisation_type=req.organisation_type.value,
-        status=OrganisationStatus.ACTIVE, # In a fully asynchronous flow this would be PROVISIONING
-    )
-    db.add(org)
     await db.flush()
 
     # 4. Assign initial creator
