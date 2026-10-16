@@ -8,6 +8,7 @@
     "local:start": "bash scripts/local-start.sh",
     "docker:start": "bash scripts/docker-start.sh start",
     "docker:stop": "bash scripts/docker-start.sh stop",
+    "docker:restart": "bash scripts/docker-start.sh restart",
     "build:tms": "pnpm --filter zolexora-tms run build",
     "build:admin": "pnpm --filter zolexora-tms-admin run build",
     "dev:tms": "pnpm --filter zolexora-tms run dev",
