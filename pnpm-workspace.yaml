@@ -24,6 +24,7 @@ packages:
   - 'products/zolexora-ironclub/packages/*'
   - 'packages/*'
   - 'apps/*'
+  - 'functions'
 allowBuilds:
   '@nestjs/core': true
   esbuild: true

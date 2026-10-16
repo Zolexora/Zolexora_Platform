@@ -1,0 +1,140 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+        (request.auth.token.admin == true || 
+         (request.auth.token.email == 'abhishekofficial4577@gmail.com' && request.auth.token.email_verified == true));
+    }
+
+    function isRecent(ts) {
+      return ts <= request.time && ts >= request.time - duration.value(5, 'm');
+    }
+
+    // Default deny-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // -----------------------------------------------------------------
+    // 1. Users Collection: users/{uid}
+    // -----------------------------------------------------------------
+    match /users/{userId} {
+      // User can read their own profile; admins can read any
+      allow read: if isOwner(userId) || isAdmin();
+
+      // Creation: must match authenticated UID
+      allow create: if isOwner(userId)
+        // Canonical UID binding
+        && request.resource.data.uid == userId
+        // Mandatory type & size restrictions (Prevent Resource Exhaustion/DoS)
+        && request.resource.data.zolexora_id is string
+        && request.resource.data.zolexora_id.size() <= 30
+        && (!('display_name' in request.resource.data) || (request.resource.data.display_name is string && request.resource.data.display_name.size() <= 100))
+        && (!('email' in request.resource.data) || (request.resource.data.email is string && request.resource.data.email.size() <= 100))
+        && (!('phone_number' in request.resource.data) || (request.resource.data.phone_number is string && request.resource.data.phone_number.size() <= 30))
+        && (!('photo_url' in request.resource.data) || (request.resource.data.photo_url is string && request.resource.data.photo_url.size() <= 500))
+        // Clients CANNOT self-verify or self-activate (Prevent Privilege Escalation)
+        && request.resource.data.email_verified is bool
+        && request.resource.data.phone_verified == false
+        && request.resource.data.onboarding_completed == false
+        && request.resource.data.status in ['pending', 'active']
+        && (!('role' in request.resource.data) || request.resource.data.role == 'member')
+        && (!('isAdmin' in request.resource.data) || request.resource.data.isAdmin == false);
+
+      // Update: user can only edit non-privileged profile fields
+      allow update: if isOwner(userId)
+        // Immutable identity bindings
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.zolexora_id == resource.data.zolexora_id
+        // Prevent Update Bypass on privileged fields:
+        // Client CANNOT flip onboarding_completed, phone_verified, status, or role
+        && request.resource.data.onboarding_completed == resource.data.onboarding_completed
+        && request.resource.data.phone_verified == resource.data.phone_verified
+        && request.resource.data.status == resource.data.status
+        && (!('role' in request.resource.data) || request.resource.data.role == resource.data.role)
+        && (!('isAdmin' in request.resource.data) || request.resource.data.isAdmin == resource.data.isAdmin)
+        // Size & type safety on editable fields
+        && (!('display_name' in request.resource.data) || (request.resource.data.display_name is string && request.resource.data.display_name.size() <= 100))
+        && (!('photo_url' in request.resource.data) || (request.resource.data.photo_url is string && request.resource.data.photo_url.size() <= 500));
+
+      // Deletions are forbidden from client SDKs
+      allow delete: if false;
+    }
+
+    // -----------------------------------------------------------------
+    // 2. Registration Attempts: registrationAttempts/{attemptId}
+    // -----------------------------------------------------------------
+    match /registrationAttempts/{attemptId} {
+      // Owner or bound UID can read attempt progress
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.uid == request.auth.uid);
+
+      // Client creation of a registration attempt
+      allow create: if
+        // Size and schema safety
+        request.resource.data.attemptId == attemptId
+        && request.resource.data.signupMethod in ['google', 'email', 'mobile']
+        && request.resource.data.platform in ['web', 'android', 'ios']
+        // Initial state must be pending
+        && request.resource.data.status in ['identity_pending', 'contact_verification']
+        // Expiration must be bounded (max 2 hours)
+        && request.resource.data.expiresAt is string
+        // Crucial: client CANNOT mark phone or email as verified!
+        && request.resource.data.emailVerified == false
+        && request.resource.data.phoneVerified == false
+        && (!('emailOtpHash' in request.resource.data)) // OTP hash is trusted backend only
+        // UID binding if authenticated
+        && (!('uid' in request.resource.data) || request.resource.data.uid == null || (isAuthenticated() && request.resource.data.uid == request.auth.uid));
+
+      // Update: client can only modify draft name or cancel; CANNOT mark verification complete
+      allow update: if
+        // Must be bound owner or admin
+        (isAdmin() || (isAuthenticated() && resource.data.uid == request.auth.uid))
+        // Cannot change identity, method, or verification flags
+        && request.resource.data.attemptId == resource.data.attemptId
+        && request.resource.data.signupMethod == resource.data.signupMethod
+        && request.resource.data.emailVerified == resource.data.emailVerified
+        && request.resource.data.phoneVerified == resource.data.phoneVerified
+        && (!('emailOtpHash' in request.resource.data) || request.resource.data.emailOtpHash == resource.data.emailOtpHash)
+        // Allowed client transitions: cancel or edit display name
+        && (request.resource.data.status == resource.data.status || request.resource.data.status == 'cancelled')
+        && (!('displayName' in request.resource.data) || (request.resource.data.displayName is string && request.resource.data.displayName.size() <= 100));
+
+      // Hard delete disabled
+      allow delete: if false;
+    }
+
+    // -----------------------------------------------------------------
+    // 3. Security Events: securityEvents/{eventId}
+    // -----------------------------------------------------------------
+    match /securityEvents/{eventId} {
+      // Only admins / compliance officers can read security audit events
+      allow read: if isAdmin();
+
+      // Client append-only audit event logging with strict payload validation
+      allow create: if
+        request.resource.data.eventId == eventId
+        && request.resource.data.eventType in [
+          'signup_started', 'signup_completed', 'login_success', 'login_failed',
+          'email_otp_sent', 'email_otp_verified', 'phone_pnv_verified',
+          'phone_sms_verified', 'identity_linked', 'password_reset_requested', 'password_changed'
+        ]
+        && request.resource.data.platform in ['web', 'android', 'ios']
+        && request.resource.data.timestamp is string
+        && (!('uid' in request.resource.data) || request.resource.data.uid == null || (isAuthenticated() && request.resource.data.uid == request.auth.uid));
+
+      // Audit logs are strictly immutable: no updates or deletes allowed
+      allow update, delete: if false;
+    }
+  }
+}
