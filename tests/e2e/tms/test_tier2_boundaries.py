@@ -158,7 +158,10 @@ class TestTier2Domain3ContainerIdempotency(unittest.TestCase):
         rc2, out2, _ = run_cmd(["bash", str(canonical_script), "status"], timeout=10.0)
         self.assertEqual(rc1, 0)
         self.assertEqual(rc2, 0)
-        self.assertEqual(out1, out2)
+        import re
+        norm1 = re.sub(r"Up \d+ \w+", "Up X", out1)
+        norm2 = re.sub(r"Up \d+ \w+", "Up X", out2)
+        self.assertEqual(norm1, norm2)
 
     def test_b3_03_restart_command_syntax_idempotent(self):
         """Verify restart command implementation performs down before start."""
