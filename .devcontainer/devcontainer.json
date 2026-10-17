@@ -103,24 +103,24 @@
         "cloudflare.cloudflare-workers-bindings"
       ],
       "settings": {
-        "python.defaultInterpreterPath": "${workspaceFolder}/scripts/.venv/bin/python",
+        "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
         "python.analysis.extraPaths": [
-          "${workspaceFolder}/products/ZolexoraERP/backend/frappe",
-          "${workspaceFolder}/products/ZolexoraERP/backend/erpnext",
-          "${workspaceFolder}/products/ZolexoraERP/backend/payments",
-          "${workspaceFolder}/products/ZolexoraERP/backend/zolexora_core",
-          "${workspaceFolder}/products/ZolexoraERP/backend/zolexora_branding",
-          "${workspaceFolder}/products/ZolexoraERP/backend/zolexora_platform",
-          "${workspaceFolder}/products/ZolexoraERP/backend/zolexora_integrations"
+          "${workspaceFolder}/products/zolexora-erp/backend/frappe",
+          "${workspaceFolder}/products/zolexora-erp/backend/erpnext",
+          "${workspaceFolder}/products/zolexora-erp/backend/payments",
+          "${workspaceFolder}/products/zolexora-erp/backend/zolexora_core",
+          "${workspaceFolder}/products/zolexora-erp/backend/zolexora_branding",
+          "${workspaceFolder}/products/zolexora-erp/backend/zolexora_platform",
+          "${workspaceFolder}/products/zolexora-erp/backend/zolexora_integrations"
         ],
         "python.autoComplete.extraPaths": [
-          "${workspaceFolder}/products/ZolexoraERP/backend/frappe",
-          "${workspaceFolder}/products/ZolexoraERP/backend/erpnext",
-          "${workspaceFolder}/products/ZolexoraERP/backend/payments",
-          "${workspaceFolder}/products/ZolexoraERP/backend/zolexora_core",
-          "${workspaceFolder}/products/ZolexoraERP/backend/zolexora_branding",
-          "${workspaceFolder}/products/ZolexoraERP/backend/zolexora_platform",
-          "${workspaceFolder}/products/ZolexoraERP/backend/zolexora_integrations"
+          "${workspaceFolder}/products/zolexora-erp/backend/frappe",
+          "${workspaceFolder}/products/zolexora-erp/backend/erpnext",
+          "${workspaceFolder}/products/zolexora-erp/backend/payments",
+          "${workspaceFolder}/products/zolexora-erp/backend/zolexora_core",
+          "${workspaceFolder}/products/zolexora-erp/backend/zolexora_branding",
+          "${workspaceFolder}/products/zolexora-erp/backend/zolexora_platform",
+          "${workspaceFolder}/products/zolexora-erp/backend/zolexora_integrations"
         ],
         "editor.formatOnSave": true,
         "editor.defaultFormatter": "esbenp.prettier-vscode",
