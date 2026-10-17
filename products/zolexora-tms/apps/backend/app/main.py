@@ -4,7 +4,7 @@ import time
 import uuid
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 import sentry_sdk
 
 from app.core.config import settings
@@ -46,7 +46,7 @@ app.add_middleware(
 
 @app.middleware("http")
 async def correlation_id_middleware(request: Request, call_next):
-    request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
+    request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
     request.state.request_id = request_id
     start_time = time.time()
     response = await call_next(request)
@@ -75,6 +75,7 @@ from app.db import models as _db_models  # noqa: F401
 # Mount Routers
 from app.modules.identity.organisations.routes import router as organisations_router
 from app.modules.identity.users.routes import router as users_router
+from app.modules.identity.roles.routes import router as roles_router
 from app.modules.fleet.vehicles.routes import router as vehicles_router
 from app.modules.operations.bookings.routes_request import router as booking_requests_router
 from app.modules.operations.bookings.routes import router as bookings_router
@@ -88,12 +89,11 @@ from app.modules.crm.clients.routes import router as clients_router
 from app.modules.operations.operating_units.routes import router as operating_units_router
 from app.modules.crm.vendors.routes import router as vendors_router
 
-from fastapi.responses import JSONResponse, RedirectResponse
-from app.modules.identity.roles.routes import router as roles_router
-
 app.include_router(health_router)
+app.include_router(health_router, prefix="/api")
 app.include_router(organisations_router)
 app.include_router(users_router)
+app.include_router(roles_router)
 app.include_router(customization_router)
 app.include_router(vehicles_router)
 app.include_router(booking_requests_router)
@@ -106,7 +106,6 @@ app.include_router(r1rcm_router)
 app.include_router(clients_router)
 app.include_router(operating_units_router)
 app.include_router(vendors_router)
-app.include_router(roles_router)
 
 @app.get("/", include_in_schema=False)
 async def root():
