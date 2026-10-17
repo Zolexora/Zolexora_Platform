@@ -67,6 +67,11 @@ fi
 "${WORKSPACE_DIR}/scripts/.venv/bin/pip" install --upgrade pip setuptools wheel packaging > /dev/null 2>&1
 ok "pip/setuptools/wheel up to date"
 
+if [ ! -e "${WORKSPACE_DIR}/.venv" ] && [ ! -L "${WORKSPACE_DIR}/.venv" ]; then
+    ln -sf "${WORKSPACE_DIR}/scripts/.venv" "${WORKSPACE_DIR}/.venv"
+    ok "Symlinked .venv -> scripts/.venv"
+fi
+
 # Frappe path compatibility symlinks (ZolexoraERP)
 log "    Configuring Frappe path symlinks..."
 PYTHON_BIN="$(which python3)"
