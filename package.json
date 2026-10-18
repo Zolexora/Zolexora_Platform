@@ -3,6 +3,10 @@
   "private": true,
   "packageManager": "pnpm@9.12.3",
   "scripts": {
+    "build": "turbo run build",
+    "test": "vitest run platform/",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
     "dev:suite": "pnpm --filter @zas/client dev:infisical",
     "dev:suite:client": "pnpm --filter @zas/client dev:infisical",
     "dev:suite:team": "pnpm --filter @zas/dev-team dev:infisical",
