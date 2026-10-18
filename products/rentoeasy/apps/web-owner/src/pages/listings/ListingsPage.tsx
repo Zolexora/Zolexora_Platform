@@ -6,7 +6,7 @@ import {
   MapPin, MoreVertical, Loader2, Camera,
 } from 'lucide-react'
 import { propertiesAPI }  from '@/services/api'
-import { formatCurrency } from '@rent-stay/utils'
+import { formatCurrency } from '@zolexora/rentoeasy-utils'
 
 const STATUS_BADGE: Record<string, string> = {
   active:       'badge-green',

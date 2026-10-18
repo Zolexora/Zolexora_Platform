@@ -3,7 +3,7 @@ import { useNavigate }    from 'react-router-dom'
 import { useMutation }    from '@tanstack/react-query'
 import { X, Calendar, IndianRupee, AlertCircle, CheckCircle } from 'lucide-react'
 import { bookingsAPI }    from '@/services/api'
-import { formatCurrency } from '@rent-stay/utils'
+import { formatCurrency } from '@zolexora/rentoeasy-utils'
 
 interface Props {
   property: any

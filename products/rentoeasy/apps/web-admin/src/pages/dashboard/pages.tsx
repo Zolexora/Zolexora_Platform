@@ -9,7 +9,7 @@ import {
   ChevronRight, RefreshCw, DollarSign,
 } from 'lucide-react'
 import { adminAPI, usersAPI, kycAPI, propertiesAPI } from '@/services/api'
-import { formatCurrency } from '@rent-stay/utils'
+import { formatCurrency } from '@zolexora/rentoeasy-utils'
 
 export function DashboardPage() {
   const { data, isLoading } = useQuery({

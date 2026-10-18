@@ -1,5 +1,5 @@
 {
-  "name": "@rent-stay/api",
+  "name": "@zolexora/rentoeasy-api",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -30,8 +30,8 @@
     "@nestjs/swagger": "^11.4.4",
     "@nestjs/websockets": "^11.1.24",
     "@prisma/client": "^5.14.0",
-    "@rent-stay/types": "workspace:*",
-    "@rent-stay/utils": "workspace:*",
+    "@zolexora/rentoeasy-types": "workspace:*",
+    "@zolexora/rentoeasy-utils": "workspace:*",
     "@sendgrid/mail": "^8.1.3",
     "axios": "^1.7.0",
     "bcryptjs": "^3.0.3",

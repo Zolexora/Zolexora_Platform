@@ -1,5 +1,5 @@
 {
-  "name": "@ttc/marketplace-mobile",
+  "name": "@zolexora/ttc-marketplace-mobile",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -9,8 +9,8 @@
     "web": "expo start --web"
   },
   "dependencies": {
-    "@ttc/api-client": "workspace:*",
-    "@ttc/config": "workspace:*",
+    "@zolexora/ttc-api-client": "workspace:*",
+    "@zolexora/ttc-config": "workspace:*",
     "expo": "~51.0.28",
     "expo-status-bar": "~1.2.0",
     "react": "18.2.0",

@@ -47,12 +47,12 @@ The workspace packages are:
 
 | Package | Path | Purpose |
 | --- | --- | --- |
-| `@rent-stay/web-tenant` | `apps/web-tenant` | Tenant portal |
-| `@rent-stay/web-owner` | `apps/web-owner` | Owner portal |
-| `@rent-stay/web-admin` | `apps/web-admin` | Admin portal |
-| `@rent-stay/api` | `services/api` | Backend API |
-| `@rent-stay/types` | `packages/shared-types` | Shared domain types |
-| `@rent-stay/utils` | `packages/shared-utils` | Shared utilities |
+| `@zolexora/rentoeasy-web-tenant` | `apps/web-tenant` | Tenant portal |
+| `@zolexora/rentoeasy-web-owner` | `apps/web-owner` | Owner portal |
+| `@zolexora/rentoeasy-web-admin` | `apps/web-admin` | Admin portal |
+| `@zolexora/rentoeasy-api` | `services/api` | Backend API |
+| `@zolexora/rentoeasy-types` | `packages/shared-types` | Shared domain types |
+| `@zolexora/rentoeasy-utils` | `packages/shared-utils` | Shared utilities |
 
 ## Applications
 
@@ -194,7 +194,7 @@ services/api/prisma/schema.prisma
 Generate the Prisma client:
 
 ```bash
-pnpm --filter @rent-stay/api prisma:generate
+pnpm --filter @zolexora/rentoeasy-api prisma:generate
 ```
 
 Run migrations locally when direct database access on port 5432 is available:
@@ -222,10 +222,10 @@ pnpm prisma:seed
 Useful Prisma commands:
 
 ```bash
-pnpm --filter @rent-stay/api prisma:generate
-pnpm --filter @rent-stay/api prisma:push
-pnpm --filter @rent-stay/api prisma:studio
-pnpm --filter @rent-stay/api prisma:seed
+pnpm --filter @zolexora/rentoeasy-api prisma:generate
+pnpm --filter @zolexora/rentoeasy-api prisma:push
+pnpm --filter @zolexora/rentoeasy-api prisma:studio
+pnpm --filter @zolexora/rentoeasy-api prisma:seed
 ```
 
 ## Development
@@ -567,20 +567,20 @@ pnpm add -D <package> -w
 Specific app or service:
 
 ```bash
-pnpm --filter @rent-stay/api add <package>
-pnpm --filter @rent-stay/web-tenant add <package>
+pnpm --filter @zolexora/rentoeasy-api add <package>
+pnpm --filter @zolexora/rentoeasy-web-tenant add <package>
 ```
 
 Workspace package dependency:
 
 ```json
-"@rent-stay/types": "workspace:*"
+"@zolexora/rentoeasy-types": "workspace:*"
 ```
 
 ### Remove A Dependency
 
 ```bash
-pnpm --filter @rent-stay/web-owner remove <package>
+pnpm --filter @zolexora/rentoeasy-web-owner remove <package>
 ```
 
 ### Clean Local Outputs
@@ -609,9 +609,9 @@ There should be no package-script references to deleted mobile apps.
 | `pnpm build` | Build all packages/apps/services |
 | `pnpm audit` | Check dependency vulnerabilities |
 | `pnpm type-check` | Run workspace type-check task |
-| `pnpm --filter @rent-stay/api prisma:generate` | Generate Prisma client |
-| `pnpm --filter @rent-stay/api prisma:studio` | Open Prisma Studio |
-| `pnpm --filter @rent-stay/api prisma:seed` | Seed database |
+| `pnpm --filter @zolexora/rentoeasy-api prisma:generate` | Generate Prisma client |
+| `pnpm --filter @zolexora/rentoeasy-api prisma:studio` | Open Prisma Studio |
+| `pnpm --filter @zolexora/rentoeasy-api prisma:seed` | Seed database |
 
 ## Troubleshooting
 
@@ -630,7 +630,7 @@ Also ensure `pnpm-workspace.yaml` exists.
 Run:
 
 ```bash
-pnpm --filter @rent-stay/api prisma:generate
+pnpm --filter @zolexora/rentoeasy-api prisma:generate
 ```
 
 ### API starts but database connection fails
@@ -702,7 +702,7 @@ The current workspace has been verified with:
 ```bash
 pnpm install
 pnpm audit
-pnpm --filter @rent-stay/api prisma:generate
+pnpm --filter @zolexora/rentoeasy-api prisma:generate
 pnpm build
 timeout 35s pnpm dev
 ```

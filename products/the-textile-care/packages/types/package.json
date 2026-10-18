@@ -1,5 +1,5 @@
 {
-  "name": "@ttc/types",
+  "name": "@zolexora/ttc-types",
   "version": "0.1.0",
   "private": true,
   "main": "./src/index.ts",
@@ -8,6 +8,6 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@zolexora/api-contracts": "file:../../../../packages/api-contracts"
+    "@zolexora/api-contracts": "workspace:*"
   }
 }

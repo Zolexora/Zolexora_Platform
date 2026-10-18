@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 import { Button } from './ui';
 import { useAuth } from '@/lib/auth-context';
 import { useCartStore, useLocationStore } from '@/lib/stores';
-import { Logo } from '@ttc/ui';
+import { Logo } from '@zolexora/ttc-ui';
 
 // ---------------------------------------------------------------------------
 // Top Header

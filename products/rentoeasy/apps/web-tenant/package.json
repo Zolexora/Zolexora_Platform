@@ -1,5 +1,5 @@
 {
-  "name": "@rent-stay/web-tenant",
+  "name": "@zolexora/rentoeasy-web-tenant",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -11,8 +11,8 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@rent-stay/types": "workspace:*",
-    "@rent-stay/utils": "workspace:*",
+    "@zolexora/rentoeasy-types": "workspace:*",
+    "@zolexora/rentoeasy-utils": "workspace:*",
     "@tanstack/react-query": "^5.40.0",
     "axios": "^1.7.0",
     "firebase": "^12.13.0",

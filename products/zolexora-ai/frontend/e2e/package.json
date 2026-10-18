@@ -1,5 +1,5 @@
 {
-  "name": "swarm-factory-e2e",
+  "name": "@zolexora/ai-e2e",
   "version": "0.1.0",
   "private": true,
   "scripts": {

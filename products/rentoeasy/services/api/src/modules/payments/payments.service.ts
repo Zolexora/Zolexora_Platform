@@ -10,7 +10,7 @@ import {
   CreateOrderDto, VerifyPaymentDto, UPICollectDto,
   SetupAutoPayDto, ManualPayoutDto, RefundDto,
 } from './dto/payments.dto'
-import { generateReceiptNumber, formatCurrency } from '@rent-stay/utils'
+import { generateReceiptNumber, formatCurrency } from '@zolexora/rentoeasy-utils'
 
 @Injectable()
 export class PaymentsService {

@@ -1,5 +1,5 @@
 {
-  "name": "@ttc/auth",
+  "name": "@zolexora/ttc-auth",
   "version": "0.1.0",
   "private": true,
   "main": "./src/index.ts",

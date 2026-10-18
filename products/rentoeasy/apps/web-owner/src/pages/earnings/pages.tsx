@@ -1,6 +1,6 @@
 // ─── EARNINGS PAGE ────────────────────────────────────────────────────────────
 import { useQuery }      from '@tanstack/react-query'
-import { formatCurrency } from '@rent-stay/utils'
+import { formatCurrency } from '@zolexora/rentoeasy-utils'
 import { IndianRupee, TrendingUp, Clock, CheckCircle, Download } from 'lucide-react'
 import { paymentsAPI }   from '@/services/api'
 

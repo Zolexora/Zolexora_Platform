@@ -7,7 +7,7 @@ import { Button, Dialog, DialogContent, DialogHeader, DialogTitle, Input, Label,
 import { AddressCard } from '@/components/marketplace';
 import { useAddresses, useCreateAddress, useUpdateAddress, useDeleteAddress } from '@/lib/queries';
 import { useAuth } from '@/lib/auth-context';
-import type { CustomerAddress, CustomerAddressCreate } from '@ttc/types';
+import type { CustomerAddress, CustomerAddressCreate } from '@zolexora/ttc-types';
 import { toast } from 'sonner';
 
 function AddressForm({

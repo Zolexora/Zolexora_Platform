@@ -9,7 +9,7 @@ import { OrderStatusBadge } from '@/components/marketplace';
 import { useOrders } from '@/lib/queries';
 import { useAuth } from '@/lib/auth-context';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import type {} from '@ttc/types';
+import type {} from '@zolexora/ttc-types';
 
 export default function OrdersPage() {
   const { isAuthenticated } = useAuth();

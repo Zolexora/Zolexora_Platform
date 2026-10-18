@@ -6,7 +6,7 @@ import {
   ChevronLeft, Loader2, AlertCircle, ClipboardList,
 } from 'lucide-react'
 import { bookingsAPI } from '@/services/api'
-import { formatCurrency } from '@rent-stay/utils'
+import { formatCurrency } from '@zolexora/rentoeasy-utils'
 
 const STATUS_TABS = [
   { value: '',          label: 'All'       },

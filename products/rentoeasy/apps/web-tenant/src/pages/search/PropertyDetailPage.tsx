@@ -8,7 +8,7 @@ import {
 } from 'lucide-react'
 import { propertiesAPI }      from '@/services/api'
 import { useAuthStore }       from '@/store/authStore'
-import { formatCurrency }     from '@rent-stay/utils'
+import { formatCurrency }     from '@zolexora/rentoeasy-utils'
 import BookingModal           from './BookingModal'
 
 const TYPE_LABEL: Record<string, string> = {

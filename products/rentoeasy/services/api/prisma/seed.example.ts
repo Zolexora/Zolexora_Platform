@@ -7,7 +7,7 @@
  * 2. Customize the seeding logic or default credentials in your local `seed.ts` if needed.
  * 3. `seed.ts` is ignored in Git to prevent checking in sensitive credentials.
  * 4. Run the seed command:
- *    pnpm --filter @rent-stay/api prisma:seed
+ *    pnpm --filter @zolexora/rentoeasy-api prisma:seed
  */
 
 import { PrismaClient } from '@prisma/client'

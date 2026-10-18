@@ -18,9 +18,9 @@ COPY products/rentoeasy/services/api ./services/api
 
 RUN ln -s /app/packages /packages
 RUN pnpm config set ignore-scripts true && pnpm install --no-frozen-lockfile
-RUN pnpm --filter @rent-stay/utils build
-RUN pnpm --filter @rent-stay/api prisma:generate
-RUN pnpm --filter @rent-stay/api build
+RUN pnpm --filter @zolexora/rentoeasy-utils build
+RUN pnpm --filter @zolexora/rentoeasy-api prisma:generate
+RUN pnpm --filter @zolexora/rentoeasy-api build
 
 FROM node:22-alpine
 # Prisma's query engine requires libssl 1.1 (not available on Alpine 3.17+ by default)

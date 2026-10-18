@@ -13,7 +13,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from 'next-themes';
 import { Toaster } from 'sonner';
 import { AuthContext, type AuthContextValue } from '@/lib/auth-context';
-import type { AuthUser, AuthSession } from '@ttc/auth';
+import type { AuthUser, AuthSession } from '@zolexora/ttc-auth';
 
 function makeQueryClient(): QueryClient {
   return new QueryClient({

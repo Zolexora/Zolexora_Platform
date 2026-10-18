@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Mail, Lock, Eye, EyeOff, User, ArrowRight } from 'lucide-react';
 import { Button, Input, Label, Card, CardContent, Alert, AlertDescription } from '@/components/ui';
 import { useAuth } from '@/lib/auth-context';
-import { Logo } from '@ttc/ui';
+import { Logo } from '@zolexora/ttc-ui';
 
 export default function LoginPage() {
   const router = useRouter();

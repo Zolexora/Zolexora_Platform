@@ -5,7 +5,7 @@ import {
   Search, CheckCircle, XCircle, Eye, Loader2, MapPin,
 } from 'lucide-react'
 import { propertiesAPI }  from '@/services/api'
-import { formatCurrency } from '@rent-stay/utils'
+import { formatCurrency } from '@zolexora/rentoeasy-utils'
 
 const STATUS_OPTS = ['under_review','active','inactive']
 

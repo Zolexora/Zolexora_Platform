@@ -1,6 +1,6 @@
 import React from 'react';
 import { SafeAreaView, StyleSheet, Text, View } from 'react-native';
-import type { TenantConfiguration } from '@ttc/branding';
+import type { TenantConfiguration } from '@zolexora/ttc-branding';
 
 const MOCK_CONFIG: TenantConfiguration = {
   tenantId: 'tenant-123',

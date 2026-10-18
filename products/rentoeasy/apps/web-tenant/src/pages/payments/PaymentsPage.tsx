@@ -6,7 +6,7 @@ import {
   ChevronRight, Loader2, X,
 } from 'lucide-react'
 import { paymentsAPI }    from '@/services/api'
-import { formatCurrency } from '@rent-stay/utils'
+import { formatCurrency } from '@zolexora/rentoeasy-utils'
 
 declare global { interface Window { Razorpay: any } }
 
