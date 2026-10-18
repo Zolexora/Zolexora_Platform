@@ -2,7 +2,7 @@
 # ==============================================================================
 # Zolexora IMS — Cloudflare D1 & Relational Database Operations
 # Commands: migrate, seed, backup, restore, status, query
-# Usage: ./scripts/zolexora-ims/db-ops.sh [COMMAND] [OPTIONS]
+# Usage: ./products/zolexora-ims/scripts/db-ops.sh [COMMAND] [OPTIONS]
 # ==============================================================================
 
 set -eo pipefail
@@ -28,7 +28,7 @@ print_help() {
   echo -e "${CYAN}${BOLD}║           ZOLEXORA IMS — DATABASE OPERATIONS & MIGRATIONS            ║${NC}"
   echo -e "${CYAN}${BOLD}║                Cloudflare D1 Serverless SQL Engine                   ║${NC}"
   echo -e "${CYAN}${BOLD}╚══════════════════════════════════════════════════════════════════════╝${NC}"
-  echo -e "${BOLD}Usage:${NC} ./scripts/zolexora-ims/db-ops.sh <command> [options]"
+  echo -e "${BOLD}Usage:${NC} ./products/zolexora-ims/scripts/db-ops.sh <command> [options]"
   echo ""
   echo -e "${BOLD}Commands:${NC}"
   echo "  migrate           Apply all SQL migration files to D1 database"
@@ -44,10 +44,10 @@ print_help() {
   echo "  --local           Target local SQLite / D1 simulator (default)"
   echo ""
   echo -e "${BOLD}Examples:${NC}"
-  echo "  ./scripts/zolexora-ims/db-ops.sh migrate --local"
-  echo "  ./scripts/zolexora-ims/db-ops.sh seed --local"
-  echo "  ./scripts/zolexora-ims/db-ops.sh query \"SELECT name, price, stock FROM products;\""
-  echo "  ./scripts/zolexora-ims/db-ops.sh backup"
+  echo "  ./products/zolexora-ims/scripts/db-ops.sh migrate --local"
+  echo "  ./products/zolexora-ims/scripts/db-ops.sh seed --local"
+  echo "  ./products/zolexora-ims/scripts/db-ops.sh query \"SELECT name, price, stock FROM products;\""
+  echo "  ./products/zolexora-ims/scripts/db-ops.sh backup"
   exit 0
 }
 
@@ -139,7 +139,7 @@ cmd_query() {
   wrangler_cmd=$(get_wrangler)
 
   if [[ -z "${sql_query}" ]]; then
-    echo -e "${RED}❌ SQL query required. Example: ./scripts/zolexora-ims/db-ops.sh query \"SELECT * FROM products;\"${NC}"
+    echo -e "${RED}❌ SQL query required. Example: ./products/zolexora-ims/scripts/db-ops.sh query \"SELECT * FROM products;\"${NC}"
     exit 1
   fi
 

@@ -2,7 +2,7 @@
 # ==============================================================================
 # Zolexora IMS — Enterprise Deployment Orchestrator
 # Supports: Render (Containers), Cloudflare Pages (Vite SPA), Docker Stack
-# Usage: ./scripts/zolexora-ims/deploy.sh [OPTIONS]
+# Usage: ./products/zolexora-ims/scripts/deploy.sh [OPTIONS]
 # ==============================================================================
 
 set -eo pipefail
@@ -36,7 +36,7 @@ print_banner() {
 }
 
 print_help() {
-  echo -e "${BOLD}Usage:${NC} ./scripts/zolexora-ims/deploy.sh [OPTIONS]"
+  echo -e "${BOLD}Usage:${NC} ./products/zolexora-ims/scripts/deploy.sh [OPTIONS]"
   echo ""
   echo -e "${BOLD}Options:${NC}"
   echo "  -t, --target <target>   Deployment target: all | render | cloudflare | docker (default: all)"
@@ -47,10 +47,10 @@ print_help() {
   echo "  -h, --help              Show this help menu"
   echo ""
   echo -e "${BOLD}Examples:${NC}"
-  echo "  ./scripts/zolexora-ims/deploy.sh --target render"
-  echo "  ./scripts/zolexora-ims/deploy.sh --target cloudflare --env preview"
-  echo "  ./scripts/zolexora-ims/deploy.sh --target all --skip-tests"
-  echo "  ./scripts/zolexora-ims/deploy.sh --dry-run"
+  echo "  ./products/zolexora-ims/scripts/deploy.sh --target render"
+  echo "  ./products/zolexora-ims/scripts/deploy.sh --target cloudflare --env preview"
+  echo "  ./products/zolexora-ims/scripts/deploy.sh --target all --skip-tests"
+  echo "  ./products/zolexora-ims/scripts/deploy.sh --dry-run"
   exit 0
 }
 

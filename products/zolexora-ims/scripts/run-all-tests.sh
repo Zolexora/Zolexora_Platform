@@ -2,7 +2,7 @@
 # ==============================================================================
 # Zolexora IMS — Full-Stack Quality Gate & CI/CD Test Runner
 # Executes backend tests, TypeScript checks, security audits, and bundle builds
-# Usage: ./scripts/zolexora-ims/test-all.sh [OPTIONS]
+# Usage: ./products/zolexora-ims/scripts/test-all.sh [OPTIONS]
 # ==============================================================================
 
 set -eo pipefail

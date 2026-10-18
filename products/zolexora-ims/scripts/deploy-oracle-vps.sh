@@ -4,7 +4,7 @@
 # Automatically configures an Oracle Cloud (4 OCPU / 24GB RAM Always-Free) VM,
 # installs Docker, Docker Compose, sets firewall rules, and starts container stack
 # Usage: Run directly on your Ubuntu/Debian VPS:
-#   curl -fsSL https://raw.githubusercontent.com/Zolexora/Zolexora_IMS/dev/scripts/zolexora-ims/deploy-oracle-vps.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/Zolexora/Zolexora_IMS/de./products/zolexora-ims/scripts/deploy-oracle-vps.sh | bash
 # ==============================================================================
 
 set -eo pipefail

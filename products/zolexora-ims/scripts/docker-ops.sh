@@ -2,7 +2,7 @@
 # ==============================================================================
 # Zolexora IMS — Docker & Container Management Operations
 # Commands: build, up, down, restart, logs, ps, shell, clean, push
-# Usage: ./scripts/zolexora-ims/docker-ops.sh [COMMAND] [OPTIONS]
+# Usage: ./products/zolexora-ims/scripts/docker-ops.sh [COMMAND] [OPTIONS]
 # ==============================================================================
 
 set -eo pipefail
@@ -24,7 +24,7 @@ print_help() {
   echo -e "${CYAN}${BOLD}╔══════════════════════════════════════════════════════════════════════╗${NC}"
   echo -e "${CYAN}${BOLD}║             ZOLEXORA IMS — DOCKER CONTAINER OPERATIONS               ║${NC}"
   echo -e "${CYAN}${BOLD}╚══════════════════════════════════════════════════════════════════════╝${NC}"
-  echo -e "${BOLD}Usage:${NC} ./scripts/zolexora-ims/docker-ops.sh <command> [service/options]"
+  echo -e "${BOLD}Usage:${NC} ./products/zolexora-ims/scripts/docker-ops.sh <command> [service/options]"
   echo ""
   echo -e "${BOLD}Commands:${NC}"
   echo "  up                Build and start all containers in background"
@@ -135,7 +135,7 @@ cmd_push() {
   check_docker
   local registry="${1:-}"
   if [[ -z "${registry}" ]]; then
-    echo -e "${RED}❌ Registry prefix required. Example: ./scripts/zolexora-ims/docker-ops.sh push ghcr.io/my-org${NC}"
+    echo -e "${RED}❌ Registry prefix required. Example: ./products/zolexora-ims/scripts/docker-ops.sh push ghcr.io/my-org${NC}"
     exit 1
   fi
 

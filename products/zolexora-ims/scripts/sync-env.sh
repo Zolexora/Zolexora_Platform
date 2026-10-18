@@ -2,7 +2,7 @@
 # ==============================================================================
 # Zolexora IMS — Environment Variable & Secret Management Tool
 # Commands: audit, generate, sync-render, sync-cloudflare
-# Usage: ./scripts/zolexora-ims/sync-env.sh [COMMAND]
+# Usage: ./products/zolexora-ims/scripts/sync-env.sh [COMMAND]
 # ==============================================================================
 
 set -eo pipefail
@@ -22,7 +22,7 @@ print_help() {
   echo -e "${CYAN}${BOLD}╔══════════════════════════════════════════════════════════════════════╗${NC}"
   echo -e "${CYAN}${BOLD}║           ZOLEXORA IMS — ENVIRONMENT & SECRET MANAGEMENT             ║${NC}"
   echo -e "${CYAN}${BOLD}╚══════════════════════════════════════════════════════════════════════╝${NC}"
-  echo -e "${BOLD}Usage:${NC} ./scripts/zolexora-ims/sync-env.sh <command>"
+  echo -e "${BOLD}Usage:${NC} ./products/zolexora-ims/scripts/sync-env.sh <command>"
   echo ""
   echo -e "${BOLD}Commands:${NC}"
   echo "  audit             Audit all local .env.local files for missing or placeholder keys"
@@ -66,7 +66,7 @@ cmd_audit() {
     local full_path="${ROOT_DIR}/${rel_path}"
     echo -e "${BOLD}${BLUE}■ ${name}${NC} (${rel_path})"
     if [[ ! -f "${full_path}" ]]; then
-      echo -e "  ${RED}✕ File does not exist! Run './scripts/zolexora-ims/sync-env.sh generate' to scaffold.${NC}\n"
+      echo -e "  ${RED}✕ File does not exist! Run './products/zolexora-ims/scripts/sync-env.sh generate' to scaffold.${NC}\n"
       continue
     fi
 

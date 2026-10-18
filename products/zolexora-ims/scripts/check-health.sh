@@ -2,7 +2,7 @@
 # ==============================================================================
 # Zolexora IMS — Service Health & Smoke Test Monitor
 # Probes backends, frontends, APIs, and databases with latency benchmarking
-# Usage: ./scripts/zolexora-ims/health-check.sh [OPTIONS]
+# Usage: ./products/zolexora-ims/scripts/health-check.sh [OPTIONS]
 # ==============================================================================
 
 set -eo pipefail
@@ -21,7 +21,7 @@ JSON_OUTPUT=false
 TIMEOUT=3
 
 print_help() {
-  echo -e "${BOLD}Usage:${NC} ./scripts/zolexora-ims/health-check.sh [OPTIONS]"
+  echo -e "${BOLD}Usage:${NC} ./products/zolexora-ims/scripts/health-check.sh [OPTIONS]"
   echo ""
   echo -e "${BOLD}Options:${NC}"
   echo "  -w, --watch           Run continuous monitor loop"

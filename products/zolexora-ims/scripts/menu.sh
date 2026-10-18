@@ -2,7 +2,7 @@
 # ==============================================================================
 # Zolexora IMS — Interactive CLI Control Center
 # Unified interactive dashboard to run any deployment, ops, or test script
-# Usage: ./scripts/zolexora-ims/menu.sh
+# Usage: ./products/zolexora-ims/scripts/menu.sh
 # ==============================================================================
 
 set -eo pipefail

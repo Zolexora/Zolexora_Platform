@@ -3,7 +3,7 @@
 # Zolexora IMS — Cloudflare Pages Frontend Deployment (100% Free Forever)
 # Deploys User Frontend (POS & Inventory) and Admin Frontend to Cloudflare Pages
 # Zero cold starts • Unlimited bandwidth • Global edge CDN in 330+ cities
-# Usage: ./scripts/zolexora-ims/deploy-frontends-cloudflare.sh [OPTIONS]
+# Usage: ./products/zolexora-ims/scripts/deploy-frontends-cloudflare.sh [OPTIONS]
 # ==============================================================================
 
 set -eo pipefail
@@ -33,7 +33,7 @@ print_banner() {
 }
 
 print_help() {
-  echo -e "${BOLD}Usage:${NC} ./scripts/zolexora-ims/deploy-frontends-cloudflare.sh [OPTIONS]"
+  echo -e "${BOLD}Usage:${NC} ./products/zolexora-ims/scripts/deploy-frontends-cloudflare.sh [OPTIONS]"
   echo ""
   echo -e "${BOLD}Options:${NC}"
   echo "  -t, --target <all|user|admin>   Select frontend app (default: all)"
