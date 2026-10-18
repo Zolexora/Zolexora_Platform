@@ -1,28 +1,22 @@
 packages:
   - 'products/*'
-  - 'platform/*'
-  - 'platform/auth/*'
-  - 'apps/platform-admin/frontend'
+  - 'products/*/apps/*'
+  - 'products/*/packages/*'
+  - 'products/*/services/*'
+  - 'products/the-textile-care/platform/*'
   - 'products/zolexora-marketplace/apps/*/*/*'
   - 'products/zolexora-marketplace/packages/*'
-  - 'products/zolexora-engage/apps/*'
-  - 'products/zolexora-engage/services/*'
-  - 'products/zolexora-engage/packages/*'
-  - 'products/rentoeasy/apps/*'
-  - 'products/rentoeasy/packages/*'
-  - 'products/the-textile-care/apps/*'
-  - 'products/the-textile-care/packages/*'
-  - 'products/the-textile-care/platform/*'
-  - 'products/zolexora-appsuite/apps/*'
-  - 'products/zolexora-tms/apps/*'
-  - 'products/zolexora-ironclub/apps/*'
-  - 'products/zolexora-ironclub/packages/*'
+  - 'platform/*'
+  - 'platform/auth/*'
+  - 'platform/functions'
   - 'packages/*'
   - 'apps/*'
-  - 'platform/functions'
+  - 'apps/*/*'
 allowBuilds:
   '@nestjs/core': true
+  better-sqlite3: true
   esbuild: true
+  node-gyp: true
   unrs-resolver: true
   workerd: true
 
