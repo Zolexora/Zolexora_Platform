@@ -1,54 +1,32 @@
-# ─────────────────────────────────────────────────────────────────────────────
-# Stage 1 — JS deps
-# ─────────────────────────────────────────────────────────────────────────────
 FROM node:22-alpine AS deps
 RUN corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
-COPY packages/api-contracts /packages/api-contracts
-COPY products/TheTextileCare/pnpm-workspace.yaml products/TheTextileCare/pnpm-lock.yaml products/TheTextileCare/package.json ./
-COPY products/TheTextileCare/apps/marketplace-mobile/package.json   ./apps/marketplace-mobile/
-COPY products/TheTextileCare/packages/api-client/package.json       ./packages/api-client/
-COPY products/TheTextileCare/packages/config/package.json           ./packages/config/
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+COPY packages ./packages
+COPY products/the-textile-care ./products/the-textile-care
 RUN pnpm config set ignore-scripts true && pnpm install --no-frozen-lockfile
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Stage 2 — Dev server (Metro bundler)
-# Connect phones/emulators via Expo Go → exp://<host-ip>:8081
-# ─────────────────────────────────────────────────────────────────────────────
 FROM deps AS dev
 WORKDIR /app
-COPY products/TheTextileCare .
 ENV EXPO_PUBLIC_API_BASE_URL=${EXPO_PUBLIC_API_BASE_URL:-http://localhost:4010} \
     EXPO_NO_DOTENV=1
 EXPOSE 8081 19000 19001 19002
-WORKDIR /app/apps/marketplace-mobile
+WORKDIR /app/products/the-textile-care/apps/marketplace-mobile
 CMD ["pnpm", "start", "--", "--host", "lan", "--port", "8081"]
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Stage 3 — Android base (shared by APK + AAB stages)
-# Runs expo prebuild and installs Gradle dependencies once
-# ─────────────────────────────────────────────────────────────────────────────
 FROM reactnativecommunity/react-native-android:latest AS android-base
 RUN corepack enable && corepack prepare pnpm@latest --activate && \
     npm install -g eas-cli@latest
 WORKDIR /app
-COPY --from=deps /app/node_modules              ./node_modules
-COPY --from=deps /app/apps/marketplace-mobile/node_modules \
-                                                ./apps/marketplace-mobile/node_modules
-COPY . .
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/products/the-textile-care ./products/the-textile-care
 ARG EXPO_PUBLIC_API_BASE_URL=https://api.thetextilecare.com
 ENV EXPO_PUBLIC_API_BASE_URL=$EXPO_PUBLIC_API_BASE_URL \
     GRADLE_OPTS="-Dorg.gradle.daemon=false -Dorg.gradle.parallel=false"
-WORKDIR /app/apps/marketplace-mobile
-# Prebuild generates the native android/ folder
+WORKDIR /app/products/the-textile-care/apps/marketplace-mobile
 RUN npx expo prebuild --platform android --clean
-# Pre-download Gradle wrapper so both APK and AAB stages hit cache
 RUN cd android && ./gradlew --version
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Stage 4a — APK build (direct install / testing)
-# Output: /output/marketplace-mobile-release.apk
-# ─────────────────────────────────────────────────────────────────────────────
 FROM android-base AS android-apk
 RUN cd android && ./gradlew assembleRelease --no-daemon
 RUN mkdir -p /output && \
@@ -56,10 +34,6 @@ RUN mkdir -p /output && \
          -exec cp {} /output/marketplace-mobile-release.apk \;
 CMD ["echo", "APK ready at /output/marketplace-mobile-release.apk"]
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Stage 4b — AAB build (Google Play Store submission)
-# Output: /output/marketplace-mobile-release.aab
-# ─────────────────────────────────────────────────────────────────────────────
 FROM android-base AS android-aab
 RUN cd android && ./gradlew bundleRelease --no-daemon
 RUN mkdir -p /output && \

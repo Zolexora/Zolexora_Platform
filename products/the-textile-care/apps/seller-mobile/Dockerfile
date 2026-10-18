@@ -1,34 +1,29 @@
 FROM node:22-alpine AS deps
 RUN corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
-COPY packages/api-contracts /packages/api-contracts
-COPY products/TheTextileCare/pnpm-workspace.yaml products/TheTextileCare/pnpm-lock.yaml products/TheTextileCare/package.json ./
-COPY products/TheTextileCare/apps/seller-mobile/package.json  ./apps/seller-mobile/
-COPY products/TheTextileCare/packages/api-client/package.json ./packages/api-client/
-COPY products/TheTextileCare/packages/config/package.json     ./packages/config/
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+COPY packages ./packages
+COPY products/the-textile-care ./products/the-textile-care
 RUN pnpm config set ignore-scripts true && pnpm install --no-frozen-lockfile
 
 FROM deps AS dev
 WORKDIR /app
-COPY products/TheTextileCare .
 ENV EXPO_PUBLIC_API_BASE_URL=${EXPO_PUBLIC_API_BASE_URL:-http://localhost:4010} \
     EXPO_NO_DOTENV=1
 EXPOSE 8082 19000 19001 19002
-WORKDIR /app/apps/seller-mobile
+WORKDIR /app/products/the-textile-care/apps/seller-mobile
 CMD ["pnpm", "start", "--", "--host", "lan", "--port", "8082"]
 
 FROM reactnativecommunity/react-native-android:latest AS android-base
 RUN corepack enable && corepack prepare pnpm@latest --activate && \
     npm install -g eas-cli@latest
 WORKDIR /app
-COPY --from=deps /app/node_modules             ./node_modules
-COPY --from=deps /app/apps/seller-mobile/node_modules \
-                                               ./apps/seller-mobile/node_modules
-COPY products/TheTextileCare .
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/products/the-textile-care ./products/the-textile-care
 ARG EXPO_PUBLIC_API_BASE_URL=https://api.thetextilecare.com
 ENV EXPO_PUBLIC_API_BASE_URL=$EXPO_PUBLIC_API_BASE_URL \
     GRADLE_OPTS="-Dorg.gradle.daemon=false -Dorg.gradle.parallel=false"
-WORKDIR /app/apps/seller-mobile
+WORKDIR /app/products/the-textile-care/apps/seller-mobile
 RUN npx expo prebuild --platform android --clean
 RUN cd android && ./gradlew --version
 
