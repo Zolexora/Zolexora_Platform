@@ -20,7 +20,7 @@ fail_report() {
   log "ERROR" "Bootstrap failed"
   log "ERROR" "Step: $CURRENT_STEP"
   log "ERROR" "Exit code: $exit_code"
-  log "ERROR" "Suggested remediation: review the exception above, fix the failing bootstrap phase, then rerun ./scripts/zolexora-erp/bootstrap-frappe-site.sh"
+  log "ERROR" "Suggested remediation: review the exception above, fix the failing bootstrap phase, then rerun ./products/zolexora-erp/scripts/bootstrap-frappe-site.sh"
   exit "$exit_code"
 }
 
