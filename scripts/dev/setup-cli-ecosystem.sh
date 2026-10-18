@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Zolexora TMS — Developer Ecosystem Setup & Health Check
+# Zolexora Platform — Developer Ecosystem Setup & Health Check
 #
 # Manages CLI installations, MCP servers, Agent Skills, and auth verification
 # across GitHub, Cloudinary, Supabase, MongoDB Atlas, Render, Cloudflare,
-# Resend, OpenAI Codex, Antigravity, and Ponytail.
+# Resend, OpenAI Codex, Bitwarden, Antigravity, and Ponytail.
 # ==============================================================================
 
 set -eo pipefail
 
-WORKSPACE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
+WORKSPACE_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || (cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd))"
 DOCS_FILE="${WORKSPACE_ROOT}/products/zolexora-tms/docs/ecosystem_and_tooling/ecosystem_cli_guide.md"
 MCP_CANONICAL="${WORKSPACE_ROOT}/mcp.json"
 DOT_ENV="${WORKSPACE_ROOT}/.env"
@@ -35,6 +35,21 @@ log_header()  { echo -e "\n${CLR_BOLD}${CLR_BLUE}=== $1 ===${CLR_RESET}\n"; }
 # ------------------------------------------------------------------------------
 install_clis() {
   log_header "Installing & Verifying Ecosystem CLIs"
+
+  # Keep the package managers current before installing ecosystem tools.
+  if command -v npm >/dev/null 2>&1; then
+    log_info "Updating npm to the latest version..."
+    sudo npm install -g npm@latest
+  else
+    log_warn "npm not found; skipping npm update."
+  fi
+
+  if command -v python3 >/dev/null 2>&1; then
+    log_info "Updating pip to the latest version..."
+    python3 -m pip install --user --upgrade --ignore-installed pip --break-system-packages
+  else
+    log_warn "python3 not found; skipping pip update."
+  fi
 
   # GitHub CLI
   if command -v gh >/dev/null 2>&1; then
@@ -129,6 +144,14 @@ WRAPPER_EOF
     log_warn "Installing OpenAI Codex CLI (@openai/codex)..."
     sudo npm install -g @openai/codex
   fi
+
+  # Bitwarden CLI (bw)
+  if command -v bw >/dev/null 2>&1; then
+    log_success "Bitwarden CLI (bw): $(bw --version 2>/dev/null)"
+  else
+    log_warn "Installing Bitwarden CLI globally..."
+    sudo npm install -g @bitwarden/cli
+  fi
 }
 
 # ------------------------------------------------------------------------------
@@ -181,6 +204,10 @@ args = ["-y", "@cloudinary/asset-management", "mcp", "start"]
 [mcp_servers.github]
 command = "npx"
 args = ["-y", "@modelcontextprotocol/server-github"]
+
+[mcp_servers.bitwarden]
+command = "npx"
+args = ["-y", "@bitwarden/mcp"]
 CODEX_CONFIG_EOF
 
   cp "${HOME}/.codex/config.toml" "${WORKSPACE_ROOT}/.codex/config.toml"
@@ -320,6 +347,19 @@ run_check() {
     printf "%-18s %-16s %-28b %-25s\n" "Resend" "${RESEND_VER}" "${RESEND_AUTH}" "mcp.resend.com (http)"
   fi
 
+  # Bitwarden
+  if command -v bw >/dev/null 2>&1; then
+    BW_VER="v$(bw --version 2>/dev/null)"
+    if bw login --check 2>&1 | grep -qi "You are logged in"; then
+      BW_AUTH="${CLR_GREEN}Authenticated${CLR_RESET}"
+    else
+      BW_AUTH="${CLR_YELLOW}Unauthenticated${CLR_RESET}"
+    fi
+    printf "%-18s %-16s %-28b %-25s\n" "Bitwarden" "${BW_VER}" "${BW_AUTH}" "secrets (vault)"
+  else
+    printf "%-18s %-16s %-28b %-25s\n" "Bitwarden" "Not Found" "${CLR_RED}Uninstalled${CLR_RESET}" "-"
+  fi
+
   echo "--------------------------------------------------------------------------------"
   echo -e "\n📖 Complete CLI Documentation available at: ${CLR_BOLD}${DOCS_FILE}${CLR_RESET}\n"
 }
@@ -331,7 +371,7 @@ show_help() {
   cat << USAGE_EOF
 Usage: $0 [OPTION]
 
-Zolexora TMS Ecosystem Provisioner & Health Audit
+Zolexora Platform Ecosystem Provisioner & Health Audit
 
 Options:
   -a, --all        Install missing CLIs, configure MCP, sync skills, and run check (Default)
@@ -339,12 +379,12 @@ Options:
   -i, --install    Install and verify all required CLI binaries
   -m, --mcp        Configure canonical mcp.json, symlinks, and Codex config
   -s, --skills     Synchronize Agent Skills across workspace and global locations
-  -d, --docs       Verify presence of docs/ECOSYSTEM_CLI_GUIDE.md
+  -d, --docs       Verify presence of documentation
   -h, --help       Show this help message
 
 Examples:
-  ./scripts/setup-cli-ecosystem.sh --check
-  ./scripts/setup-cli-ecosystem.sh --all
+  ./scripts/dev/setup-cli-ecosystem.sh --check
+  ./scripts/dev/setup-cli-ecosystem.sh --all
 USAGE_EOF
 }
 
