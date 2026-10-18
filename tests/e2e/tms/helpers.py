@@ -41,7 +41,6 @@ def find_tms_startup_scripts() -> List[Path]:
     root = get_repo_root()
     candidates = [
         root / "products" / "zolexora-tms" / "scripts" / "docker-start.sh",
-        root / "scripts" / "zolexora-tms" / "start-docker.sh",
     ]
     return [p for p in candidates if p.exists()]
 

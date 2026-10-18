@@ -383,8 +383,8 @@ Options:
   -h, --help       Show this help message
 
 Examples:
-  ./scripts/zolexora-tms/setup-cli-ecosystem.sh --check
-  ./scripts/zolexora-tms/setup-cli-ecosystem.sh --all
+  ./products/zolexora-tms/scripts/setup-cli-ecosystem.sh --check
+  ./products/zolexora-tms/scripts/setup-cli-ecosystem.sh --all
 USAGE_EOF
 }
 
