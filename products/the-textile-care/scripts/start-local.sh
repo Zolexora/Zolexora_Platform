@@ -3,22 +3,22 @@
 # scripts/textile-care/start-local.sh - The Textile Care Monorepo Development Server Launcher
 #
 # Usage:
-#   ./scripts/textile-care/start-local.sh [options] [app1 app2 ...]
+#   ./products/the-textile-care/scripts/start-local.sh [options] [app1 app2 ...]
 #
 # Examples:
-#   ./scripts/textile-care/start-local.sh                      # Launch interactive selection menu
-#   ./scripts/textile-care/start-local.sh admin-web            # Start only admin-web
-#   ./scripts/textile-care/start-local.sh backend              # Start only backend
-#   ./scripts/textile-care/start-local.sh admin-web backend    # Start admin-web and backend concurrently
-#   ./scripts/textile-care/start-local.sh all                  # Start all core applications
-#   ./scripts/textile-care/start-local.sh web                  # Start all web applications
-#   ./scripts/textile-care/start-local.sh --help               # Show help and usage information
+#   ./products/the-textile-care/scripts/start-local.sh                      # Launch interactive selection menu
+#   ./products/the-textile-care/scripts/start-local.sh admin-web            # Start only admin-web
+#   ./products/the-textile-care/scripts/start-local.sh backend              # Start only backend
+#   ./products/the-textile-care/scripts/start-local.sh admin-web backend    # Start admin-web and backend concurrently
+#   ./products/the-textile-care/scripts/start-local.sh all                  # Start all core applications
+#   ./products/the-textile-care/scripts/start-local.sh web                  # Start all web applications
+#   ./products/the-textile-care/scripts/start-local.sh --help               # Show help and usage information
 #
 
 set -eo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(dirname "$SCRIPT_DIR")"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 cd "$REPO_ROOT"
 
@@ -84,10 +84,10 @@ trap cleanup SIGINT SIGTERM EXIT
 # Help message
 show_help() {
   cat <<'EOF'
-The Textile Care - Development Server Launcher (scripts/textile-care/start-local.sh)
+The Textile Care - Development Server Launcher (products/the-textile-care/scripts/start-local.sh)
 
 Usage:
-  ./scripts/textile-care/start-local.sh [options] [app...]
+  ./products/the-textile-care/scripts/start-local.sh [options] [app...]
 
 Options:
   -h, --help        Show this help message and exit
@@ -110,12 +110,12 @@ Group Aliases:
   all                    Start all core services (admin-web, marketplace-web, seller-web, backend)
 
 Examples:
-  ./scripts/textile-care/start-local.sh                      # Launch interactive menu
-  ./scripts/textile-care/start-local.sh admin-web            # Start only admin-web
-  ./scripts/textile-care/start-local.sh backend              # Start only backend
-  ./scripts/textile-care/start-local.sh admin-web backend    # Start admin-web and backend concurrently
-  ./scripts/textile-care/start-local.sh 1 4                  # Start by number: admin-web and backend
-  ./scripts/textile-care/start-local.sh all                  # Start all core applications
+  ./products/the-textile-care/scripts/start-local.sh                      # Launch interactive menu
+  ./products/the-textile-care/scripts/start-local.sh admin-web            # Start only admin-web
+  ./products/the-textile-care/scripts/start-local.sh backend              # Start only backend
+  ./products/the-textile-care/scripts/start-local.sh admin-web backend    # Start admin-web and backend concurrently
+  ./products/the-textile-care/scripts/start-local.sh 1 4                  # Start by number: admin-web and backend
+  ./products/the-textile-care/scripts/start-local.sh all                  # Start all core applications
 EOF
 }
 
@@ -143,7 +143,7 @@ Application Groups:
 How to select:
   - Enter one or more numbers or app names separated by spaces
     (e.g., '1 4', 'admin-web backend', or 'all')
-  - Or run directly with arguments: ./scripts/textile-care/start-local.sh admin-web backend
+  - Or run directly with arguments: ./products/the-textile-care/scripts/start-local.sh admin-web backend
 
 EOF
 }
@@ -265,7 +265,7 @@ else
       : # Successfully read from pipe
     else
       # Reached EOF with no input (e.g. ./scripts/textile-care/start-local.sh < /dev/null)
-      echo "Tip: Run './scripts/textile-care/start-local.sh <app-name>' or run in an interactive terminal to select."
+      echo "Tip: Run './products/the-textile-care/scripts/start-local.sh <app-name>' or run in an interactive terminal to select."
       exit 0
     fi
   fi
