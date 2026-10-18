@@ -30,9 +30,12 @@ services:
       context: ./apps/backend
       dockerfile: Dockerfile
     container_name: tms-backend
+    ports:
+    - "${TMS_BACKEND_PORT:-4030}:4030"
     environment:
     - DATABASE_URL=postgresql://tms:password@postgres:5432/tms
     - FIREBASE_PROJECT_ID=zolexora-platform
+    - PATH=/app/.venv/bin:/usr/local/bin:/usr/bin:/bin
     depends_on:
       postgres:
         condition: service_healthy
@@ -124,6 +127,10 @@ services:
     - "${TMS_PORT:-3084}:80"
     depends_on:
       backend:
+        condition: service_healthy
+      tms-web:
+        condition: service_healthy
+      tms-admin:
         condition: service_healthy
     deploy:
       resources:

@@ -12,7 +12,7 @@ ARG PORT=3041
 ENV PORT=$PORT
 ARG BASE_PATH=/
 ENV BASE_PATH=$BASE_PATH
-RUN pnpm --filter "@workspace/client-web" build
+RUN pnpm --filter "@zolexora/engage-web" build
 
 FROM nginx:alpine
 COPY --from=builder /app/products/zolexora-engage/artifacts/client/web/dist /usr/share/nginx/html

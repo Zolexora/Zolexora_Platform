@@ -2,7 +2,7 @@ import { createRoot } from 'react-dom/client';
 
 import App from './app/App';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { setBaseUrl } from '@workspace/api-client-react';
+import { setBaseUrl } from '@zolexora/engage-api-client-react';
 
 import './index.css';
 

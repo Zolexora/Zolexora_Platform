@@ -39,4 +39,4 @@ do
   export "$variable=$value"
 done
 
-exec pnpm --filter @workspace/client-web dev
+exec pnpm --filter @zolexora/engage-web dev
