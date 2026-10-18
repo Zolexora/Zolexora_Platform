@@ -2,106 +2,102 @@
 set -e
 
 # Always execute from the repository root
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../.."
+REPO_ROOT="$(pwd)"
 
-echo "🔐 Checking dotenvx encryption key..."
-if [ -z "$DOTENV_PRIVATE_KEY" ]; then
-    if [ -f .env.keys ]; then
-        echo "   Using local .env.keys file."
-    else
-        echo "   No .env.keys found. Fetching from Bitwarden..."
-        if [ -f .env.local ]; then
-            export $(grep -v '^#' .env.local | xargs)
-        fi
-        if [ -n "${BW_CLIENTID:-}" ] && [ -n "${BW_CLIENTSECRET:-}" ]; then
-            bw login --apikey >/dev/null 2>&1 || true
-        fi
-        BW_SESSION=$(bw unlock --passwordenv BW_MASTER_PASSWORD --raw 2>/dev/null)
-        if [ -n "$BW_SESSION" ]; then
-            export DOTENV_PRIVATE_KEY=$(bw get notes "ZOLEXORA TMS DOTENV_PRIVATE_KEY" --session "$BW_SESSION" 2>/dev/null)
-            echo "   ✅ Key loaded from Bitwarden."
-        else
-            echo "   ❌ Failed to unlock Bitwarden. Cannot decrypt .env file."
-            exit 1
-        fi
-    fi
-fi
+COMPOSE_FILE="products/zolexora-tms/compose.yaml"
+INFISICAL_PROJECT_ID="188824cd-59ce-468f-b60f-f2da7aeefe63"
+INFISICAL_ENV="dev"
+INFISICAL_PATH="/Zolexora_Auth_TMS"
 
-echo "📦 Generating decrypted environment for Docker..."
-pnpm dotenvx get -f config/envs/zolexora-erp/erp.env --format json 2>/dev/null | jq -r 'to_entries | map("\(.key)=\(.value|tostring)") | .[]' > .env.docker
-
-# Ensure .env.docker gets deleted when the script exits
-cleanup_env() {
-    rm -f .env.docker
+# Non-blocking secret injection helper
+run_compose() {
+  if [ -n "$INFISICAL_TOKEN" ] || [ -n "$INFISICAL_ACCESS_TOKEN" ] || { command -v infisical >/dev/null 2>&1 && infisical login status >/dev/null 2>&1; }; then
+    echo "🔐 Infisical credentials detected - executing with runtime secret injection..."
+    infisical run --projectId="$INFISICAL_PROJECT_ID" --env="$INFISICAL_ENV" --path="$INFISICAL_PATH" -- docker compose -f "$COMPOSE_FILE" "$@"
+  else
+    echo "⚠️  Infisical not authenticated or unavailable."
+    echo "ℹ️  Run 'infisical login' or export INFISICAL_TOKEN to enable automatic secret injection."
+    echo "ℹ️  Executing docker compose with existing environment..."
+    docker compose -f "$COMPOSE_FILE" "$@"
+  fi
 }
-trap cleanup_env EXIT
 
-ACTION=${1:-start}
+start_stack() {
+  echo "======================================"
+  echo "🚀 Starting Zolexora TMS Stack"
+  echo "======================================"
+  run_compose up -d --build "$@"
+  echo ""
+  echo "✅ Zolexora TMS Stack status:"
+  docker compose -f "$COMPOSE_FILE" ps
+}
 
-if [ "$ACTION" = "stop" ] || [ "$ACTION" = "down" ]; then
-    echo "Stopping Zolexora TMS containers..."
-    docker compose -f infrastructure/docker-compose.yml down
+# Subcommand parsing
+ACTION=""
+if [ $# -gt 0 ]; then
+  ACTION="$1"
+  shift
+elif [ ! -t 0 ]; then
+  ACTION="start"
+else
+  # Interactive mode without arguments
+  echo "======================================"
+  echo " Zolexora TMS - Docker Infrastructure"
+  echo "======================================"
+  echo "Which action would you like to perform?"
+  echo "1) Start / Up all services (Default)"
+  echo "2) Stop / Down all services"
+  echo "3) Restart all services"
+  echo "4) Build all services"
+  echo "5) Status / PS"
+  echo "6) View Logs"
+  echo "0) Cancel"
+  echo "======================================"
+  read -p "Select an option [1]: " OPTION
+  OPTION=${OPTION:-1}
+  case "$OPTION" in
+    1) ACTION="start" ;;
+    2) ACTION="stop" ;;
+    3) ACTION="restart" ;;
+    4) ACTION="build" ;;
+    5) ACTION="status" ;;
+    6) ACTION="logs" ;;
+    0) echo "Cancelled."; exit 0 ;;
+    *) echo "Invalid option. Exiting."; exit 1 ;;
+  esac
+fi
+
+case "$ACTION" in
+  start|up)
+    start_stack "$@"
+    ;;
+  stop|down)
+    echo "🛑 Stopping Zolexora TMS Stack..."
+    docker compose -f "$COMPOSE_FILE" down "$@"
     echo "All services stopped."
-    exit 0
-fi
-
-# If specific services were passed as arguments (e.g. ./docker-start.sh start backend)
-if [ $# -gt 1 ]; then
-    shift
-    SERVICES="$*"
-    echo "Building and starting specific services: $SERVICES"
-    docker compose -f infrastructure/docker-compose.yml up --build -d $SERVICES
-    exit 0
-fi
-
-echo "======================================"
-echo " Zolexora TMS - Docker Infrastructure"
-echo "======================================"
-echo "Which services would you like to start?"
-echo "1) All Services (Default)"
-echo "2) Backend API + Redis"
-echo "3) TMS Frontend"
-echo "4) Admin Dashboard"
-echo "5) Custom (type specific names)"
-echo "0) Cancel"
-echo "======================================"
-read -p "Select an option [1]: " OPTION
-
-# Default to option 1 if empty
-OPTION=${OPTION:-1}
-
-SERVICES=""
-case $OPTION in
-    1) SERVICES="" ;; # empty means all services
-    2) SERVICES="backend redis" ;;
-    3) SERVICES="tms" ;;
-    4) SERVICES="admin" ;;
-    5) 
-        read -p "Enter service names (e.g. backend tms): " SERVICES
-        ;;
-    0) 
-        echo "Cancelled."
-        exit 0 
-        ;;
-    *) 
-        echo "Invalid option. Exiting."
-        exit 1 
-        ;;
+    ;;
+  restart)
+    echo "🔄 Restarting Zolexora TMS Stack..."
+    docker compose -f "$COMPOSE_FILE" down
+    start_stack "$@"
+    ;;
+  build)
+    echo "🔨 Building Zolexora TMS Containers..."
+    run_compose build "$@"
+    ;;
+  status|ps)
+    docker compose -f "$COMPOSE_FILE" ps "$@"
+    ;;
+  logs)
+    if [ $# -eq 0 ]; then
+      docker compose -f "$COMPOSE_FILE" logs -f
+    else
+      docker compose -f "$COMPOSE_FILE" logs "$@"
+    fi
+    ;;
+  *)
+    echo "Usage: $0 {start|up|stop|down|restart|build|status|ps|logs} [services...]"
+    exit 1
+    ;;
 esac
-
-echo "Building and starting containers..."
-# We intentionally do not quote $SERVICES so it expands to multiple arguments
-docker compose -f infrastructure/docker-compose.yml up --build -d $SERVICES
-
-echo "======================================"
-echo "Services started successfully!"
-if [[ -z "$SERVICES" || "$SERVICES" == *"tms"* ]]; then
-    echo "- TMS Frontend: http://localhost:3000"
-fi
-if [[ -z "$SERVICES" || "$SERVICES" == *"admin"* ]]; then
-    echo "- Admin Dashboard: http://localhost:3001"
-fi
-if [[ -z "$SERVICES" || "$SERVICES" == *"backend"* ]]; then
-    echo "- Backend API: http://localhost:4030/docs"
-fi
-echo "======================================"

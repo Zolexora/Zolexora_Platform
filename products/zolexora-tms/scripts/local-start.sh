@@ -114,13 +114,13 @@ fi
 
 if [[ "$SERVICES" == *"tms"* ]]; then
     echo "Starting TMS Frontend..."
-    pnpm --filter zolexora-tms run dev &
+    pnpm --filter @zolexora/tms-web run dev &
     PIDS="$PIDS $!"
 fi
 
 if [[ "$SERVICES" == *"admin"* ]]; then
     echo "Starting Admin Dashboard..."
-    pnpm --filter zolexora-tms-admin run dev &
+    pnpm --filter @zolexora/tms-admin run dev &
     PIDS="$PIDS $!"
 fi
 

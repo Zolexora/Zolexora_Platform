@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { Router, type IRouter, type Request } from "express";
-import { SendWhatsAppMessageBody } from "@workspace/api-zod";
+import { SendWhatsAppMessageBody } from "@zolexora/engage-api-zod";
 
 const router: IRouter = Router();
 const graphVersion = "v23.0";

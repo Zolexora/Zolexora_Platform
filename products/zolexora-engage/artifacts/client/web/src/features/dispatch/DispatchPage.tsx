@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode 
 import { AlertCircle, ArrowUpRight, Bell, Check, CheckCircle2, ChevronDown, ClipboardCheck, CloudUpload, Download, FileSpreadsheet, Filter, Info, LayoutDashboard, LogOut, Menu, MessageCircle, PanelLeftClose, PanelLeftOpen, Pencil, RefreshCw, Search, Send, Sparkles, Upload, Users, X, XCircle } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { supabase } from '@/lib/Supabase';
-import { getWhatsAppMessageStatuses, sendWhatsAppMessage } from '@workspace/api-client-react';
+import { getWhatsAppMessageStatuses, sendWhatsAppMessage } from '@zolexora/engage-api-client-react';
 
 type DeliveryStatus = 'pending' | 'ready' | 'blocked' | 'sent' | 'delivered' | 'read' | 'failed';
 type DriverRecord = {
