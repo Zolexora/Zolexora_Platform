@@ -2,27 +2,21 @@ ARG APP_PATH=apps/marketplace-web
 FROM node:22-alpine AS builder
 ARG APP_PATH
 WORKDIR /app
-COPY products/the-textile-care/package.json ./package.json
-COPY pnpm-lock.yaml ./pnpm-lock.yaml
-COPY products/the-textile-care/pnpm-workspace.yaml ./pnpm-workspace.yaml
-COPY products/the-textile-care/tsconfig.base.json ./tsconfig.base.json
 
-COPY products/the-textile-care/packages ./packages
-COPY packages/api-contracts ./packages/api-contracts
-COPY packages/tsconfig ./packages/tsconfig
-COPY products/the-textile-care/platform ./platform
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages ./packages
+COPY products/the-textile-care ./products/the-textile-care
 
-COPY products/the-textile-care/${APP_PATH} ./${APP_PATH}
 RUN corepack enable && corepack prepare pnpm@9 --activate
 RUN ln -s /app/packages /packages
 RUN pnpm config set ignore-scripts true && pnpm install --no-frozen-lockfile
-RUN pnpm --filter "./${APP_PATH}" build
+RUN pnpm --filter "./products/the-textile-care/${APP_PATH}" build
 
 FROM node:22-alpine
 WORKDIR /app
 ARG APP_PATH
-COPY --from=builder /app/${APP_PATH}/.next/standalone ./
-COPY --from=builder /app/${APP_PATH}/.next/static ./.next/static
-COPY --from=builder /app/${APP_PATH}/public ./public
+COPY --from=builder /app/products/the-textile-care/${APP_PATH}/.next/standalone ./
+COPY --from=builder /app/products/the-textile-care/${APP_PATH}/.next/static ./.next/static
+COPY --from=builder /app/products/the-textile-care/${APP_PATH}/public ./public
 EXPOSE 3000
 CMD ["sh", "-c", "node ${APP_PATH}/server.js"]
