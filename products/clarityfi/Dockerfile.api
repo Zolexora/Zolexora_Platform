@@ -5,7 +5,7 @@ WORKDIR /app
 
 # Copy workspace config
 COPY products/clarityfi/package.json ./package.json
-COPY products/clarityfi/pnpm-lock.yaml ./pnpm-lock.yaml
+COPY pnpm-lock.yaml ./pnpm-lock.yaml
 COPY products/clarityfi/pnpm-workspace.yaml ./pnpm-workspace.yaml
 COPY products/clarityfi/tsconfig.base.json ./tsconfig.base.json
 COPY products/clarityfi/tsconfig.json ./tsconfig.json

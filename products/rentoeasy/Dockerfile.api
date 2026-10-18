@@ -3,7 +3,7 @@ RUN corepack enable && corepack prepare pnpm@9 --activate
 WORKDIR /app
 
 COPY products/rentoeasy/package.json ./package.json
-COPY products/rentoeasy/pnpm-lock.yaml ./pnpm-lock.yaml
+COPY pnpm-lock.yaml ./pnpm-lock.yaml
 COPY products/rentoeasy/pnpm-workspace.yaml ./pnpm-workspace.yaml
 COPY products/rentoeasy/tsconfig.base.json ./tsconfig.base.json
 
