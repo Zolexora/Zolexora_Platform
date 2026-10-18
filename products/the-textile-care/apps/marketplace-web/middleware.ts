@@ -30,7 +30,7 @@ function resolveTenantFromHost(host: string): {
   domain: string;
 } {
   // Production tenant resolution — extends here when TenantResolver API is available
-  // ponytail: replace with real tenant API call when @ttc/tenant resolver is wired
+  // ponytail: replace with real tenant API call when @zolexora/ttc-tenant resolver is wired
 
   const marketplace = process.env.NEXT_PUBLIC_MARKETPLACE_DOMAIN ?? 'thetextilecare.com';
 

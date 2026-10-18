@@ -1,7 +1,7 @@
 import { Link }         from 'react-router-dom'
 import { MapPin, Wifi, Wind, Car, Star, Heart } from 'lucide-react'
 import { useState }       from 'react'
-import { formatCurrency } from '@rent-stay/utils'
+import { formatCurrency } from '@zolexora/rentoeasy-utils'
 
 interface Photo  { url: string; thumbnailUrl: string; isPrimary: boolean }
 interface Amenity { amenity: { name: string; icon: string } }

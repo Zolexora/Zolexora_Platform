@@ -17,9 +17,9 @@
     "declarationMap": true,
     "sourceMap": true,
     "paths": {
-      "@rent-stay/types": ["./packages/shared-types/src/index.ts"],
-      "@rent-stay/utils": ["./packages/shared-utils/src/index.ts"],
-      "@rent-stay/ui": ["./packages/ui-web/src/index.ts"]
+      "@zolexora/rentoeasy-types": ["./packages/shared-types/src/index.ts"],
+      "@zolexora/rentoeasy-utils": ["./packages/shared-utils/src/index.ts"],
+      "@zolexora/rentoeasy-ui": ["./packages/ui-web/src/index.ts"]
     }
   },
   "exclude": ["node_modules"]

@@ -9,8 +9,8 @@
     "types": ["node", "vite/client"],
     "paths": {
       "@/*": ["src/*"],
-      "@rent-stay/types": ["../../packages/shared-types/src/index.ts"],
-      "@rent-stay/utils": ["../../packages/shared-utils/src/index.ts"]
+      "@zolexora/rentoeasy-types": ["../../packages/shared-types/src/index.ts"],
+      "@zolexora/rentoeasy-utils": ["../../packages/shared-utils/src/index.ts"]
     }
   },
   "include": ["src", "vite.config.ts"]

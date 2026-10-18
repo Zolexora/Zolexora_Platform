@@ -1,5 +1,5 @@
 {
-  "name": "@rent-stay/types",
+  "name": "@zolexora/rentoeasy-types",
   "version": "1.0.0",
   "private": true,
   "main": "./src/index.ts",
@@ -8,6 +8,6 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@zolexora/api-contracts": "file:../../../../packages/api-contracts"
+    "@zolexora/api-contracts": "workspace:*"
   }
 }

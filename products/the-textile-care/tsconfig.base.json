@@ -18,13 +18,13 @@
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
     "paths": {
-      "@ttc/types": ["./packages/types/src/index.ts"],
-      "@ttc/config": ["./packages/config/src/index.ts"],
-      "@ttc/auth": ["./packages/auth/src/index.ts"],
-      "@ttc/tenant": ["./packages/tenant/src/index.ts"],
-      "@ttc/api-client": ["./packages/api-client/src/index.ts"],
-      "@ttc/branding": ["./packages/branding/src/index.ts"],
-      "@ttc/ui": ["./packages/ui/src/index.ts"]
+      "@zolexora/ttc-types": ["./packages/types/src/index.ts"],
+      "@zolexora/ttc-config": ["./packages/config/src/index.ts"],
+      "@zolexora/ttc-auth": ["./packages/auth/src/index.ts"],
+      "@zolexora/ttc-tenant": ["./packages/tenant/src/index.ts"],
+      "@zolexora/ttc-api-client": ["./packages/api-client/src/index.ts"],
+      "@zolexora/ttc-branding": ["./packages/branding/src/index.ts"],
+      "@zolexora/ttc-ui": ["./packages/ui/src/index.ts"]
     }
   }
 }

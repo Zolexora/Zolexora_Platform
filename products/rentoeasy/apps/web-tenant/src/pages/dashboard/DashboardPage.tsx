@@ -7,7 +7,7 @@ import {
 } from 'lucide-react'
 import { bookingsAPI, paymentsAPI } from '@/services/api'
 import { useAuthStore }             from '@/store/authStore'
-import { formatCurrency }           from '@rent-stay/utils'
+import { formatCurrency }           from '@zolexora/rentoeasy-utils'
 import KYCBanner                    from '@/components/kyc/KYCBanner'
 
 const STATUS_CONFIG: Record<string, { label: string; cls: string; icon: any }> = {

@@ -1,5 +1,5 @@
-import { Button, Card, Logo } from '@ttc/ui';
-import type { TenantConfiguration } from '@ttc/branding';
+import { Button, Card, Logo } from '@zolexora/ttc-ui';
+import type { TenantConfiguration } from '@zolexora/ttc-branding';
 
 // Simulated configuration resolution (in reality, this would fetch from /api/v1/public/configuration)
 const MOCK_CONFIG: TenantConfiguration = {

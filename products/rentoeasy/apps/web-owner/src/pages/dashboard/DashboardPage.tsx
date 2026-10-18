@@ -7,7 +7,7 @@ import {
 } from 'lucide-react'
 import { paymentsAPI, bookingsAPI, propertiesAPI, kycAPI } from '@/services/api'
 import { useAuthStore } from '@/store/authStore'
-import { formatCurrency } from '@rent-stay/utils'
+import { formatCurrency } from '@zolexora/rentoeasy-utils'
 
 export default function DashboardPage() {
   const { user } = useAuthStore()

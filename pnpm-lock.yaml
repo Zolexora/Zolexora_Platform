@@ -280,15 +280,15 @@ importers:
 
   products/rentoeasy/apps/web-admin:
     dependencies:
-      '@rent-stay/types':
-        specifier: workspace:*
-        version: link:../../packages/shared-types
-      '@rent-stay/utils':
-        specifier: workspace:*
-        version: link:../../packages/shared-utils
       '@tanstack/react-query':
         specifier: ^5.40.0
         version: 5.104.2(react@19.1.0)
+      '@zolexora/rentoeasy-types':
+        specifier: workspace:*
+        version: link:../../packages/shared-types
+      '@zolexora/rentoeasy-utils':
+        specifier: workspace:*
+        version: link:../../packages/shared-utils
       axios:
         specifier: ^1.16.1
         version: 1.20.0
@@ -332,15 +332,15 @@ importers:
 
   products/rentoeasy/apps/web-owner:
     dependencies:
-      '@rent-stay/types':
-        specifier: workspace:*
-        version: link:../../packages/shared-types
-      '@rent-stay/utils':
-        specifier: workspace:*
-        version: link:../../packages/shared-utils
       '@tanstack/react-query':
         specifier: ^5.40.0
         version: 5.104.2(react@19.1.0)
+      '@zolexora/rentoeasy-types':
+        specifier: workspace:*
+        version: link:../../packages/shared-types
+      '@zolexora/rentoeasy-utils':
+        specifier: workspace:*
+        version: link:../../packages/shared-utils
       axios:
         specifier: ^1.7.0
         version: 1.20.0
@@ -396,15 +396,15 @@ importers:
 
   products/rentoeasy/apps/web-tenant:
     dependencies:
-      '@rent-stay/types':
-        specifier: workspace:*
-        version: link:../../packages/shared-types
-      '@rent-stay/utils':
-        specifier: workspace:*
-        version: link:../../packages/shared-utils
       '@tanstack/react-query':
         specifier: ^5.40.0
         version: 5.104.2(react@19.1.0)
+      '@zolexora/rentoeasy-types':
+        specifier: workspace:*
+        version: link:../../packages/shared-types
+      '@zolexora/rentoeasy-utils':
+        specifier: workspace:*
+        version: link:../../packages/shared-utils
       axios:
         specifier: ^1.7.0
         version: 1.20.0
@@ -461,7 +461,7 @@ importers:
   products/rentoeasy/packages/shared-types:
     dependencies:
       '@zolexora/api-contracts':
-        specifier: file:../../../../packages/api-contracts
+        specifier: workspace:*
         version: link:../../../../packages/api-contracts
 
   products/rentoeasy/packages/shared-utils: {}
@@ -504,10 +504,10 @@ importers:
 
   products/the-textile-care/apps/admin-web:
     dependencies:
-      '@ttc/config':
+      '@zolexora/ttc-config':
         specifier: workspace:*
         version: link:../../packages/config
-      '@ttc/ui':
+      '@zolexora/ttc-ui':
         specifier: workspace:*
         version: link:../../packages/ui
       next:
@@ -544,10 +544,10 @@ importers:
 
   products/the-textile-care/apps/driver-mobile:
     dependencies:
-      '@ttc/api-client':
+      '@zolexora/ttc-api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
-      '@ttc/config':
+      '@zolexora/ttc-config':
         specifier: workspace:*
         version: link:../../packages/config
       expo:
@@ -572,10 +572,10 @@ importers:
 
   products/the-textile-care/apps/marketplace-mobile:
     dependencies:
-      '@ttc/api-client':
+      '@zolexora/ttc-api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
-      '@ttc/config':
+      '@zolexora/ttc-config':
         specifier: workspace:*
         version: link:../../packages/config
       expo:
@@ -648,25 +648,25 @@ importers:
       '@tanstack/react-query':
         specifier: '5'
         version: 5.104.2(react@19.1.0)
-      '@ttc/api-client':
+      '@zolexora/ttc-api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
-      '@ttc/auth':
+      '@zolexora/ttc-auth':
         specifier: workspace:*
         version: link:../../packages/auth
-      '@ttc/branding':
+      '@zolexora/ttc-branding':
         specifier: workspace:*
         version: link:../../packages/branding
-      '@ttc/config':
+      '@zolexora/ttc-config':
         specifier: workspace:*
         version: link:../../packages/config
-      '@ttc/tenant':
+      '@zolexora/ttc-tenant':
         specifier: workspace:*
         version: link:../../packages/tenant
-      '@ttc/types':
+      '@zolexora/ttc-types':
         specifier: workspace:*
         version: link:../../packages/types
-      '@ttc/ui':
+      '@zolexora/ttc-ui':
         specifier: workspace:*
         version: link:../../packages/ui
       class-variance-authority:
@@ -730,13 +730,13 @@ importers:
 
   products/the-textile-care/apps/seller-mobile:
     dependencies:
-      '@ttc/api-client':
+      '@zolexora/ttc-api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
-      '@ttc/branding':
+      '@zolexora/ttc-branding':
         specifier: workspace:^
         version: link:../../packages/branding
-      '@ttc/config':
+      '@zolexora/ttc-config':
         specifier: workspace:*
         version: link:../../packages/config
       expo:
@@ -761,13 +761,13 @@ importers:
 
   products/the-textile-care/apps/seller-web:
     dependencies:
-      '@ttc/branding':
+      '@zolexora/ttc-branding':
         specifier: workspace:^
         version: link:../../packages/branding
-      '@ttc/config':
+      '@zolexora/ttc-config':
         specifier: workspace:*
         version: link:../../packages/config
-      '@ttc/ui':
+      '@zolexora/ttc-ui':
         specifier: workspace:*
         version: link:../../packages/ui
       next:
@@ -815,7 +815,7 @@ importers:
   products/the-textile-care/packages/types:
     dependencies:
       '@zolexora/api-contracts':
-        specifier: file:../../../../packages/api-contracts
+        specifier: workspace:*
         version: link:../../../../packages/api-contracts
 
   products/the-textile-care/packages/ui:

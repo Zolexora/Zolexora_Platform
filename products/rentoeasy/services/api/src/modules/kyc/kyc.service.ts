@@ -10,7 +10,7 @@ import axios from 'axios'
 import FormData from 'form-data'
 import { PrismaService } from '../../prisma/prisma.service'
 import { UploadService } from '../../config/upload.service'
-import { generateAadhaarPasswords } from '@rent-stay/utils'
+import { generateAadhaarPasswords } from '@zolexora/rentoeasy-utils'
 import { VerifyPANDto, VerifyBankDto, AdminKYCActionDto } from './dto/kyc.dto'
 
 @Injectable()

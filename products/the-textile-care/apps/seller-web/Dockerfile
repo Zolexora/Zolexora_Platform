@@ -19,7 +19,7 @@ WORKDIR /app
 COPY products/TheTextileCare .
 ARG NEXT_PUBLIC_API_BASE_URL=http://localhost:4010
 ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
-RUN pnpm --filter @ttc/seller-web build
+RUN pnpm --filter @zolexora/ttc-seller-web build
 
 FROM base AS runner
 WORKDIR /app

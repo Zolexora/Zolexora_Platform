@@ -13,7 +13,7 @@ import React from 'react';
 import { Star, Clock, CheckCircle2, Circle, Loader2, MapPin } from 'lucide-react';
 import { cn, formatCurrency, truncate } from '@/lib/utils';
 import { Badge, Card, CardContent, Avatar, AvatarImage, AvatarFallback, Skeleton } from './ui';
-import type { OrderStatus } from '@ttc/types';
+import type { OrderStatus } from '@zolexora/ttc-types';
 
 // ---------------------------------------------------------------------------
 // StarRating

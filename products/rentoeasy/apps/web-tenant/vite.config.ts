@@ -7,8 +7,8 @@ export default defineConfig({
   resolve: {
     alias: {
       '@':             path.resolve(__dirname, './src'),
-      '@rent-stay/types': path.resolve(__dirname, '../../packages/shared-types/src'),
-      '@rent-stay/utils': path.resolve(__dirname, '../../packages/shared-utils/src/index.ts'),
+      '@zolexora/rentoeasy-types': path.resolve(__dirname, '../../packages/shared-types/src'),
+      '@zolexora/rentoeasy-utils': path.resolve(__dirname, '../../packages/shared-utils/src/index.ts'),
     },
   },
   server: { port: 3001 },

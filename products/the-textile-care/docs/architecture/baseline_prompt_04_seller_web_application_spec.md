@@ -74,15 +74,15 @@ It consumes:
 ```text
 TTC Backend APIs
 +
-@ttc/types
+@zolexora/ttc-types
 +
-@ttc/ui
+@zolexora/ttc-ui
 +
-@ttc/api-client
+@zolexora/ttc-api-client
 +
-@ttc/auth
+@zolexora/ttc-auth
 +
-@ttc/tenant
+@zolexora/ttc-tenant
 ```
 
 where those packages exist in the repository.
@@ -1785,7 +1785,7 @@ Do not invent API responses in frontend code.
 Seller-Web must use:
 
 ```text
-@ttc/types
+@zolexora/ttc-types
 ```
 
 for shared contracts.
@@ -1815,7 +1815,7 @@ Do not duplicate interfaces inside components.
 Use:
 
 ```text
-@ttc/api-client
+@zolexora/ttc-api-client
 ```
 
 or the repository's established API abstraction.

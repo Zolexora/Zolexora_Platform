@@ -15,7 +15,7 @@
     "noImplicitAny": false,
     "strictPropertyInitialization": false,
     "paths": {
-      "@rent-stay/utils": ["../../packages/shared-utils/dist/index.d.ts"]
+      "@zolexora/rentoeasy-utils": ["../../packages/shared-utils/dist/index.d.ts"]
     }
   },
   "include": ["src/**/*.ts", "prisma/**/*.ts"],

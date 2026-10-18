@@ -25,7 +25,7 @@ import type {
   CustomerAddressUpdate,
   PricingCalculationRequest,
   OrderCreateRequest,
-} from '@ttc/types';
+} from '@zolexora/ttc-types';
 
 // ---------------------------------------------------------------------------
 // Query keys — centralised for cache invalidation consistency

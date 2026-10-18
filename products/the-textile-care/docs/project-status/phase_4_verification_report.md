@@ -26,8 +26,8 @@ The **Phase 4** foundation has been fully implemented, tested, committed cleanly
 - [x] **REST API (`api/v1/catalog.py`)**: Exposed clean RESTful patterns under `/api/v1/catalog/...` ensuring hierarchical routing.
 
 ## 4. Frontend Ecosystem Prep
-- [x] **Shared Types (`@ttc/types`)**: Implemented explicit TypeScript interfaces (`Catalog`, `Category`, `Service`, etc.) in `packages/types/src/catalog.ts`.
-- [x] **Build Integrity**: Verified `pnpm build` across all 13 monorepo packages to ensure the `@ttc/types` package exports cleanly to Next.js and React Native consumers without compilation errors.
+- [x] **Shared Types (`@zolexora/ttc-types`)**: Implemented explicit TypeScript interfaces (`Catalog`, `Category`, `Service`, etc.) in `packages/types/src/catalog.ts`.
+- [x] **Build Integrity**: Verified `pnpm build` across all 13 monorepo packages to ensure the `@zolexora/ttc-types` package exports cleanly to Next.js and React Native consumers without compilation errors.
 
 ## 5. Security & Isolation Testing
 - [x] **`test_catalog_lifecycle`**: Programmatically asserts the complete sequence of creating a Catalog -> Category -> Service -> Item -> Addon -> Activation.

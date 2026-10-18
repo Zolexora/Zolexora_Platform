@@ -1,4 +1,4 @@
-import { Button, Card, Logo } from '@ttc/ui';
+import { Button, Card, Logo } from '@zolexora/ttc-ui';
 export default function Page() {
   return (
     <main className="min-h-screen bg-slate-950 p-10 text-slate-50">

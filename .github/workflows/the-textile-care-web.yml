@@ -22,6 +22,6 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @ttc/marketplace-web build
-      - run: pnpm --filter @ttc/seller-web build
-      - run: pnpm --filter @ttc/admin-web build
+      - run: pnpm --filter @zolexora/ttc-marketplace-web build
+      - run: pnpm --filter @zolexora/ttc-seller-web build
+      - run: pnpm --filter @zolexora/ttc-admin-web build

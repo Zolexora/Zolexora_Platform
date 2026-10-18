@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { UploadService } from '../../config/upload.service'
-import { generateReceiptNumber } from '@rent-stay/utils'
+import { generateReceiptNumber } from '@zolexora/rentoeasy-utils'
 
 export interface ReceiptData {
   receiptNumber:  string

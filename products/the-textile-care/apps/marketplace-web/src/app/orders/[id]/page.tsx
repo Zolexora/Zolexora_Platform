@@ -8,7 +8,7 @@ import { Button, Card, CardContent, Skeleton, EmptyState, Separator } from '@/co
 import { OrderStatusBadge, OrderTimeline, type TimelineEvent } from '@/components/marketplace';
 import { useOrder } from '@/lib/queries';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import type { OrderStatus } from '@ttc/types';
+import type { OrderStatus } from '@zolexora/ttc-types';
 
 // Map order status to timeline events
 function buildTimeline(status: OrderStatus, history: Array<{ to_status: string; created_at: string }>): TimelineEvent[] {
