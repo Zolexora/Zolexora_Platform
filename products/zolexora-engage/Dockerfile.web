@@ -15,5 +15,5 @@ ENV BASE_PATH=$BASE_PATH
 RUN pnpm --filter "@zolexora/engage-web" build
 
 FROM nginx:alpine
-COPY --from=builder /app/products/zolexora-engage/artifacts/client/web/dist /usr/share/nginx/html
+COPY --from=builder /app/products/zolexora-engage/apps/web/dist /usr/share/nginx/html
 EXPOSE 80
