@@ -16,12 +16,12 @@
     "dev:admin": "pnpm --filter @zolexora/tms-admin run dev",
     "dev:admin:infisical": "infisical run --env=dev --path=/Zolexora_Auth_TMS -- pnpm --filter @zolexora/tms-admin run dev",
     "test:backend": "apps/backend/.venv/bin/pytest apps/backend/tests/",
-    "cli:check": "bash scripts/setup-cli-ecosystem.sh --check",
-    "cli:setup": "bash scripts/setup-cli-ecosystem.sh",
-    "cli:docs": "bash scripts/setup-cli-ecosystem.sh --docs",
-    "ecosystem:check": "bash scripts/setup-cli-ecosystem.sh --check",
-    "ecosystem:setup": "bash scripts/setup-cli-ecosystem.sh",
-    "ecosystem:docs": "bash scripts/setup-cli-ecosystem.sh --docs"
+    "cli:check": "bash ../../scripts/dev/setup-cli-ecosystem.sh --check",
+    "cli:setup": "bash ../../scripts/dev/setup-cli-ecosystem.sh",
+    "cli:docs": "bash ../../scripts/dev/setup-cli-ecosystem.sh --docs",
+    "ecosystem:check": "bash ../../scripts/dev/setup-cli-ecosystem.sh --check",
+    "ecosystem:setup": "bash ../../scripts/dev/setup-cli-ecosystem.sh",
+    "ecosystem:docs": "bash ../../scripts/dev/setup-cli-ecosystem.sh --docs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",

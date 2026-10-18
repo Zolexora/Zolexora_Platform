@@ -30,7 +30,11 @@
     "dev:ironclub:mobile:member": "pnpm --filter @zolexora/ironclub-member-mobile start",
     "dev:ironclub:api": "products/zolexora-ironclub/apps/backend/.venv/bin/python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 4060 --app-dir products/zolexora-ironclub/apps/backend",
     "build:ironclub": "pnpm --filter \"@zolexora/ironclub-*\" build",
-    "start:ironclub": "bash products/zolexora-ironclub/scripts/dev.sh"
+    "start:ironclub": "bash products/zolexora-ironclub/scripts/dev.sh",
+    "ecosystem:check": "bash scripts/dev/setup-cli-ecosystem.sh --check",
+    "ecosystem:setup": "bash scripts/dev/setup-cli-ecosystem.sh",
+    "cli:check": "bash scripts/dev/setup-cli-ecosystem.sh --check",
+    "cli:setup": "bash scripts/dev/setup-cli-ecosystem.sh"
   },
   "devDependencies": {
     "turbo": "^2.11.7",

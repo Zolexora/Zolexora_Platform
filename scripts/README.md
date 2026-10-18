@@ -46,7 +46,7 @@ Product-specific deployment, lifecycle, and testing scripts are located in their
 | **Zolexora IMS** | [`products/zolexora-ims/scripts/`](../products/zolexora-ims/scripts/) | `setup.sh`, `deploy.sh`, `check-health.sh`, `db-ops.sh`, `docker-ops.sh`, `menu.sh`, `run-all-tests.sh`, `sync-env.sh`, `mcp-payments-server.py` |
 | **Zolexora IronClub** | [`products/zolexora-ironclub/scripts/`](../products/zolexora-ironclub/scripts/) | `dev.sh`, `test.sh` |
 | **Zolexora Marketplace** | [`products/zolexora-marketplace/scripts/`](../products/zolexora-marketplace/scripts/) | `check-openapi-drift.sh`, `generate-openapi.py`, `validate-doc-links.py`, `verify-workspace.mjs` |
-| **Zolexora TMS** | [`products/zolexora-tms/scripts/`](../products/zolexora-tms/scripts/) | `docker-start.sh`, `local-start.sh`, `setup-cli-ecosystem.sh` |
+| **Zolexora TMS** | [`products/zolexora-tms/scripts/`](../products/zolexora-tms/scripts/) | `docker-start.sh`, `local-start.sh` |
 
 ---
 
