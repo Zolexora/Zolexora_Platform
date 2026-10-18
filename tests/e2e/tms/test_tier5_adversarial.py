@@ -476,7 +476,7 @@ class TestTier5Domain6EnvAndResources(unittest.TestCase):
 
     def test_adv_33_subcommand_flag_passthrough_in_script(self):
         """Verify startup script passes subcommands and flags (e.g. ps --services) cleanly."""
-        script = get_repo_root() / "scripts" / "zolexora-tms" / "start-docker.sh"
+        script = get_repo_root() / "products" / "zolexora-tms" / "scripts" / "docker-start.sh"
         rc, stdout, stderr = run_cmd([str(script), "ps", "--services"], timeout=10.0)
         self.assertEqual(rc, 0)
         services = set(stdout.strip().split())
@@ -540,7 +540,7 @@ class TestTier5Domain7OperationalHardening(unittest.TestCase):
 
     def test_adv_38_script_invocation_from_external_cwd(self):
         """Verify startup script executes properly when invoked from external working directory."""
-        script = get_repo_root() / "scripts" / "zolexora-tms" / "start-docker.sh"
+        script = get_repo_root() / "products" / "zolexora-tms" / "scripts" / "docker-start.sh"
         rc, stdout, stderr = run_cmd([str(script), "status"], cwd=Path("/tmp"), timeout=10.0)
         self.assertEqual(rc, 0)
         self.assertIn("tms-backend", stdout)
