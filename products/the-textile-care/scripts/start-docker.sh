@@ -3,22 +3,22 @@
 # docker-scripts/textile-care/start-local.sh — The Textile Care Docker Launcher
 #
 # Usage:
-#   ./scripts/textile-care/start-docker.sh                        # Interactive menu
-#   ./scripts/textile-care/start-docker.sh all                    # All web + backend
-#   ./scripts/textile-care/start-docker.sh backend                # Backend + infra only
-#   ./scripts/textile-care/start-docker.sh marketplace-web        # One service
-#   ./scripts/textile-care/start-docker.sh all mobile-dev         # Web + mobile dev servers
-#   ./scripts/textile-care/start-docker.sh mobile-build           # Build all mobile APKs
-#   ./scripts/textile-care/start-docker.sh --down                 # Stop & remove containers
-#   ./scripts/textile-care/start-docker.sh --logs marketplace-web # Tail logs for a service
-#   ./scripts/textile-care/start-docker.sh --build all            # Force rebuild images
-#   ./scripts/textile-care/start-docker.sh --help
+#   ./products/the-textile-care/scripts/start-docker.sh                        # Interactive menu
+#   ./products/the-textile-care/scripts/start-docker.sh all                    # All web + backend
+#   ./products/the-textile-care/scripts/start-docker.sh backend                # Backend + infra only
+#   ./products/the-textile-care/scripts/start-docker.sh marketplace-web        # One service
+#   ./products/the-textile-care/scripts/start-docker.sh all mobile-dev         # Web + mobile dev servers
+#   ./products/the-textile-care/scripts/start-docker.sh mobile-build           # Build all mobile APKs
+#   ./products/the-textile-care/scripts/start-docker.sh --down                 # Stop & remove containers
+#   ./products/the-textile-care/scripts/start-docker.sh --logs marketplace-web # Tail logs for a service
+#   ./products/the-textile-care/scripts/start-docker.sh --build all            # Force rebuild images
+#   ./products/the-textile-care/scripts/start-docker.sh --help
 #
 
 set -eo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(dirname "$SCRIPT_DIR")"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT"
 
 # ── Colour helpers ─────────────────────────────────────────────────────────────
