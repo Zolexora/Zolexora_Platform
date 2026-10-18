@@ -2,7 +2,7 @@ packages:
   - 'products/*'
   - 'platform/*'
   - 'platform/auth/*'
-  - 'products/platform-admin/frontend'
+  - 'apps/platform-admin/frontend'
   - 'products/zolexora-marketplace/apps/*/*/*'
   - 'products/zolexora-marketplace/packages/*'
   - 'products/zolexora-engage/apps/*'
@@ -21,7 +21,7 @@ packages:
   - 'products/zolexora-ironclub/packages/*'
   - 'packages/*'
   - 'apps/*'
-  - 'functions'
+  - 'platform/functions'
 allowBuilds:
   '@nestjs/core': true
   esbuild: true

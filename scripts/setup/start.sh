@@ -51,7 +51,7 @@ PRODUCTS=(); PATHS=()
 
 PRODUCTS+=("All Products (Root Compose)"); PATHS+=("compose.yaml")
 
-for dir in products/*/; do
+for dir in products/*/ apps/*/; do
   [ -d "$dir" ] || continue
   pname=$(basename "$dir")
   if [ -f "$dir/compose.yaml" ]; then
