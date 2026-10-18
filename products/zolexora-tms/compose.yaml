@@ -61,7 +61,7 @@ services:
       context: ../../
       dockerfile: products/zolexora-tms/Dockerfile.web
       args:
-        APP_PATH: apps/frontend/zolexora-tms
+        APP_PATH: apps/tms-web
     container_name: tms-web
     environment:
       - NEXT_PUBLIC_FIREBASE_ACC1_TMS_API_KEY
@@ -92,7 +92,7 @@ services:
       context: ../../
       dockerfile: products/zolexora-tms/Dockerfile.web
       args:
-        APP_PATH: apps/frontend/tms-admin
+        APP_PATH: apps/tms-admin
     container_name: tms-admin
     environment:
       - NEXT_PUBLIC_FIREBASE_ACC1_TMS_API_KEY

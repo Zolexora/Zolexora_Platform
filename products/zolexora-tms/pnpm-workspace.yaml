@@ -1,9 +1,8 @@
 packages:
   - 'apps/*'
-  - 'apps/frontend/*'
   - 'packages/*'
-  - 'platform/Authentication/User Auth/*'
-  - '../../platform/Authentication/User Auth/*'
+  - 'platform/auth/*'
+  - '../../platform/auth/*'
 allowBuilds:
   esbuild: true
   better-sqlite3: true

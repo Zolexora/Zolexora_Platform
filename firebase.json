@@ -3,6 +3,10 @@
     "authorizedDomains": [
       "localhost",
       "127.0.0.1",
+      "app.localhost",
+      "admin.localhost",
+      "improved-giggle-96qvpwx555wg2p4xg-3084.app.github.dev",
+      "improved-giggle-96qvpwx555wg2p4xg.app.github.dev",
       "shop.zolexora.com",
       "mahilamadel.store",
       "seller.zolexora.com"
