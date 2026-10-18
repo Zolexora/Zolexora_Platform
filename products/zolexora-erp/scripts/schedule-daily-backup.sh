@@ -13,5 +13,5 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
 log "INFO" "starting scheduled backup"
-./scripts/zolexora-erp/backup-frappe-site.sh
+./products/zolexora-erp/scripts/backup-frappe-site.sh
 log "INFO" "scheduled backup completed"

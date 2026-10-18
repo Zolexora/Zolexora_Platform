@@ -14,7 +14,7 @@ fail_report() {
   local exit_code=$?
   log "ERROR" "failed during step: $CURRENT_STEP"
   log "ERROR" "exit code: $exit_code"
-  log "ERROR" "verify the backup directory contains database, public files, private files, and optional SHA256SUMS from scripts/zolexora-erp/backup-frappe-site.sh"
+  log "ERROR" "verify the backup directory contains database, public files, private files, and optional SHA256SUMS from products/zolexora-erp/scripts/backup-frappe-site.sh"
   exit "$exit_code"
 }
 
@@ -35,7 +35,7 @@ source config/envs/zolexora-erp/erp.env
 set +a
 
 if [ "${1:-}" = "" ]; then
-  log "ERROR" "usage: ./scripts/zolexora-erp/restore-frappe-site.sh storage/backups/<timestamp>"
+  log "ERROR" "usage: ./products/zolexora-erp/scripts/restore-frappe-site.sh storage/backups/<timestamp>"
   exit 1
 fi
 
