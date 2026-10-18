@@ -4,7 +4,7 @@ services:
   platform-admin-frontend:
     build:
       context: ../../
-      dockerfile: products/platform-admin/frontend/Dockerfile
+      dockerfile: apps/platform-admin/frontend/Dockerfile
     ports:
       - "3082:3000"
     environment:
