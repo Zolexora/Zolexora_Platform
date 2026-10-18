@@ -1,6 +1,6 @@
 #!/bin/bash
 # Zolexora Platform — Universal Startup Script
-# Usage: ./scripts/setup/start.sh
+# Usage: ./scripts/setup/start.sh [product] [action]
 set -e
 
 # Always run from repository root
@@ -27,15 +27,13 @@ echo -e "  ${GREEN}✔ pnpm $(pnpm --version)${NC}"
 # ── 2. Infisical detection ────────────────────────────────────
 echo -e "\n${YELLOW}[2/4] Secrets Manager...${NC}"
 USE_INFISICAL=false
-if command -v infisical >/dev/null 2>&1; then
-  if infisical user get >/dev/null 2>&1; then
-    USE_INFISICAL=true
-    echo -e "  ${GREEN}✔ Infisical CLI found & authenticated — secrets will be injected automatically.${NC}"
-  else
-    echo -e "  ${YELLOW}⚠ Infisical installed but not logged in.${NC}"
-    echo -e "    Run: ${BLUE}infisical login${NC} to enable automatic secret injection."
-    echo -e "    Falling back to local .env files."
-  fi
+if [ -n "$INFISICAL_TOKEN" ] || [ -n "$INFISICAL_ACCESS_TOKEN" ] || { command -v infisical >/dev/null 2>&1 && infisical login status >/dev/null 2>&1; }; then
+  USE_INFISICAL=true
+  echo -e "  ${GREEN}✔ Infisical CLI found & authenticated — secrets will be injected automatically.${NC}"
+elif command -v infisical >/dev/null 2>&1; then
+  echo -e "  ${YELLOW}⚠ Infisical installed but not logged in.${NC}"
+  echo -e "    Run: ${BLUE}infisical login${NC} or export INFISICAL_TOKEN to enable automatic secret injection."
+  echo -e "    Falling back to local .env files."
 else
   echo -e "  ${YELLOW}⚠ Infisical CLI not installed.${NC}"
   echo -e "    Install with: ${BLUE}curl -1sLf 'https://dl.cloudsmith.io/public/infisical/infisical-cli/setup.deb.sh' | sudo bash && sudo apt-get install -y infisical${NC}"
@@ -47,7 +45,7 @@ echo -e "\n${YELLOW}[3/4] Installing monorepo dependencies...${NC}"
 pnpm install --ignore-scripts || true
 echo -e "  ${GREEN}✔ Done${NC}"
 
-# ── 4. Product menu ───────────────────────────────────────────
+# ── 4. Product menu or CLI argument ───────────────────────────
 echo -e "\n${YELLOW}[4/4] Scanning for Dockerized products...${NC}"
 PRODUCTS=(); PATHS=()
 
@@ -65,35 +63,97 @@ for dir in products/*/; do
   fi
 done
 
-echo -e "\nWhich product would you like to start?\n"
-for i in "${!PRODUCTS[@]}"; do
-  printf "  %2d. %s\n" "$((i+1))" "${PRODUCTS[$i]}"
-done
-echo ""
-echo "  $((${#PRODUCTS[@]} + 1)). 🛑  Stop / Down all products"
-echo "  $((${#PRODUCTS[@]} + 2)). ✕   Exit"
-echo ""
-read -rp "Select an option [1-$((${#PRODUCTS[@]} + 2))]: " OPTION
+CLI_PRODUCT="${1:-}"
+CLI_ACTION="${2:-up}"
 
-# ── Exit / Stop ───────────────────────────────────────────────
-if [ "$OPTION" -eq "$((${#PRODUCTS[@]} + 2))" ]; then
-  echo "Exiting."; exit 0
-elif [ "$OPTION" -eq "$((${#PRODUCTS[@]} + 1))" ]; then
-  echo -e "\n${YELLOW}Stopping all containers...${NC}"
-  for compose_file in "${PATHS[@]}"; do
-    docker compose -f "$compose_file" down 2>/dev/null || true
+if [ -n "$CLI_PRODUCT" ]; then
+  # CLI argument mode (non-interactive)
+  if [ "$CLI_PRODUCT" = "stop" ] || [ "$CLI_PRODUCT" = "down" ]; then
+    echo -e "\n${YELLOW}Stopping all containers...${NC}"
+    for compose_file in "${PATHS[@]}"; do
+      docker compose -f "$compose_file" down 2>/dev/null || true
+    done
+    echo -e "${GREEN}✔ All containers stopped.${NC}"
+    exit 0
+  fi
+
+  SELECTED_IDX=-1
+  for i in "${!PRODUCTS[@]}"; do
+    p="${PRODUCTS[$i]}"
+    if [ "$p" = "$CLI_PRODUCT" ] || [[ "$p" == *"$CLI_PRODUCT"* ]] || [ "$(basename "$(dirname "${PATHS[$i]}")")" = "$CLI_PRODUCT" ]; then
+      SELECTED_IDX=$i
+      break
+    fi
   done
-  echo -e "${GREEN}✔ All containers stopped.${NC}"; exit 0
+
+  if [ "$SELECTED_IDX" -eq -1 ]; then
+    echo -e "${RED}Product '$CLI_PRODUCT' not found. Available products:${NC}"
+    for p in "${PRODUCTS[@]}"; do
+      echo "  - $p"
+    done
+    exit 1
+  fi
+  IDX=$SELECTED_IDX
+else
+  # Interactive menu mode
+  if [ ! -t 0 ]; then
+    OPTION=1
+  else
+    echo -e "\nWhich product would you like to start?\n"
+    for i in "${!PRODUCTS[@]}"; do
+      printf "  %2d. %s\n" "$((i+1))" "${PRODUCTS[$i]}"
+    done
+    echo ""
+    echo "  $((${#PRODUCTS[@]} + 1)). 🛑  Stop / Down all products"
+    echo "  $((${#PRODUCTS[@]} + 2)). ✕   Exit"
+    echo ""
+    read -rp "Select an option [1-$((${#PRODUCTS[@]} + 2))]: " OPTION
+  fi
+
+  # ── Exit / Stop ───────────────────────────────────────────────
+  if [ "$OPTION" -eq "$((${#PRODUCTS[@]} + 2))" ]; then
+    echo "Exiting."; exit 0
+  elif [ "$OPTION" -eq "$((${#PRODUCTS[@]} + 1))" ]; then
+    echo -e "\n${YELLOW}Stopping all containers...${NC}"
+    for compose_file in "${PATHS[@]}"; do
+      docker compose -f "$compose_file" down 2>/dev/null || true
+    done
+    echo -e "${GREEN}✔ All containers stopped.${NC}"; exit 0
+  fi
+
+  if [ "$OPTION" -lt 1 ] || [ "$OPTION" -gt "${#PRODUCTS[@]}" ]; then
+    echo -e "${RED}Invalid option.${NC}"; exit 1
+  fi
+
+  IDX=$((OPTION - 1))
 fi
 
-if [ "$OPTION" -lt 1 ] || [ "$OPTION" -gt "${#PRODUCTS[@]}" ]; then
-  echo -e "${RED}Invalid option.${NC}"; exit 1
-fi
-
-IDX=$((OPTION - 1))
 NAME="${PRODUCTS[$IDX]}"
 COMPOSE_FILE="${PATHS[$IDX]}"
 DIR=$(dirname "$COMPOSE_FILE")
+ACTION="${CLI_ACTION:-up}"
+
+if [ "$ACTION" = "stop" ] || [ "$ACTION" = "down" ]; then
+  echo -e "\n${YELLOW}Stopping → $NAME${NC}"
+  docker compose -f "$COMPOSE_FILE" down
+  echo -e "${GREEN}✔ Stopped $NAME.${NC}"
+  exit 0
+fi
+
+if [ "$ACTION" = "ps" ] || [ "$ACTION" = "status" ]; then
+  docker compose -f "$COMPOSE_FILE" ps
+  exit 0
+fi
+
+if [ "$ACTION" = "logs" ]; then
+  docker compose -f "$COMPOSE_FILE" logs -f
+  exit 0
+fi
+
+if [ "$ACTION" = "restart" ]; then
+  echo -e "\n${YELLOW}Stopping existing containers for $NAME...${NC}"
+  docker compose -f "$COMPOSE_FILE" down
+fi
 
 echo -e "\n${GREEN}Starting → $NAME${NC}"
 
@@ -114,10 +174,15 @@ fi
 
 # ── Launch Docker Compose ─────────────────────────────────────
 if [ "$USE_INFISICAL" = true ] && [ -f "$DIR/.infisical.json" ]; then
+  WORKSPACE_ID=$(python3 -c "import json; d=json.load(open('$DIR/.infisical.json')); print(d.get('workspaceId',''))" 2>/dev/null || echo "")
   SECRET_PATH=$(python3 -c "import json; d=json.load(open('$DIR/.infisical.json')); print(d.get('secretsPath','/'))" 2>/dev/null || echo "/")
   ENV_SLUG=$(python3 -c "import json; d=json.load(open('$DIR/.infisical.json')); print(d.get('defaultEnvironment','dev'))" 2>/dev/null || echo "dev")
-  echo -e "  ${BLUE}Injecting secrets from Infisical path: $SECRET_PATH (env: $ENV_SLUG)${NC}"
-  infisical run --path="$SECRET_PATH" --env="$ENV_SLUG" -- \
+  PROJECT_FLAG=""
+  if [ -n "$WORKSPACE_ID" ]; then
+    PROJECT_FLAG="--projectId=$WORKSPACE_ID"
+  fi
+  echo -e "  ${BLUE}Injecting secrets from Infisical path: $SECRET_PATH (env: $ENV_SLUG, project: ${WORKSPACE_ID:-default})${NC}"
+  infisical run $PROJECT_FLAG --path="$SECRET_PATH" --env="$ENV_SLUG" -- \
     docker compose -f "$COMPOSE_FILE" up -d --build
 else
   docker compose -f "$COMPOSE_FILE" up -d --build
