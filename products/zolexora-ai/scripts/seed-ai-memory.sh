@@ -3,7 +3,7 @@
 # Swarm Factory — Seed Memory Script
 # Pre-populates the session store with common patterns so the
 # first build has context even before any real builds run.
-# Usage: bash scripts/zolexora-ai/seed-ai-memory.sh
+# Usage: bash products/zolexora-ai/scripts/seed-ai-memory.sh
 # =============================================================
 set -euo pipefail
 

@@ -5,9 +5,9 @@
 # and verifies the live app.
 #
 # Usage:
-#   bash scripts/zolexora-ai/deploy-azure.sh
-#   TAG=my-test bash scripts/zolexora-ai/deploy-azure.sh
-#   SKIP_BUILD=1 IMAGE=swarmfactoryacr.azurecr.io/swarm-factory-api:tag bash scripts/zolexora-ai/deploy-azure.sh
+#   bash products/zolexora-ai/scripts/deploy-azure.sh
+#   TAG=my-test bash products/zolexora-ai/scripts/deploy-azure.sh
+#   SKIP_BUILD=1 IMAGE=swarmfactoryacr.azurecr.io/swarm-factory-api:tag bash products/zolexora-ai/scripts/deploy-azure.sh
 # =============================================================
 set -euo pipefail
 
