@@ -1,0 +1,57 @@
+# Zolexora Platform — AI Agent Operational Guidelines
+
+This repository is a Turborepo/pnpm monorepo housing the Zolexora ecosystem products and services. All AI agents working in this workspace must adhere to these directives.
+
+---
+
+## 1. Monorepo Organization
+
+- **`products/`**: Independent vertical products (e.g., `zolexora-tms`, `zolexora-marketplace`, `the-textile-care`, `rentoeasy`, `clarityfi`, etc.).
+- **`packages/`**: Shared TypeScript/Node libraries and configs (`packages/ui`, `packages/api-client`, etc.).
+- **`platform/`**: Central platform foundation and core utilities.
+- **`apps/`**: Shared platform administration dashboards.
+- **`scripts/`**: Monorepo orchestration scripts (`scripts/dev/`, `scripts/setup/`, `scripts/docker/`).
+- **`.agents/`**: Customization system containing rules (`.agents/rules/`), skills (`.agents/skills/`), and MCP server configs.
+
+---
+
+## 2. Docker, GHCR & Product Script Standards
+
+When creating, updating, or debugging Docker infrastructure for any product:
+
+1. **Follow the Rule**: Adhere strictly to [.agents/rules/docker-product-standards.md](file:///.agents/rules/docker-product-standards.md).
+2. **Never Force `--build`**: Startup scripts must NEVER hardcode `up -d --build`. They must pull missing prebuilt images from GitHub Container Registry (`ghcr.io/zolexora/...`) using `pull --ignore-pull-failures` and start with `up -d`.
+3. **Always Add GHCR Tags & Pull Policy**:
+   In every `compose.yaml`:
+   ```yaml
+   image: ${PRODUCT_SERVICE_IMAGE:-ghcr.io/zolexora/<product>-<service>:latest}
+   pull_policy: missing
+   build:
+     ...
+   ```
+4. **Standard Subcommands**:
+   Every `products/<product>/scripts/docker-start.sh` must support:
+   `start`, `stop`, `restart`, `build`, `pull`, `status`, `logs`.
+5. **Standard Package Scripts**:
+   Register `docker:<product>:{start|stop|restart|build|pull|logs|status}` in root `package.json`.
+6. **Automate with Scaffolder**:
+   When adding a new product or scripts, run:
+   ```bash
+   bash scripts/dev/scaffold-product-docker.sh <product-name>
+   ```
+
+---
+
+## 3. Secret Management (Infisical)
+
+- **Non-blocking Auth**: Always check Infisical login non-blockingly before executing commands. If not authenticated, notify the developer and fall back cleanly to local `.env` files. Never halt or hang.
+- **No Plaintext Leaks**: Never commit decrypted secrets or print production credentials into chat or console logs.
+
+---
+
+## 4. Antigravity & Agent Tooling Protocols
+
+- **Zero Polling**: Never run terminal polling loops waiting for processes. Antigravity wakes up reactively upon task completion.
+- **No `sleep`**: Use the native `schedule` tool instead of running `sleep` in terminal commands.
+- **Clickable File Links**: Always use GitHub-style markdown file links with the `file://` scheme and basenames (e.g. [package.json](file:///package.json)).
+- **Ponytail Minimalism**: Write the simplest, shortest solution that works. Defer unnecessary abstractions, prefer stdlib and native platform features.

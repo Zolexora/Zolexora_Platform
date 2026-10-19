@@ -27,7 +27,9 @@ start_stack() {
   echo "======================================"
   echo "🚀 Starting Zolexora TMS Stack"
   echo "======================================"
-  run_compose up -d --build "$@"
+  echo "🔍 Checking for pre-built images from GHCR (if needed)..."
+  run_compose pull --ignore-pull-failures 2>/dev/null || true
+  run_compose up -d "$@"
   echo ""
   echo "✅ Zolexora TMS Stack status:"
   docker compose -f "$COMPOSE_FILE" ps
@@ -49,9 +51,10 @@ else
   echo "1) Start / Up all services (Default)"
   echo "2) Stop / Down all services"
   echo "3) Restart all services"
-  echo "4) Build all services"
-  echo "5) Status / PS"
-  echo "6) View Logs"
+  echo "4) Build all services locally"
+  echo "5) Pull latest images from GHCR"
+  echo "6) Status / PS"
+  echo "7) View Logs"
   echo "0) Cancel"
   echo "======================================"
   read -p "Select an option [1]: " OPTION
@@ -61,8 +64,9 @@ else
     2) ACTION="stop" ;;
     3) ACTION="restart" ;;
     4) ACTION="build" ;;
-    5) ACTION="status" ;;
-    6) ACTION="logs" ;;
+    5) ACTION="pull" ;;
+    6) ACTION="status" ;;
+    7) ACTION="logs" ;;
     0) echo "Cancelled."; exit 0 ;;
     *) echo "Invalid option. Exiting."; exit 1 ;;
   esac
@@ -86,6 +90,10 @@ case "$ACTION" in
     echo "🔨 Building Zolexora TMS Containers..."
     run_compose build "$@"
     ;;
+  pull)
+    echo "📥 Pulling Zolexora TMS images from GHCR..."
+    run_compose pull "$@"
+    ;;
   status|ps)
     docker compose -f "$COMPOSE_FILE" ps "$@"
     ;;
@@ -97,7 +105,7 @@ case "$ACTION" in
     fi
     ;;
   *)
-    echo "Usage: $0 {start|up|stop|down|restart|build|status|ps|logs} [services...]"
+    echo "Usage: $0 {start|up|stop|down|restart|build|pull|status|ps|logs} [services...]"
     exit 1
     ;;
 esac

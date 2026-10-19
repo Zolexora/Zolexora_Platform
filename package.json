@@ -23,6 +23,7 @@
     "docker:tms:stop": "bash products/zolexora-tms/scripts/docker-start.sh stop",
     "docker:tms:restart": "bash products/zolexora-tms/scripts/docker-start.sh restart",
     "docker:tms:build": "bash products/zolexora-tms/scripts/docker-start.sh build",
+    "docker:tms:pull": "bash products/zolexora-tms/scripts/docker-start.sh pull",
     "docker:tms:logs": "bash products/zolexora-tms/scripts/docker-start.sh logs",
     "docker:tms:status": "bash products/zolexora-tms/scripts/docker-start.sh status",
     "dev:ironclub": "pnpm --filter @zolexora/ironclub-admin-web dev",
