@@ -187,9 +187,6 @@ if [ "$USE_INFISICAL" = false ]; then
 fi
 
 # ── Launch Docker Compose ─────────────────────────────────────
-echo -e "  ${BLUE}Checking for pre-built images (pulling if missing)...${NC}"
-docker compose -f "$COMPOSE_FILE" pull --ignore-pull-failures 2>/dev/null || true
-
 if [ "$USE_INFISICAL" = true ] && [ -f "$DIR/.infisical.json" ]; then
   WORKSPACE_ID=$(python3 -c "import json; d=json.load(open('$DIR/.infisical.json')); print(d.get('workspaceId',''))" 2>/dev/null || echo "")
   SECRET_PATH=$(python3 -c "import json; d=json.load(open('$DIR/.infisical.json')); print(d.get('secretsPath','/'))" 2>/dev/null || echo "/")

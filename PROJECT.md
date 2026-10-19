@@ -45,9 +45,9 @@
 - Fallback: If Infisical is not authenticated or unavailable, notify user and run `docker compose -f products/zolexora-tms/compose.yaml <action>` using existing environment without writing plaintext secret files to disk.
 
 ### Host Endpoints
-- Postgres: `localhost:5448`
-- Backend API Health: `http://localhost:4030/health` (HTTP 200, JSON status)
-- Frontend Gateway (Nginx): `http://localhost:3084/` (HTTP 200)
+- Postgres: `localhost:5449`
+- Backend API Health: `http://localhost:4031/health` (HTTP 200, JSON status)
+- Frontend Gateway (Nginx): `http://localhost:3090/` (HTTP 200)
 
 ## Code Layout
 - Startup scripts:

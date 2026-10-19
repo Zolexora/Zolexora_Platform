@@ -26,6 +26,8 @@
     "docker:tms:pull": "bash products/zolexora-tms/scripts/docker-start.sh pull",
     "docker:tms:logs": "bash products/zolexora-tms/scripts/docker-start.sh logs",
     "docker:tms:status": "bash products/zolexora-tms/scripts/docker-start.sh status",
+    "docker:clean": "docker container prune -f && docker network prune -f && docker builder prune -f",
+    "docker:prune": "bash scripts/docker/prune-except-devcontainer.sh",
     "dev:ironclub": "pnpm --filter @zolexora/ironclub-admin-web dev",
     "dev:ironclub:admin": "pnpm --filter @zolexora/ironclub-admin-web dev",
     "dev:ironclub:manager": "pnpm --filter @zolexora/ironclub-manager-web dev",

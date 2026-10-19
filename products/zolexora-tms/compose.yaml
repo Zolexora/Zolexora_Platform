@@ -9,7 +9,7 @@ services:
     volumes:
     - postgres_data:/var/lib/postgresql/data
     ports:
-    - "${TMS_POSTGRES_PORT:-5448}:5432"
+    - "${TMS_POSTGRES_PORT:-5449}:5432"
     healthcheck:
       test:
       - CMD-SHELL
@@ -33,7 +33,7 @@ services:
       dockerfile: Dockerfile
     container_name: tms-backend
     ports:
-    - "${TMS_BACKEND_PORT:-4030}:4030"
+    - "${TMS_BACKEND_PORT:-4031}:4030"
     environment:
     - DATABASE_URL=postgresql://tms:password@postgres:5432/tms
     - FIREBASE_PROJECT_ID=zolexora-platform
@@ -132,7 +132,7 @@ services:
       dockerfile: Dockerfile.nginx
     container_name: tms-nginx
     ports:
-    - "${TMS_PORT:-3084}:80"
+    - "${TMS_PORT:-3090}:80"
     depends_on:
       backend:
         condition: service_healthy
