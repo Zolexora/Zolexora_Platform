@@ -140,6 +140,20 @@ if [ "$ACTION" = "stop" ] || [ "$ACTION" = "down" ]; then
   exit 0
 fi
 
+if [ "$ACTION" = "build" ]; then
+  echo -e "\n${YELLOW}Building images for $NAME...${NC}"
+  docker compose -f "$COMPOSE_FILE" build
+  echo -e "${GREEN}✔ Built images for $NAME.${NC}"
+  exit 0
+fi
+
+if [ "$ACTION" = "pull" ]; then
+  echo -e "\n${YELLOW}Pulling images for $NAME from registry...${NC}"
+  docker compose -f "$COMPOSE_FILE" pull
+  echo -e "${GREEN}✔ Pulled images for $NAME.${NC}"
+  exit 0
+fi
+
 if [ "$ACTION" = "ps" ] || [ "$ACTION" = "status" ]; then
   docker compose -f "$COMPOSE_FILE" ps
   exit 0
@@ -173,6 +187,9 @@ if [ "$USE_INFISICAL" = false ]; then
 fi
 
 # ── Launch Docker Compose ─────────────────────────────────────
+echo -e "  ${BLUE}Checking for pre-built images (pulling if missing)...${NC}"
+docker compose -f "$COMPOSE_FILE" pull --ignore-pull-failures 2>/dev/null || true
+
 if [ "$USE_INFISICAL" = true ] && [ -f "$DIR/.infisical.json" ]; then
   WORKSPACE_ID=$(python3 -c "import json; d=json.load(open('$DIR/.infisical.json')); print(d.get('workspaceId',''))" 2>/dev/null || echo "")
   SECRET_PATH=$(python3 -c "import json; d=json.load(open('$DIR/.infisical.json')); print(d.get('secretsPath','/'))" 2>/dev/null || echo "/")
@@ -183,9 +200,9 @@ if [ "$USE_INFISICAL" = true ] && [ -f "$DIR/.infisical.json" ]; then
   fi
   echo -e "  ${BLUE}Injecting secrets from Infisical path: $SECRET_PATH (env: $ENV_SLUG, project: ${WORKSPACE_ID:-default})${NC}"
   infisical run $PROJECT_FLAG --path="$SECRET_PATH" --env="$ENV_SLUG" -- \
-    docker compose -f "$COMPOSE_FILE" up -d --build
+    docker compose -f "$COMPOSE_FILE" up -d
 else
-  docker compose -f "$COMPOSE_FILE" up -d --build
+  docker compose -f "$COMPOSE_FILE" up -d
 fi
 
 echo -e "\n=========================================================="

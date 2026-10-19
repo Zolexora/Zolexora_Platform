@@ -58,24 +58,33 @@ fi
 # 2. Python virtual environment (workspace root)
 # =============================================================================
 log "[2/11] Python venv (workspace root)"
-if [ ! -d "${WORKSPACE_DIR}/scripts/.venv" ]; then
-    python3 -m venv "${WORKSPACE_DIR}/scripts/.venv"
-    ok "Created scripts/.venv"
-else
-    skip "scripts/.venv"
+# Ensure /usr/bin/python3.12 is available in container for cross-environment compatibility
+if [ ! -e /usr/bin/python3.12 ] && [ -x /usr/local/bin/python3.12 ]; then
+    sudo ln -sf /usr/local/bin/python3.12 /usr/bin/python3.12
 fi
-"${WORKSPACE_DIR}/scripts/.venv/bin/pip" install --upgrade pip setuptools wheel packaging > /dev/null 2>&1
-ok "pip/setuptools/wheel up to date"
 
-if [ ! -e "${WORKSPACE_DIR}/.venv" ] && [ ! -L "${WORKSPACE_DIR}/.venv" ]; then
-    ln -sf "${WORKSPACE_DIR}/scripts/.venv" "${WORKSPACE_DIR}/.venv"
-    ok "Symlinked .venv -> scripts/.venv"
+# Ensure workspace .venv is valid and functional
+if [ ! -x "${WORKSPACE_DIR}/.venv/bin/python" ] || ! "${WORKSPACE_DIR}/.venv/bin/python" --version > /dev/null 2>&1; then
+    log "    Initializing .venv at workspace root..."
+    rm -rf "${WORKSPACE_DIR}/.venv"
+    python3 -m venv "${WORKSPACE_DIR}/.venv"
+    "${WORKSPACE_DIR}/.venv/bin/pip" install --upgrade pip setuptools wheel packaging > /dev/null 2>&1 || true
+    ok "Created fresh .venv"
+else
+    ok ".venv interpreter verified: $("${WORKSPACE_DIR}/.venv/bin/python" --version 2>/dev/null)"
+fi
+
+# Maintain scripts/.venv as a relative symlink to .venv for backwards compatibility
+if [ ! -e "${WORKSPACE_DIR}/scripts/.venv" ] || [ -L "${WORKSPACE_DIR}/scripts/.venv" ]; then
+    rm -rf "${WORKSPACE_DIR}/scripts/.venv"
+    ln -sfn ../.venv "${WORKSPACE_DIR}/scripts/.venv"
+    ok "Symlinked scripts/.venv -> .venv"
 fi
 
 # Frappe path compatibility symlinks (ZolexoraERP)
 log "    Configuring Frappe path symlinks..."
 PYTHON_BIN="$(which python3)"
-PIP_BIN="${WORKSPACE_DIR}/scripts/.venv/bin/pip"
+PIP_BIN="${WORKSPACE_DIR}/.venv/bin/pip"
 sudo mkdir -p /home/frappe/frappe-bench/env/bin
 sudo ln -sf "${PYTHON_BIN}" /home/frappe/frappe-bench/env/bin/python
 sudo ln -sf "${PYTHON_BIN}" /home/frappe/frappe-bench/env/bin/python3
@@ -191,10 +200,14 @@ fi
 # =============================================================================
 log "[11/12] infisical (Secrets Manager)"
 if ! command -v infisical > /dev/null 2>&1; then
-    curl -1sLf 'https://dl.cloudsmith.io/public/infisical/infisical-cli/setup.deb.sh' \
-        | sudo bash > /dev/null 2>&1
-    sudo apt-get install -y infisical > /dev/null 2>&1
-    ok "infisical installed: $(infisical --version 2>/dev/null)"
+    (curl -1sLf 'https://artifacts-cli.infisical.com/setup.deb.sh' | sudo -E bash > /dev/null 2>&1 \
+        && sudo apt-get update > /dev/null 2>&1 \
+        && sudo apt-get install -y infisical > /dev/null 2>&1) || true
+    if command -v infisical > /dev/null 2>&1; then
+        ok "infisical installed: $(infisical --version 2>/dev/null)"
+    else
+        echo "    ⚠ infisical: auto-install failed — install manually per https://infisical.com/docs/cli"
+    fi
 else
     skip "infisical $(infisical --version 2>/dev/null)"
 fi
@@ -219,6 +232,7 @@ done
 CURRENT_USER="$(whoami)"
 if [ "${CURRENT_USER}" != "root" ]; then
     sudo chown -R "${CURRENT_USER}:${CURRENT_USER}" \
+        "${WORKSPACE_DIR}/.venv" \
         "${WORKSPACE_DIR}/scripts/.venv" 2>/dev/null || true
 fi
 
