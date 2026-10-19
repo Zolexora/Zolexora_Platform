@@ -27,8 +27,6 @@ start_stack() {
   echo "======================================"
   echo "🚀 Starting Zolexora TMS Stack"
   echo "======================================"
-  echo "🔍 Checking for pre-built images from GHCR (if needed)..."
-  run_compose pull --ignore-pull-failures 2>/dev/null || true
   run_compose up -d "$@"
   echo ""
   echo "✅ Zolexora TMS Stack status:"

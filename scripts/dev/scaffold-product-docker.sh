@@ -107,6 +107,8 @@ services:
       context: .
       dockerfile: Dockerfile.api
     container_name: ${PRODUCT}-backend
+    ports:
+      - "\${${PRODUCT^^}_BACKEND_PORT:-4040}:4030"
     restart: unless-stopped
 
   web:
@@ -116,6 +118,8 @@ services:
       context: .
       dockerfile: Dockerfile.web
     container_name: ${PRODUCT}-web
+    ports:
+      - "\${${PRODUCT^^}_PORT:-3095}:80"
     restart: unless-stopped
 EOF
   echo -e "  ${GREEN}✔ Created $COMPOSE_FILE with GHCR tags and pull_policy: missing${NC}"
@@ -157,8 +161,6 @@ start_stack() {
   echo "======================================"
   echo "🚀 Starting ${PRODUCT} Stack"
   echo "======================================"
-  echo "🔍 Checking for pre-built images from GHCR (if needed)..."
-  run_compose pull --ignore-pull-failures 2>/dev/null || true
   run_compose up -d "$@"
   echo ""
   echo "✅ ${PRODUCT} Stack status:"

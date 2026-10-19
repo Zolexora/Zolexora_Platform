@@ -39,6 +39,9 @@ When creating, updating, or debugging Docker infrastructure for any product:
    ```bash
    bash scripts/dev/scaffold-product-docker.sh <product-name>
    ```
+7. **Safe Cleanup (Never use raw `docker system prune -a`)**:
+   - `pnpm docker:clean`: Fast, safe cleanup of stopped containers, unused networks, and dangling build cache.
+   - `pnpm docker:prune`: Deep cleanup (equivalent to `prune -a`) that reclaims maximum disk space while strictly safeguarding DevContainer images (`vsc-*`), volumes (`vscode`), and workspace state.
 
 ---
 
