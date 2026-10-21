@@ -18,5 +18,8 @@
     "${workspaceFolder}/products/zolexora-erp/backend/zolexora_platform",
     "${workspaceFolder}/products/zolexora-erp/backend/zolexora_integrations"
   ],
-  "npm.packageManager": "pnpm"
+  "npm.packageManager": "pnpm",
+  "gradle.nestedProjects": [
+    "products/maunkavach"
+  ]
 }
