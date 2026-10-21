@@ -270,6 +270,11 @@ export default function AccountTable({
               })}
             </tbody>
           </table>
+          {filteredAccounts.length === 0 && (
+            <div className="text-center py-8 text-slate-400 text-xs">
+              No accounts discovered or matching the active filter.
+            </div>
+          )}
         </div>
       </div>
     </div>

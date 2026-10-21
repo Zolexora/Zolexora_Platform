@@ -167,11 +167,13 @@ def sync_accounts_from_infisical() -> AccountSyncResponse:
             )
 
     # 4. Discover Email Providers (Resend, Brevo, SendGrid)
+    from .email import get_daily_usage
     resend_key = os.getenv("RESEND_API_KEY")
     brevo_key = os.getenv("BREVO_API_KEY")
     sendgrid_key = os.getenv("SENDGRID_API_KEY")
 
     if resend_key:
+        resend_used = get_daily_usage("resend")
         discovered["resend-acc-1"] = DiscoveredAccount(
             id="resend-acc-1",
             provider="resend",
@@ -179,11 +181,12 @@ def sync_accounts_from_infisical() -> AccountSyncResponse:
             project_id_or_account_id="resend-acc-01",
             status="ACTIVE",
             daily_quota_total=100,
-            daily_quota_used=int(os.getenv("RESEND_DAILY_USED", "12")),
-            quota_percentage=float(os.getenv("RESEND_DAILY_USED", "12")),
+            daily_quota_used=resend_used,
+            quota_percentage=round((resend_used / 100.0) * 100, 2),
             last_synced_at=now_iso
         )
     if brevo_key:
+        brevo_used = get_daily_usage("brevo")
         discovered["brevo-acc-1"] = DiscoveredAccount(
             id="brevo-acc-1",
             provider="brevo",
@@ -191,11 +194,12 @@ def sync_accounts_from_infisical() -> AccountSyncResponse:
             project_id_or_account_id="brevo-acc-01",
             status="ACTIVE",
             daily_quota_total=300,
-            daily_quota_used=int(os.getenv("BREVO_DAILY_USED", "45")),
-            quota_percentage=round((float(os.getenv("BREVO_DAILY_USED", "45")) / 300) * 100, 2),
+            daily_quota_used=brevo_used,
+            quota_percentage=round((brevo_used / 300.0) * 100, 2),
             last_synced_at=now_iso
         )
     if sendgrid_key:
+        sendgrid_used = get_daily_usage("sendgrid")
         discovered["sendgrid-acc-1"] = DiscoveredAccount(
             id="sendgrid-acc-1",
             provider="sendgrid",
@@ -203,8 +207,8 @@ def sync_accounts_from_infisical() -> AccountSyncResponse:
             project_id_or_account_id="sendgrid-acc-01",
             status="ACTIVE",
             daily_quota_total=100,
-            daily_quota_used=int(os.getenv("SENDGRID_DAILY_USED", "8")),
-            quota_percentage=float(os.getenv("SENDGRID_DAILY_USED", "8")),
+            daily_quota_used=sendgrid_used,
+            quota_percentage=round((sendgrid_used / 100.0) * 100, 2),
             last_synced_at=now_iso
         )
 

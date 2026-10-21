@@ -68,7 +68,8 @@ async def get_mongo(product: str, raise_on_missing: bool = False) -> Optional[As
         raise ValueError(f"Unknown product '{product}'. Not defined in MONGO_DB_MAP.")
 
     db_name = MONGO_DB_MAP[product]
-    mongo_uri = os.getenv("MONGO_URI")
+    from ..services.infisical import get_secret
+    mongo_uri = get_secret("MONGO_URI")
 
     if not mongo_uri:
         if raise_on_missing:

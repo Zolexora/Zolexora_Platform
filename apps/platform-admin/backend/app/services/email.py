@@ -3,7 +3,6 @@ import uuid
 from datetime import datetime, timezone
 from typing import List, Dict, Optional, Any
 import httpx
-from ..db.connections import get_mongo
 from ..schemas.email import (
     EmailSendRequest,
     EmailSendResponse,
@@ -85,6 +84,7 @@ async def archive_log_record(log_record: EmailLogRecord) -> None:
     _fallback_logs.insert(0, log_record)
 
     try:
+        from ..db.connections import get_mongo
         db = await get_mongo("zolexora-engage", raise_on_missing=False)
         if db is not None:
             collection = db["email_logs"]
@@ -242,6 +242,7 @@ async def query_email_logs(
     records: List[EmailLogRecord] = []
 
     try:
+        from ..db.connections import get_mongo
         db = await get_mongo("zolexora-engage", raise_on_missing=False)
         if db is not None:
             collection = db["email_logs"]

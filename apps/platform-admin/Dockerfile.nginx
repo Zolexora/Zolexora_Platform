@@ -1,0 +1,14 @@
+FROM nginx:alpine
+
+# Remove default nginx configurations
+RUN rm -rf /etc/nginx/conf.d/*
+
+# Copy platform admin gateway configuration
+COPY nginx-conf.d/ /etc/nginx/conf.d/
+
+EXPOSE 80
+
+HEALTHCHECK --interval=20s --timeout=5s --start-period=5s --retries=3 \
+  CMD wget -qO- http://localhost:80/healthz || exit 1
+
+CMD ["nginx", "-g", "daemon off;"]

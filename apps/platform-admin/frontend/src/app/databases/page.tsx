@@ -41,7 +41,7 @@ export default function DatabasesCapacityPage() {
             Database & Storage Capacity Monitoring
           </h1>
           <p className="text-sm text-slate-400 mt-1">
-            Real-time telemetry tracking against 500MB PostgreSQL (Supabase Core, Commerce, Business, AI/ERP) and 512MB MongoDB Atlas free limits.
+            Real-time telemetry tracking against 500MB PostgreSQL (Cloud Supabase Clusters) and 512MB MongoDB Atlas free limits via Infisical. Local setups are excluded.
           </p>
         </div>
         <button

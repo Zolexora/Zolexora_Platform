@@ -5,15 +5,25 @@ from ..schemas.telemetry import (
     ArchivePreviewResponse,
     ArchiveExclusionToggleRequest,
     ArchiveExclusionsResponse,
+    FleetResponse,
 )
 from ..db.telemetry import (
     get_capacity_telemetry,
     calculate_archive_preview,
     get_pinned_tables,
     toggle_table_pin,
+    collect_fleet_telemetry,
 )
 
 router = APIRouter(prefix="/api/telemetry", tags=["Telemetry"])
+
+@router.get("/fleet", response_model=FleetResponse)
+async def get_fleet_telemetry() -> FleetResponse:
+    """
+    Returns live operational status of the Platform Admin stack, remote database targets,
+    and monorepo application services.
+    """
+    return await collect_fleet_telemetry()
 
 @router.get("/capacity", response_model=CapacityTelemetryResponse)
 async def get_capacity() -> CapacityTelemetryResponse:
