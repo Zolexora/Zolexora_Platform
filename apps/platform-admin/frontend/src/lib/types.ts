@@ -88,7 +88,9 @@ export interface StorageQuotaMetric {
   used_bytes: number;
   used_pretty: string;
   usage_percentage: number;
-  threshold_state: 'NORMAL' | 'WARNING' | 'CRITICAL';
+  threshold_state: 'NORMAL' | 'WARNING' | 'CRITICAL' | 'UNCONFIGURED';
+  is_configured?: boolean;
+  infisical_path?: string | null;
   tables?: HotTableMetric[] | null;
 }
 
@@ -180,11 +182,21 @@ export interface FleetService {
   id: string;
   name: string;
   category: 'frontend' | 'backend' | 'database' | 'worker' | 'edge';
-  environment: 'Production-1 (Edge & PaaS)' | 'Production-2 (K3s ARM)';
-  host: 'Vercel' | 'Fly.io' | 'Render' | 'Cloudflare' | 'Oracle ARM K3s';
+  environment: string;
+  host: string;
   endpoint: string;
-  status: 'operational' | 'degraded' | 'critical';
-  latency_ms: number;
+  status: 'operational' | 'degraded' | 'critical' | 'stopped' | 'unconfigured';
+  latency_ms?: number | null;
   last_checked: string;
-  details?: string;
+  details?: string | null;
+}
+
+export interface FleetResponse {
+  services: FleetService[];
+  total_count: number;
+  operational_count: number;
+  degraded_count: number;
+  stopped_count: number;
+  unconfigured_count: number;
+  timestamp: string;
 }

@@ -33,12 +33,38 @@ services:
       dockerfile: Dockerfile
     container_name: platform-admin-backend
     restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "${PLATFORM_ADMIN_BACKEND_PORT:-4041}:8000"
+    env_file:
+      - path: .env
+        required: false
     environment:
       - ENVIRONMENT=development
       - PORT=8000
       - DATABASE_URL=postgresql://${PLATFORM_ADMIN_POSTGRES_USER:-admin}:${PLATFORM_ADMIN_POSTGRES_PASSWORD:-adminpassword}@platform-admin-postgres:5432/${PLATFORM_ADMIN_POSTGRES_DB:-platform_admin}
+      - INFISICAL_TOKEN=${INFISICAL_TOKEN:-}
+      - INFISICAL_CLIENT_ID=${INFISICAL_CLIENT_ID:-}
+      - INFISICAL_CLIENT_SECRET=${INFISICAL_CLIENT_SECRET:-}
+      - INFISICAL_WORKSPACE_ID=${INFISICAL_WORKSPACE_ID:-}
+      - INFISICAL_SITE_URL=${INFISICAL_SITE_URL:-https://app.infisical.com}
+      - SUPABASE_CORE_URL=${SUPABASE_CORE_URL:-}
+      - SUPABASE_CORE_SERVICE_KEY=${SUPABASE_CORE_SERVICE_KEY:-}
+      - SUPABASE_CORE_PG_URL=${SUPABASE_CORE_PG_URL:-}
+      - SUPABASE_COMMERCE_URL=${SUPABASE_COMMERCE_URL:-}
+      - SUPABASE_COMMERCE_SERVICE_KEY=${SUPABASE_COMMERCE_SERVICE_KEY:-}
+      - SUPABASE_COMMERCE_PG_URL=${SUPABASE_COMMERCE_PG_URL:-}
+      - SUPABASE_BUSINESS_URL=${SUPABASE_BUSINESS_URL:-}
+      - SUPABASE_BUSINESS_SERVICE_KEY=${SUPABASE_BUSINESS_SERVICE_KEY:-}
+      - SUPABASE_BUSINESS_PG_URL=${SUPABASE_BUSINESS_PG_URL:-}
+      - SUPABASE_AI_ERP_URL=${SUPABASE_AI_ERP_URL:-}
+      - SUPABASE_AI_ERP_SERVICE_KEY=${SUPABASE_AI_ERP_SERVICE_KEY:-}
+      - SUPABASE_AI_ERP_PG_URL=${SUPABASE_AI_ERP_PG_URL:-}
+      - MONGO_URI=${MONGO_URI:-}
+      - CF_ACCOUNT_ID=${CF_ACCOUNT_ID:-}
+      - RESEND_API_KEY=${RESEND_API_KEY:-}
+      - FIREBASE_ACTIVE_ACCOUNTS=${FIREBASE_ACTIVE_ACCOUNTS:-}
     depends_on:
       platform-admin-postgres:
         condition: service_healthy
@@ -86,6 +112,35 @@ services:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000 || exit 1"]
       interval: 20s
       timeout: 10s
+      retries: 3
+
+  platform-admin-nginx:
+    image: ${PLATFORM_ADMIN_NGINX_IMAGE:-ghcr.io/zolexora/platform-admin-nginx:latest}
+    pull_policy: missing
+    build:
+      context: .
+      dockerfile: Dockerfile.nginx
+    container_name: platform-admin-nginx
+    restart: unless-stopped
+    ports:
+      - "${PLATFORM_ADMIN_GATEWAY_PORT:-3095}:80"
+    depends_on:
+      platform-admin-backend:
+        condition: service_healthy
+      platform-admin-frontend:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:80/healthz || exit 1"]
+      interval: 20s
+      timeout: 5s
       retries: 3
 
 volumes:

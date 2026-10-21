@@ -1,5 +1,5 @@
 import './globals.css';
-import Header from '@/components/Header';
+import AppShell from '@/components/AppShell';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -14,14 +14,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased">
-        <Header />
-        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-          {children}
-        </main>
-        <footer className="border-t border-slate-900 bg-slate-950 py-4 text-center text-xs text-slate-500">
-          Zolexora Platform Admin Control Plane • Port 3082 • Next.js 14 App Router
-        </footer>
+      <body className="bg-slate-950 text-slate-100 min-h-screen antialiased selection:bg-indigo-500 selection:text-white">
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

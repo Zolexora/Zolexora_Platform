@@ -36,6 +36,10 @@ export default function EmailOperationsPage() {
   }, []);
 
   const totalSentToday = providers.reduce((acc, curr) => acc + curr.daily_used, 0);
+  const deliveredCount = initialLogs.filter((l) => l.status === 'delivered').length;
+  const bouncedCount = initialLogs.filter((l) => l.status === 'bounced').length;
+  const deliveryRate = totalLogs > 0 ? Number(((deliveredCount / totalLogs) * 100).toFixed(1)) : 100.0;
+  const bounceRate = totalLogs > 0 ? Number(((bouncedCount / totalLogs) * 100).toFixed(1)) : 0.0;
 
   return (
     <div className="space-y-8">
@@ -61,8 +65,8 @@ export default function EmailOperationsPage() {
         <EmailQuotaBar
           providers={providers}
           totalSentToday={totalSentToday}
-          deliveryRatePercent={99.1}
-          bounceRatePercent={0.9}
+          deliveryRatePercent={deliveryRate}
+          bounceRatePercent={bounceRate}
         />
       </section>
 

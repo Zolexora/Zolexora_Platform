@@ -12,9 +12,9 @@ interface EmailQuotaBarProps {
 
 export default function EmailQuotaBar({
   providers,
-  totalSentToday = 91,
-  deliveryRatePercent = 98.9,
-  bounceRatePercent = 1.1,
+  totalSentToday = 0,
+  deliveryRatePercent = 100.0,
+  bounceRatePercent = 0.0,
 }: EmailQuotaBarProps) {
   const getProviderColor = (providerName: string) => {
     switch (providerName) {

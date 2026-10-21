@@ -10,14 +10,16 @@ interface FleetGridProps {
 }
 
 export default function FleetGrid({ services, onRefresh, isLoading = false }: FleetGridProps) {
-  const [selectedEnv, setSelectedEnv] = useState<'ALL' | 'P1' | 'P2'>('ALL');
+  const [selectedEnv, setSelectedEnv] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<'ALL' | 'frontend' | 'backend' | 'database' | 'worker' | 'edge'>('ALL');
 
+  // Dynamically extract unique environments from live services
+  const environments = Array.from(new Set(services.map((s) => s.environment))).filter(Boolean);
+
   const filteredServices = services.filter((svc) => {
     // Environment filter
-    if (selectedEnv === 'P1' && !svc.environment.startsWith('Production-1')) return false;
-    if (selectedEnv === 'P2' && !svc.environment.startsWith('Production-2')) return false;
+    if (selectedEnv !== 'ALL' && svc.environment !== selectedEnv) return false;
 
     // Category filter
     if (categoryFilter !== 'ALL' && svc.category !== categoryFilter) return false;
@@ -58,6 +60,26 @@ export default function FleetGrid({ services, onRefresh, isLoading = false }: Fl
             Critical
           </span>
         );
+      case 'stopped':
+        return (
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700">
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-500 mr-1.5" />
+            Stopped
+          </span>
+        );
+      case 'unconfigured':
+        return (
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-amber-950/40 text-amber-300 border border-amber-800/50">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 mr-1.5" />
+            Unconfigured
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700">
+            {status}
+          </span>
+        );
     }
   };
 
@@ -81,15 +103,16 @@ export default function FleetGrid({ services, onRefresh, isLoading = false }: Fl
   };
 
   const operationalCount = services.filter((s) => s.status === 'operational').length;
-  const degradedCount = services.filter((s) => s.status === 'degraded').length;
-  const criticalCount = services.filter((s) => s.status === 'critical').length;
+  const stoppedCount = services.filter((s) => s.status === 'stopped').length;
+  const unconfiguredCount = services.filter((s) => s.status === 'unconfigured').length;
+  const degradedCount = services.filter((s) => s.status === 'degraded' || s.status === 'critical').length;
 
   return (
     <div className="space-y-6">
       {/* Metrics Banner */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
-          <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Services</p>
+          <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Monitored</p>
           <p className="text-2xl font-bold text-white mt-1">{services.length}</p>
         </div>
         <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
@@ -97,12 +120,12 @@ export default function FleetGrid({ services, onRefresh, isLoading = false }: Fl
           <p className="text-2xl font-bold text-emerald-400 mt-1">{operationalCount}</p>
         </div>
         <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
-          <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Degraded</p>
-          <p className="text-2xl font-bold text-amber-400 mt-1">{degradedCount}</p>
+          <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Stopped / Offline</p>
+          <p className="text-2xl font-bold text-slate-400 mt-1">{stoppedCount}</p>
         </div>
         <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
-          <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Critical</p>
-          <p className="text-2xl font-bold text-rose-400 mt-1">{criticalCount}</p>
+          <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Unconfigured / Degraded</p>
+          <p className="text-2xl font-bold text-amber-400 mt-1">{unconfiguredCount + degradedCount}</p>
         </div>
       </div>
 
@@ -121,26 +144,19 @@ export default function FleetGrid({ services, onRefresh, isLoading = false }: Fl
             >
               All Envs ({services.length})
             </button>
-            <button
-              onClick={() => setSelectedEnv('P1')}
-              className={`px-3 py-1 text-xs font-medium rounded ${
-                selectedEnv === 'P1'
-                  ? 'bg-indigo-600 text-white'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              Production-1 (Edge & PaaS)
-            </button>
-            <button
-              onClick={() => setSelectedEnv('P2')}
-              className={`px-3 py-1 text-xs font-medium rounded ${
-                selectedEnv === 'P2'
-                  ? 'bg-indigo-600 text-white'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              Production-2 (K3s ARM)
-            </button>
+            {environments.map((env) => (
+              <button
+                key={env}
+                onClick={() => setSelectedEnv(env)}
+                className={`px-3 py-1 text-xs font-medium rounded ${
+                  selectedEnv === env
+                    ? 'bg-indigo-600 text-white'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                {env} ({services.filter((s) => s.environment === env).length})
+              </button>
+            ))}
           </div>
 
           {/* Category Dropdown */}
@@ -224,14 +240,16 @@ export default function FleetGrid({ services, onRefresh, isLoading = false }: Fl
                 <span className="text-slate-500">Latency:</span>
                 <span
                   className={`font-semibold ${
-                    svc.latency_ms < 30
+                    svc.latency_ms && svc.latency_ms < 30
                       ? 'text-emerald-400'
-                      : svc.latency_ms < 80
+                      : svc.latency_ms && svc.latency_ms < 80
                       ? 'text-amber-400'
-                      : 'text-rose-400'
+                      : svc.latency_ms
+                      ? 'text-rose-400'
+                      : 'text-slate-500'
                   }`}
                 >
-                  {svc.latency_ms > 0 ? `${svc.latency_ms}ms` : '—'}
+                  {svc.latency_ms && svc.latency_ms > 0 ? `${svc.latency_ms}ms` : '—'}
                 </span>
               </div>
             </div>

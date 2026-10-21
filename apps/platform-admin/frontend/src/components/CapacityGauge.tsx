@@ -66,20 +66,61 @@ export default function CapacityGauge({ databases, overallThresholdAlert = false
     };
   };
 
+  const configuredDatabases = databases.filter(
+    (db) => db.is_configured && db.threshold_state !== 'UNCONFIGURED'
+  );
+  const unconfiguredDatabases = databases.filter(
+    (db) => !db.is_configured || db.threshold_state === 'UNCONFIGURED'
+  );
+
   return (
     <div className="space-y-6">
-      {/* Overview Cards */}
+      {/* Informative Header when clusters are pending Infisical activation */}
+      {unconfiguredDatabases.length > 0 && (
+        <div className="bg-slate-900/80 border border-slate-800 rounded-lg p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-amber-950/60 border border-amber-800/80 rounded-md text-amber-300">
+              🔑
+            </div>
+            <div>
+              <p className="font-semibold text-slate-200">
+                {configuredDatabases.length} of {databases.length} Cloud Databases Connected
+              </p>
+              <p className="text-slate-400 text-[11px] mt-0.5">
+                Local PostgreSQL instances are strictly excluded from monitoring. Connect cloud Supabase clusters and MongoDB Atlas via Infisical or environment variables to view live telemetry.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center space-x-2 text-[11px] text-slate-400">
+            <span className="inline-block w-2 h-2 rounded-full bg-amber-400"></span>
+            <span>Infisical Path: <code className="text-indigo-300 font-mono">/shared/database-pool</code></span>
+          </div>
+        </div>
+      )}
+
+      {/* Cluster Storage Quotas Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {databases.map((db) => {
-          const styling = getGaugeColor(db.usage_percentage);
-          const isCritical = db.usage_percentage >= 90;
+          const isUnconfigured = !db.is_configured || db.threshold_state === 'UNCONFIGURED';
+          const styling = isUnconfigured
+            ? {
+                bar: 'bg-slate-700',
+                text: 'text-slate-400',
+                badge: 'bg-slate-800 text-amber-300/90 border-amber-800/60 font-mono',
+                label: 'PENDING INFISICAL',
+              }
+            : getGaugeColor(db.usage_percentage);
+
+          const isCritical = !isUnconfigured && db.usage_percentage >= 90;
           const limitMb = Math.round(db.free_tier_limit_bytes / (1024 * 1024));
 
           return (
             <div
               key={`${db.service}-${db.project_or_cluster}`}
               className={`bg-slate-900 border rounded-lg p-5 flex flex-col justify-between transition-all ${
-                isCritical
+                isUnconfigured
+                  ? 'border-slate-800/80 bg-slate-900/50'
+                  : isCritical
                   ? 'border-rose-700/80 shadow-lg shadow-rose-950/30'
                   : db.usage_percentage >= 70
                   ? 'border-amber-700/60'
@@ -97,41 +138,76 @@ export default function CapacityGauge({ databases, overallThresholdAlert = false
                       {db.project_or_cluster}
                     </h4>
                   </div>
-                  <span className={`px-2 py-0.5 rounded text-xs font-semibold border ${styling.badge}`}>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${styling.badge}`}>
                     {styling.label}
                   </span>
                 </div>
 
-                {/* Free Tier Limit Progress */}
-                <div className="space-y-2 mt-4">
-                  <div className="flex justify-between items-baseline text-xs">
-                    <span className="text-slate-400">Capacity Used:</span>
-                    <span className="font-mono text-slate-200">
-                      <strong className={styling.text}>{db.used_pretty}</strong> / {limitMb} MB
-                    </span>
-                  </div>
+                {/* Free Tier Limit Progress or Unconfigured Card State */}
+                {isUnconfigured ? (
+                  <div className="space-y-3 mt-4">
+                    <div className="flex justify-between items-baseline text-xs">
+                      <span className="text-slate-400">Capacity Used:</span>
+                      <span className="font-mono text-amber-300/90 font-medium">
+                        Unconfigured
+                      </span>
+                    </div>
 
-                  {/* Visual Progress Bar */}
-                  <div className="w-full bg-slate-950 rounded-full h-3.5 p-0.5 border border-slate-800 overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all duration-500 ${styling.bar}`}
-                      style={{ width: `${Math.min(100, Math.max(2, db.usage_percentage))}%` }}
-                    />
-                  </div>
+                    {/* Muted Inactive Progress Bar */}
+                    <div className="w-full bg-slate-950 rounded-full h-3.5 p-0.5 border border-slate-800/80 overflow-hidden">
+                      <div className="h-full rounded-full bg-slate-800/60 w-full" />
+                    </div>
 
-                  <div className="flex justify-between text-[11px] text-slate-400">
-                    <span>0 MB</span>
-                    <span className={`font-bold ${styling.text}`}>
-                      {db.usage_percentage.toFixed(1)}%
-                    </span>
-                    <span>{limitMb} MB (Free Tier)</span>
+                    <div className="bg-slate-950/70 p-2.5 rounded border border-slate-800/70 space-y-1">
+                      <span className="text-[10px] text-slate-500 uppercase font-semibold tracking-wider block">
+                        Expected Infisical Secret
+                      </span>
+                      <code className="text-[11px] font-mono text-indigo-300 break-all select-all block">
+                        {db.infisical_path || `/shared/database-pool/${db.project_or_cluster.toUpperCase()}_URL`}
+                      </code>
+                    </div>
+
+                    <div className="flex justify-between text-[11px] text-slate-500">
+                      <span>0 B tracked</span>
+                      <span>{limitMb} MB Free Tier Cap</span>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="space-y-2 mt-4">
+                    <div className="flex justify-between items-baseline text-xs">
+                      <span className="text-slate-400">Capacity Used:</span>
+                      <span className="font-mono text-slate-200">
+                        <strong className={styling.text}>{db.used_pretty}</strong> / {limitMb} MB
+                      </span>
+                    </div>
+
+                    {/* Visual Progress Bar */}
+                    <div className="w-full bg-slate-950 rounded-full h-3.5 p-0.5 border border-slate-800 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 ${styling.bar}`}
+                        style={{ width: `${Math.min(100, Math.max(2, db.usage_percentage))}%` }}
+                      />
+                    </div>
+
+                    <div className="flex justify-between text-[11px] text-slate-400">
+                      <span>0 MB</span>
+                      <span className={`font-bold ${styling.text}`}>
+                        {db.usage_percentage.toFixed(1)}%
+                      </span>
+                      <span>{limitMb} MB (Free Tier)</span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Action / Warning Footer */}
               <div className="mt-5 pt-3 border-t border-slate-800">
-                {isCritical ? (
+                {isUnconfigured ? (
+                  <p className="text-[11px] text-slate-500 text-center flex items-center justify-center space-x-1.5">
+                    <span>🔒</span>
+                    <span>Awaiting cloud credentials • Local DB excluded</span>
+                  </p>
+                ) : isCritical ? (
                   <div className="space-y-2">
                     <div className="inline-flex items-center px-2 py-1 rounded bg-rose-950/80 border border-rose-800 text-[11px] text-rose-300 font-medium w-full justify-center">
                       ⚠️ Autonomous Archive Recommended

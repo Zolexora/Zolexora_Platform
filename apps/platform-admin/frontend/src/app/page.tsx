@@ -40,7 +40,7 @@ export default function FleetOverviewPage() {
           Command Center Fleet Overview
         </h1>
         <p className="text-sm text-slate-400 mt-1">
-          Unified telemetry and health monitoring across Production-1 (Edge, Vercel, Fly.io, Render) and Production-2 (Sovereign K3s ARM Cluster).
+          Unified operational telemetry and live health monitoring across Platform Control Plane, Cloud Database Clusters, and Services configured via Infisical.
         </p>
       </div>
 

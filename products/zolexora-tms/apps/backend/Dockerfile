@@ -1,4 +1,4 @@
-# Stage 1: Build virtualenv with dependencies
+# Stage 1: Build virtualenv with dependencies using pre-compiled uv binary
 FROM python:3.12-slim AS builder
 
 WORKDIR /app
@@ -7,19 +7,13 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     UV_COMPILE_BYTECODE=1
 
-# Install build dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install uv for fast package management
-RUN pip install --no-cache-dir uv
+# Use prebuilt uv binary - zero apt/pip overhead
+COPY --from=ghcr.io/astral-sh/uv:0.4.25 /uv /bin/uv
 
 # Copy dependency specifications first to leverage Docker layer caching
 COPY pyproject.toml uv.lock README.md ./
 
-# Install dependencies into /app/.venv
+# Install production dependencies into /app/.venv
 RUN uv sync --no-dev --frozen --no-install-project
 
 # Stage 2: Minimal runtime image
@@ -32,20 +26,20 @@ ENV PYTHONUNBUFFERED=1 \
     PORT=4030 \
     PATH="/app/.venv/bin:$PATH"
 
-# Install only minimal runtime shared libraries
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libpq5 \
-    && rm -rf /var/lib/apt/lists/*
+# Create non-root app user for container security
+RUN groupadd -g 1001 appgroup && \
+    useradd -u 1001 -g appgroup -s /bin/bash -m appuser
 
-# Copy pre-built virtual environment from builder
-COPY --from=builder /app/.venv /app/.venv
+# Copy virtual environment from builder
+COPY --from=builder --chown=appuser:appgroup /app/.venv /app/.venv
 
 # Copy application source code and migrations
-COPY app ./app
-COPY alembic ./alembic
-COPY alembic.ini ./
-COPY init_db.py ./
+COPY --chown=appuser:appgroup app ./app
+COPY --chown=appuser:appgroup alembic ./alembic
+COPY --chown=appuser:appgroup alembic.ini ./
+COPY --chown=appuser:appgroup init_db.py ./
 
+USER appuser
 EXPOSE 4030
 
 # Run the app from the virtual environment

@@ -99,8 +99,9 @@ MONGO_FREE_LIMIT_BYTES    = 512 * 1024 * 1024   # 512 MB (536,870,912 bytes)
 
 def get_supabase_url(project_name: str, raise_on_missing: bool = True) -> Optional[str]:
     """Helper to dynamically fetch the right SUPABASE_URL based on the mapped project name."""
+    from ..services.infisical import get_secret
     env_var_name = f"SUPABASE_{project_name.upper()}_URL"
-    url = os.getenv(env_var_name)
+    url = get_secret(env_var_name)
     if not url:
         if raise_on_missing:
             raise ValueError(f"Missing environment variable: {env_var_name}")
@@ -109,8 +110,9 @@ def get_supabase_url(project_name: str, raise_on_missing: bool = True) -> Option
 
 def get_supabase_key(project_name: str, key_type: str = "SERVICE_KEY", raise_on_missing: bool = True) -> Optional[str]:
     """Helper to fetch the ANON or SERVICE_KEY for a specific project."""
+    from ..services.infisical import get_secret
     env_var_name = f"SUPABASE_{project_name.upper()}_{key_type.upper()}"
-    key = os.getenv(env_var_name)
+    key = get_secret(env_var_name)
     if not key:
         if raise_on_missing:
             raise ValueError(f"Missing environment variable: {env_var_name}")
@@ -119,22 +121,23 @@ def get_supabase_key(project_name: str, key_type: str = "SERVICE_KEY", raise_on_
 
 def get_pg_pool_dsn(project_name: str, schema: Optional[str] = None) -> Optional[str]:
     """
-    Constructs an asyncpg DSN for Supavisor connection pooling on port 6543.
-    Respects SUPABASE_{PROJECT}_PG_URL, DATABASE_URL, or derives from host configuration.
+    Constructs an asyncpg DSN for cloud Supavisor connection pooling on port 6543
+    using credentials strictly retrieved from Infisical.
     """
+    from ..services.infisical import get_secret
     project_upper = project_name.upper()
-    explicit_dsn = os.getenv(f"SUPABASE_{project_upper}_PG_URL") or os.getenv("DATABASE_URL")
+    explicit_dsn = get_secret(f"SUPABASE_{project_upper}_PG_URL")
     if explicit_dsn:
         if schema and "search_path" not in explicit_dsn:
             separator = "&" if "?" in explicit_dsn else "?"
             return f"{explicit_dsn}{separator}options=-csearch_path%3D{schema}"
         return explicit_dsn
 
-    db_host = os.getenv(f"SUPABASE_{project_upper}_HOST") or os.getenv("PGHOST")
-    db_user = os.getenv(f"SUPABASE_{project_upper}_USER") or os.getenv("PGUSER", "postgres")
-    db_pass = os.getenv(f"SUPABASE_{project_upper}_PASSWORD") or os.getenv("PGPASSWORD")
-    db_name = os.getenv(f"SUPABASE_{project_upper}_DB") or os.getenv("PGDATABASE", "postgres")
-    port = int(os.getenv(f"SUPABASE_{project_upper}_PORT", "6543"))
+    db_host = get_secret(f"SUPABASE_{project_upper}_HOST")
+    db_user = get_secret(f"SUPABASE_{project_upper}_USER")
+    db_pass = get_secret(f"SUPABASE_{project_upper}_PASSWORD")
+    db_name = get_secret(f"SUPABASE_{project_upper}_DB", "postgres")
+    port = int(get_secret(f"SUPABASE_{project_upper}_PORT", "6543") or "6543")
 
     if not db_host or not db_pass:
         return None
