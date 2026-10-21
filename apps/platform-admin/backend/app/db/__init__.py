@@ -1,15 +1,67 @@
-from .config import PRODUCT_DB_MAP, MONGO_DB_MAP, D1_DB_MAP
-from .connections import get_supabase, get_mongo, get_r2_url
-from .health import get_system_health, check_supabase_health, check_mongo_health
+from .config import (
+    PRODUCT_DB_MAP,
+    MONGO_DB_MAP,
+    D1_DB_MAP,
+    R2_BUCKET_MAP,
+    SUPABASE_PROJECTS,
+    POSTGRES_FREE_LIMIT_BYTES,
+    MONGO_FREE_LIMIT_BYTES,
+    get_supabase_url,
+    get_supabase_key,
+    get_pg_pool_dsn,
+)
+from .connections import (
+    get_supabase,
+    get_mongo,
+    get_r2_client,
+    generate_r2_presigned_url,
+    get_r2_bucket_for_product,
+    get_asyncpg_pool,
+    close_all_connections,
+)
+from .health import (
+    check_supabase_health,
+    check_mongo_health,
+    get_system_health,
+)
+from .telemetry import (
+    collect_postgres_capacity,
+    collect_mongo_capacity,
+    get_hot_tables_metrics,
+    get_capacity_telemetry,
+    calculate_archive_preview,
+    get_pinned_tables,
+    toggle_table_pin,
+    format_bytes,
+)
 
 __all__ = [
     "PRODUCT_DB_MAP",
     "MONGO_DB_MAP",
     "D1_DB_MAP",
+    "R2_BUCKET_MAP",
+    "SUPABASE_PROJECTS",
+    "POSTGRES_FREE_LIMIT_BYTES",
+    "MONGO_FREE_LIMIT_BYTES",
+    "get_supabase_url",
+    "get_supabase_key",
+    "get_pg_pool_dsn",
     "get_supabase",
     "get_mongo",
-    "get_r2_url",
-    "get_system_health",
+    "get_r2_client",
+    "generate_r2_presigned_url",
+    "get_r2_bucket_for_product",
+    "get_asyncpg_pool",
+    "close_all_connections",
     "check_supabase_health",
     "check_mongo_health",
+    "get_system_health",
+    "collect_postgres_capacity",
+    "collect_mongo_capacity",
+    "get_hot_tables_metrics",
+    "get_capacity_telemetry",
+    "calculate_archive_preview",
+    "get_pinned_tables",
+    "toggle_table_pin",
+    "format_bytes",
 ]

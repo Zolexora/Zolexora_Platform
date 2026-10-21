@@ -1,10 +1,12 @@
 import os
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 # ============================================================================
 # ZOLEXORA PLATFORM — DATABASE ROUTER MAP
 # Defines the location and connection details for every product's database.
 # ============================================================================
+
+SUPABASE_PROJECTS = ["core", "commerce", "business", "ai_erp"]
 
 PRODUCT_DB_MAP: Dict[str, Dict[str, Any]] = {
     # ── zolexora-core ───────────────────────────────────────────────
@@ -72,9 +74,9 @@ PRODUCT_DB_MAP: Dict[str, Dict[str, Any]] = {
 }
 
 MONGO_DB_MAP: Dict[str, str] = {
-    "zolexora-ai":    "db_ai",
-    "zolexora-tms":   "db_tms",
-    "zolexora-engage":"db_engage",
+    "zolexora-ai":     "db_ai",
+    "zolexora-tms":    "db_tms",
+    "zolexora-engage": "db_engage",
 }
 
 D1_DB_MAP: Dict[str, str] = {
@@ -84,18 +86,60 @@ D1_DB_MAP: Dict[str, str] = {
     "routes":   "D1_ROUTES_ID",
 }
 
-def get_supabase_url(project_name: str) -> str:
+R2_BUCKET_MAP: Dict[str, str] = {
+    "zolexora-ims":         os.getenv("R2_BUCKET_IMS", "zolexora-ims-files"),
+    "zolexora-marketplace": os.getenv("R2_BUCKET_MARKETPLACE", "zolexora-marketplace-files"),
+    "zolexora-tms":         os.getenv("R2_BUCKET_TMS", "zolexora-tms-files"),
+    "default":              os.getenv("R2_BUCKET_DEFAULT", "zolexora-platform-files"),
+}
+
+# Free-tier capacity limits
+POSTGRES_FREE_LIMIT_BYTES = 500 * 1024 * 1024   # 500 MB (524,288,000 bytes)
+MONGO_FREE_LIMIT_BYTES    = 512 * 1024 * 1024   # 512 MB (536,870,912 bytes)
+
+def get_supabase_url(project_name: str, raise_on_missing: bool = True) -> Optional[str]:
     """Helper to dynamically fetch the right SUPABASE_URL based on the mapped project name."""
     env_var_name = f"SUPABASE_{project_name.upper()}_URL"
     url = os.getenv(env_var_name)
     if not url:
-        raise ValueError(f"Missing environment variable: {env_var_name}")
+        if raise_on_missing:
+            raise ValueError(f"Missing environment variable: {env_var_name}")
+        return None
     return url
 
-def get_supabase_key(project_name: str, key_type: str = "SERVICE_KEY") -> str:
+def get_supabase_key(project_name: str, key_type: str = "SERVICE_KEY", raise_on_missing: bool = True) -> Optional[str]:
     """Helper to fetch the ANON or SERVICE_KEY for a specific project."""
     env_var_name = f"SUPABASE_{project_name.upper()}_{key_type.upper()}"
     key = os.getenv(env_var_name)
     if not key:
-        raise ValueError(f"Missing environment variable: {env_var_name}")
+        if raise_on_missing:
+            raise ValueError(f"Missing environment variable: {env_var_name}")
+        return None
     return key
+
+def get_pg_pool_dsn(project_name: str, schema: Optional[str] = None) -> Optional[str]:
+    """
+    Constructs an asyncpg DSN for Supavisor connection pooling on port 6543.
+    Respects SUPABASE_{PROJECT}_PG_URL, DATABASE_URL, or derives from host configuration.
+    """
+    project_upper = project_name.upper()
+    explicit_dsn = os.getenv(f"SUPABASE_{project_upper}_PG_URL") or os.getenv("DATABASE_URL")
+    if explicit_dsn:
+        if schema and "search_path" not in explicit_dsn:
+            separator = "&" if "?" in explicit_dsn else "?"
+            return f"{explicit_dsn}{separator}options=-csearch_path%3D{schema}"
+        return explicit_dsn
+
+    db_host = os.getenv(f"SUPABASE_{project_upper}_HOST") or os.getenv("PGHOST")
+    db_user = os.getenv(f"SUPABASE_{project_upper}_USER") or os.getenv("PGUSER", "postgres")
+    db_pass = os.getenv(f"SUPABASE_{project_upper}_PASSWORD") or os.getenv("PGPASSWORD")
+    db_name = os.getenv(f"SUPABASE_{project_upper}_DB") or os.getenv("PGDATABASE", "postgres")
+    port = int(os.getenv(f"SUPABASE_{project_upper}_PORT", "6543"))
+
+    if not db_host or not db_pass:
+        return None
+
+    dsn = f"postgresql://{db_user}:{db_pass}@{db_host}:{port}/{db_name}"
+    if schema:
+        dsn += f"?options=-csearch_path%3D{schema}"
+    return dsn
