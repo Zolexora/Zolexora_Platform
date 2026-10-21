@@ -1,80 +1,144 @@
-import asyncio
+import os
 import time
-from typing import Dict, Any
-from .config import PRODUCT_DB_MAP, MONGO_DB_MAP
+from datetime import datetime, timezone
+from typing import Dict
+from .config import PRODUCT_DB_MAP, MONGO_DB_MAP, SUPABASE_PROJECTS, get_supabase_url, get_supabase_key
 from .connections import get_supabase, get_mongo
+from ..schemas.health import DatabaseTargetHealth, DatabaseHealthReport
 
 # ============================================================================
 # ZOLEXORA PLATFORM — DATABASE HEALTH MONITOR
-# Regularly checks connectivity to all clustered databases.
+# Non-blocking health checks across all clustered Supabase projects and MongoDB
 # ============================================================================
 
-async def check_supabase_health(product: str) -> Dict[str, Any]:
-    """Checks the health of the Supabase project associated with a product."""
+async def check_supabase_health(project_name: str) -> DatabaseTargetHealth:
+    """
+    Checks the health of a specific Supabase project with non-blocking graceful degradation.
+    Returns status 'unconfigured' if credentials are missing, avoiding unhandled 500 exceptions.
+    """
+    url = get_supabase_url(project_name, raise_on_missing=False)
+    key = get_supabase_key(project_name, "SERVICE_KEY", raise_on_missing=False)
+
+    if not url or not key:
+        return DatabaseTargetHealth(
+            target=f"supabase_{project_name}",
+            status="unconfigured",
+            latency_ms=-1,
+            details=f"Missing credentials: SUPABASE_{project_name.upper()}_URL or SERVICE_KEY",
+            error=None
+        )
+
+    # Find a product mapped to this project to use its client config
+    sample_product = next(
+        (p for p, cfg in PRODUCT_DB_MAP.items() if cfg["supabase_project"] == project_name),
+        None
+    )
+    if not sample_product:
+        return DatabaseTargetHealth(
+            target=f"supabase_{project_name}",
+            status="unconfigured",
+            latency_ms=-1,
+            details=f"No products registered for project {project_name}"
+        )
+
     start_time = time.time()
     try:
-        client = get_supabase(product)
-        # Simple query to verify connection and schema resolution
-        # We query a generic postgres system table or simple limit 1
+        client = get_supabase(sample_product, raise_on_missing=False)
+        if not client:
+            return DatabaseTargetHealth(
+                target=f"supabase_{project_name}",
+                status="unconfigured",
+                latency_ms=-1,
+                details=f"Client initialization failed for project {project_name}"
+            )
+
+        # Probing a system table or non-existent table to verify REST API is reachable
         client.table("non_existent_table").select("*").limit(1).execute()
     except Exception as e:
-        # We expect a PostgrestAPIError (404/400) which means the REST API is alive,
-        # but if we get a connection error, it will be caught here.
-        if "40" in str(e) or "Relation" in str(e) or "relation" in str(e):
-             # The DB is alive, the table just doesn't exist. This is a successful ping.
-             pass
+        err_msg = str(e)
+        # If the response code indicates table/relation does not exist, PostgREST endpoint is healthy
+        if any(keyword in err_msg for keyword in ["40", "Relation", "relation", "does not exist", "PGRST"]):
+            pass
         else:
-            return {
-                "status": "degraded",
-                "latency_ms": -1,
-                "error": str(e)
-            }
-    
-    latency = int((time.time() - start_time) * 1000)
-    return {
-        "status": "healthy",
-        "latency_ms": latency
-    }
+            return DatabaseTargetHealth(
+                target=f"supabase_{project_name}",
+                status="degraded",
+                latency_ms=-1,
+                error=err_msg
+            )
 
-async def check_mongo_health(product: str) -> Dict[str, Any]:
-    """Checks the health of the MongoDB database associated with a product."""
+    latency = max(1, int((time.time() - start_time) * 1000))
+    return DatabaseTargetHealth(
+        target=f"supabase_{project_name}",
+        status="healthy",
+        latency_ms=latency,
+        details=f"Supabase {project_name} project reachable via PostgREST"
+    )
+
+async def check_mongo_health() -> DatabaseTargetHealth:
+    """
+    Checks the health of the MongoDB Atlas cluster with non-blocking graceful degradation.
+    """
+    mongo_uri = os.getenv("MONGO_URI")
+    if not mongo_uri:
+        return DatabaseTargetHealth(
+            target="mongodb_atlas",
+            status="unconfigured",
+            latency_ms=-1,
+            details="Missing MONGO_URI environment variable",
+            error=None
+        )
+
     start_time = time.time()
     try:
-        db = await get_mongo(product)
-        # Execute a fast ping command
+        first_product = next(iter(MONGO_DB_MAP), "zolexora-ai")
+        db = await get_mongo(first_product, raise_on_missing=False)
+        if db is None:
+            return DatabaseTargetHealth(
+                target="mongodb_atlas",
+                status="unconfigured",
+                latency_ms=-1,
+                details="MongoDB client pool could not be initialized"
+            )
         await db.command("ping")
     except Exception as e:
-        return {
-            "status": "degraded",
-            "latency_ms": -1,
-            "error": str(e)
-        }
-    
-    latency = int((time.time() - start_time) * 1000)
-    return {
-        "status": "healthy",
-        "latency_ms": latency
-    }
+        return DatabaseTargetHealth(
+            target="mongodb_atlas",
+            status="degraded",
+            latency_ms=-1,
+            error=str(e)
+        )
 
-async def get_system_health() -> Dict[str, Dict[str, Any]]:
-    """
-    Returns a comprehensive health report of all clustered databases.
-    Used by the Platform Admin dashboard.
-    """
-    health_report = {}
-    
-    # We only need to check one product per unique project to avoid spamming pings
-    checked_supabase_projects = set()
-    
-    for product, config in PRODUCT_DB_MAP.items():
-        project = config["supabase_project"]
-        if project not in checked_supabase_projects:
-            health_report[f"supabase_{project}"] = await check_supabase_health(product)
-            checked_supabase_projects.add(project)
-            
-    # For MongoDB, we share a cluster, so we only need to ping it once via any product
-    if MONGO_DB_MAP:
-        first_mongo_product = next(iter(MONGO_DB_MAP))
-        health_report["mongodb"] = await check_mongo_health(first_mongo_product)
+    latency = max(1, int((time.time() - start_time) * 1000))
+    return DatabaseTargetHealth(
+        target="mongodb_atlas",
+        status="healthy",
+        latency_ms=latency,
+        details="MongoDB Atlas cluster ping acknowledged"
+    )
 
-    return health_report
+async def get_system_health() -> DatabaseHealthReport:
+    """
+    Returns comprehensive health metrics for all 4 Supabase projects and MongoDB Atlas.
+    """
+    targets: Dict[str, DatabaseTargetHealth] = {}
+
+    for project in SUPABASE_PROJECTS:
+        targets[f"supabase_{project}"] = await check_supabase_health(project)
+
+    targets["mongodb_atlas"] = await check_mongo_health()
+
+    # Determine overall status
+    statuses = [t.status for t in targets.values()]
+    if all(s == "healthy" for s in statuses):
+        overall_status = "healthy"
+    elif any(s in ("healthy", "unconfigured") for s in statuses):
+        overall_status = "degraded"
+    else:
+        overall_status = "unhealthy"
+
+    return DatabaseHealthReport(
+        overall_status=overall_status,
+        targets=targets,
+        timestamp=datetime.now(timezone.utc).isoformat()
+    )

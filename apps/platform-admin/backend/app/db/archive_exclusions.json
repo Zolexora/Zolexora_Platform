@@ -1,0 +1,6 @@
+{
+  "pinned_tables": [
+    "clarity_fi.audit_log",
+    "platform_admin.global_settings"
+  ]
+}
