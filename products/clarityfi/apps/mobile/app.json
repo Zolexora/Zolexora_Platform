@@ -26,7 +26,11 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#0A0A0A"
-      }
+      },
+      "permissions": [
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT"
+      ]
     },
     "web": {
       "favicon": "./assets/images/icon.png"
@@ -45,6 +49,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "eb1fc46c-c05e-4cb1-9ace-854f6b1c0db0"
+      }
+    },
+    "owner": "zolexora"
   }
 }

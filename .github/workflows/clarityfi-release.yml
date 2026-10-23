@@ -104,7 +104,7 @@ jobs:
             --profile preview \
             --non-interactive \
             --json \
-            --no-wait=false 2>&1)
+            --no-wait=false 2>&1) || { echo "$OUTPUT"; exit 1; }
           echo "$OUTPUT"
           URL=$(echo "$OUTPUT" | python3 -c "
           import sys, json
@@ -146,7 +146,7 @@ jobs:
             --profile production \
             --non-interactive \
             --json \
-            --no-wait=false 2>&1)
+            --no-wait=false 2>&1) || { echo "$OUTPUT"; exit 1; }
           echo "$OUTPUT"
           URL=$(echo "$OUTPUT" | python3 -c "
           import sys, json
