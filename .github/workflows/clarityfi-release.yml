@@ -24,7 +24,7 @@ on:
 env:
   WORKING_DIR: products/clarityfi/apps/mobile
   APP_SLUG: clarityfi
-  GITHUB_APK_REPO: Abhishek-art01/03_Clearityfi   # repo that hosts GitHub Releases
+  GITHUB_APK_REPO: Zolexora/Zolexora_Platform   # repo that hosts GitHub Releases
 
 jobs:
   # ──────────────────────────────────────────────────────────────────────────
