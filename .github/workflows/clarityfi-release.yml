@@ -1,0 +1,292 @@
+name: ClarityFi — Release
+
+# ────────────────────────────────────────────────────────────────────────────
+# Triggers on tags like  clarityfi-v1.0.0  or  clarityfi-v2.3.1-beta
+# ────────────────────────────────────────────────────────────────────────────
+on:
+  push:
+    tags:
+      - "clarityfi-v*"
+
+  # Allow a manual run from the GitHub Actions UI (choose ref manually)
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: "EAS build channel"
+        required: false
+        default: "production"
+        type: choice
+        options:
+          - production
+          - preview
+
+# All jobs share these env vars
+env:
+  WORKING_DIR: products/clarityfi/apps/mobile
+  APP_SLUG: clarityfi
+  GITHUB_APK_REPO: Abhishek-art01/03_Clearityfi   # repo that hosts GitHub Releases
+
+jobs:
+  # ──────────────────────────────────────────────────────────────────────────
+  # 1. Build APK (sideload / Galaxy Store preview) + AAB (Galaxy Store prod)
+  # ──────────────────────────────────────────────────────────────────────────
+  build-android:
+    name: Build Android (APK + AAB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    outputs:
+      apk_url: ${{ steps.eas_apk.outputs.artifact_url }}
+      aab_url: ${{ steps.eas_aab.outputs.artifact_url }}
+      version:  ${{ steps.version.outputs.version }}
+
+    steps:
+      # ── Checkout ──────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # full history so EAS can read git metadata
+
+      # ── Node + pnpm ───────────────────────────────────────────────────────
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+          run_install: false
+
+      - name: Get pnpm store path
+        id: pnpm_cache
+        shell: bash
+        run: echo "store=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm_cache.outputs.store }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+
+      - name: Install monorepo dependencies
+        run: pnpm install --frozen-lockfile
+
+      # ── EAS CLI ───────────────────────────────────────────────────────────
+      - name: Setup Expo + EAS CLI
+        uses: expo/expo-github-action@v8
+        with:
+          expo-version: latest
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      # ── Extract version from app.json ────────────────────────────────────
+      - name: Extract version
+        id: version
+        working-directory: ${{ env.WORKING_DIR }}
+        run: |
+          VER=$(node -p "require('./app.json').expo.version")
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+          echo "📦 Building ClarityFi v$VER"
+
+      # ── Build APK (preview profile → standalone .apk for sideloading) ────
+      - name: EAS Build — APK (preview)
+        id: eas_apk
+        working-directory: ${{ env.WORKING_DIR }}
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          # --non-interactive + --json lets us parse the artifact URL
+          OUTPUT=$(eas build \
+            --platform android \
+            --profile preview \
+            --non-interactive \
+            --json \
+            --no-wait=false 2>&1)
+          echo "$OUTPUT"
+          URL=$(echo "$OUTPUT" | python3 -c "
+          import sys, json
+          lines = sys.stdin.read()
+          # EAS outputs JSON array at the end
+          start = lines.rfind('[')
+          data = json.loads(lines[start:])
+          print(data[0]['artifacts']['buildUrl'])
+          ")
+          echo "artifact_url=$URL" >> "$GITHUB_OUTPUT"
+          echo "✅ APK artifact: $URL"
+
+      # ── Download APK so we can attach it to GitHub Release ───────────────
+      - name: Download APK artifact
+        run: |
+          mkdir -p /tmp/clarityfi-artifacts
+          curl -L "${{ steps.eas_apk.outputs.artifact_url }}" \
+            -o "/tmp/clarityfi-artifacts/ClarityFi-v${{ steps.version.outputs.version }}-arm64.apk"
+          echo "APK downloaded: $(du -sh /tmp/clarityfi-artifacts/*.apk | cut -f1)"
+
+      # ── SHA256 checksum for security-conscious users ──────────────────────
+      - name: Generate SHA256 checksum
+        run: |
+          cd /tmp/clarityfi-artifacts
+          sha256sum "ClarityFi-v${{ steps.version.outputs.version }}-arm64.apk" \
+            > "ClarityFi-v${{ steps.version.outputs.version }}-arm64.apk.sha256"
+          echo "Checksum:"
+          cat "ClarityFi-v${{ steps.version.outputs.version }}-arm64.apk.sha256"
+
+      # ── Build AAB (production profile → for Samsung Galaxy Store) ────────
+      - name: EAS Build — AAB (production)
+        id: eas_aab
+        working-directory: ${{ env.WORKING_DIR }}
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          OUTPUT=$(eas build \
+            --platform android \
+            --profile production \
+            --non-interactive \
+            --json \
+            --no-wait=false 2>&1)
+          echo "$OUTPUT"
+          URL=$(echo "$OUTPUT" | python3 -c "
+          import sys, json
+          lines = sys.stdin.read()
+          start = lines.rfind('[')
+          data = json.loads(lines[start:])
+          print(data[0]['artifacts']['buildUrl'])
+          ")
+          echo "artifact_url=$URL" >> "$GITHUB_OUTPUT"
+          echo "✅ AAB artifact: $URL"
+
+      # ── Download AAB ──────────────────────────────────────────────────────
+      - name: Download AAB artifact
+        run: |
+          curl -L "${{ steps.eas_aab.outputs.artifact_url }}" \
+            -o "/tmp/clarityfi-artifacts/ClarityFi-v${{ steps.version.outputs.version }}.aab"
+          echo "AAB downloaded: $(du -sh /tmp/clarityfi-artifacts/*.aab | cut -f1)"
+
+      # ── Upload artifacts between jobs ─────────────────────────────────────
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: clarityfi-android-${{ steps.version.outputs.version }}
+          path: /tmp/clarityfi-artifacts/
+          retention-days: 30
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # 2. Create GitHub Release and attach APK + checksum
+  # ──────────────────────────────────────────────────────────────────────────
+  github-release:
+    name: GitHub Release
+    runs-on: ubuntu-latest
+    needs: build-android
+    permissions:
+      contents: write       # needed to create releases
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: clarityfi-android-${{ needs.build-android.outputs.version }}
+          path: /tmp/clarityfi-artifacts/
+
+      - name: List artifacts
+        run: ls -lh /tmp/clarityfi-artifacts/
+
+      # ── Derive friendly tag from git ref or workflow_dispatch ─────────────
+      - name: Set release tag
+        id: tag
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            TAG="${GITHUB_REF#refs/tags/}"
+          else
+            TAG="clarityfi-v${{ needs.build-android.outputs.version }}"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Release tag: $TAG"
+
+      # ── Read APK checksum for release body ───────────────────────────────
+      - name: Read checksum
+        id: checksum
+        run: |
+          CS=$(cat /tmp/clarityfi-artifacts/ClarityFi-v${{ needs.build-android.outputs.version }}-arm64.apk.sha256 | cut -d' ' -f1)
+          echo "sha256=$CS" >> "$GITHUB_OUTPUT"
+
+      # ── Create release ────────────────────────────────────────────────────
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: "ClarityFi v${{ needs.build-android.outputs.version }}"
+          body: |
+            ## ClarityFi v${{ needs.build-android.outputs.version }}
+
+            ### 📥 Installation
+
+            #### Direct APK (Recommended for most users)
+            Download the APK below and install it on your Android device.
+            > ⚠️ You'll see "Install unknown apps" — this is normal for apps outside the Play Store.
+            > Enable it once for your browser/file manager, install, then disable it again.
+
+            #### Samsung Galaxy Store
+            ClarityFi is available on Samsung Galaxy Store:
+            ```
+            samsungapps://ProductDetail/com.clarityfi.app
+            ```
+            Or search **ClarityFi** in the Galaxy Store app on your Samsung device.
+
+            ---
+
+            ### 🔒 Security — Verify your download
+            ```
+            SHA256: ${{ steps.checksum.outputs.sha256 }}
+            ```
+            Verify on Linux/macOS:
+            ```bash
+            sha256sum ClarityFi-v${{ needs.build-android.outputs.version }}-arm64.apk
+            ```
+
+            ---
+
+            ### 📋 What's included
+            - `ClarityFi-v${{ needs.build-android.outputs.version }}-arm64.apk` — Sideload / Direct install
+            - `ClarityFi-v${{ needs.build-android.outputs.version }}-arm64.apk.sha256` — Integrity checksum
+            - `ClarityFi-v${{ needs.build-android.outputs.version }}.aab` — Samsung Galaxy Store bundle
+
+            ---
+            *Built with Expo EAS. Privacy-first. Your data stays on your device.*
+          files: |
+            /tmp/clarityfi-artifacts/ClarityFi-v${{ needs.build-android.outputs.version }}-arm64.apk
+            /tmp/clarityfi-artifacts/ClarityFi-v${{ needs.build-android.outputs.version }}-arm64.apk.sha256
+            /tmp/clarityfi-artifacts/ClarityFi-v${{ needs.build-android.outputs.version }}.aab
+          draft: false
+          prerelease: false
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # 3. Notify — post a summary comment / Slack message (optional)
+  # ──────────────────────────────────────────────────────────────────────────
+  notify:
+    name: Notify
+    runs-on: ubuntu-latest
+    needs: [build-android, github-release]
+    if: always()
+
+    steps:
+      - name: Release summary
+        run: |
+          echo "## ClarityFi Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Channel | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| GitHub Release (APK) | ${{ needs.github-release.result == 'success' && '✅ Published' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| EAS APK Build | ${{ needs.build-android.result == 'success' && '✅ Built' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| EAS AAB Build | ${{ needs.build-android.result == 'success' && '✅ Built' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Samsung Galaxy Store | ⏳ Manual upload required (see AAB artifact) |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version**: v${{ needs.build-android.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**APK**: ${{ needs.build-android.outputs.apk_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "**AAB**: ${{ needs.build-android.outputs.aab_url }}" >> $GITHUB_STEP_SUMMARY

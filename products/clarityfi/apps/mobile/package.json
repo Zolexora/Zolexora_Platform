@@ -7,6 +7,9 @@
     "dev": "expo start",
     "dev:tunnel": "expo start --tunnel",
     "build": "node scripts/build.js",
+    "build:apk": "eas build -p android --profile preview",
+    "build:aab": "eas build -p android --profile production",
+    "build:ios": "eas build -p ios --profile production",
     "serve": "node server/serve.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "verify:tunnel": "node scripts/verify-tunnel.js"
