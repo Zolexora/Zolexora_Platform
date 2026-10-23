@@ -82,6 +82,9 @@
     .nav-cta:hover, .button:hover { transform: translateY(-2px); background: var(--gold-soft); }
     .button.secondary { border-color: var(--line); background: transparent; color: var(--cream); }
     .button.secondary:hover { border-color: #555246; background: rgba(255,255,255,.03); }
+    .button.galaxy-btn { background: #1428A0; border-color: #1428A0; color: #fff; }
+    .button.galaxy-btn:hover { background: #0e1e7a; border-color: #0e1e7a; transform: translateY(-2px); }
+    .cta-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-bottom: 8px; }
 
     .hero { min-height: calc(100vh - 72px); display: grid; grid-template-columns: 1.05fr .95fr; align-items: center; gap: clamp(50px, 8vw, 110px); padding-block: 76px 90px; }
     .hero h1 { max-width: 730px; margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: clamp(55px, 7.2vw, 104px); font-weight: 400; letter-spacing: -.055em; line-height: .91; }
@@ -343,8 +346,54 @@
     </section>
 
     <section class="shell cta-section" id="access">
-      <div class="cta-panel"><p class="eyebrow">Android release is ready</p><h2>Download ClarityFi for Android.</h2><p>Install the first public APK release directly from GitHub. This build is made for modern arm64 Android devices.</p><a class="button" href="https://github.com/Abhishek-art01/03_Clearityfi/releases/latest/download/clarityfi-v1.0.0-arm64.apk">Download APK <span aria-hidden="true">↓</span></a><a class="button secondary" href="https://github.com/Abhishek-art01/03_Clearityfi/releases/latest">View release notes <span aria-hidden="true">↗</span></a><div class="status-pill"><span class="status-dot"></span> v1.0.0 APK available now</div></div>
+      <div class="cta-panel">
+        <p class="eyebrow">Android release is ready</p>
+        <h2>Download ClarityFi for Android.</h2>
+        <p>Install directly — no Play Store required. Your data stays on your device, always.</p>
+
+        <!-- Primary download actions -->
+        <div class="cta-actions">
+          <!-- Direct APK (GitHub Releases permanent link) -->
+          <a class="button" href="https://github.com/Abhishek-art01/03_Clearityfi/releases/latest/download/ClarityFi-latest-arm64.apk" download>
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" width="18" height="18" style="vertical-align:middle;margin-right:6px"><path d="M12 3v13M7 11l5 5 5-5M4 20h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Download APK
+          </a>
+
+          <!-- Samsung Galaxy Store badge -->
+          <a class="button galaxy-btn" id="galaxyStoreBtn" href="https://apps.samsung.com/appquery/appDetail.as?appId=com.clarityfi.app" rel="noopener noreferrer">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" width="18" height="18" style="vertical-align:middle;margin-right:6px"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M8 12h8M12 8v8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            Get on Galaxy Store
+          </a>
+        </div>
+
+        <!-- Secondary links -->
+        <div style="margin-top:16px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+          <a class="button secondary" href="https://github.com/Abhishek-art01/03_Clearityfi/releases/latest">View release notes <span aria-hidden="true">↗</span></a>
+        </div>
+
+        <!-- SHA256 checksum note -->
+        <p class="cta-footnote" style="margin-top:18px;font-size:12px;color:var(--muted);text-align:center">
+          Verify integrity: <code id="checksumNote" style="font-family:monospace;color:var(--gold-soft)">sha256sum ClarityFi-latest-arm64.apk</code>
+          — checksum published with every <a href="https://github.com/Abhishek-art01/03_Clearityfi/releases/latest" style="color:var(--gold-soft)">GitHub release</a>
+        </p>
+
+        <div class="status-pill"><span class="status-dot"></span> v1.0.0 · arm64 · Free forever</div>
+      </div>
     </section>
+
+    <!-- Samsung Galaxy Store deep-link script:
+         On Samsung Internet / Samsung devices, redirect to samsungapps:// URI -->
+    <script>
+      (function () {
+        var btn = document.getElementById('galaxyStoreBtn');
+        if (!btn) return;
+        var ua = navigator.userAgent || '';
+        var isSamsung = /SamsungBrowser/i.test(ua) || /Samsung/i.test(ua);
+        if (isSamsung) {
+          btn.href = 'samsungapps://ProductDetail/com.clarityfi.app';
+        }
+      })();
+    </script>
   </main>
 
   <footer><div class="shell footer-inner"><a class="brand" href="#top"><span class="brand-mark" aria-hidden="true">C</span>ClarityFi</a><p>Money · Movement · Daily life</p><div class="footer-links"><a href="#privacy">Privacy</a><a href="#features">Features</a></div><p>© 2026 ClarityFi</p></div></footer>

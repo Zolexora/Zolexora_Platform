@@ -17,6 +17,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import AIChatBubble from "@/components/AIChatBubble";
 import DrawerMenu from "@/components/DrawerMenu";
 import PasscodeGate from "@/components/PasscodeGate";
+import UpdateBanner from "@/components/UpdateBanner";
 import { AppSecurityProvider } from "@/context/AppSecurityContext";
 import { DrawerProvider } from "@/context/DrawerContext";
 import { FitnessProvider } from "@/context/FitnessContext";
@@ -70,6 +71,7 @@ export default function RootLayout() {
                             <PasscodeGate />
                             <DrawerMenu />
                             <AIChatBubble />
+                            <UpdateBanner />
                           </FitnessProvider>
                         </KeyboardProvider>
                       </GestureHandlerRootView>
