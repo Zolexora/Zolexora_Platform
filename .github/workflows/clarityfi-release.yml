@@ -107,14 +107,28 @@ jobs:
             --json \
             --wait 2>&1) || { echo "$OUTPUT"; exit 1; }
           echo "$OUTPUT"
-          URL=$(echo "$OUTPUT" | python3 -c "
-          import sys, json
-          lines = sys.stdin.read()
-          # EAS outputs JSON array at the end
-          start = lines.rfind('[')
-          data = json.loads(lines[start:])
-          print(data[0]['artifacts']['buildUrl'])
-          ")
+          URL=$(python3 -c "
+          import sys, json, re
+          text = sys.stdin.read()
+          url = None
+          for start in [m.start() for m in re.finditer(r'\[', text)]:
+              for end in [m.end() for m in re.finditer(r'\]', text[start:])]:
+                  try:
+                      candidate = text[start:start+end]
+                      data = json.loads(candidate)
+                      if isinstance(data, list) and len(data) > 0 and 'artifacts' in data[0]:
+                          url = data[0]['artifacts'].get('buildUrl') or data[0]['artifacts'].get('applicationArchiveUrl')
+                          if url:
+                              break
+                  except Exception:
+                      continue
+              if url:
+                  break
+          if not url:
+              sys.stderr.write('Failed to parse buildUrl from EAS output\n')
+              sys.exit(1)
+          print(url)
+          " <<< "$OUTPUT")
           echo "artifact_url=$URL" >> "$GITHUB_OUTPUT"
           echo "✅ APK artifact: $URL"
 
@@ -149,13 +163,28 @@ jobs:
             --json \
             --wait 2>&1) || { echo "$OUTPUT"; exit 1; }
           echo "$OUTPUT"
-          URL=$(echo "$OUTPUT" | python3 -c "
-          import sys, json
-          lines = sys.stdin.read()
-          start = lines.rfind('[')
-          data = json.loads(lines[start:])
-          print(data[0]['artifacts']['buildUrl'])
-          ")
+          URL=$(python3 -c "
+          import sys, json, re
+          text = sys.stdin.read()
+          url = None
+          for start in [m.start() for m in re.finditer(r'\[', text)]:
+              for end in [m.end() for m in re.finditer(r'\]', text[start:])]:
+                  try:
+                      candidate = text[start:start+end]
+                      data = json.loads(candidate)
+                      if isinstance(data, list) and len(data) > 0 and 'artifacts' in data[0]:
+                          url = data[0]['artifacts'].get('buildUrl') or data[0]['artifacts'].get('applicationArchiveUrl')
+                          if url:
+                              break
+                  except Exception:
+                      continue
+              if url:
+                  break
+          if not url:
+              sys.stderr.write('Failed to parse buildUrl from EAS output\n')
+              sys.exit(1)
+          print(url)
+          " <<< "$OUTPUT")
           echo "artifact_url=$URL" >> "$GITHUB_OUTPUT"
           echo "✅ AAB artifact: $URL"
 
