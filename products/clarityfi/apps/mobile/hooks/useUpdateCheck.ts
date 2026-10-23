@@ -34,14 +34,14 @@ const CURRENT_VERSION = "1.0.0";
  * Returns the latest non-prerelease, non-draft release.
  */
 const GITHUB_RELEASES_API =
-  "https://api.github.com/repos/Abhishek-art01/03_Clearityfi/releases/latest";
+  "https://api.github.com/repos/Zolexora/Zolexora_Platform/releases/latest";
 
 /**
  * Permanent redirect URL that always points to the latest APK.
  * Used as fallback if the API response doesn't include an APK asset.
  */
 const GITHUB_LATEST_APK_URL =
-  "https://github.com/Abhishek-art01/03_Clearityfi/releases/latest/download/ClarityFi-latest-arm64.apk";
+  "https://github.com/Zolexora/Zolexora_Platform/releases/latest/download/ClarityFi-latest-arm64.apk";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -108,7 +108,7 @@ export function useUpdateCheck(): UpdateInfo | null {
         const assets: Array<{ name: string; browser_download_url: string }> =
           data.assets ?? [];
         const releasePageUrl: string =
-          data.html_url ?? "https://github.com/Abhishek-art01/03_Clearityfi/releases/latest";
+          data.html_url ?? "https://github.com/Zolexora/Zolexora_Platform/releases/latest";
 
         if (!tagName || cancelled) return;
 
