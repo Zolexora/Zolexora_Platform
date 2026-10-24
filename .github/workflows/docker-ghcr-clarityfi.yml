@@ -30,6 +30,9 @@ jobs:
           - service: clarityfi-api
             context: .
             file: ./products/clarityfi/Dockerfile.api
+          - service: clarityfi-nginx
+            context: .
+            file: ./products/clarityfi/Dockerfile.nginx
 
     steps:
       - name: Checkout repository
