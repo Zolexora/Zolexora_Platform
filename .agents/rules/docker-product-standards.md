@@ -23,14 +23,16 @@ products/<product-name>/
 
 Every service in `compose.yaml` that builds locally MUST adhere to:
 
-1. **Explicit GHCR Image Tag**:
+1. **Root Build Context (`context: ../../` or `.`)**:
+   **Mandatory:** In this monorepo, EVERY product service build context MUST be the monorepo root. For `products/<product-name>/compose.yaml`, this means `context: ../../` and `dockerfile: products/<product-name>/Dockerfile.<service>`. Never set context to a product subfolder.
+2. **Explicit GHCR Image Tag**:
    Always attach `image: ${<PRODUCT>_<SERVICE>_IMAGE:-ghcr.io/zolexora/<product-slug>-<service>:latest}` alongside `build:`.
    *All repository and image names must be strictly lowercase.*
-2. **`pull_policy: missing`**:
+3. **`pull_policy: missing`**:
    Always declare `pull_policy: missing`. This ensures Docker Compose pulls the prebuilt image from GHCR when missing, rather than compiling from scratch.
-3. **Preserve `build:` Block**:
+4. **Preserve `build:` Block**:
    Always keep the `build:` block so developers can still build local changes when explicitly requested.
-4. **Port Overrides via Environment Variables**:
+5. **Port Overrides via Environment Variables**:
    Never hardcode raw host ports that collide with VS Code DevContainer forwards. Use configurable defaults:
    ```yaml
    ports:
@@ -45,8 +47,8 @@ services:
     image: ${TMS_BACKEND_IMAGE:-ghcr.io/zolexora/tms-backend:latest}
     pull_policy: missing
     build:
-      context: ./apps/backend
-      dockerfile: Dockerfile
+      context: ../../
+      dockerfile: products/zolexora-tms/apps/backend/Dockerfile
     container_name: tms-backend
     ports:
       - "${TMS_BACKEND_PORT:-4031}:4030"
@@ -58,6 +60,9 @@ services:
 
 Heavy images (>500MB) cause 20–40 minute network pull delays. Every Dockerfile MUST be multi-stage:
 
+0. **Root-Relative COPY Paths**:
+   - Because all build contexts are set to the monorepo root (`.`), all `COPY` commands must use repository root-relative paths (e.g., `COPY products/<product>/apps/web ...`, `COPY package.json ...`).
+   - Never assume the Dockerfile's local directory is the build context.
 1. **Separate Builder and Runner Stages**:
    - Compilers (`build-essential`, `gcc`, `make`, build SDKs) must ONLY live in the `builder` stage.
    - The final `runner` stage must only contain runtime libraries (e.g. `libpq5`, `ca-certificates`) and the compiled artifact / virtual environment.

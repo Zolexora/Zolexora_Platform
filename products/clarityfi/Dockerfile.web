@@ -2,10 +2,10 @@ FROM nginx:alpine
 
 # Remove default configuration and add optimized web configuration
 RUN rm -f /etc/nginx/conf.d/default.conf
-COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
+COPY products/clarityfi/apps/web/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy static web files directly into Nginx public directory
-COPY apps/web /usr/share/nginx/html
+COPY products/clarityfi/apps/web /usr/share/nginx/html
 
 EXPOSE 80
 

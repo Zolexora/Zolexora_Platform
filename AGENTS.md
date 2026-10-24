@@ -20,26 +20,30 @@ This repository is a Turborepo/pnpm monorepo housing the Zolexora ecosystem prod
 When creating, updating, or debugging Docker infrastructure for any product:
 
 1. **Follow the Rule**: Adhere strictly to [.agents/rules/docker-product-standards.md](file:///.agents/rules/docker-product-standards.md).
-2. **Never Force `--build`**: Startup scripts must NEVER hardcode `up -d --build`. They must pull missing prebuilt images from GitHub Container Registry (`ghcr.io/zolexora/...`) using `pull --ignore-pull-failures` and start with `up -d`.
-3. **Always Add GHCR Tags & Pull Policy**:
+2. **Root Build Context Mandate**:
+   - In this monorepo, **EVERY product and service Docker build** (in CI pipelines, Docker Compose, or manual CLI commands) **MUST use the monorepo root (`.`) as the build context**.
+   - All `Dockerfile` definitions across all products must use paths relative to the repository root (e.g., `COPY products/<product>/...`). Never scope build context to a subfolder.
+3. **Never Force `--build`**: Startup scripts must NEVER hardcode `up -d --build`. They must pull missing prebuilt images from GitHub Container Registry (`ghcr.io/zolexora/...`) using `pull --ignore-pull-failures` and start with `up -d`.
+4. **Always Add GHCR Tags & Pull Policy**:
    In every `compose.yaml`:
    ```yaml
    image: ${PRODUCT_SERVICE_IMAGE:-ghcr.io/zolexora/<product>-<service>:latest}
    pull_policy: missing
    build:
-     ...
+     context: ../../
+     dockerfile: products/<product>/Dockerfile.<service>
    ```
-4. **Standard Subcommands**:
+5. **Standard Subcommands**:
    Every `products/<product>/scripts/docker-start.sh` must support:
    `start`, `stop`, `restart`, `build`, `pull`, `status`, `logs`.
-5. **Standard Package Scripts**:
+6. **Standard Package Scripts**:
    Register `docker:<product>:{start|stop|restart|build|pull|logs|status}` in root `package.json`.
-6. **Automate with Scaffolder**:
+7. **Automate with Scaffolder**:
    When adding a new product or scripts, run:
    ```bash
    bash scripts/dev/scaffold-product-docker.sh <product-name>
    ```
-7. **Safe Cleanup (Never use raw `docker system prune -a`)**:
+8. **Safe Cleanup (Never use raw `docker system prune -a`)**:
    - `pnpm docker:clean`: Fast, safe cleanup of stopped containers, unused networks, and dangling build cache.
    - `pnpm docker:prune`: Deep cleanup (equivalent to `prune -a`) that reclaims maximum disk space while strictly safeguarding DevContainer images (`vsc-*`), volumes (`vscode`), and workspace state.
 

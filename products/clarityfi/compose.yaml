@@ -28,8 +28,8 @@ services:
 
   frontend:
     build:
-      context: ./
-      dockerfile: Dockerfile.web
+      context: ../../
+      dockerfile: products/clarityfi/Dockerfile.web
     container_name: clarity-fi-web
     restart: unless-stopped
     healthcheck:
@@ -52,8 +52,8 @@ services:
 
   nginx:
     build:
-      context: .
-      dockerfile: Dockerfile.nginx
+      context: ../../
+      dockerfile: products/clarityfi/Dockerfile.nginx
     container_name: clarity-fi-nginx
     restart: unless-stopped
     ports:
