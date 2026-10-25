@@ -197,7 +197,7 @@ jobs:
 
       # ── Upload artifacts between jobs ─────────────────────────────────────
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: clarityfi-android-${{ steps.version.outputs.version }}
           path: /tmp/clarityfi-artifacts/
