@@ -134,7 +134,7 @@ jobs:
           echo "$KEYSTORE_BASE64" | base64 --decode > app/maunkavach-release.jks
 
       - name: Run unit tests
-        run: ./gradlew testReleaseUnitTest --no-daemon
+        run: ./gradlew testDebugUnitTest --no-daemon
 
       - name: Build release AAB
         env:
