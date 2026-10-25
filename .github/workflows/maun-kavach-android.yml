@@ -26,6 +26,9 @@ on:
         type: choice
         options: [debug, release]
 
+permissions:
+  contents: write
+
 defaults:
   run:
     working-directory: products/maunkavach
@@ -193,6 +196,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/maunkavach-v')
         uses: softprops/action-gh-release@v2
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           name: MaunKavach ${{ github.ref_name }}
           files: |
             products/maunkavach/app/build/outputs/bundle/release/*.aab
