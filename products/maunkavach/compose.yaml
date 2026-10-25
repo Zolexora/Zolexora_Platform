@@ -1,23 +1,28 @@
 services:
   backend:
+    image: ${MAUN_KAVACH_BACKEND_IMAGE:-ghcr.io/zolexora/maun-kavach-backend:latest}
+    pull_policy: missing
     build:
-      context: .
-      dockerfile: Dockerfile.api
+      context: ../../
+      dockerfile: products/maunkavach/Dockerfile.api
     container_name: maun-kavach-backend
-    env_file: .env
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
     environment:
-    - PORT=8080
-    - NODE_ENV=production
-    - SUPABASE_URL=${SUPABASE_URL}
-    - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
-    - JWT_SECRET=${JWT_SECRET}
-    - DATABASE_URL=${DATABASE_URL}
+      - PORT=8080
+      - NODE_ENV=production
+      - SUPABASE_URL=${SUPABASE_URL:-}
+      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY:-}
+      - JWT_SECRET=${JWT_SECRET:-}
+      - DATABASE_URL=${DATABASE_URL:-}
     healthcheck:
       test:
-      - CMD
-      - wget
-      - -qO-
-      - http://localhost:8080/health
+        - CMD
+        - wget
+        - -qO-
+        - http://localhost:8080/health
       interval: 15s
       timeout: 5s
       retries: 5
@@ -29,17 +34,21 @@ services:
         reservations:
           cpus: '0.1'
           memory: 128M
+
   frontend:
+    image: ${MAUN_KAVACH_WEB_IMAGE:-ghcr.io/zolexora/maun-kavach-web:latest}
+    pull_policy: missing
     build:
-      context: .
-      dockerfile: Dockerfile.web
+      context: ../../
+      dockerfile: products/maunkavach/Dockerfile.web
     container_name: maun-kavach-web
+    restart: unless-stopped
     healthcheck:
       test:
-      - CMD
-      - wget
-      - -qO-
-      - http://localhost:80
+        - CMD
+        - wget
+        - -qO-
+        - http://localhost:80
       interval: 10s
       timeout: 5s
       retries: 5
@@ -51,13 +60,17 @@ services:
         reservations:
           cpus: '0.1'
           memory: 128M
+
   nginx:
+    image: ${MAUN_KAVACH_NGINX_IMAGE:-ghcr.io/zolexora/maun-kavach-nginx:latest}
+    pull_policy: missing
     build:
-      context: .
-      dockerfile: Dockerfile.nginx
+      context: ../../
+      dockerfile: products/maunkavach/Dockerfile.nginx
     container_name: maun-kavach-nginx
+    restart: unless-stopped
     ports:
-    - 3071:80
+      - "${MAUN_KAVACH_PORT:-3071}:80"
     depends_on:
       backend:
         condition: service_healthy
@@ -72,7 +85,7 @@ services:
           cpus: '0.1'
           memory: 128M
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost/ -o /dev/null && exit 0 || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:80 || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 3

@@ -1,0 +1,68 @@
+name: Build & Publish MaunKavach Containers to GHCR
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'products/maunkavach/**'
+      - '.github/workflows/docker-ghcr-maun-kavach.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish-maun-kavach-images:
+    name: Build & Push ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: maun-kavach-backend
+            context: .
+            file: ./products/maunkavach/Dockerfile.api
+          - service: maun-kavach-web
+            context: .
+            file: ./products/maunkavach/Dockerfile.web
+          - service: maun-kavach-nginx
+            context: .
+            file: ./products/maunkavach/Dockerfile.nginx
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute lowercase repository and image tag
+        id: meta
+        run: |
+          REPO_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE="ghcr.io/${REPO_OWNER}/${{ matrix.service }}"
+          echo "image=${IMAGE}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push container image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.image }}:latest
+            ${{ steps.meta.outputs.image }}:${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.description=Pre-built container for ${{ matrix.service }} in Zolexora Platform
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}

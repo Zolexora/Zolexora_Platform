@@ -1,8 +1,8 @@
 FROM node:22-alpine
 WORKDIR /app
-COPY backend/package*.json ./
-RUN npm ci --omit=dev
-COPY backend/ .
+COPY products/maunkavach/backend/package*.json ./
+RUN npm install --omit=dev
+COPY products/maunkavach/backend/ .
 EXPOSE 8080
 HEALTHCHECK --interval=15s --timeout=5s --retries=3 \
   CMD wget -qO- http://localhost:8080/health || exit 1
