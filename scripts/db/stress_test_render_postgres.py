@@ -199,7 +199,6 @@ async def test_concurrency():
             t0 = time.perf_counter()
             try:
                 conn = await asyncpg.connect(DB_URL, ssl=ctx, timeout=30)
-                # Execute transaction with queries
                 async with conn.transaction():
                     v1 = await conn.fetchval("SELECT $1::int", worker_id)
                     v2 = await conn.fetchval("SELECT count(*) FROM public.contracts")
@@ -242,21 +241,43 @@ async def test_schema_constraints():
     conn = await asyncpg.connect(DB_URL, ssl=ctx, timeout=25)
 
     test_user_id = uuid.uuid4()
-    test_user_email = f"challenger_test_{uuid.uuid4().hex[:8]}@zolexora.test"
+    test_zx_id = f"zx_test_{uuid.uuid4().hex[:8]}"
+    test_user_email = f"challenger_test_{uuid.uuid4().hex[:8]}@zolexora.test".lower()
 
-    log(f"[*] Setting up test user fixture: id={test_user_id}, email={test_user_email}")
-    await conn.execute("INSERT INTO auth.users (id, email) VALUES ($1, $2)", test_user_id, test_user_email)
+    log(f"[*] Setting up test user fixture in public.zolexora_auth_users:")
+    log(f"    id={test_user_id}, zx_id={test_zx_id}, email={test_user_email}")
+    await conn.execute(
+        """INSERT INTO public.zolexora_auth_users (id, zolexora_id, email, password_hash)
+           VALUES ($1, $2, $3, 'dummy_bcrypt_hash')""",
+        test_user_id, test_zx_id, test_user_email
+    )
 
     try:
-        # 1. UNIQUE constraint on auth.users(email)
-        log("[*] Testing UNIQUE constraint on auth.users(email)...")
-        unique_failed = False
+        # 1. UNIQUE constraint on zolexora_auth_users(email) and zolexora_id
+        log("[*] Testing UNIQUE constraints on zolexora_auth_users...")
+        unique_email_failed = False
         try:
-            await conn.execute("INSERT INTO auth.users (id, email) VALUES ($1, $2)", uuid.uuid4(), test_user_email)
+            await conn.execute(
+                """INSERT INTO public.zolexora_auth_users (id, zolexora_id, email, password_hash)
+                   VALUES ($1, $2, $3, 'hash')""",
+                uuid.uuid4(), f"zx_alt_{uuid.uuid4().hex[:8]}", test_user_email
+            )
         except asyncpg.UniqueViolationError:
-            unique_failed = True
-        assert unique_failed, "Failed to enforce UNIQUE on auth.users(email)"
-        log("    -> [PASS] UniqueViolationError caught.")
+            unique_email_failed = True
+        assert unique_email_failed, "Failed to enforce UNIQUE on zolexora_auth_users.email"
+        log("    -> [PASS] UniqueViolationError caught on duplicate email.")
+
+        unique_zx_failed = False
+        try:
+            await conn.execute(
+                """INSERT INTO public.zolexora_auth_users (id, zolexora_id, email, password_hash)
+                   VALUES ($1, $2, $3, 'hash')""",
+                uuid.uuid4(), test_zx_id, f"unique_{uuid.uuid4().hex[:8]}@test.com"
+            )
+        except asyncpg.UniqueViolationError:
+            unique_zx_failed = True
+        assert unique_zx_failed, "Failed to enforce UNIQUE on zolexora_auth_users.zolexora_id"
+        log("    -> [PASS] UniqueViolationError caught on duplicate zolexora_id.")
 
         # 2. NOT NULL constraints on app_requests
         log("[*] Testing NOT NULL constraints on app_requests...")
@@ -293,7 +314,7 @@ async def test_schema_constraints():
         log("    -> [PASS] CheckViolationError caught on invalid app_requests status.")
 
         # 4. FOREIGN KEY constraint on app_requests.user_id
-        log("[*] Testing Foreign Key constraint on app_requests.user_id -> auth.users(id)...")
+        log("[*] Testing Foreign Key constraint on app_requests.user_id -> zolexora_auth_users(id)...")
         fk_failed = False
         try:
             await conn.execute("INSERT INTO public.app_requests (user_id, title, description) VALUES ($1, 'T', 'D')", uuid.uuid4())
@@ -343,7 +364,7 @@ async def test_schema_constraints():
             assert chk_f, f"Failed CHECK on contracts.{col} with value {val}"
         log("    -> [PASS] CheckViolationError caught on contract_type, signing_mode, status.")
 
-        # 8. Foreign Key on contracts.request_id
+        # 8. Foreign Key on contracts.request_id and contracts.user_id
         log("[*] Testing Foreign Key on contracts.request_id...")
         fk_c_req = False
         try:
@@ -390,12 +411,12 @@ async def test_schema_constraints():
         log("[*] Testing CASCADE DELETE & SET NULL rules...")
 
         # Test A: Delete app_request -> contracts.request_id must be SET NULL
-        log("    -> Testing contracts.request_id ON DELETE SET NULL...")
+        log("    -> Testing contracts.request_id ON DELETE SET NULL on app_request deletion...")
         await conn.execute("DELETE FROM public.app_requests WHERE id = $1", req_id)
         curr_c = await conn.fetchrow("SELECT id, request_id FROM public.contracts WHERE id = $1", contract_id)
         assert curr_c is not None, "Contract was erroneously deleted when app_request was deleted!"
         assert curr_c["request_id"] is None, f"Expected request_id to be SET NULL, got {curr_c['request_id']}"
-        log("       [PASS] contracts.request_id set to NULL as expected.")
+        log("       [PASS] contracts.request_id correctly set to NULL.")
 
         # Test B: Delete contract -> contract_audit_logs must CASCADE DELETE
         log("    -> Testing contract_audit_logs ON DELETE CASCADE on contract deletion...")
@@ -404,8 +425,8 @@ async def test_schema_constraints():
         assert log_count == 0, f"Expected audit log to be CASCADE DELETED, found count={log_count}"
         log("       [PASS] contract_audit_logs cascade-deleted with contract.")
 
-        # Test C: Delete auth.users -> app_requests & contracts CASCADE DELETE
-        log("    -> Testing CASCADE DELETE on auth.users deletion...")
+        # Test C: Delete zolexora_auth_users -> app_requests & contracts CASCADE DELETE
+        log("    -> Testing CASCADE DELETE on zolexora_auth_users deletion...")
         req_id_2 = uuid.uuid4()
         contract_id_2 = uuid.uuid4()
         log_id_2 = uuid.uuid4()
@@ -413,27 +434,27 @@ async def test_schema_constraints():
         await conn.execute("INSERT INTO public.contracts (id, request_id, user_id, title) VALUES ($1, $2, $3, 'T2')", contract_id_2, req_id_2, test_user_id)
         await conn.execute("INSERT INTO public.contract_audit_logs (id, contract_id, user_id, signer_name, signer_email, action, ip_address, user_agent, verification_method) VALUES ($1, $2, $3, 'S2', 'E2', 'CREATED', '1.1.1.1', 'UA', 'SESSION')", log_id_2, contract_id_2, test_user_id)
 
-        # Delete auth.users row
-        await conn.execute("DELETE FROM auth.users WHERE id = $1", test_user_id)
+        # Delete user row
+        await conn.execute("DELETE FROM public.zolexora_auth_users WHERE id = $1", test_user_id)
 
         # Check cascading
         r_c = await conn.fetchval("SELECT count(*) FROM public.app_requests WHERE id = $1", req_id_2)
         c_c = await conn.fetchval("SELECT count(*) FROM public.contracts WHERE id = $1", contract_id_2)
         l_c = await conn.fetchval("SELECT count(*) FROM public.contract_audit_logs WHERE id = $1", log_id_2)
-        u_c = await conn.fetchval("SELECT count(*) FROM auth.users WHERE id = $1", test_user_id)
+        u_c = await conn.fetchval("SELECT count(*) FROM public.zolexora_auth_users WHERE id = $1", test_user_id)
 
         assert u_c == 0, "Test user not deleted"
         assert r_c == 0, f"app_requests was not cascade deleted (count={r_c})"
         assert c_c == 0, f"contracts was not cascade deleted (count={c_c})"
         assert l_c == 0, f"contract_audit_logs was not cascade deleted (count={l_c})"
-        log("       [PASS] auth.users deletion cleanly cascade-deleted app_requests, contracts, and audit logs.")
+        log("       [PASS] zolexora_auth_users deletion cleanly cascade-deleted app_requests, contracts, and audit logs.")
 
         log("[PASS] Suite 4: All Schema Constraints & Referential Integrity rules verified 100%!\n")
         return {"status": "SUCCESS"}
 
     finally:
         try:
-            await conn.execute("DELETE FROM auth.users WHERE id = $1", test_user_id)
+            await conn.execute("DELETE FROM public.zolexora_auth_users WHERE id = $1", test_user_id)
         except Exception:
             pass
         await conn.close()

@@ -66,4 +66,5 @@ config/envs/**/*.env
 storage/
 
 .pnpm-store/
-.agents/teamwork
+.agents/teamwork/
+.agents/
