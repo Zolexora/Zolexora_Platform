@@ -1,0 +1,18 @@
+FROM nginx:alpine
+
+# Remove default nginx configurations
+RUN rm -rf /etc/nginx/conf.d/*
+
+# Copy appsuite gateway configurations
+COPY products/zolexora-appsuite/nginx.conf /etc/nginx/nginx.conf
+COPY products/zolexora-appsuite/nginx-conf.d/ /etc/nginx/conf.d/
+
+# Create certs and certbot challenge directories
+RUN mkdir -p /etc/nginx/certs /var/www/certbot
+
+EXPOSE 80 443
+
+HEALTHCHECK --interval=20s --timeout=5s --start-period=5s --retries=3 \
+  CMD wget -qO- http://localhost:80/healthz || exit 1
+
+CMD ["nginx", "-g", "daemon off;"]
