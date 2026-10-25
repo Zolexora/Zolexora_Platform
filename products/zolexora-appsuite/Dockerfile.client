@@ -26,6 +26,6 @@ COPY --from=builder /app/products/zolexora-appsuite/apps/client/.next/static ./p
 EXPOSE 3070
 
 HEALTHCHECK --interval=15s --timeout=5s --retries=3 \
-  CMD wget -qO- http://localhost:3070/ || exit 1
+  CMD wget -qO- http://127.0.0.1:${PORT:-3070}/ || exit 1
 
 CMD ["node", "products/zolexora-appsuite/apps/client/server.js"]
