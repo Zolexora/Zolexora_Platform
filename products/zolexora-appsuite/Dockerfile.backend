@@ -1,0 +1,34 @@
+FROM node:22-alpine AS builder
+
+RUN corepack enable && corepack prepare pnpm@9 --activate
+WORKDIR /app
+
+# Copy monorepo workspace files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json tsconfig.json ./
+COPY packages ./packages
+COPY platform ./platform
+COPY products/zolexora-appsuite ./products/zolexora-appsuite
+
+# Install dependencies and build backend
+RUN pnpm config set ignore-scripts true && pnpm install --no-frozen-lockfile
+RUN pnpm --filter @zas/backend build
+
+FROM node:22-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production \
+    PORT=8080
+
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/platform/auth/user-auth-core ./platform/auth/user-auth-core
+COPY --from=builder /app/products/zolexora-appsuite/apps/backend ./products/zolexora-appsuite/apps/backend
+
+WORKDIR /app/products/zolexora-appsuite/apps/backend
+
+EXPOSE 8080
+
+HEALTHCHECK --interval=15s --timeout=5s --retries=3 \
+  CMD wget -qO- http://localhost:8080/health || exit 1
+
+CMD ["node", "dist/index.js"]

@@ -33,7 +33,8 @@ app.get('/', (_req, res) => {
     version: '1.0.0',
     port,
     endpoints: {
-      health: '/api/health',
+      health: '/health',
+      apiHealth: '/api/health',
       auth: '/api/auth',
       requests: '/api/requests',
       contracts: '/api/contracts',
@@ -43,6 +44,7 @@ app.get('/', (_req, res) => {
 })
 
 // Route mounts
+app.use('/health', healthRouter)
 app.use('/api/health', healthRouter)
 app.use('/api/auth', authRouter)
 app.use('/api/requests', requestsRouter)

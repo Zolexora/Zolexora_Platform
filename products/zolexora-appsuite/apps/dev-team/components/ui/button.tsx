@@ -1,10 +1,11 @@
 import { cn } from '@/lib/cn'
 import type { ButtonHTMLAttributes } from 'react'
 
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'> {
   variant?: 'primary' | 'ghost' | 'outline' | 'danger' | 'success'
   size?: 'sm' | 'md' | 'lg'
   loading?: boolean
+  children?: React.ReactNode
 }
 
 export function Button({

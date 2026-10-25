@@ -1,7 +1,7 @@
 import { cn } from '@/lib/cn'
 import type { InputHTMLAttributes } from 'react'
 
-interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'children'> {
   label?: string
   error?: string
   hint?: string
