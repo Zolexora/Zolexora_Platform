@@ -23,12 +23,19 @@ val releaseBuildRequested = gradle.startParameter.taskNames.any {
     it.contains("assembleRelease", ignoreCase = true) || it.contains("bundleRelease", ignoreCase = true)
 }
 
-val releaseServerBaseUrl = secureProperty("MAUNKAVACH_SERVER_BASE_URL")
+val rawServerBaseUrl = secureProperty("MAUNKAVACH_SERVER_BASE_URL")
     ?: if (releaseBuildRequested) {
         throw GradleException("MAUNKAVACH_SERVER_BASE_URL must be set for release builds.")
     } else {
         "https://invalid.local"
     }
+
+val releaseServerBaseUrl = rawServerBaseUrl
+    .trim()
+    .trim('"', '\'')
+    .trimEnd(',')
+    .trimEnd('/')
+    .trim()
 
 if (releaseBuildRequested && (
     releaseServerBaseUrl.contains("your-maunkavach-server") ||
@@ -42,7 +49,7 @@ if (releaseBuildRequested && (
 if (releaseBuildRequested) {
     val uri = runCatching { URI(releaseServerBaseUrl) }.getOrNull()
     if (uri?.scheme != "https" || uri.host.isNullOrBlank()) {
-        throw GradleException("MAUNKAVACH_SERVER_BASE_URL must be a valid HTTPS URL with a real host.")
+        throw GradleException("MAUNKAVACH_SERVER_BASE_URL must be a valid HTTPS URL with a real host (parsed: '$releaseServerBaseUrl').")
     }
 }
 
@@ -51,7 +58,7 @@ val releaseStorePassword = secureProperty("MAUNKAVACH_RELEASE_STORE_PASSWORD")
 val releaseKeyAlias = secureProperty("MAUNKAVACH_RELEASE_KEY_ALIAS")
 val releaseKeyPassword = secureProperty("MAUNKAVACH_RELEASE_KEY_PASSWORD")
 
-if (releaseBuildRequested) {
+val keyStoreFile = if (releaseBuildRequested) {
     val missing = listOf(
         "MAUNKAVACH_RELEASE_STORE_FILE" to releaseStoreFile,
         "MAUNKAVACH_RELEASE_STORE_PASSWORD" to releaseStorePassword,
@@ -63,10 +70,15 @@ if (releaseBuildRequested) {
         throw GradleException("Release signing config is missing: ${missing.joinToString()}")
     }
 
-    val keyStore = file(releaseStoreFile!!)
-    if (!keyStore.exists()) {
-        throw GradleException("MAUNKAVACH_RELEASE_STORE_FILE does not exist: ${keyStore.absolutePath}")
-    }
+    val candidates = listOf(
+        file(releaseStoreFile!!),
+        rootProject.file(releaseStoreFile),
+        file("app/$releaseStoreFile")
+    )
+    candidates.firstOrNull { it.exists() }
+        ?: throw GradleException("MAUNKAVACH_RELEASE_STORE_FILE does not exist. Looked in: ${candidates.joinToString { it.absolutePath }}")
+} else {
+    null
 }
 
 fun quotedBuildConfigString(value: String): String =
@@ -88,7 +100,7 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile = releaseStoreFile?.let { file(it) }
+            storeFile = keyStoreFile
             storePassword = releaseStorePassword
             keyAlias = releaseKeyAlias
             keyPassword = releaseKeyPassword
