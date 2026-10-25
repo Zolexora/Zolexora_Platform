@@ -29,8 +29,8 @@ services:
     image: ${PLATFORM_ADMIN_BACKEND_IMAGE:-ghcr.io/zolexora/platform-admin-backend:latest}
     pull_policy: missing
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: ../../
+      dockerfile: apps/platform-admin/backend/Dockerfile
     container_name: platform-admin-backend
     restart: unless-stopped
     extra_hosts:
@@ -118,8 +118,8 @@ services:
     image: ${PLATFORM_ADMIN_NGINX_IMAGE:-ghcr.io/zolexora/platform-admin-nginx:latest}
     pull_policy: missing
     build:
-      context: .
-      dockerfile: Dockerfile.nginx
+      context: ../../
+      dockerfile: apps/platform-admin/Dockerfile.nginx
     container_name: platform-admin-nginx
     restart: unless-stopped
     ports:

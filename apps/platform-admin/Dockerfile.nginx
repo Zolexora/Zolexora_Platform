@@ -4,7 +4,7 @@ FROM nginx:alpine
 RUN rm -rf /etc/nginx/conf.d/*
 
 # Copy platform admin gateway configuration
-COPY nginx-conf.d/ /etc/nginx/conf.d/
+COPY apps/platform-admin/nginx-conf.d/ /etc/nginx/conf.d/
 
 EXPOSE 80
 
