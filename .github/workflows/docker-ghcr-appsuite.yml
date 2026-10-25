@@ -31,6 +31,9 @@ jobs:
           - service: appsuite-team
             context: .
             file: ./products/zolexora-appsuite/Dockerfile.devteam
+          - service: appsuite-nginx
+            context: .
+            file: ./products/zolexora-appsuite/Dockerfile.nginx
 
     steps:
       - name: Checkout repository

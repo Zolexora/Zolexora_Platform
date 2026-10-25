@@ -1,0 +1,162 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: appsuite-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-appsuite_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-appsuite_secure_password_2026}
+      POSTGRES_DB: ${POSTGRES_DB:-appsuite_db}
+    volumes:
+      - appsuite_postgres_data:/var/lib/postgresql/data
+      - ./sql/render-schema.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    ports:
+      # Expose only on loopback for VM security (override via .env if needed)
+      - "${POSTGRES_BIND_IP:-127.0.0.1}:${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-appsuite_user} -d ${POSTGRES_DB:-appsuite_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    networks:
+      - appsuite_network
+
+  backend:
+    image: ${APPSUITE_BACKEND_IMAGE:-ghcr.io/zolexora/appsuite-backend:latest}
+    build:
+      context: ../../
+      dockerfile: products/zolexora-appsuite/Dockerfile.backend
+    container_name: appsuite-backend
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=8080
+      - ZOLEXORA_AUTHENTICATION_DATABASE_URL=postgresql://${POSTGRES_USER:-appsuite_user}:${POSTGRES_PASSWORD:-appsuite_secure_password_2026}@postgres:5432/${POSTGRES_DB:-appsuite_db}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-appsuite_user}:${POSTGRES_PASSWORD:-appsuite_secure_password_2026}@postgres:5432/${POSTGRES_DB:-appsuite_db}
+      - APP_SUITE_CLIENT_URL=${APP_SUITE_CLIENT_URL:-http://localhost:3070}
+      - APP_SUITE_DEV_TEAM_URL=${APP_SUITE_DEV_TEAM_URL:-http://localhost:3070/team}
+      - APP_SUITE_AUTH_APP_URL=${APP_SUITE_AUTH_APP_URL:-http://localhost:3070}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    networks:
+      - appsuite_network
+
+  client:
+    image: ${APPSUITE_CLIENT_IMAGE:-ghcr.io/zolexora/appsuite-client:latest}
+    build:
+      context: ../../
+      dockerfile: products/zolexora-appsuite/Dockerfile.client
+    container_name: appsuite-client
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:3070/api}
+      - NEXT_PUBLIC_DEV_TEAM_URL=${NEXT_PUBLIC_DEV_TEAM_URL:-http://localhost:3070/team}
+    depends_on:
+      backend:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    networks:
+      - appsuite_network
+
+  devteam:
+    image: ${APPSUITE_TEAM_IMAGE:-ghcr.io/zolexora/appsuite-team:latest}
+    build:
+      context: ../../
+      dockerfile: products/zolexora-appsuite/Dockerfile.devteam
+    container_name: appsuite-devteam
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:3070/api}
+      - NEXT_PUBLIC_CLIENT_URL=${NEXT_PUBLIC_CLIENT_URL:-http://localhost:3070}
+    depends_on:
+      backend:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    networks:
+      - appsuite_network
+
+  nginx:
+    image: ${APPSUITE_NGINX_IMAGE:-ghcr.io/zolexora/appsuite-nginx:latest}
+    build:
+      context: ../../
+      dockerfile: products/zolexora-appsuite/Dockerfile.nginx
+    container_name: appsuite-nginx
+    restart: unless-stopped
+    ports:
+      - "${APPSUITE_PORT:-3070}:80"
+      - "${APPSUITE_SSL_PORT:-3443}:443"
+    volumes:
+      - ./nginx-conf.d:/etc/nginx/conf.d:ro
+      - certbot_www:/var/www/certbot
+      - certbot_certs:/etc/nginx/certs:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+      client:
+        condition: service_started
+      devteam:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:80/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+    networks:
+      - appsuite_network
+
+volumes:
+  appsuite_postgres_data:
+  certbot_www:
+  certbot_certs:
+
+networks:
+  appsuite_network:
+    driver: bridge
