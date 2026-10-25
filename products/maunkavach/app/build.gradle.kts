@@ -20,7 +20,7 @@ fun secureProperty(name: String): String? =
         ?: System.getenv(name)
 
 val releaseBuildRequested = gradle.startParameter.taskNames.any {
-    it.contains("Release", ignoreCase = true)
+    it.contains("assembleRelease", ignoreCase = true) || it.contains("bundleRelease", ignoreCase = true)
 }
 
 val releaseServerBaseUrl = secureProperty("MAUNKAVACH_SERVER_BASE_URL")

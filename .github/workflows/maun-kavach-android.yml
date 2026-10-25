@@ -106,6 +106,12 @@ jobs:
     if: |
       startsWith(github.ref, 'refs/tags/maunkavach-v') ||
       (github.event_name == 'workflow_dispatch' && inputs.build_type == 'release')
+    env:
+      MAUNKAVACH_SERVER_BASE_URL: ${{ secrets.MAUNKAVACH_SERVER_BASE_URL }}
+      MAUNKAVACH_RELEASE_STORE_FILE: app/maunkavach-release.jks
+      MAUNKAVACH_RELEASE_STORE_PASSWORD: ${{ secrets.MAUNKAVACH_RELEASE_STORE_PASSWORD }}
+      MAUNKAVACH_RELEASE_KEY_ALIAS: ${{ secrets.MAUNKAVACH_RELEASE_KEY_ALIAS }}
+      MAUNKAVACH_RELEASE_KEY_PASSWORD: ${{ secrets.MAUNKAVACH_RELEASE_KEY_PASSWORD }}
 
     steps:
       - name: Checkout
