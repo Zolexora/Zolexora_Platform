@@ -103,7 +103,8 @@ android {
             storeFile = keyStoreFile
             storePassword = releaseStorePassword
             keyAlias = releaseKeyAlias
-            keyPassword = releaseKeyPassword
+            // In PKCS12 keystores (RFC 7292), private key protection is tied directly to the keystore storePassword.
+            keyPassword = releaseStorePassword ?: releaseKeyPassword
         }
     }
 
