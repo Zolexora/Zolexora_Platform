@@ -51,10 +51,6 @@ val releaseStorePassword = secureProperty("MAUNKAVACH_RELEASE_STORE_PASSWORD")
 val releaseKeyAlias = secureProperty("MAUNKAVACH_RELEASE_KEY_ALIAS")
 val releaseKeyPassword = secureProperty("MAUNKAVACH_RELEASE_KEY_PASSWORD")
 
-val resolvedStoreFile = releaseStoreFile?.let { path ->
-    listOf(file(path), rootProject.file(path), java.io.File(path)).firstOrNull { it.exists() } ?: file(path)
-}
-
 if (releaseBuildRequested) {
     val missing = listOf(
         "MAUNKAVACH_RELEASE_STORE_FILE" to releaseStoreFile,
@@ -67,8 +63,9 @@ if (releaseBuildRequested) {
         throw GradleException("Release signing config is missing: ${missing.joinToString()}")
     }
 
-    if (resolvedStoreFile == null || !resolvedStoreFile.exists()) {
-        throw GradleException("MAUNKAVACH_RELEASE_STORE_FILE does not exist: ${resolvedStoreFile?.absolutePath ?: releaseStoreFile}")
+    val keyStore = file(releaseStoreFile!!)
+    if (!keyStore.exists()) {
+        throw GradleException("MAUNKAVACH_RELEASE_STORE_FILE does not exist: ${keyStore.absolutePath}")
     }
 }
 
@@ -91,7 +88,7 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile = resolvedStoreFile
+            storeFile = releaseStoreFile?.let { file(it) }
             storePassword = releaseStorePassword
             keyAlias = releaseKeyAlias
             keyPassword = releaseKeyPassword

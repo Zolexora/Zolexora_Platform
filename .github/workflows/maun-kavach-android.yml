@@ -108,7 +108,7 @@ jobs:
       (github.event_name == 'workflow_dispatch' && inputs.build_type == 'release')
     env:
       MAUNKAVACH_SERVER_BASE_URL: ${{ secrets.MAUNKAVACH_SERVER_BASE_URL }}
-      MAUNKAVACH_RELEASE_STORE_FILE: app/maunkavach-release.jks
+      MAUNKAVACH_RELEASE_STORE_FILE: maunkavach-release.jks
       MAUNKAVACH_RELEASE_STORE_PASSWORD: ${{ secrets.MAUNKAVACH_RELEASE_STORE_PASSWORD }}
       MAUNKAVACH_RELEASE_KEY_ALIAS: ${{ secrets.MAUNKAVACH_RELEASE_KEY_ALIAS }}
       MAUNKAVACH_RELEASE_KEY_PASSWORD: ${{ secrets.MAUNKAVACH_RELEASE_KEY_PASSWORD }}
@@ -137,21 +137,9 @@ jobs:
         run: ./gradlew testDebugUnitTest --no-daemon
 
       - name: Build release AAB
-        env:
-          MAUNKAVACH_SERVER_BASE_URL: ${{ secrets.MAUNKAVACH_SERVER_BASE_URL }}
-          MAUNKAVACH_RELEASE_STORE_FILE: app/maunkavach-release.jks
-          MAUNKAVACH_RELEASE_STORE_PASSWORD: ${{ secrets.MAUNKAVACH_RELEASE_STORE_PASSWORD }}
-          MAUNKAVACH_RELEASE_KEY_ALIAS: ${{ secrets.MAUNKAVACH_RELEASE_KEY_ALIAS }}
-          MAUNKAVACH_RELEASE_KEY_PASSWORD: ${{ secrets.MAUNKAVACH_RELEASE_KEY_PASSWORD }}
         run: ./gradlew bundleRelease --no-daemon
 
       - name: Build release APK (for Firebase / direct install)
-        env:
-          MAUNKAVACH_SERVER_BASE_URL: ${{ secrets.MAUNKAVACH_SERVER_BASE_URL }}
-          MAUNKAVACH_RELEASE_STORE_FILE: app/maunkavach-release.jks
-          MAUNKAVACH_RELEASE_STORE_PASSWORD: ${{ secrets.MAUNKAVACH_RELEASE_STORE_PASSWORD }}
-          MAUNKAVACH_RELEASE_KEY_ALIAS: ${{ secrets.MAUNKAVACH_RELEASE_KEY_ALIAS }}
-          MAUNKAVACH_RELEASE_KEY_PASSWORD: ${{ secrets.MAUNKAVACH_RELEASE_KEY_PASSWORD }}
         run: ./gradlew assembleRelease --no-daemon
 
       - name: Clean up keystore
