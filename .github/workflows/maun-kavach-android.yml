@@ -8,7 +8,7 @@ on:
       - "products/maunkavach/gradle/**"
       - "products/maunkavach/*.kts"
       - "products/maunkavach/*.properties"
-      - ".github/workflows/MaunKavach-android.yml"
+      - ".github/workflows/maun-kavach-android.yml"
     tags:
       - "maunkavach-v*"
   pull_request:
@@ -16,7 +16,7 @@ on:
       - "products/maunkavach/app/**"
       - "products/maunkavach/gradle/**"
       - "products/maunkavach/*.kts"
-      - ".github/workflows/MaunKavach-android.yml"
+      - ".github/workflows/maun-kavach-android.yml"
   workflow_dispatch:
     inputs:
       build_type:
@@ -71,8 +71,9 @@ jobs:
           retention-days: 7
 
       - name: Distribute to testers via Firebase App Distribution
-        # Only runs on push to main — not on PRs
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        # Only runs on push to main when Firebase credentials are configured
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.MAUNKAVACH_FIREBASE_APP_ID != ''
+        continue-on-error: true
         uses: wzieba/Firebase-Distribution-Github-Action@v1
         with:
           appId: ${{ secrets.MAUNKAVACH_FIREBASE_APP_ID }}
