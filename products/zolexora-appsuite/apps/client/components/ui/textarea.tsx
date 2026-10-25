@@ -1,7 +1,7 @@
 import { cn } from '@/lib/cn'
 import type { TextareaHTMLAttributes } from 'react'
 
-interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
+interface TextareaProps extends Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'children'> {
   label?: string
   error?: string
   hint?: string
