@@ -155,24 +155,17 @@ jobs:
         run: ./gradlew testDebugUnitTest --no-daemon
 
       - name: Build release AAB
-        run: |
-          ./gradlew bundleRelease --no-daemon --stacktrace 2>&1 | tee /tmp/bundle-aab.log || {
-            echo "## ❌ BundleRelease Error Log" >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            tail -n 80 /tmp/bundle-aab.log >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            exit 1
-          }
+        run: ./gradlew bundleRelease --no-daemon --stacktrace
 
       - name: Build release APK (for Firebase / direct install)
+        run: ./gradlew assembleRelease --no-daemon --stacktrace
+
+      - name: Inspect built release binaries
         run: |
-          ./gradlew assembleRelease --no-daemon --stacktrace 2>&1 | tee /tmp/assemble-apk.log || {
-            echo "## ❌ AssembleRelease Error Log" >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            tail -n 80 /tmp/assemble-apk.log >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            exit 1
-          }
+          echo "=== Release Bundle outputs ==="
+          ls -la app/build/outputs/bundle/release/ || true
+          echo "=== Release APK outputs ==="
+          ls -la app/build/outputs/apk/release/ || true
 
       - name: Clean up keystore
         if: always()
@@ -183,6 +176,7 @@ jobs:
         with:
           name: maunkavach-release-aab-${{ github.ref_name }}
           path: products/maunkavach/app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
           retention-days: 30
 
       - name: Upload release APK
@@ -190,6 +184,7 @@ jobs:
         with:
           name: maunkavach-release-apk-${{ github.ref_name }}
           path: products/maunkavach/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
           retention-days: 30
 
       - name: Create GitHub Release
@@ -201,5 +196,6 @@ jobs:
           files: |
             products/maunkavach/app/build/outputs/bundle/release/*.aab
             products/maunkavach/app/build/outputs/apk/release/*.apk
+          fail_on_unmatched_files: true
           generate_release_notes: true
           draft: false
