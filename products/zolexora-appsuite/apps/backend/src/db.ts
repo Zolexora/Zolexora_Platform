@@ -13,20 +13,16 @@ export function getDbPool(): Pool {
 
     const parsed = new URL(databaseUrl)
     const isSsl =
-      parsed.searchParams.get('sslmode') === 'require' ||
-      parsed.hostname.includes('supabase.com') ||
-      parsed.hostname.includes('render.com') ||
-      parsed.hostname.includes('neon.tech') ||
-      parsed.hostname.includes('pooler.supabase.com')
+      databaseUrl.includes('sslmode=') ||
+      databaseUrl.includes('supabase.com') ||
+      databaseUrl.includes('render.com') ||
+      databaseUrl.includes('neon.tech') ||
+      databaseUrl.includes('pooler.supabase.com')
 
     pool = new Pool({
-      host: parsed.hostname,
-      port: Number(parsed.port) || 5432,
-      database: parsed.pathname.replace(/^\//, '') || 'postgres',
-      user: decodeURIComponent(parsed.username),
-      password: decodeURIComponent(parsed.password),
+      connectionString: databaseUrl,
       max: 10,
-      ssl: isSsl ? { rejectUnauthorized: false } : undefined,
+      ssl: isSsl ? { rejectUnauthorized: false, servername: parsed.hostname } : false,
     })
   }
 

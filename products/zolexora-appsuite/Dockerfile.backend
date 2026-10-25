@@ -21,8 +21,9 @@ ENV NODE_ENV=production \
 
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/platform/auth/user-auth-core ./platform/auth/user-auth-core
-COPY --from=builder /app/products/zolexora-appsuite/apps/backend ./products/zolexora-appsuite/apps/backend
+COPY --from=builder /app/packages ./packages
+COPY --from=builder /app/platform ./platform
+COPY --from=builder /app/products/zolexora-appsuite ./products/zolexora-appsuite
 
 WORKDIR /app/products/zolexora-appsuite/apps/backend
 
@@ -31,4 +32,4 @@ EXPOSE 8080
 HEALTHCHECK --interval=15s --timeout=5s --retries=3 \
   CMD wget -qO- http://localhost:8080/health || exit 1
 
-CMD ["node", "dist/index.js"]
+CMD ["./node_modules/.bin/tsx", "src/index.ts"]
