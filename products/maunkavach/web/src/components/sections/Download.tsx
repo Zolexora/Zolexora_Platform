@@ -10,7 +10,9 @@ const btnMuted =
 
 export default function Download() {
   const androidApkUrl =
-    "https://github.com/Abhishek-art01/01_MaunKavach/releases/download/v1.0.6/app-release.apk";
+    "https://github.com/Zolexora/Zolexora_Platform/releases/download/maunkavach-v1.0.6/app-release.apk";
+  const androidAabUrl =
+    "https://github.com/Zolexora/Zolexora_Platform/releases/download/maunkavach-v1.0.6/app-release.aab";
 
   return (
     <section id="download" className="py-32 bg-background border-t border-border">
@@ -31,14 +33,19 @@ export default function Download() {
             <SiAndroid className="w-12 h-12 mb-6 text-primary" />
             <h3 className="text-xl font-bold mb-2 uppercase tracking-wider">Android</h3>
             <p className="text-sm text-muted-foreground font-mono mb-6">v1.0.6</p>
-            <div className="flex gap-2 w-full mt-auto">
-              <a href={androidApkUrl} className={btnPrimary}>
+            <div className="flex flex-col gap-2 w-full mt-auto">
+              <a href={androidApkUrl} className={btnPrimary + " w-full"}>
                 Download APK
               </a>
-              <a href="#download-android-play" className={btnPrimary}>
-                <SiGoogleplay className="inline w-3 h-3 mr-1" />
-                Play Store
-              </a>
+              <div className="flex gap-2 w-full">
+                <a href={androidAabUrl} className={btnPrimary}>
+                  AAB
+                </a>
+                <a href="#download-android-play" className={btnPrimary}>
+                  <SiGoogleplay className="inline w-3 h-3 mr-1" />
+                  Play Store
+                </a>
+              </div>
             </div>
           </div>
 
