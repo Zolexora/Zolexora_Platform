@@ -1,5 +1,5 @@
 import { Monitor } from "lucide-react";
-import { SiApple, SiLinux, SiAndroid, SiGoogleplay, SiAppstore } from "react-icons/si";
+import { SiApple, SiLinux, SiAndroid, SiGoogleplay, SiAppstore, SiSamsung } from "react-icons/si";
 
 const btnBase =
   "flex-1 px-4 py-2 text-xs font-bold uppercase tracking-widest transition-colors text-center border";
@@ -11,8 +11,8 @@ const btnMuted =
 export default function Download() {
   const androidApkUrl =
     "https://github.com/Zolexora/Zolexora_Platform/releases/download/maunkavach-v1.0.6/app-release.apk";
-  const androidAabUrl =
-    "https://github.com/Zolexora/Zolexora_Platform/releases/download/maunkavach-v1.0.6/app-release.aab";
+  const samsungGalaxyStoreUrl =
+    "https://galaxystore.samsung.com/detail/com.maunkavach";
 
   return (
     <section id="download" className="py-32 bg-background border-t border-border">
@@ -38,12 +38,13 @@ export default function Download() {
                 Download APK
               </a>
               <div className="flex gap-2 w-full">
-                <a href={androidAabUrl} className={btnPrimary}>
-                  AAB
-                </a>
                 <a href="#download-android-play" className={btnPrimary}>
                   <SiGoogleplay className="inline w-3 h-3 mr-1" />
                   Play Store
+                </a>
+                <a href={samsungGalaxyStoreUrl} className={btnPrimary}>
+                  <SiSamsung className="inline w-3 h-3 mr-1" />
+                  Galaxy Store
                 </a>
               </div>
             </div>
