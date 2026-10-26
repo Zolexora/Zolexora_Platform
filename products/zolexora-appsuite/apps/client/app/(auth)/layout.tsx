@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Layers } from 'lucide-react'
+import Image from 'next/image'
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -16,11 +16,16 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       </div>
 
       {/* Logo */}
-      <Link href="/" className="flex items-center gap-2.5 mb-10 relative">
-        <div className="w-8 h-8 rounded-lg bg-[var(--color-brand-primary)] flex items-center justify-center">
-          <Layers className="w-4 h-4 text-white" />
-        </div>
-        <span className="font-semibold text-lg text-[var(--color-text-primary)]">
+      <Link href="/" className="flex items-center gap-3 mb-10 relative group">
+        <Image
+          src="/logo.png"
+          alt="Zolexora App Suite Logo"
+          width={38}
+          height={38}
+          className="w-9 h-9 rounded-xl object-contain shadow-lg shadow-brand-primary/20 transition-transform group-hover:scale-105"
+          priority
+        />
+        <span className="font-semibold text-xl text-[var(--color-text-primary)]">
           Zolexora <span className="text-[var(--color-brand-primary)]">App Suite</span>
         </span>
       </Link>

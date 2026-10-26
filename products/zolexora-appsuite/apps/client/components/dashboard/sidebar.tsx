@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard,
@@ -8,7 +9,6 @@ import {
   FolderOpen,
   FileText,
   LogOut,
-  Layers,
   User,
 } from 'lucide-react'
 import { cn } from '@/lib/cn'
@@ -32,10 +32,14 @@ export function Sidebar({ user }: SidebarProps) {
   return (
     <aside className="flex flex-col w-60 min-h-screen border-r border-[var(--color-border)] bg-[var(--color-surface-dark)] px-4 py-6">
       {/* Logo */}
-      <Link href="/" className="flex items-center gap-2.5 px-2 mb-8">
-        <div className="w-7 h-7 rounded-lg bg-[var(--color-brand-primary)] flex items-center justify-center">
-          <Layers className="w-3.5 h-3.5 text-white" />
-        </div>
+      <Link href="/" className="flex items-center gap-2.5 px-2 mb-8 group">
+        <Image
+          src="/logo.png"
+          alt="Zolexora App Suite Logo"
+          width={30}
+          height={30}
+          className="w-7 h-7 rounded-lg object-contain transition-transform group-hover:scale-105"
+        />
         <span className="font-semibold text-sm text-[var(--color-text-primary)]">
           App Suite
         </span>

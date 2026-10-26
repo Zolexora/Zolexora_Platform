@@ -1,12 +1,17 @@
-import { Terminal } from 'lucide-react'
+import Image from 'next/image'
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-[var(--color-surface-dark)]">
-      <div className="flex items-center gap-2.5 mb-8">
-        <div className="w-9 h-9 rounded-lg bg-[var(--color-brand-primary)]/20 border border-[var(--color-brand-primary)]/40 flex items-center justify-center">
-          <Terminal className="w-5 h-5 text-[var(--color-brand-primary)]" />
-        </div>
+      <div className="flex items-center gap-3.5 mb-8">
+        <Image
+          src="/logo.png"
+          alt="Zolexora App Suite"
+          width={40}
+          height={40}
+          className="w-10 h-10 rounded-xl object-contain shadow-md"
+          priority
+        />
         <div>
           <span className="font-bold text-lg text-[var(--color-text-primary)] tracking-wide">
             DevTeam <span className="text-[var(--color-brand-primary)]">Console</span>

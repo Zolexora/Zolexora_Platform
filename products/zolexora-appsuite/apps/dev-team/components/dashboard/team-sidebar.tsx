@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard,
@@ -28,10 +29,14 @@ export function TeamSidebar({ user }: { user: ZolexoraUser }) {
   return (
     <aside className="flex flex-col w-64 min-h-screen border-r border-[var(--color-border)] bg-[var(--color-surface-dark)] px-4 py-5 select-none shrink-0">
       {/* Brand */}
-      <div className="flex items-center gap-2.5 px-2 mb-6">
-        <div className="w-8 h-8 rounded-lg bg-[var(--color-brand-primary)]/20 border border-[var(--color-brand-primary)]/40 flex items-center justify-center">
-          <Terminal className="w-4 h-4 text-[var(--color-brand-primary)]" />
-        </div>
+      <div className="flex items-center gap-3 px-2 mb-6">
+        <Image
+          src="/logo.png"
+          alt="Zolexora App Suite"
+          width={32}
+          height={32}
+          className="w-8 h-8 rounded-lg object-contain shadow-sm"
+        />
         <div className="min-w-0">
           <p className="font-bold text-sm text-[var(--color-text-primary)] tracking-wide">
             DevTeam <span className="text-[var(--color-brand-primary)]">Ops</span>

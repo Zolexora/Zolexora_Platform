@@ -22,6 +22,7 @@ ENV NODE_ENV=production \
 
 COPY --from=builder /app/products/zolexora-appsuite/apps/client/.next/standalone ./
 COPY --from=builder /app/products/zolexora-appsuite/apps/client/.next/static ./products/zolexora-appsuite/apps/client/.next/static
+COPY --from=builder /app/products/zolexora-appsuite/apps/client/public ./products/zolexora-appsuite/apps/client/public
 
 EXPOSE 3070
 
