@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import {
   ArrowRight,
   MessageSquare,
@@ -102,6 +103,19 @@ export default function HomePage() {
 
       {/* Hero */}
       <section className="relative mx-auto max-w-7xl px-6 pt-24 pb-20 text-center">
+        <div className="flex justify-center mb-6">
+          <div className="relative p-2.5 rounded-2xl bg-gradient-to-b from-white/10 to-transparent border border-white/10 shadow-2xl backdrop-blur-sm">
+            <Image
+              src="/logo.png"
+              alt="Zolexora App Suite Emblem"
+              width={80}
+              height={80}
+              className="w-16 h-16 md:w-20 md:h-20 object-contain drop-shadow-[0_12px_24px_rgba(124,58,237,0.4)]"
+              priority
+            />
+          </div>
+        </div>
+
         <div className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-card)] px-4 py-1.5 text-xs text-[var(--color-text-muted)] mb-8">
           <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-brand-primary)] animate-pulse" />
           Accepting New Projects — Response within 48h

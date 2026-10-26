@@ -135,8 +135,8 @@ services:
     ports:
       - "${APPSUITE_PORT:-3070}:80"
       - "${APPSUITE_SSL_PORT:-3443}:443"
+    # Config is baked into the Dockerfile image
     volumes:
-      - ./nginx-conf.d:/etc/nginx/conf.d:ro
       - certbot_www:/var/www/certbot
       - certbot_certs:/etc/nginx/certs:ro
     depends_on:

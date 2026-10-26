@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Layers } from 'lucide-react'
+import Image from 'next/image'
 
 export function Footer() {
   return (
@@ -8,9 +8,13 @@ export function Footer() {
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
           <div>
             <div className="flex items-center gap-2.5 mb-3">
-              <div className="w-7 h-7 rounded-lg bg-[var(--color-brand-primary)] flex items-center justify-center">
-                <Layers className="w-3.5 h-3.5 text-white" />
-              </div>
+              <Image
+                src="/logo.png"
+                alt="Zolexora App Suite Logo"
+                width={28}
+                height={28}
+                className="w-7 h-7 rounded-lg object-contain"
+              />
               <span className="font-semibold text-[var(--color-text-primary)]">
                 Zolexora App Suite
               </span>
