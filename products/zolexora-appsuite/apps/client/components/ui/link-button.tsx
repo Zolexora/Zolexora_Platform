@@ -15,15 +15,15 @@ export function LinkButton({
   ...props
 }: LinkButtonProps) {
   const base =
-    'inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-primary)]'
+    'inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#CBD5E1]'
 
   const variants = {
     primary:
-      'bg-[var(--color-brand-primary)] text-white hover:opacity-90 active:scale-[0.98]',
+      'bg-[#0B1F3A] text-white hover:bg-[#142E54] border border-[#CBD5E1]/30 hover:border-[#CBD5E1]/60 shadow-sm active:scale-[0.98]',
     ghost:
-      'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)]',
+      'text-[#CBD5E1] hover:text-white hover:bg-[#121824]',
     outline:
-      'border border-[var(--color-border)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)]',
+      'border border-[#404040] text-[#CBD5E1] hover:text-white hover:border-[#CBD5E1]/50 hover:bg-[#0B1F3A]/40',
   }
 
   const sizes = {

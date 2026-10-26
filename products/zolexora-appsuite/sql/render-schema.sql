@@ -1,4 +1,4 @@
--- Zolexora App Suite: Production Database Schema for Render PostgreSQL
+-- Zolexora AppSuite: Production Database Schema for Render PostgreSQL
 -- Compatible with Native PostgreSQL 18 & @zolexora/user-auth-zolexora
 -- Compliant with IT Act 2000, Indian Contract Act 1872 & Indian Evidence Act (Sec 65B)
 

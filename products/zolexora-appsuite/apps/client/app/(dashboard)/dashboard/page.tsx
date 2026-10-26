@@ -33,16 +33,15 @@ export default async function DashboardPage() {
       : Promise.resolve({ rows: [] as Contract[] }),
   ])
 
-
   return (
     <div className="space-y-8">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">
-            App Suite Workspace 👋
+          <h1 className="text-2xl font-bold text-white">
+            AppSuite Workspace 👋
           </h1>
-          <p className="text-sm text-[var(--color-text-muted)] mt-1">
+          <p className="text-sm text-[#CBD5E1]/70 mt-1">
             Here&apos;s an overview of your projects and contracts.
           </p>
         </div>
@@ -82,9 +81,9 @@ export default async function DashboardPage() {
             icon: FileText,
           },
         ].map((stat) => (
-          <Card key={stat.label} className="p-4">
-            <p className="text-sm text-[var(--color-text-muted)]">{stat.label}</p>
-            <p className="text-3xl font-bold text-[var(--color-text-primary)] mt-1">
+          <Card key={stat.label} className="p-4 bg-[#0A0A0A] border border-[#404040]">
+            <p className="text-xs font-semibold uppercase tracking-wider text-[#CBD5E1]/70">{stat.label}</p>
+            <p className="text-3xl font-bold text-white mt-1">
               {stat.value}
             </p>
           </Card>
@@ -94,25 +93,25 @@ export default async function DashboardPage() {
       {/* Recent Requests */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
+          <h2 className="text-lg font-semibold text-white">
             Recent Requests
           </h2>
           <Link
             href="/dashboard/requests"
-            className="text-sm text-[var(--color-brand-primary)] hover:underline flex items-center gap-1"
+            className="text-xs font-semibold text-[#CBD5E1] hover:text-white flex items-center gap-1 transition-colors"
           >
             View all <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
 
         {!requests || requests.length === 0 ? (
-          <Card className="text-center py-12">
-            <FolderOpen className="w-8 h-8 text-[var(--color-text-muted)] mx-auto mb-3" />
-            <p className="text-sm text-[var(--color-text-muted)]">
+          <Card className="text-center py-12 bg-[#0A0A0A] border border-[#404040]">
+            <FolderOpen className="w-8 h-8 text-[#CBD5E1]/50 mx-auto mb-3" />
+            <p className="text-sm text-[#CBD5E1]/70">
               No requests yet.{' '}
               <Link
                 href="/dashboard/new-request"
-                className="text-[var(--color-brand-primary)] hover:underline"
+                className="text-white underline underline-offset-2 hover:text-[#CBD5E1]"
               >
                 Submit your first one
               </Link>
@@ -125,14 +124,14 @@ export default async function DashboardPage() {
               <Link
                 key={req.id}
                 href={`/dashboard/requests/${req.id}`}
-                className="block rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-card)] p-4 hover:border-[var(--color-brand-primary)]/40 hover:bg-[var(--color-surface-hover)] transition-all group"
+                className="block rounded-xl border border-[#404040] bg-[#0A0A0A] p-4 hover:border-[#CBD5E1]/50 hover:bg-[#121824] transition-all group"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
-                    <p className="font-medium text-[var(--color-text-primary)] truncate group-hover:text-[var(--color-brand-primary)] transition-colors">
+                    <p className="font-medium text-white truncate group-hover:text-[#CBD5E1] transition-colors">
                       {req.title}
                     </p>
-                    <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+                    <p className="text-xs text-[#CBD5E1]/60 mt-0.5">
                       {req.category ?? 'Uncategorized'} ·{' '}
                       {new Date(req.created_at).toLocaleDateString()}
                     </p>
@@ -150,21 +149,21 @@ export default async function DashboardPage() {
       {/* Contracts */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
+          <h2 className="text-lg font-semibold text-white">
             Recent Contracts
           </h2>
           <Link
             href="/dashboard/contracts"
-            className="text-sm text-[var(--color-brand-primary)] hover:underline flex items-center gap-1"
+            className="text-xs font-semibold text-[#CBD5E1] hover:text-white flex items-center gap-1 transition-colors"
           >
             View all <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
 
         {!contracts || contracts.length === 0 ? (
-          <Card className="text-center py-10">
-            <FileText className="w-8 h-8 text-[var(--color-text-muted)] mx-auto mb-3" />
-            <p className="text-sm text-[var(--color-text-muted)]">
+          <Card className="text-center py-10 bg-[#0A0A0A] border border-[#404040]">
+            <FileText className="w-8 h-8 text-[#CBD5E1]/50 mx-auto mb-3" />
+            <p className="text-sm text-[#CBD5E1]/70">
               No contracts yet. Contracts are generated after your request is reviewed.
             </p>
           </Card>
@@ -174,10 +173,10 @@ export default async function DashboardPage() {
               <Link
                 key={contract.id}
                 href={`/dashboard/contracts/${contract.id}`}
-                className="block rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-card)] p-4 hover:border-[var(--color-brand-primary)]/40 hover:bg-[var(--color-surface-hover)] transition-all group"
+                className="block rounded-xl border border-[#404040] bg-[#0A0A0A] p-4 hover:border-[#CBD5E1]/50 hover:bg-[#121824] transition-all group"
               >
                 <div className="flex items-center justify-between gap-4">
-                  <p className="font-medium text-[var(--color-text-primary)] truncate group-hover:text-[var(--color-brand-primary)] transition-colors">
+                  <p className="font-medium text-white truncate group-hover:text-[#CBD5E1] transition-colors">
                     {contract.title}
                   </p>
                   <Badge color={contractStatusColor[contract.status]}>

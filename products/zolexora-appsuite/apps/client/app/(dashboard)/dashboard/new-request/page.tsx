@@ -18,10 +18,10 @@ export default function NewRequestPage() {
   return (
     <div className="max-w-2xl">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">
+        <h1 className="text-2xl font-bold text-white">
           Submit a New Request
         </h1>
-        <p className="text-sm text-[var(--color-text-muted)] mt-1">
+        <p className="text-sm text-[#CBD5E1]/70 mt-1">
           Tell us about the application you want built. Be as detailed as
           possible — it helps us give you an accurate proposal.
         </p>
@@ -65,7 +65,7 @@ export default function NewRequestPage() {
           />
 
           {state.error && (
-            <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+            <div className="rounded-lg border border-[#404040] bg-[#0A0A0A] px-3 py-2 text-xs text-[#CBD5E1] font-medium">
               {state.error}
             </div>
           )}

@@ -7,7 +7,7 @@ import {
   type AppRequest,
   type RequestStatus,
 } from '@/lib/types'
-import { GitPullRequest, ArrowRight, Filter } from 'lucide-react'
+import { GitPullRequest } from 'lucide-react'
 
 export const metadata = { title: 'All App Requests | DevTeam Console' }
 
@@ -50,20 +50,20 @@ export default async function TeamRequestsPage({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-[var(--color-text-primary)]">
+          <h1 className="text-2xl font-bold tracking-tight text-white">
             Application Development Requests
           </h1>
-          <p className="text-sm text-[var(--color-text-muted)] mt-1">
-            Browse and manage all customer requests across Zolexora App Suite.
+          <p className="text-sm text-[#CBD5E1]/70 mt-1">
+            Browse and manage all customer requests across Zolexora AppSuite.
           </p>
         </div>
-        <div className="text-xs text-[var(--color-text-muted)] bg-[var(--color-surface-card)] border border-[var(--color-border)] px-3 py-1.5 rounded-lg">
+        <div className="text-xs text-[#CBD5E1] bg-[#0A0A0A] border border-[#404040] px-3 py-1.5 rounded-lg">
           Total: <span className="font-semibold text-white">{requests.length}</span> requests
         </div>
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex flex-wrap items-center gap-1.5 border-b border-[var(--color-border)] pb-3">
+      <div className="flex flex-wrap items-center gap-1.5 border-b border-[#404040] pb-3">
         {tabs.map((tab) => {
           const isActive = (!tab.value && !statusFilter) || tab.value === statusFilter
           return (
@@ -72,8 +72,8 @@ export default async function TeamRequestsPage({
               href={tab.value ? `/requests?status=${tab.value}` : '/requests'}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                 isActive
-                  ? 'bg-[var(--color-brand-primary)] text-black font-semibold'
-                  : 'text-[var(--color-text-muted)] hover:text-white hover:bg-[var(--color-surface-hover)]'
+                  ? 'bg-[#0B1F3A] text-white border border-[#CBD5E1]/40 font-semibold shadow-xs'
+                  : 'text-[#CBD5E1]/70 hover:text-white hover:bg-[#121824]'
               }`}
             >
               {tab.label}
@@ -84,8 +84,8 @@ export default async function TeamRequestsPage({
 
       {/* List */}
       {requests.length === 0 ? (
-        <Card className="p-12 text-center text-sm text-[var(--color-text-muted)]">
-          <GitPullRequest className="w-8 h-8 text-zinc-500 mx-auto mb-3" />
+        <Card className="p-12 text-center text-sm text-[#CBD5E1]/60 bg-[#0A0A0A] border border-[#404040]">
+          <GitPullRequest className="w-8 h-8 text-[#CBD5E1]/40 mx-auto mb-3" />
           No requests found matching this filter.
         </Card>
       ) : (
@@ -94,40 +94,31 @@ export default async function TeamRequestsPage({
             <Link
               key={r.id}
               href={`/requests/${r.id}`}
-              className="block rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-card)] p-5 hover:border-[var(--color-brand-primary)]/40 hover:bg-[var(--color-surface-hover)] transition-all group"
+              className="block rounded-xl border border-[#404040] bg-[#0A0A0A] p-5 hover:border-[#CBD5E1]/40 hover:bg-[#121824] transition-all group"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2.5">
-                    <p className="font-semibold text-base text-[var(--color-text-primary)] group-hover:text-[var(--color-brand-primary)] transition-colors truncate">
+                    <p className="font-semibold text-base text-white group-hover:text-[#CBD5E1] transition-colors truncate">
                       {r.title}
                     </p>
                     <Badge color={requestStatusColor[r.status]}>
                       {REQUEST_STATUS_LABELS[r.status]}
                     </Badge>
                   </div>
-
-                  <p className="text-xs text-[var(--color-text-muted)] mt-1 truncate">
-                    Client: <span className="text-zinc-200 font-mono">{r.user_email}</span>
+                  <p className="text-xs text-[#CBD5E1]/70 mt-1 truncate">
+                    Client: <span className="text-white font-mono">{r.user_email}</span>
                   </p>
-
-                  <p className="text-xs text-zinc-400 mt-2 line-clamp-2 leading-relaxed">
+                  <p className="text-xs text-[#CBD5E1]/80 mt-2 line-clamp-2">
                     {r.description}
                   </p>
-
-                  <div className="flex flex-wrap items-center gap-3 mt-3 text-xs text-[var(--color-text-muted)]">
-                    <span className="bg-zinc-800/80 px-2 py-0.5 rounded text-[11px] text-zinc-300">
-                      {r.category || 'Web Application'}
-                    </span>
-                    <span>Budget: <strong className="text-zinc-200">{r.budget_range || 'Flexible'}</strong></span>
+                  <div className="flex items-center gap-3 mt-3 text-[11px] text-[#CBD5E1]/60">
+                    <span>{r.category || 'General'}</span>
                     <span>•</span>
-                    <span>Submitted: {new Date(r.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                    <span>{r.budget_range || 'Flexible budget'}</span>
+                    <span>•</span>
+                    <span>{new Date(r.created_at).toLocaleDateString('en-IN')}</span>
                   </div>
-                </div>
-
-                <div className="flex items-center gap-1 text-xs text-[var(--color-brand-primary)] font-medium shrink-0 self-center">
-                  <span>Manage</span>
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                 </div>
               </div>
             </Link>

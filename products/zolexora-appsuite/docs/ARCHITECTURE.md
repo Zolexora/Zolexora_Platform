@@ -1,12 +1,12 @@
-# Zolexora App Suite — Documentation & Architecture Guide
+# Zolexora AppSuite — Documentation & Architecture Guide
 
 ## Overview
 
-**Zolexora App Suite** is the client-facing intake, legal contract management, and project execution portal for the dedicated Zolexora on-demand application engineering team.
+**Zolexora AppSuite** is the client-facing intake, legal contract management, and project execution portal for the dedicated Zolexora on-demand application engineering team.
 
 Clients submit software specifications, review structured milestone proposals, and digitally execute legally binding agreements (MSAs, SOWs, NDAs) compliant with Indian law.
 
-> **Key Architectural Boundary:** Applications commissioned through Zolexora App Suite are deployed directly to the client's designated cloud infrastructure or external Git repositories. They are **never stored, maintained, or version-controlled inside the Zolexora platform monorepo**.
+> **Key Architectural Boundary:** Applications commissioned through Zolexora AppSuite are deployed directly to the client's designated cloud infrastructure or external Git repositories. They are **never stored, maintained, or version-controlled inside the Zolexora platform monorepo**.
 
 ---
 
@@ -69,7 +69,7 @@ products/zolexora-appsuite/
 
 ## Indian Legal & Digital Contracting Framework
 
-Zolexora App Suite incorporates a 3-tier digital execution model tailored to Indian commercial and cyber law:
+Zolexora AppSuite incorporates a 3-tier digital execution model tailored to Indian commercial and cyber law:
 
 ```mermaid
 flowchart TD
@@ -126,7 +126,7 @@ Pre-configured in [`lib/legal-clauses.ts`](file:///workspaces/Zolexora_Platform/
 ### Installation & Local Setup
 
 ```bash
-# 1. Navigate to the App Suite web application
+# 1. Navigate to the AppSuite web application
 cd /workspaces/Zolexora_Platform/products/zolexora-appsuite/apps/web
 
 # 2. Configure environment variables

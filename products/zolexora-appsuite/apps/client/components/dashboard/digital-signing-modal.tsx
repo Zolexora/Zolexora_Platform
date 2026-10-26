@@ -101,59 +101,58 @@ export function DigitalSigningModal({
           }
         : undefined
 
-    const res = await executeDigitalContract({
+    const result = await executeDigitalContract({
       contractId,
-      signerName,
       signingMode,
-      otpCode: otpCode || '123456',
+      signerName: signerName.trim(),
+      otpCode: signingMode === 'CLICKWRAP_OTP' ? otpCode : undefined,
       dscPayload,
-      esignProvider,
-      signerPhone,
+      esignProvider: signingMode === 'AADHAAR_ESIGN' ? esignProvider : undefined,
+      signerPhone: signingMode === 'AADHAAR_ESIGN' && signerPhone.trim() ? signerPhone.trim() : undefined,
     })
 
-    if (res.error) {
-      setError(res.error)
-      setLoading(false)
-      return
-    }
-
-    // Handle Aadhaar eSign Gateway Redirect
-    if (signingMode === 'AADHAAR_ESIGN' && res.gatewayUrl) {
-      setGatewayRedirectUrl(res.gatewayUrl)
-      setSuccess(true)
-      setSuccessMessage(
-        `Aadhaar eSign session created on ${esignProvider}. Click below to complete biometric / UIDAI OTP verification.`
-      )
-      setLoading(false)
-      return
-    }
-
-    setSuccess(true)
-    setSuccessMessage(
-      signingMode === 'DSC_TOKEN'
-        ? 'Class 3 USB DSC Token Successfully Verified & Signed! Presumption of validity applies under Section 85B of the Indian Evidence Act.'
-        : 'Your signature has been cryptographically recorded under Section 10A of the IT Act, 2000. An audit certificate has been generated.'
-    )
     setLoading(false)
-    router.refresh()
+
+    if (result.success) {
+      if (result.gatewayUrl) {
+        setGatewayRedirectUrl(result.gatewayUrl)
+        setSuccess(true)
+        setSuccessMessage(
+          `Redirecting to ${esignProvider} Aadhaar eSign ESP gateway for biometric / UIDAI OTP verification...`
+        )
+      } else {
+        setSuccess(true)
+        setSuccessMessage(
+          'Contract legally executed and notarized under IT Act 2000 Section 10A / 3A with SHA-256 evidence integrity logs.'
+        )
+        setTimeout(() => {
+          router.refresh()
+        }, 1500)
+      }
+    } else {
+      setError(result.error || 'Failed to digitally sign document.')
+    }
   }
 
   if (success) {
     return (
-      <div className="rounded-xl border border-green-500/30 bg-green-950/20 p-6 text-center">
-        <CheckCircle2 className="w-10 h-10 text-green-400 mx-auto mb-3" />
-        <h3 className="text-lg font-semibold text-white">Digital Signature Process Initiated!</h3>
-        <p className="text-sm text-[var(--color-text-muted)] mt-1">{successMessage}</p>
-
+      <div className="rounded-xl border border-[#CBD5E1]/40 bg-[#0B1F3A]/50 p-6 text-center">
+        <CheckCircle2 className="w-10 h-10 text-[#CBD5E1] mx-auto mb-3" />
+        <h3 className="text-base font-semibold text-white mb-1">
+          Agreement Executed Successfully
+        </h3>
+        <p className="text-xs text-[#CBD5E1]/80 max-w-sm mx-auto mb-4">
+          {successMessage}
+        </p>
         {gatewayRedirectUrl && (
-          <div className="mt-4">
+          <div className="pt-2">
             <a
               href={gatewayRedirectUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 bg-[var(--color-brand-primary)] text-white text-sm font-medium px-5 py-2.5 rounded-lg hover:opacity-90 transition-opacity"
+              className="inline-flex items-center gap-2 bg-[#0B1F3A] hover:bg-[#142E54] text-white border border-[#CBD5E1]/40 text-sm font-medium px-5 py-2.5 rounded-lg transition-all"
             >
-              Open {esignProvider} Aadhaar eSign Gateway <ExternalLink className="w-4 h-4" />
+              Open {esignProvider} Aadhaar eSign Gateway <ExternalLink className="w-4 h-4 text-[#CBD5E1]" />
             </a>
           </div>
         )}
@@ -162,31 +161,31 @@ export function DigitalSigningModal({
   }
 
   return (
-    <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-card)] p-6">
+    <div className="rounded-xl border border-[#404040] bg-[#0A0A0A] p-6">
       <div className="flex items-center gap-3 mb-4">
-        <div className="w-9 h-9 rounded-lg bg-[var(--color-brand-primary)]/10 flex items-center justify-center">
-          <ShieldCheck className="w-5 h-5 text-[var(--color-brand-primary)]" />
+        <div className="w-9 h-9 rounded-lg bg-[#0B1F3A] border border-[#CBD5E1]/30 flex items-center justify-center">
+          <ShieldCheck className="w-5 h-5 text-[#CBD5E1]" />
         </div>
         <div>
           <h3 className="font-semibold text-white">Execute Digital Contract</h3>
-          <p className="text-xs text-[var(--color-text-muted)]">
-            Legally valid in India under the IT Act, 2000 & Indian Evidence Act (Sec 65B & 85B)
+          <p className="text-xs text-[#CBD5E1]/70">
+            Legally valid in India under the IT Act, 2000 &amp; Indian Evidence Act (Sec 65B &amp; 85B)
           </p>
         </div>
       </div>
 
       {/* 3 Signature Method Tabs */}
-      <div className="grid grid-cols-3 gap-1.5 p-1 bg-[var(--color-surface-hover)] rounded-lg mb-5 border border-[var(--color-border)]">
+      <div className="grid grid-cols-3 gap-1.5 p-1 bg-[#121824] rounded-lg mb-5 border border-[#404040]">
         <button
           type="button"
           onClick={() => {
             setSigningMode('CLICKWRAP_OTP')
             setError(null)
           }}
-          className={`flex items-center justify-center gap-1.5 py-2 text-xs font-medium rounded-md transition-all ${
+          className={`flex items-center justify-center gap-1.5 py-2 text-xs font-medium rounded-md transition-all cursor-pointer ${
             signingMode === 'CLICKWRAP_OTP'
-              ? 'bg-[var(--color-brand-primary)] text-white shadow'
-              : 'text-[var(--color-text-muted)] hover:text-white'
+              ? 'bg-[#0B1F3A] text-white border border-[#CBD5E1]/40 shadow-xs'
+              : 'text-[#CBD5E1]/70 hover:text-white'
           }`}
         >
           <Mail className="w-3.5 h-3.5" /> Email OTP
@@ -197,10 +196,10 @@ export function DigitalSigningModal({
             setSigningMode('AADHAAR_ESIGN')
             setError(null)
           }}
-          className={`flex items-center justify-center gap-1.5 py-2 text-xs font-medium rounded-md transition-all ${
+          className={`flex items-center justify-center gap-1.5 py-2 text-xs font-medium rounded-md transition-all cursor-pointer ${
             signingMode === 'AADHAAR_ESIGN'
-              ? 'bg-[var(--color-brand-primary)] text-white shadow'
-              : 'text-[var(--color-text-muted)] hover:text-white'
+              ? 'bg-[#0B1F3A] text-white border border-[#CBD5E1]/40 shadow-xs'
+              : 'text-[#CBD5E1]/70 hover:text-white'
           }`}
         >
           <Fingerprint className="w-3.5 h-3.5" /> Aadhaar eSign
@@ -211,10 +210,10 @@ export function DigitalSigningModal({
             setSigningMode('DSC_TOKEN')
             setError(null)
           }}
-          className={`flex items-center justify-center gap-1.5 py-2 text-xs font-medium rounded-md transition-all ${
+          className={`flex items-center justify-center gap-1.5 py-2 text-xs font-medium rounded-md transition-all cursor-pointer ${
             signingMode === 'DSC_TOKEN'
-              ? 'bg-[var(--color-brand-primary)] text-white shadow'
-              : 'text-[var(--color-text-muted)] hover:text-white'
+              ? 'bg-[#0B1F3A] text-white border border-[#CBD5E1]/40 shadow-xs'
+              : 'text-[#CBD5E1]/70 hover:text-white'
           }`}
         >
           <Usb className="w-3.5 h-3.5" /> USB Token (CCA)
@@ -259,12 +258,12 @@ export function DigitalSigningModal({
 
         {/* Mode 2: Aadhaar eSign (Digio / Leegality) */}
         {signingMode === 'AADHAAR_ESIGN' && (
-          <div className="space-y-3 p-4 rounded-lg bg-[var(--color-surface-hover)] border border-[var(--color-border)]">
+          <div className="space-y-3 p-4 rounded-lg bg-[#080C14] border border-[#404040]">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-white flex items-center gap-1.5">
-                <Fingerprint className="w-4 h-4 text-orange-400" /> Aadhaar eSign (UIDAI ESP Gateway)
+                <Fingerprint className="w-4 h-4 text-[#CBD5E1]" /> Aadhaar eSign (UIDAI ESP Gateway)
               </span>
-              <span className="text-[10px] bg-orange-950 text-orange-300 border border-orange-800 px-2 py-0.5 rounded font-mono">
+              <span className="text-[10px] bg-[#0B1F3A] text-[#CBD5E1] border border-[#CBD5E1]/30 px-2 py-0.5 rounded font-mono">
                 IT ACT SEC 3A
               </span>
             </div>
@@ -292,14 +291,16 @@ export function DigitalSigningModal({
 
         {/* Mode 3: Hardware USB DSC Token */}
         {signingMode === 'DSC_TOKEN' && (
-          <div className="space-y-3 p-4 rounded-lg bg-[var(--color-surface-hover)] border border-[var(--color-border)]">
+          <div className="space-y-3 p-4 rounded-lg bg-[#080C14] border border-[#404040]">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-white flex items-center gap-1.5">
-                <Usb className="w-4 h-4 text-indigo-400" /> USB Hardware Token (ePass2003 / ProxKey)
+                <Usb className="w-4 h-4 text-[#CBD5E1]" /> USB Hardware Token (ePass2003 / ProxKey)
               </span>
               <span
-                className={`text-[10px] px-2 py-0.5 rounded font-mono ${
-                  dscConnected ? 'bg-green-950 text-green-300 border border-green-800' : 'bg-yellow-950 text-yellow-300'
+                className={`text-[10px] px-2 py-0.5 rounded font-mono border ${
+                  dscConnected
+                    ? 'bg-white/10 text-white border-white/40 font-semibold'
+                    : 'bg-[#0A0A0A] text-[#CBD5E1]/60 border-[#404040]'
                 }`}
               >
                 {dscConnected ? 'TOKEN DETECTED' : 'NOT DETECTED'}
@@ -322,14 +323,14 @@ export function DigitalSigningModal({
                 onClick={handleConnectUsbToken}
                 className="w-full text-xs"
               >
-                Detect & Read USB Token Certificate
+                Detect &amp; Read USB Token Certificate
               </Button>
             ) : (
               <>
-                <div className="p-2.5 rounded bg-slate-900 border border-slate-800 text-[11px] font-mono text-slate-300 space-y-1">
-                  <div>Serial No: <span className="text-indigo-300">{dscSerialNumber}</span></div>
-                  <div>Cert Type: <span className="text-green-400">Class 3 Organization / Signing</span></div>
-                  <div>Algorithm: <span className="text-slate-400">SHA256withRSA / PKCS#11</span></div>
+                <div className="p-2.5 rounded bg-[#0A0A0A] border border-[#404040] text-[11px] font-mono text-[#CBD5E1] space-y-1">
+                  <div>Serial No: <span className="text-white">{dscSerialNumber}</span></div>
+                  <div>Cert Type: <span className="text-white font-semibold">Class 3 Organization / Signing</span></div>
+                  <div>Algorithm: <span className="text-[#CBD5E1]/70">SHA256withRSA / PKCS#11</span></div>
                 </div>
 
                 <Input
@@ -345,21 +346,21 @@ export function DigitalSigningModal({
           </div>
         )}
 
-        <label className="flex items-start gap-3 p-3 rounded-lg bg-[var(--color-surface-hover)] border border-[var(--color-border)] cursor-pointer">
+        <label className="flex items-start gap-3 p-3 rounded-lg bg-[#080C14] border border-[#404040] cursor-pointer">
           <input
             type="checkbox"
             checked={acceptedTerms}
             onChange={(e) => setAcceptedTerms(e.target.checked)}
-            className="mt-1 h-4 w-4 rounded border-gray-700 bg-gray-900 text-[var(--color-brand-primary)] focus:ring-[var(--color-brand-primary)]"
+            className="mt-1 h-4 w-4 rounded border-[#404040] bg-[#0A0A0A] text-[#0B1F3A] focus:ring-[#CBD5E1]"
           />
-          <span className="text-xs text-[var(--color-text-muted)] leading-relaxed">
-            I confirm that I am authorized to bind the client, acknowledge the IP transfer terms upon full settlement, and consent to electronic execution under Section 10A & Section 3A of the Information Technology Act, 2000.
+          <span className="text-xs text-[#CBD5E1]/80 leading-relaxed">
+            I confirm that I am authorized to bind the client, acknowledge the IP transfer terms upon full settlement, and consent to electronic execution under Section 10A &amp; Section 3A of the Information Technology Act, 2000.
           </span>
         </label>
 
         {error && (
-          <div className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-xs text-red-400">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-[#0A0A0A] border border-[#404040] text-xs text-[#CBD5E1]">
+            <AlertCircle className="w-4 h-4 flex-shrink-0 text-white" />
             <span>{error}</span>
           </div>
         )}

@@ -1,5 +1,5 @@
 /**
- * Zolexora App Suite - Standard Indian Legal Clause Templates
+ * Zolexora AppSuite - Standard Indian Legal Clause Templates
  * Governing Law: Republic of India (Indian Contract Act 1872, IT Act 2000, Copyright Act 1957)
  */
 

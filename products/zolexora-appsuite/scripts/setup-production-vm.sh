@@ -2,12 +2,12 @@
 set -e
 
 # ==============================================================================
-# Zolexora App Suite — Automated VM Production Setup Script
+# Zolexora AppSuite — Automated VM Production Setup Script
 # Target OS: Ubuntu 22.04 / 24.04 LTS or Debian 11 / 12
 # ==============================================================================
 
 echo "=================================================================="
-echo "🚀 Zolexora App Suite Production VM Provisioning"
+echo "🚀 Zolexora AppSuite Production VM Provisioning"
 echo "=================================================================="
 
 # Check root or sudo permissions
@@ -65,7 +65,7 @@ echo "⚙️  Configuring systemd service at $SERVICE_FILE..."
 
 cat <<EOF > "$SERVICE_FILE"
 [Unit]
-Description=Zolexora App Suite Docker Compose Stack
+Description=Zolexora AppSuite Docker Compose Stack
 Requires=docker.service
 After=docker.service
 
@@ -86,7 +86,7 @@ systemctl enable zolexora-appsuite.service
 echo "✅ systemd service enabled."
 
 # 5. Launch the Stack
-echo "🚀 Booting Zolexora App Suite stack..."
+echo "🚀 Booting Zolexora AppSuite stack..."
 systemctl start zolexora-appsuite.service
 
 # 6. Verify Health
@@ -100,7 +100,7 @@ else
 fi
 
 echo "=================================================================="
-echo "🎉 Zolexora App Suite is LIVE on this VM!"
+echo "🎉 Zolexora AppSuite is LIVE on this VM!"
 echo "   - Gateway Status:   systemctl status zolexora-appsuite"
 echo "   - View Logs:        docker compose -f $APPSUITE_DIR/compose.yaml logs -f"
 echo "   - HTTP Port:        80"

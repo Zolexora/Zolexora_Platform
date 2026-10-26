@@ -29,7 +29,7 @@ app.use(express.urlencoded({ extended: true }))
 // Root welcome route
 app.get('/', (_req, res) => {
   res.json({
-    service: 'Zolexora App Suite Backend API',
+    service: 'Zolexora AppSuite Backend API',
     version: '1.0.0',
     port,
     endpoints: {
@@ -72,7 +72,7 @@ async function start() {
     console.log(`[Database] Connected to PostgreSQL at ${rows[0].boot_time}`)
 
     app.listen(port, () => {
-      console.log(`🚀 Zolexora App Suite Backend API listening on http://localhost:${port}`)
+      console.log(`🚀 Zolexora AppSuite Backend API listening on http://localhost:${port}`)
     })
   } catch (error) {
     console.error('[Boot Error] Failed to connect to database:', error)

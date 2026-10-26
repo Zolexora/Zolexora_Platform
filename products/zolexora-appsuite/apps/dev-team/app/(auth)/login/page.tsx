@@ -15,22 +15,22 @@ export default function TeamLoginPage() {
 
   return (
     <div className="w-full max-w-sm">
-      <Card className="p-7">
+      <Card className="p-7 bg-[#0A0A0A] border border-[#404040]">
         <div className="mb-6">
-          <div className="flex items-center gap-2 mb-2 text-xs font-semibold text-[var(--color-brand-primary)] uppercase tracking-wider">
-            <ShieldCheck className="w-4 h-4" /> Internal Staff Access
+          <div className="flex items-center gap-2 mb-2 text-xs font-semibold text-[#CBD5E1] uppercase tracking-wider">
+            <ShieldCheck className="w-4 h-4 text-[#CBD5E1]" /> Internal Staff Access
           </div>
-          <h1 className="text-xl font-bold text-[var(--color-text-primary)]">
+          <h1 className="text-xl font-bold text-white">
             Team Authentication
           </h1>
-          <p className="text-xs text-[var(--color-text-muted)] mt-1">
+          <p className="text-xs text-[#CBD5E1]/70 mt-1">
             Sign in with your Zolexora engineer credentials.
           </p>
         </div>
 
         <form action={formAction} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+            <label className="text-xs font-semibold uppercase tracking-wider text-[#CBD5E1]/70">
               Team Email
             </label>
             <input
@@ -39,12 +39,12 @@ export default function TeamLoginPage() {
               placeholder="engineer@zolexora.com"
               required
               autoComplete="email"
-              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-dark)] px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] outline-none focus:border-[var(--color-brand-primary)]"
+              className="w-full rounded-lg border border-[#404040] bg-[#080C14] px-3 py-2 text-sm text-white placeholder:text-[#71717A] outline-none focus:border-[#CBD5E1]"
             />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+            <label className="text-xs font-semibold uppercase tracking-wider text-[#CBD5E1]/70">
               Password
             </label>
             <div className="relative w-full">
@@ -54,12 +54,12 @@ export default function TeamLoginPage() {
                 placeholder="••••••••••••"
                 required
                 autoComplete="current-password"
-                className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-dark)] px-3 py-2 pr-10 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] outline-none focus:border-[var(--color-brand-primary)]"
+                className="w-full rounded-lg border border-[#404040] bg-[#080C14] px-3 py-2 pr-10 text-sm text-white placeholder:text-[#71717A] outline-none focus:border-[#CBD5E1]"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] cursor-pointer p-1"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#CBD5E1]/60 hover:text-white cursor-pointer p-1"
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -68,7 +68,7 @@ export default function TeamLoginPage() {
           </div>
 
           {state.error && (
-            <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+            <div className="rounded-lg border border-[#404040] bg-[#080C14] px-3 py-2 text-xs text-[#CBD5E1]">
               {state.error}
             </div>
           )}

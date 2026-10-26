@@ -1,8 +1,7 @@
 import Link from 'next/link'
 import { query } from '@/lib/db'
 import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Users, Mail, CheckCircle2, XCircle, PlusCircle } from 'lucide-react'
+import { Users, CheckCircle2, XCircle, PlusCircle } from 'lucide-react'
 
 export const metadata = { title: 'Client Accounts | DevTeam Console' }
 
@@ -34,28 +33,28 @@ export default async function TeamClientsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-[var(--color-text-primary)]">
+          <h1 className="text-2xl font-bold tracking-tight text-white">
             Client Accounts Roster
           </h1>
-          <p className="text-sm text-[var(--color-text-muted)] mt-1">
-            All registered users across Zolexora App Suite and their associated activity.
+          <p className="text-sm text-[#CBD5E1]/70 mt-1">
+            All registered users across Zolexora AppSuite and their associated activity.
           </p>
         </div>
-        <div className="text-xs text-[var(--color-text-muted)] bg-[var(--color-surface-card)] border border-[var(--color-border)] px-3 py-1.5 rounded-lg">
+        <div className="text-xs text-[#CBD5E1] bg-[#0A0A0A] border border-[#404040] px-3 py-1.5 rounded-lg">
           Total: <span className="font-semibold text-white">{clients.length}</span> clients
         </div>
       </div>
 
       {clients.length === 0 ? (
-        <Card className="p-12 text-center text-sm text-[var(--color-text-muted)]">
-          <Users className="w-8 h-8 text-zinc-500 mx-auto mb-3" />
+        <Card className="p-12 text-center text-sm text-[#CBD5E1]/60 bg-[#0A0A0A] border border-[#404040]">
+          <Users className="w-8 h-8 text-[#CBD5E1]/40 mx-auto mb-3" />
           No client accounts found.
         </Card>
       ) : (
-        <div className="rounded-xl border border-[var(--color-border)] overflow-hidden bg-[var(--color-surface-card)]">
+        <div className="rounded-xl border border-[#404040] overflow-hidden bg-[#0A0A0A]">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-zinc-900/80 text-[var(--color-text-muted)] uppercase tracking-wider font-semibold border-b border-[var(--color-border)]">
+              <thead className="bg-[#080C14] text-[#CBD5E1]/70 uppercase tracking-wider font-semibold border-b border-[#404040]">
                 <tr>
                   <th className="px-5 py-3">Client Email</th>
                   <th className="px-5 py-3">Email Verification</th>
@@ -65,30 +64,30 @@ export default async function TeamClientsPage() {
                   <th className="px-5 py-3 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[var(--color-border)]">
+              <tbody className="divide-y divide-[#404040]">
                 {clients.map((c) => (
-                  <tr key={c.id} className="hover:bg-[var(--color-surface-hover)] transition-colors">
+                  <tr key={c.id} className="hover:bg-[#121824] transition-colors">
                     <td className="px-5 py-4 font-mono font-medium text-white">
                       {c.email}
                     </td>
                     <td className="px-5 py-4">
                       {c.email_verified_at ? (
-                        <span className="inline-flex items-center gap-1.5 text-emerald-400 font-medium">
-                          <CheckCircle2 className="w-3.5 h-3.5" /> Verified
+                        <span className="inline-flex items-center gap-1.5 text-white font-medium">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-[#CBD5E1]" /> Verified
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1.5 text-amber-400 font-medium">
-                          <XCircle className="w-3.5 h-3.5" /> Pending OTP
+                        <span className="inline-flex items-center gap-1.5 text-[#CBD5E1]/60 font-medium">
+                          <XCircle className="w-3.5 h-3.5 text-[#404040]" /> Pending OTP
                         </span>
                       )}
                     </td>
-                    <td className="px-5 py-4 text-zinc-300 font-semibold">
+                    <td className="px-5 py-4 text-[#CBD5E1] font-semibold">
                       {c.total_requests}
                     </td>
-                    <td className="px-5 py-4 text-zinc-300 font-semibold">
+                    <td className="px-5 py-4 text-[#CBD5E1] font-semibold">
                       {c.total_contracts}
                     </td>
-                    <td className="px-5 py-4 text-[var(--color-text-muted)]">
+                    <td className="px-5 py-4 text-[#CBD5E1]/70">
                       {c.created_at
                         ? new Date(c.created_at).toLocaleDateString('en-IN', {
                             day: 'numeric',
@@ -100,9 +99,9 @@ export default async function TeamClientsPage() {
                     <td className="px-5 py-4 text-right">
                       <Link
                         href={`/contracts/new?userId=${c.id}`}
-                        className="inline-flex items-center gap-1 bg-zinc-800 hover:bg-zinc-700 text-white font-medium px-2.5 py-1 rounded transition-colors text-[11px]"
+                        className="inline-flex items-center gap-1 bg-[#0B1F3A] hover:bg-[#142E54] text-white border border-[#CBD5E1]/30 font-medium px-2.5 py-1 rounded transition-colors text-[11px]"
                       >
-                        <PlusCircle className="w-3 h-3" /> Contract
+                        <PlusCircle className="w-3 h-3 text-[#CBD5E1]" /> Contract
                       </Link>
                     </td>
                   </tr>

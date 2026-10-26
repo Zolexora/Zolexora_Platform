@@ -4,45 +4,45 @@ import { LinkButton } from '@/components/ui/link-button'
 
 export function Navbar() {
   return (
-    <header className="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-surface-dark)]/80 backdrop-blur-md">
+    <header className="sticky top-0 z-50 border-b border-[#404040] bg-[#080C14]/90 backdrop-blur-md">
       <div className="mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-3 group">
           <Image
             src="/logo.png"
-            alt="Zolexora App Suite Logo"
+            alt="Zolexora AppSuite Logo"
             width={34}
             height={34}
             className="w-8 h-8 rounded-lg object-contain transition-transform group-hover:scale-105"
             priority
           />
-          <span className="font-semibold text-lg text-[var(--color-text-primary)]">
+          <span className="font-semibold text-lg text-white">
             Zolexora{' '}
-            <span className="text-[var(--color-brand-primary)]">App Suite</span>
+            <span className="text-[#CBD5E1]">AppSuite</span>
           </span>
         </Link>
 
         <nav className="hidden md:flex items-center gap-6 text-sm">
           <Link
             href="/#how-it-works"
-            className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
+            className="text-[#CBD5E1]/80 hover:text-white transition-colors"
           >
             How it Works
           </Link>
           <Link
             href="/#services"
-            className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
+            className="text-[#CBD5E1]/80 hover:text-white transition-colors"
           >
             Services
           </Link>
           <Link
             href="/dashboard/requests"
-            className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
+            className="text-[#CBD5E1]/80 hover:text-white transition-colors"
           >
             My Requests
           </Link>
           <Link
             href="/dashboard/contracts"
-            className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
+            className="text-[#CBD5E1]/80 hover:text-white transition-colors"
           >
             Contracts
           </Link>

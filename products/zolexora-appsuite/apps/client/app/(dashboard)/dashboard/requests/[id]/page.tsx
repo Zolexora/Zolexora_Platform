@@ -31,7 +31,6 @@ export default async function RequestDetailPage({ params }: Props) {
   const request = rows[0]
   if (!request) notFound()
 
-
   const req = request as AppRequest
 
   const statusSteps = [
@@ -49,7 +48,7 @@ export default async function RequestDetailPage({ params }: Props) {
       {/* Back */}
       <Link
         href="/dashboard/requests"
-        className="inline-flex items-center gap-2 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
+        className="inline-flex items-center gap-2 text-sm text-[#CBD5E1]/70 hover:text-white transition-colors"
       >
         <ArrowLeft className="w-4 h-4" /> Back to Requests
       </Link>
@@ -57,10 +56,10 @@ export default async function RequestDetailPage({ params }: Props) {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">
+          <h1 className="text-2xl font-bold text-white">
             {req.title}
           </h1>
-          <p className="text-sm text-[var(--color-text-muted)] mt-1">
+          <p className="text-sm text-[#CBD5E1]/70 mt-1">
             Submitted on{' '}
             {new Date(req.created_at).toLocaleDateString('en-IN', {
               day: 'numeric',
@@ -76,7 +75,7 @@ export default async function RequestDetailPage({ params }: Props) {
 
       {/* Progress */}
       <Card>
-        <h2 className="text-sm font-semibold text-[var(--color-text-primary)] mb-4">
+        <h2 className="text-sm font-semibold text-white mb-4">
           Project Progress
         </h2>
         <div className="flex items-center gap-0">
@@ -86,13 +85,13 @@ export default async function RequestDetailPage({ params }: Props) {
                 <div
                   className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-colors ${
                     i <= currentIndex
-                      ? 'bg-[var(--color-brand-primary)] border-[var(--color-brand-primary)] text-white'
-                      : 'bg-[var(--color-surface-dark)] border-[var(--color-border)] text-[var(--color-text-muted)]'
+                      ? 'bg-[#0B1F3A] border-[#CBD5E1] text-white'
+                      : 'bg-[#080C14] border-[#404040] text-[#CBD5E1]/50'
                   }`}
                 >
                   {i < currentIndex ? '✓' : i + 1}
                 </div>
-                <span className="text-[10px] text-[var(--color-text-muted)] text-center w-16 leading-tight hidden sm:block">
+                <span className="text-[10px] text-[#CBD5E1]/70 text-center w-16 leading-tight hidden sm:block">
                   {REQUEST_STATUS_LABELS[step]}
                 </span>
               </div>
@@ -100,8 +99,8 @@ export default async function RequestDetailPage({ params }: Props) {
                 <div
                   className={`h-0.5 flex-1 mx-1 transition-colors ${
                     i < currentIndex
-                      ? 'bg-[var(--color-brand-primary)]'
-                      : 'bg-[var(--color-border)]'
+                      ? 'bg-[#CBD5E1]'
+                      : 'bg-[#404040]'
                   }`}
                 />
               )}
@@ -112,15 +111,15 @@ export default async function RequestDetailPage({ params }: Props) {
 
       {/* Details */}
       <Card>
-        <h2 className="text-sm font-semibold text-[var(--color-text-primary)] mb-4">
+        <h2 className="text-sm font-semibold text-white mb-4">
           Project Details
         </h2>
         <div className="grid sm:grid-cols-2 gap-4 mb-6">
           {req.category && (
-            <div className="flex items-center gap-2.5 text-sm text-[var(--color-text-muted)]">
-              <Tag className="w-4 h-4 shrink-0" />
+            <div className="flex items-center gap-2.5 text-sm text-[#CBD5E1]/70">
+              <Tag className="w-4 h-4 shrink-0 text-[#CBD5E1]" />
               <span>
-                <span className="text-[var(--color-text-primary)] font-medium">
+                <span className="text-white font-medium">
                   Category:
                 </span>{' '}
                 {req.category}
@@ -128,20 +127,20 @@ export default async function RequestDetailPage({ params }: Props) {
             </div>
           )}
           {req.budget_range && (
-            <div className="flex items-center gap-2.5 text-sm text-[var(--color-text-muted)]">
-              <DollarSign className="w-4 h-4 shrink-0" />
+            <div className="flex items-center gap-2.5 text-sm text-[#CBD5E1]/70">
+              <DollarSign className="w-4 h-4 shrink-0 text-[#CBD5E1]" />
               <span>
-                <span className="text-[var(--color-text-primary)] font-medium">
+                <span className="text-white font-medium">
                   Budget:
                 </span>{' '}
                 {req.budget_range}
               </span>
             </div>
           )}
-          <div className="flex items-center gap-2.5 text-sm text-[var(--color-text-muted)]">
-            <Calendar className="w-4 h-4 shrink-0" />
+          <div className="flex items-center gap-2.5 text-sm text-[#CBD5E1]/70">
+            <Calendar className="w-4 h-4 shrink-0 text-[#CBD5E1]" />
             <span>
-              <span className="text-[var(--color-text-primary)] font-medium">
+              <span className="text-white font-medium">
                 Last updated:
               </span>{' '}
               {new Date(req.updated_at).toLocaleDateString('en-IN', {
@@ -154,10 +153,10 @@ export default async function RequestDetailPage({ params }: Props) {
         </div>
 
         <div>
-          <p className="text-sm font-medium text-[var(--color-text-primary)] mb-2">
+          <p className="text-sm font-medium text-white mb-2">
             Description
           </p>
-          <p className="text-sm text-[var(--color-text-muted)] leading-relaxed whitespace-pre-wrap">
+          <p className="text-sm text-[#CBD5E1]/70 leading-relaxed whitespace-pre-wrap">
             {req.description}
           </p>
         </div>
@@ -165,14 +164,14 @@ export default async function RequestDetailPage({ params }: Props) {
 
       {/* Next Steps */}
       {req.status === 'submitted' && (
-        <Card className="border-[var(--color-brand-primary)]/20 bg-[var(--color-brand-primary)]/5">
+        <Card className="border border-[#CBD5E1]/30 bg-[#0B1F3A]/40">
           <div className="flex items-start gap-3">
-            <FileText className="w-5 h-5 text-[var(--color-brand-primary)] shrink-0 mt-0.5" />
+            <FileText className="w-5 h-5 text-[#CBD5E1] shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-semibold text-[var(--color-text-primary)]">
+              <p className="text-sm font-semibold text-white">
                 What happens next?
               </p>
-              <p className="text-sm text-[var(--color-text-muted)] mt-1">
+              <p className="text-sm text-[#CBD5E1]/80 mt-1">
                 Our team will review your request within 48 hours and reach out
                 to you with a detailed proposal including scope, timeline, and
                 cost estimate.

@@ -1,4 +1,4 @@
--- Zolexora App Suite: Database Schema & Row Level Security (RLS)
+-- Zolexora AppSuite: Database Schema & Row Level Security (RLS)
 -- Legally compliant with IT Act 2000, Indian Contract Act 1872 & Indian Evidence Act (Sec 65B)
 
 -- 1. App Requests Table
