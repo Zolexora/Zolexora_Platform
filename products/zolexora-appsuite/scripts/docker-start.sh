@@ -15,6 +15,13 @@ if [ ! -f "$ENV_FILE" ] && [ -f "products/zolexora-appsuite/.env.example" ]; the
   cp "products/zolexora-appsuite/.env.example" "$ENV_FILE"
 fi
 
+# Detect configured ingress port from .env or environment
+if [ -f "$ENV_FILE" ]; then
+  FILE_PORT=$(grep -E "^APPSUITE_PORT=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f 2 | tr -d ' "' || true)
+  [ -n "$FILE_PORT" ] && APPSUITE_PORT="${APPSUITE_PORT:-$FILE_PORT}"
+fi
+APPSUITE_PORT="${APPSUITE_PORT:-3270}"
+
 run_compose() {
   if [ -f "$INFISICAL_CONFIG" ] && { [ -n "$INFISICAL_TOKEN" ] || [ -n "$INFISICAL_ACCESS_TOKEN" ] || { command -v infisical >/dev/null 2>&1 && infisical login status >/dev/null 2>&1; }; }; then
     WORKSPACE_ID=$(python3 -c "import json; d=json.load(open('$INFISICAL_CONFIG')); print(d.get('workspaceId',''))" 2>/dev/null || echo "188824cd-59ce-468f-b60f-f2da7aeefe63")
@@ -31,49 +38,65 @@ run_compose() {
   fi
 }
 
+start_stack() {
+  echo "=================================================="
+  echo "🚀 Starting Zolexora AppSuite Stack (Nginx Gateway)"
+  echo "=================================================="
+  run_compose up -d "$@"
+  echo ""
+  echo "✅ Zolexora AppSuite Stack status:"
+  run_compose ps
+  echo ""
+  echo "🌐 Unified Gateway available at: http://localhost:${APPSUITE_PORT}"
+  echo "   - Client Portal:     http://localhost:${APPSUITE_PORT}/"
+  echo "   - DevTeam Console:   http://localhost:${APPSUITE_PORT}/team/"
+  echo "   - Backend Health:    http://localhost:${APPSUITE_PORT}/health"
+  echo "   - Backend API:       http://localhost:${APPSUITE_PORT}/api/"
+}
+
 ACTION="${1:-start}"
+shift || true
 
 case "$ACTION" in
   start|up)
-    echo "=================================================="
-    echo "🚀 Starting Zolexora AppSuite Stack (Nginx Gateway)"
-    echo "=================================================="
-    run_compose up -d
-    echo ""
-    echo "✅ Zolexora AppSuite Stack status:"
-    run_compose ps
-    echo ""
-    echo "🌐 Unified Gateway available at: http://localhost:${APPSUITE_PORT:-3070}"
-    echo "   - Client Portal:     http://localhost:${APPSUITE_PORT:-3070}/"
-    echo "   - DevTeam Console:   http://localhost:${APPSUITE_PORT:-3070}/team/"
-    echo "   - Backend Health:    http://localhost:${APPSUITE_PORT:-3070}/health"
-    echo "   - Backend API:       http://localhost:${APPSUITE_PORT:-3070}/api/"
+    start_stack "$@"
     ;;
   stop|down)
     echo "🛑 Stopping Zolexora AppSuite Stack..."
-    run_compose down
+    run_compose down "$@"
     ;;
   restart)
+    echo "=================================================="
     echo "🔄 Restarting Zolexora AppSuite Stack..."
-    run_compose restart
+    echo "=================================================="
+    if [ $# -gt 0 ]; then
+      echo "ℹ️  Restarting service(s): $*"
+      run_compose restart "$@"
+      echo ""
+      run_compose ps
+    else
+      echo "🛑 Taking down existing containers to refresh secrets & networking..."
+      run_compose down
+      echo ""
+      start_stack
+    fi
     ;;
   build)
     echo "🔨 Building Zolexora AppSuite images locally..."
-    run_compose build
+    run_compose build "$@"
     ;;
   pull)
     echo "📥 Pulling prebuilt images from GHCR..."
-    run_compose pull --ignore-pull-failures || true
+    run_compose pull --ignore-pull-failures "$@" || true
     ;;
   status|ps)
-    run_compose ps
+    run_compose ps "$@"
     ;;
   logs)
-    shift || true
     run_compose logs -f "$@"
     ;;
   *)
-    echo "Usage: $0 {start|stop|restart|build|pull|status|logs}"
+    echo "Usage: $0 {start|stop|restart|build|pull|status|logs} [services...]"
     exit 1
     ;;
 esac
