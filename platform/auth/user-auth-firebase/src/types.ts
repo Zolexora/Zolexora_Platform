@@ -5,6 +5,7 @@ export interface FirebaseClientConfig {
   appId: string;
   messagingSenderId?: string;
   storageBucket?: string;
+  measurementId?: string;
 }
 
 export type SignupMethod = 'google' | 'email' | 'mobile';

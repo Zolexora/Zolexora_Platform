@@ -283,15 +283,10 @@ export function ZolexoraAuthCard({
       } else if (onboardingEndpoint) {
         let apiUrl = "";
         try {
-          // @ts-ignore
-          if (typeof import.meta !== "undefined" && import.meta?.env?.VITE_API_URL) {
-            // @ts-ignore
-            apiUrl = String(import.meta.env.VITE_API_URL);
+          if (typeof process !== "undefined" && (process?.env?.NEXT_PUBLIC_API_URL || process?.env?.VITE_API_URL)) {
+            apiUrl = String(process.env.NEXT_PUBLIC_API_URL || process.env.VITE_API_URL);
           }
         } catch {}
-        if (!apiUrl && typeof process !== "undefined" && process?.env?.VITE_API_URL) {
-          apiUrl = String(process.env.VITE_API_URL);
-        }
         const finalUrl = onboardingEndpoint.startsWith("http")
           ? onboardingEndpoint
           : `${apiUrl.replace(/\/$/, "")}/${onboardingEndpoint.replace(/^\//, "")}`;
