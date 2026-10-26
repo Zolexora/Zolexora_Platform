@@ -3,7 +3,7 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: {
-    default: 'DevTeam Panel | Zolexora App Suite',
+    default: 'DevTeam Panel | Zolexora AppSuite',
     template: '%s | DevTeam Panel',
   },
   description: 'Internal operations, request review, and contract dispatch console for Zolexora engineering team.',

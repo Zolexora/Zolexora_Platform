@@ -15,7 +15,6 @@ import {
   ArrowLeft,
   FileText,
   ExternalLink,
-  Calendar,
   CheckCircle2,
   Clock,
   XCircle,
@@ -61,7 +60,6 @@ export default async function ContractDetailPage({ params }: Props) {
   const contract = contracts[0]
   if (!contract) notFound()
 
-
   const c = contract as Contract
   const logs = (auditLogs || []) as ContractAuditLog[]
   const StatusIcon = statusIcons[c.status]
@@ -72,7 +70,7 @@ export default async function ContractDetailPage({ params }: Props) {
       {/* Back */}
       <Link
         href="/dashboard/contracts"
-        className="inline-flex items-center gap-2 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
+        className="inline-flex items-center gap-2 text-sm text-[#CBD5E1]/70 hover:text-white transition-colors"
       >
         <ArrowLeft className="w-4 h-4" /> Back to Contracts
       </Link>
@@ -80,14 +78,14 @@ export default async function ContractDetailPage({ params }: Props) {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[var(--color-brand-primary)]/10 flex items-center justify-center">
-            <FileText className="w-5 h-5 text-[var(--color-brand-primary)]" />
+          <div className="w-10 h-10 rounded-xl bg-[#0B1F3A] border border-[#CBD5E1]/30 flex items-center justify-center">
+            <FileText className="w-5 h-5 text-[#CBD5E1]" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-[var(--color-text-primary)]">
+            <h1 className="text-xl font-bold text-white">
               {c.title}
             </h1>
-            <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+            <p className="text-xs text-[#CBD5E1]/70 mt-0.5">
               {CONTRACT_TYPE_LABELS[c.contract_type] || c.contract_type} · Issued{' '}
               {new Date(c.created_at).toLocaleDateString('en-IN', {
                 day: 'numeric',
@@ -103,12 +101,12 @@ export default async function ContractDetailPage({ params }: Props) {
       </div>
 
       {/* Indian Stamp Duty Notice Banner */}
-      <div className="rounded-xl border border-indigo-500/20 bg-indigo-950/20 p-4 text-xs text-indigo-300 flex items-start gap-3">
-        <ShieldAlert className="w-4 h-4 flex-shrink-0 text-indigo-400 mt-0.5" />
+      <div className="rounded-xl border border-[#CBD5E1]/30 bg-[#0B1F3A]/40 p-4 text-xs text-[#CBD5E1] flex items-start gap-3">
+        <ShieldAlert className="w-4 h-4 flex-shrink-0 text-[#CBD5E1] mt-0.5" />
         <div>
           <span className="font-semibold text-white">Indian Stamp Act & Legal Enforceability:</span>{' '}
           Governing state: {c.stamp_state || 'MAHARASHTRA'} · e-Stamp Reference:{' '}
-          <span className="font-mono text-indigo-200">{c.stamp_duty_ref || 'PENDING_ADHESIVE_DUTY'}</span>.
+          <span className="font-mono text-white">{c.stamp_duty_ref || 'PENDING_ADHESIVE_DUTY'}</span>.
           Compliant with Section 10A of the Information Technology Act, 2000.
         </div>
       </div>
@@ -116,17 +114,17 @@ export default async function ContractDetailPage({ params }: Props) {
       {/* Status Card */}
       <Card>
         <div className="flex items-start gap-4">
-          <div className="w-10 h-10 rounded-xl bg-[var(--color-surface-hover)] flex items-center justify-center shrink-0">
-            <StatusIcon className="w-5 h-5 text-[var(--color-brand-primary)]" />
+          <div className="w-10 h-10 rounded-xl bg-[#121824] border border-[#404040] flex items-center justify-center shrink-0">
+            <StatusIcon className="w-5 h-5 text-[#CBD5E1]" />
           </div>
           <div className="flex-1">
-            <p className="font-semibold text-[var(--color-text-primary)]">
+            <p className="font-semibold text-white">
               {c.status === 'draft' && 'Contract is being drafted with legal clauses'}
               {c.status === 'sent' && 'Contract issued — awaiting your digital signature'}
               {c.status === 'signed' && 'Contract digitally executed — legally active'}
               {c.status === 'declined' && 'Contract was declined'}
             </p>
-            <p className="text-sm text-[var(--color-text-muted)] mt-1">
+            <p className="text-sm text-[#CBD5E1]/70 mt-1">
               {c.status === 'draft' &&
                 'Our team is tailoring the Master Services Agreement & IP transfer clauses. You will be notified once ready.'}
               {c.status === 'sent' &&
@@ -142,9 +140,9 @@ export default async function ContractDetailPage({ params }: Props) {
                 href={`/api/contracts/${c.id}/document`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-xs text-[var(--color-brand-primary)] bg-[var(--color-brand-primary)]/10 px-3 py-1.5 rounded-lg hover:bg-[var(--color-brand-primary)]/20 transition-colors"
+                className="inline-flex items-center gap-1.5 text-xs text-white bg-[#0B1F3A] border border-[#CBD5E1]/30 px-3 py-1.5 rounded-lg hover:bg-[#142E54] hover:border-[#CBD5E1]/60 transition-colors"
               >
-                <ExternalLink className="w-3.5 h-3.5" /> View Printable Legal Document
+                <ExternalLink className="w-3.5 h-3.5 text-[#CBD5E1]" /> View Printable Legal Document
               </a>
             </div>
           </div>
@@ -160,22 +158,22 @@ export default async function ContractDetailPage({ params }: Props) {
       {(c.document_hash || c.signed_document_hash) && (
         <Card>
           <div className="flex items-center gap-2 mb-3">
-            <Hash className="w-4 h-4 text-[var(--color-brand-primary)]" />
-            <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">
+            <Hash className="w-4 h-4 text-[#CBD5E1]" />
+            <h2 className="text-sm font-semibold text-white">
               Cryptographic Integrity Hashes (Sec 65B Indian Evidence Act)
             </h2>
           </div>
           <div className="space-y-2 text-xs font-mono">
             {c.document_hash && (
-              <div className="p-2.5 rounded-lg bg-[var(--color-surface-hover)] break-all">
-                <span className="text-[var(--color-text-muted)] block font-sans text-[11px] mb-0.5">Pre-Signature SHA-256 Hash:</span>
-                <span className="text-indigo-300">{c.document_hash}</span>
+              <div className="p-2.5 rounded-lg bg-[#121824] border border-[#404040]/50 break-all">
+                <span className="text-[#CBD5E1]/70 block font-sans text-[11px] mb-0.5">Pre-Signature SHA-256 Hash:</span>
+                <span className="text-[#CBD5E1]">{c.document_hash}</span>
               </div>
             )}
             {c.signed_document_hash && (
-              <div className="p-2.5 rounded-lg bg-[var(--color-surface-hover)] break-all">
-                <span className="text-[var(--color-text-muted)] block font-sans text-[11px] mb-0.5">Executed Document SHA-256 Hash:</span>
-                <span className="text-green-400">{c.signed_document_hash}</span>
+              <div className="p-2.5 rounded-lg bg-[#121824] border border-[#404040]/50 break-all">
+                <span className="text-[#CBD5E1]/70 block font-sans text-[11px] mb-0.5">Executed Document SHA-256 Hash:</span>
+                <span className="text-white font-semibold">{c.signed_document_hash}</span>
               </div>
             )}
           </div>
@@ -184,11 +182,11 @@ export default async function ContractDetailPage({ params }: Props) {
 
       {/* Immutable Audit Log Trail */}
       <Card>
-        <h2 className="text-sm font-semibold text-[var(--color-text-primary)] mb-3">
+        <h2 className="text-sm font-semibold text-white mb-3">
           Chain of Custody & Audit Trail ({logs.length} Events)
         </h2>
         {logs.length === 0 ? (
-          <p className="text-xs text-[var(--color-text-muted)]">
+          <p className="text-xs text-[#CBD5E1]/70">
             No audit events logged yet. Events will appear when viewed, downloaded, or executed.
           </p>
         ) : (
@@ -196,21 +194,21 @@ export default async function ContractDetailPage({ params }: Props) {
             {logs.map((log) => (
               <div
                 key={log.id}
-                className="flex items-start justify-between p-3 rounded-lg bg-[var(--color-surface-hover)] border border-[var(--color-border)] text-xs"
+                className="flex items-start justify-between p-3 rounded-lg bg-[#080C14] border border-[#404040] text-xs"
               >
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-white uppercase text-[11px] bg-slate-800 px-2 py-0.5 rounded">
+                    <span className="font-semibold text-white uppercase text-[11px] bg-[#0B1F3A] border border-[#CBD5E1]/30 px-2 py-0.5 rounded">
                       {log.action}
                     </span>
-                    <span className="text-[var(--color-text-primary)]">{log.signer_name}</span>
-                    <span className="text-[var(--color-text-muted)]">({log.signer_email})</span>
+                    <span className="text-white font-medium">{log.signer_name}</span>
+                    <span className="text-[#CBD5E1]/70">({log.signer_email})</span>
                   </div>
-                  <p className="text-[11px] text-[var(--color-text-muted)] mt-1">
+                  <p className="text-[11px] text-[#CBD5E1]/60 mt-1">
                     IP: {log.ip_address} · Method: {log.verification_method}
                   </p>
                 </div>
-                <span className="text-[11px] text-[var(--color-text-muted)] whitespace-nowrap ml-4">
+                <span className="text-[11px] text-[#CBD5E1]/60 whitespace-nowrap ml-4">
                   {new Date(log.timestamp_utc).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
                 </span>
               </div>

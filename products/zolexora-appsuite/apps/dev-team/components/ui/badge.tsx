@@ -1,32 +1,50 @@
 import { cn } from '@/lib/cn'
 import type { RequestStatus, ContractStatus } from '@/lib/types'
 
-type BadgeColor = 'gray' | 'blue' | 'yellow' | 'purple' | 'green' | 'red' | 'emerald' | 'cyan'
+export type BadgeColor =
+  | 'gray'
+  | 'navy'
+  | 'silver'
+  | 'white'
+  | 'dark'
+  | 'muted'
+  | 'blue'
+  | 'yellow'
+  | 'purple'
+  | 'green'
+  | 'red'
+  | 'emerald'
+  | 'cyan'
 
 const colorClasses: Record<BadgeColor, string> = {
-  gray: 'bg-zinc-800 text-zinc-300 border border-zinc-700',
-  blue: 'bg-blue-950/60 text-blue-300 border border-blue-800/60',
-  yellow: 'bg-amber-950/60 text-amber-300 border border-amber-800/60',
-  purple: 'bg-purple-950/60 text-purple-300 border border-purple-800/60',
-  green: 'bg-emerald-950/60 text-emerald-300 border border-emerald-800/60',
-  emerald: 'bg-emerald-950/60 text-emerald-300 border border-emerald-800/60',
-  cyan: 'bg-cyan-950/60 text-cyan-300 border border-cyan-800/60',
-  red: 'bg-rose-950/60 text-rose-300 border border-rose-800/60',
+  gray: 'bg-[#404040]/50 text-[#CBD5E1] border border-[#404040]',
+  navy: 'bg-[#0B1F3A] text-white border border-[#CBD5E1]/30',
+  silver: 'bg-[#CBD5E1]/15 text-white border border-[#CBD5E1]/40 font-semibold',
+  white: 'bg-white/10 text-white border border-white/40 font-semibold',
+  dark: 'bg-[#0A0A0A] text-[#CBD5E1]/80 border border-[#404040]',
+  muted: 'bg-[#0A0A0A] text-[#CBD5E1]/60 border border-[#404040]/60',
+  blue: 'bg-[#0B1F3A] text-white border border-[#CBD5E1]/30',
+  yellow: 'bg-[#0B1F3A]/80 text-[#CBD5E1] border border-[#CBD5E1]/20',
+  purple: 'bg-[#CBD5E1]/15 text-white border border-[#CBD5E1]/40',
+  green: 'bg-white/10 text-white border border-white/40 font-semibold',
+  emerald: 'bg-white/10 text-white border border-white/40 font-semibold',
+  cyan: 'bg-[#0B1F3A] text-white border border-[#CBD5E1]/35',
+  red: 'bg-[#0A0A0A] text-[#CBD5E1]/80 border border-[#404040]',
 }
 
 export const requestStatusColor: Record<RequestStatus, BadgeColor> = {
-  submitted: 'yellow',
-  in_review: 'blue',
-  contracted: 'purple',
-  in_development: 'cyan',
-  delivered: 'emerald',
+  submitted: 'gray',
+  in_review: 'navy',
+  contracted: 'silver',
+  in_development: 'navy',
+  delivered: 'white',
 }
 
 export const contractStatusColor: Record<ContractStatus, BadgeColor> = {
   draft: 'gray',
-  sent: 'yellow',
-  signed: 'emerald',
-  declined: 'red',
+  sent: 'navy',
+  signed: 'white',
+  declined: 'dark',
 }
 
 export function Badge({
@@ -41,7 +59,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium tracking-wide',
+        'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium tracking-wide shadow-xs',
         colorClasses[color],
         className
       )}

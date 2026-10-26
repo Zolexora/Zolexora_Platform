@@ -6,7 +6,7 @@ import {
   CONTRACT_STATUS_LABELS,
   type Contract,
 } from '@/lib/types'
-import { FileCheck, PlusCircle, ArrowRight, ShieldCheck } from 'lucide-react'
+import { FileCheck, PlusCircle } from 'lucide-react'
 
 export const metadata = { title: 'Contracts & Legal | DevTeam Console' }
 
@@ -24,25 +24,25 @@ export default async function TeamContractsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-[var(--color-text-primary)]">
+          <h1 className="text-2xl font-bold tracking-tight text-white">
             Legal Contracts &amp; Execution Pipeline
           </h1>
-          <p className="text-sm text-[var(--color-text-muted)] mt-1">
+          <p className="text-sm text-[#CBD5E1]/70 mt-1">
             Indian IT Act 2000 Section 10A &amp; Evidence Act Section 65B compliant agreements.
           </p>
         </div>
         <Link
           href="/contracts/new"
-          className="inline-flex items-center gap-2 bg-[var(--color-brand-primary)] text-black font-semibold text-xs px-4 py-2 rounded-lg hover:opacity-90 transition-opacity shrink-0"
+          className="inline-flex items-center gap-2 bg-[#0B1F3A] hover:bg-[#142E54] text-white border border-[#CBD5E1]/40 font-semibold text-xs px-4 py-2 rounded-lg transition-colors shrink-0 shadow-xs"
         >
-          <PlusCircle className="w-4 h-4" /> Create &amp; Dispatch Contract
+          <PlusCircle className="w-4 h-4 text-[#CBD5E1]" /> Create &amp; Dispatch Contract
         </Link>
       </div>
 
       {/* List */}
       {contracts.length === 0 ? (
-        <Card className="p-12 text-center text-sm text-[var(--color-text-muted)]">
-          <FileCheck className="w-8 h-8 text-zinc-500 mx-auto mb-3" />
+        <Card className="p-12 text-center text-sm text-[#CBD5E1]/60 bg-[#0A0A0A] border border-[#404040]">
+          <FileCheck className="w-8 h-8 text-[#CBD5E1]/40 mx-auto mb-3" />
           No contracts have been generated yet.
         </Card>
       ) : (
@@ -51,12 +51,12 @@ export default async function TeamContractsPage() {
             <Link
               key={c.id}
               href={`/contracts/${c.id}`}
-              className="block rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-card)] p-5 hover:border-[var(--color-brand-primary)]/40 hover:bg-[var(--color-surface-hover)] transition-all group"
+              className="block rounded-xl border border-[#404040] bg-[#0A0A0A] p-5 hover:border-[#CBD5E1]/40 hover:bg-[#121824] transition-all group"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2.5">
-                    <p className="font-semibold text-base text-[var(--color-text-primary)] group-hover:text-[var(--color-brand-primary)] transition-colors truncate">
+                    <p className="font-semibold text-base text-white group-hover:text-[#CBD5E1] transition-colors truncate">
                       {c.title}
                     </p>
                     <Badge color={contractStatusColor[c.status]}>
@@ -64,29 +64,29 @@ export default async function TeamContractsPage() {
                     </Badge>
                   </div>
 
-                  <p className="text-xs text-[var(--color-text-muted)] mt-1 truncate">
-                    Client: <span className="text-zinc-200 font-mono">{c.user_email}</span>
+                  <p className="text-xs text-[#CBD5E1]/70 mt-1 truncate">
+                    Client: <span className="text-white font-mono">{c.user_email}</span>
                     {c.request_title && (
                       <>
-                        {' '}• Request: <span className="text-zinc-300">{c.request_title}</span>
+                        {' '}• Request: <span className="text-[#CBD5E1]">{c.request_title}</span>
                       </>
                     )}
                   </p>
 
-                  <div className="flex flex-wrap items-center gap-3 mt-3 text-xs text-[var(--color-text-muted)]">
-                    <span className="bg-zinc-800 px-2 py-0.5 rounded text-[11px] font-mono text-zinc-300">
+                  <div className="flex flex-wrap items-center gap-3 mt-3 text-xs text-[#CBD5E1]/60">
+                    <span className="bg-[#080C14] border border-[#404040] px-2 py-0.5 rounded text-[11px] font-mono text-[#CBD5E1]">
                       {c.contract_type}
                     </span>
                     <span>
                       Value:{' '}
-                      <strong className="text-zinc-200">
+                      <strong className="text-white">
                         {c.total_value_inr
                           ? `₹${Number(c.total_value_inr).toLocaleString('en-IN')}`
                           : '₹0'}
                       </strong>
                     </span>
                     <span>•</span>
-                    <span>Mode: <strong className="text-zinc-300">{c.signing_mode}</strong></span>
+                    <span>Mode: <strong className="text-[#CBD5E1]">{c.signing_mode}</strong></span>
                     <span>•</span>
                     <span>
                       {c.signed_at
@@ -96,9 +96,8 @@ export default async function TeamContractsPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1 text-xs text-[var(--color-brand-primary)] font-medium shrink-0 self-center">
+                <div className="flex items-center gap-1 text-xs text-[#CBD5E1] font-medium shrink-0 self-center">
                   <span>View Legal File</span>
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                 </div>
               </div>
             </Link>

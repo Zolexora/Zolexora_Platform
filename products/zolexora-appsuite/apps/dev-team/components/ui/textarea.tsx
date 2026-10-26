@@ -19,15 +19,15 @@ export function Textarea({ label, error, hint, className, id, ...props }: Textar
       <textarea
         id={inputId}
         className={cn(
-          'w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-dark)] px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] outline-none transition-colors resize-y',
-          'focus:border-[var(--color-brand-primary)] focus:ring-1 focus:ring-[var(--color-brand-primary)]',
-          error && 'border-red-500 focus:border-red-500 focus:ring-red-500',
+          'w-full rounded-lg border border-[#404040] bg-[#0A0A0A] px-3 py-2 text-sm text-white placeholder:text-[#71717A] outline-none transition-colors resize-y',
+          'focus:border-[#CBD5E1] focus:ring-1 focus:ring-[#CBD5E1]',
+          error && 'border-[#CBD5E1] focus:border-[#CBD5E1] focus:ring-[#CBD5E1]',
           className
         )}
         {...props}
       />
-      {hint && !error && <p className="text-xs text-[var(--color-text-muted)]">{hint}</p>}
-      {error && <p className="text-xs text-red-400">{error}</p>}
+      {hint && !error && <p className="text-xs text-[#CBD5E1]/70">{hint}</p>}
+      {error && <p className="text-xs text-[#CBD5E1] font-medium">{error}</p>}
     </div>
   )
 }

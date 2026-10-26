@@ -16,7 +16,6 @@ import {
   ArrowRight,
   TrendingUp,
   PlusCircle,
-  Users,
 } from 'lucide-react'
 
 export const metadata = { title: 'Overview | DevTeam Console' }
@@ -86,7 +85,6 @@ export default async function TeamOverviewPage() {
     pipeline_inr: '0',
   }
 
-  const totalClients = clientCountRow[0]?.count || '0'
   const pipelineInrFormatted = Number(cStats.pipeline_inr).toLocaleString('en-IN')
 
   return (
@@ -94,73 +92,73 @@ export default async function TeamOverviewPage() {
       {/* Top Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-[var(--color-text-primary)]">
-            Engineering & Ops Console
+          <h1 className="text-2xl font-bold tracking-tight text-white">
+            Engineering &amp; Ops Console
           </h1>
-          <p className="text-sm text-[var(--color-text-muted)] mt-1">
+          <p className="text-sm text-[#CBD5E1]/70 mt-1">
             Review client requests, approve scopes, and dispatch legally binding contracts.
           </p>
         </div>
         <div className="flex items-center gap-3">
           <Link
             href="/contracts/new"
-            className="inline-flex items-center gap-2 bg-[var(--color-brand-primary)] text-black font-semibold text-xs px-3.5 py-2 rounded-lg hover:opacity-90 transition-opacity"
+            className="inline-flex items-center gap-2 bg-[#0B1F3A] hover:bg-[#142E54] text-white border border-[#CBD5E1]/40 font-semibold text-xs px-3.5 py-2 rounded-lg transition-colors shadow-xs"
           >
-            <PlusCircle className="w-4 h-4" /> Dispatch Contract
+            <PlusCircle className="w-4 h-4 text-[#CBD5E1]" /> Dispatch Contract
           </Link>
         </div>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-4 border-l-4 border-l-amber-500">
-          <div className="flex items-center justify-between text-[var(--color-text-muted)] text-xs font-semibold uppercase tracking-wider">
+        <Card className="p-4 bg-[#0A0A0A] border-l-4 border-l-[#CBD5E1] border-y-[#404040] border-r-[#404040]">
+          <div className="flex items-center justify-between text-[#CBD5E1]/70 text-xs font-semibold uppercase tracking-wider">
             <span>Pending Review</span>
-            <Clock className="w-4 h-4 text-amber-400" />
+            <Clock className="w-4 h-4 text-[#CBD5E1]" />
           </div>
-          <p className="text-3xl font-extrabold text-[var(--color-text-primary)] mt-2">
+          <p className="text-3xl font-extrabold text-white mt-2">
             {stats.pending_review}
           </p>
-          <p className="text-[11px] text-[var(--color-text-muted)] mt-1">
+          <p className="text-[11px] text-[#CBD5E1]/60 mt-1">
             New client submissions
           </p>
         </Card>
 
-        <Card className="p-4 border-l-4 border-l-cyan-500">
-          <div className="flex items-center justify-between text-[var(--color-text-muted)] text-xs font-semibold uppercase tracking-wider">
+        <Card className="p-4 bg-[#0A0A0A] border-l-4 border-l-[#0B1F3A] border-y-[#404040] border-r-[#404040]">
+          <div className="flex items-center justify-between text-[#CBD5E1]/70 text-xs font-semibold uppercase tracking-wider">
             <span>In Development</span>
-            <GitPullRequest className="w-4 h-4 text-cyan-400" />
+            <GitPullRequest className="w-4 h-4 text-[#CBD5E1]" />
           </div>
-          <p className="text-3xl font-extrabold text-[var(--color-text-primary)] mt-2">
+          <p className="text-3xl font-extrabold text-white mt-2">
             {stats.in_development}
           </p>
-          <p className="text-[11px] text-[var(--color-text-muted)] mt-1">
+          <p className="text-[11px] text-[#CBD5E1]/60 mt-1">
             Active building phase
           </p>
         </Card>
 
-        <Card className="p-4 border-l-4 border-l-emerald-500">
-          <div className="flex items-center justify-between text-[var(--color-text-muted)] text-xs font-semibold uppercase tracking-wider">
+        <Card className="p-4 bg-[#0A0A0A] border-l-4 border-l-white border-y-[#404040] border-r-[#404040]">
+          <div className="flex items-center justify-between text-[#CBD5E1]/70 text-xs font-semibold uppercase tracking-wider">
             <span>Signed Contracts</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <CheckCircle2 className="w-4 h-4 text-white" />
           </div>
-          <p className="text-3xl font-extrabold text-[var(--color-text-primary)] mt-2">
+          <p className="text-3xl font-extrabold text-white mt-2">
             {cStats.signed_contracts}
           </p>
-          <p className="text-[11px] text-[var(--color-text-muted)] mt-1">
+          <p className="text-[11px] text-[#CBD5E1]/60 mt-1">
             Executed with Sec 65B Audit
           </p>
         </Card>
 
-        <Card className="p-4 border-l-4 border-l-[var(--color-brand-primary)]">
-          <div className="flex items-center justify-between text-[var(--color-text-muted)] text-xs font-semibold uppercase tracking-wider">
+        <Card className="p-4 bg-[#0A0A0A] border-l-4 border-l-[#404040] border-y-[#404040] border-r-[#404040]">
+          <div className="flex items-center justify-between text-[#CBD5E1]/70 text-xs font-semibold uppercase tracking-wider">
             <span>Total Value Pipeline</span>
-            <TrendingUp className="w-4 h-4 text-[var(--color-brand-primary)]" />
+            <TrendingUp className="w-4 h-4 text-[#CBD5E1]" />
           </div>
-          <p className="text-2xl font-extrabold text-[var(--color-text-primary)] mt-2 truncate">
+          <p className="text-2xl font-extrabold text-white mt-2 truncate">
             ₹{pipelineInrFormatted}
           </p>
-          <p className="text-[11px] text-[var(--color-text-muted)] mt-1">
+          <p className="text-[11px] text-[#CBD5E1]/60 mt-1">
             Across {cStats.total_contracts} agreements
           </p>
         </Card>
@@ -171,20 +169,20 @@ export default async function TeamOverviewPage() {
         {/* Recent Client Requests */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold text-[var(--color-text-primary)] flex items-center gap-2">
-              <GitPullRequest className="w-4 h-4 text-[var(--color-brand-primary)]" />
+            <h2 className="text-base font-bold text-white flex items-center gap-2">
+              <GitPullRequest className="w-4 h-4 text-[#CBD5E1]" />
               Latest Client Requests
             </h2>
             <Link
               href="/requests"
-              className="text-xs text-[var(--color-brand-primary)] hover:underline flex items-center gap-1"
+              className="text-xs font-semibold text-[#CBD5E1] hover:text-white flex items-center gap-1 transition-colors"
             >
               All Requests <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
           {requests.length === 0 ? (
-            <Card className="p-8 text-center text-sm text-[var(--color-text-muted)]">
+            <Card className="p-8 text-center text-sm text-[#CBD5E1]/60 bg-[#0A0A0A] border border-[#404040]">
               No application requests submitted yet.
             </Card>
           ) : (
@@ -193,22 +191,22 @@ export default async function TeamOverviewPage() {
                 <Link
                   key={r.id}
                   href={`/requests/${r.id}`}
-                  className="block rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-card)] p-3.5 hover:border-[var(--color-brand-primary)]/40 hover:bg-[var(--color-surface-hover)] transition-all group"
+                  className="block rounded-lg border border-[#404040] bg-[#0A0A0A] p-3.5 hover:border-[#CBD5E1]/40 hover:bg-[#121824] transition-all group"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="font-semibold text-sm text-[var(--color-text-primary)] group-hover:text-[var(--color-brand-primary)] transition-colors truncate">
+                      <p className="font-semibold text-sm text-white group-hover:text-[#CBD5E1] transition-colors truncate">
                         {r.title}
                       </p>
-                      <p className="text-xs text-[var(--color-text-muted)] mt-0.5 truncate">
-                        Client: <span className="text-zinc-300">{r.user_email}</span>
+                      <p className="text-xs text-[#CBD5E1]/70 mt-0.5 truncate">
+                        Client: <span className="text-white">{r.user_email}</span>
                       </p>
                     </div>
                     <Badge color={requestStatusColor[r.status]}>
                       {REQUEST_STATUS_LABELS[r.status]}
                     </Badge>
                   </div>
-                  <div className="flex items-center gap-3 mt-2 text-[11px] text-[var(--color-text-muted)]">
+                  <div className="flex items-center gap-3 mt-2 text-[11px] text-[#CBD5E1]/60">
                     <span>{r.category || 'General'}</span>
                     <span>•</span>
                     <span>{r.budget_range || 'Flexible budget'}</span>
@@ -224,20 +222,20 @@ export default async function TeamOverviewPage() {
         {/* Recent Contracts */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold text-[var(--color-text-primary)] flex items-center gap-2">
-              <FileCheck className="w-4 h-4 text-emerald-400" />
+            <h2 className="text-base font-bold text-white flex items-center gap-2">
+              <FileCheck className="w-4 h-4 text-[#CBD5E1]" />
               Recent Legal Contracts
             </h2>
             <Link
               href="/contracts"
-              className="text-xs text-[var(--color-brand-primary)] hover:underline flex items-center gap-1"
+              className="text-xs font-semibold text-[#CBD5E1] hover:text-white flex items-center gap-1 transition-colors"
             >
               All Contracts <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
           {contracts.length === 0 ? (
-            <Card className="p-8 text-center text-sm text-[var(--color-text-muted)]">
+            <Card className="p-8 text-center text-sm text-[#CBD5E1]/60 bg-[#0A0A0A] border border-[#404040]">
               No contracts dispatched yet.
             </Card>
           ) : (
@@ -246,22 +244,22 @@ export default async function TeamOverviewPage() {
                 <Link
                   key={c.id}
                   href={`/contracts/${c.id}`}
-                  className="block rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-card)] p-3.5 hover:border-[var(--color-brand-primary)]/40 hover:bg-[var(--color-surface-hover)] transition-all group"
+                  className="block rounded-lg border border-[#404040] bg-[#0A0A0A] p-3.5 hover:border-[#CBD5E1]/40 hover:bg-[#121824] transition-all group"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="font-semibold text-sm text-[var(--color-text-primary)] group-hover:text-[var(--color-brand-primary)] transition-colors truncate">
+                      <p className="font-semibold text-sm text-white group-hover:text-[#CBD5E1] transition-colors truncate">
                         {c.title}
                       </p>
-                      <p className="text-xs text-[var(--color-text-muted)] mt-0.5 truncate">
-                        Client: <span className="text-zinc-300">{c.user_email}</span>
+                      <p className="text-xs text-[#CBD5E1]/70 mt-0.5 truncate">
+                        Client: <span className="text-white">{c.user_email}</span>
                       </p>
                     </div>
                     <Badge color={contractStatusColor[c.status]}>
                       {CONTRACT_STATUS_LABELS[c.status]}
                     </Badge>
                   </div>
-                  <div className="flex items-center gap-3 mt-2 text-[11px] text-[var(--color-text-muted)]">
+                  <div className="flex items-center gap-3 mt-2 text-[11px] text-[#CBD5E1]/60">
                     <span>{c.contract_type}</span>
                     <span>•</span>
                     <span>

@@ -14,21 +14,20 @@ export default async function RequestsPage() {
   const userId = user?.id
 
   const { rows: requests } = userId
-    ? await query<AppRequest>(
+  ? await query<AppRequest>(
         'SELECT * FROM public.app_requests WHERE user_id = $1 ORDER BY created_at DESC',
         [userId]
       )
     : { rows: [] as AppRequest[] }
 
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">
+          <h1 className="text-2xl font-bold text-white">
             My Requests
           </h1>
-          <p className="text-sm text-[var(--color-text-muted)] mt-1">
+          <p className="text-sm text-[#CBD5E1]/70 mt-1">
             All your application development requests.
           </p>
         </div>
@@ -38,12 +37,12 @@ export default async function RequestsPage() {
       </div>
 
       {!requests || requests.length === 0 ? (
-        <Card className="py-16 text-center">
-          <FolderOpen className="w-10 h-10 text-[var(--color-text-muted)] mx-auto mb-4" />
-          <h3 className="font-semibold text-[var(--color-text-primary)] mb-2">
+        <Card className="py-16 text-center bg-[#0A0A0A] border border-[#404040]">
+          <FolderOpen className="w-10 h-10 text-[#CBD5E1]/50 mx-auto mb-4" />
+          <h3 className="font-semibold text-white mb-2">
             No requests yet
           </h3>
-          <p className="text-sm text-[var(--color-text-muted)] mb-6">
+          <p className="text-sm text-[#CBD5E1]/70 mb-6">
             Submit your first app development request to get started.
           </p>
           <LinkButton href="/dashboard/new-request">
@@ -56,17 +55,17 @@ export default async function RequestsPage() {
             <Link
               key={req.id}
               href={`/dashboard/requests/${req.id}`}
-              className="block rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-card)] p-5 hover:border-[var(--color-brand-primary)]/40 hover:bg-[var(--color-surface-hover)] transition-all group"
+              className="block rounded-xl border border-[#404040] bg-[#0A0A0A] p-5 hover:border-[#CBD5E1]/50 hover:bg-[#121824] transition-all group"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-[var(--color-text-primary)] group-hover:text-[var(--color-brand-primary)] transition-colors truncate">
+                  <p className="font-semibold text-white group-hover:text-[#CBD5E1] transition-colors truncate">
                     {req.title}
                   </p>
-                  <p className="text-sm text-[var(--color-text-muted)] mt-1 line-clamp-2">
+                  <p className="text-sm text-[#CBD5E1]/70 mt-1 line-clamp-2">
                     {req.description}
                   </p>
-                  <div className="flex items-center gap-3 mt-3 text-xs text-[var(--color-text-muted)]">
+                  <div className="flex items-center gap-3 mt-3 text-xs text-[#CBD5E1]/60">
                     {req.category && <span>{req.category}</span>}
                     {req.budget_range && (
                       <>

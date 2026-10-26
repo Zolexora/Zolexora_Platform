@@ -23,11 +23,11 @@ ACTION="${1:-start}"
 case "$ACTION" in
   start|up)
     echo "=================================================="
-    echo "🚀 Starting Zolexora App Suite Stack (Nginx Gateway)"
+    echo "🚀 Starting Zolexora AppSuite Stack (Nginx Gateway)"
     echo "=================================================="
     run_compose up -d
     echo ""
-    echo "✅ Zolexora App Suite Stack status:"
+    echo "✅ Zolexora AppSuite Stack status:"
     run_compose ps
     echo ""
     echo "🌐 Unified Gateway available at: http://localhost:${APPSUITE_PORT:-3070}"
@@ -37,15 +37,15 @@ case "$ACTION" in
     echo "   - Backend API:       http://localhost:${APPSUITE_PORT:-3070}/api/"
     ;;
   stop|down)
-    echo "🛑 Stopping Zolexora App Suite Stack..."
+    echo "🛑 Stopping Zolexora AppSuite Stack..."
     run_compose down
     ;;
   restart)
-    echo "🔄 Restarting Zolexora App Suite Stack..."
+    echo "🔄 Restarting Zolexora AppSuite Stack..."
     run_compose restart
     ;;
   build)
-    echo "🔨 Building Zolexora App Suite images locally..."
+    echo "🔨 Building Zolexora AppSuite images locally..."
     run_compose build
     ;;
   pull)

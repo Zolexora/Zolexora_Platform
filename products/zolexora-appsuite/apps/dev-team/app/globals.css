@@ -1,25 +1,45 @@
 @import "tailwindcss";
 
 :root {
-  --color-brand-primary: oklch(0.65 0.24 165); /* Emerald / Cyan tech tone for DevTeam */
-  --color-brand-secondary: oklch(0.60 0.22 240);
-  --color-surface-dark: oklch(0.11 0.02 260);
-  --color-surface-card: oklch(0.14 0.02 260);
-  --color-surface-hover: oklch(0.18 0.02 260);
-  --color-border: oklch(0.22 0.02 260);
-  --color-text-primary: oklch(0.96 0.01 260);
-  --color-text-muted: oklch(0.62 0.03 260);
+  /* Approved 7 Brand Colors */
+  --color-dark-navy: #0B1F3A;
+  --color-black-deep: #080C14;
+  --color-silver: #CBD5E1;
+  --color-white: #FFFFFF;
+  --color-pure-black: #000000;
+  --color-near-black: #0A0A0A;
+  --color-charcoal-gray: #404040;
+
+  /* App Theme Tokens */
+  --color-brand-primary: #0B1F3A;
+  --color-brand-secondary: #CBD5E1;
+  --color-brand-hover: #142E54;
+  --color-surface-dark: #080C14;
+  --color-surface-card: #0A0A0A;
+  --color-surface-hover: #121824;
+  --color-border: #404040;
+  --color-border-subtle: #1C2331;
+  --color-text-primary: #FFFFFF;
+  --color-text-muted: #CBD5E1;
+  --color-text-dim: #71717A;
 }
 
 @theme inline {
   --color-brand: var(--color-brand-primary);
   --color-brand-sec: var(--color-brand-secondary);
+  --color-brand-hover: var(--color-brand-hover);
   --color-surface: var(--color-surface-dark);
   --color-card: var(--color-surface-card);
   --color-card-hover: var(--color-surface-hover);
   --color-border-subtle: var(--color-border);
   --color-fg: var(--color-text-primary);
   --color-muted: var(--color-text-muted);
+  --color-navy: #0B1F3A;
+  --color-deep-black: #080C14;
+  --color-silver: #CBD5E1;
+  --color-pure-black: #000000;
+  --color-near-black: #0A0A0A;
+  --color-charcoal: #404040;
 }
 
 html {
@@ -40,5 +60,5 @@ body {
 /* Custom scrollbars */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--color-text-muted); }
+::-webkit-scrollbar-thumb { background: #404040; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #CBD5E1; }

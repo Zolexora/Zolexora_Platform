@@ -49,11 +49,11 @@ export function RequestStatusUpdater({
               onClick={() => setSelectedStatus(status)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-all flex items-center gap-1.5 ${
                 isSelected
-                  ? 'bg-[var(--color-brand-primary)] text-black shadow-sm'
-                  : 'bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700'
+                  ? 'bg-[#0B1F3A] text-white border border-[#CBD5E1]/40 shadow-xs'
+                  : 'bg-[#0A0A0A] text-[#CBD5E1]/70 border border-[#404040] hover:text-white hover:bg-[#121824]'
               }`}
             >
-              {isSelected && <Check className="w-3.5 h-3.5" />}
+              {isSelected && <Check className="w-3.5 h-3.5 text-[#CBD5E1]" />}
               {REQUEST_STATUS_LABELS[status]}
             </button>
           )
@@ -70,7 +70,7 @@ export function RequestStatusUpdater({
           Save Status Change
         </Button>
         {message && (
-          <span className="text-xs text-[var(--color-brand-primary)]">
+          <span className="text-xs text-[#CBD5E1] font-medium">
             {message}
           </span>
         )}

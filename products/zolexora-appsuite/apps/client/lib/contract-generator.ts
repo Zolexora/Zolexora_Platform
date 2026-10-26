@@ -26,7 +26,7 @@ export function generateContractLegalHtml({
     .map(
       (c) => `
     <div style="margin-bottom: 20px;">
-      <h3 style="font-size: 15px; color: #1e293b; margin-bottom: 6px;">${c.title}</h3>
+      <h3 style="font-size: 15px; color: #0B1F3A; margin-bottom: 6px;">${c.title}</h3>
       <p style="font-size: 13px; line-height: 1.6; color: #334155; margin: 0; text-align: justify;">${c.content}</p>
     </div>
   `
@@ -45,23 +45,23 @@ export function generateContractLegalHtml({
   <title>${contract.title}</title>
   <style>
     @page { size: A4; margin: 25mm 20mm; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #0f172a; margin: 0; padding: 24px; }
-    .header { border-bottom: 2px solid #6366f1; padding-bottom: 16px; margin-bottom: 24px; }
-    .stamp-box { border: 1px dashed #64748b; background: #f8fafc; padding: 10px; font-size: 11px; color: #475569; margin-bottom: 20px; border-radius: 4px; }
-    .parties { display: flex; justify-content: space-between; margin-bottom: 24px; padding: 12px; background: #f1f5f9; border-radius: 6px; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #080C14; margin: 0; padding: 24px; }
+    .header { border-bottom: 2px solid #0B1F3A; padding-bottom: 16px; margin-bottom: 24px; }
+    .stamp-box { border: 1px dashed #404040; background: #f8fafc; padding: 10px; font-size: 11px; color: #404040; margin-bottom: 20px; border-radius: 4px; }
+    .parties { display: flex; justify-content: space-between; margin-bottom: 24px; padding: 12px; background: #f8fafc; border: 1px solid #CBD5E1; border-radius: 6px; }
     .party-col { width: 48%; font-size: 13px; line-height: 1.5; }
-    .signature-grid { margin-top: 40px; display: flex; justify-content: space-between; border-top: 1px solid #cbd5e1; padding-top: 24px; }
-    .sig-box { width: 45%; border: 1px solid #e2e8f0; padding: 16px; border-radius: 6px; font-size: 12px; }
-    .signed-badge { color: #15803d; font-weight: bold; background: #dcfce7; padding: 4px 8px; border-radius: 4px; display: inline-block; margin-top: 8px; }
-    .sec65b { margin-top: 30px; font-size: 10px; color: #64748b; border-top: 1px dashed #cbd5e1; padding-top: 12px; text-align: center; }
+    .signature-grid { margin-top: 40px; display: flex; justify-content: space-between; border-top: 1px solid #CBD5E1; padding-top: 24px; }
+    .sig-box { width: 45%; border: 1px solid #CBD5E1; padding: 16px; border-radius: 6px; font-size: 12px; }
+    .signed-badge { color: #FFFFFF; font-weight: bold; background: #0B1F3A; border: 1px solid #CBD5E1; padding: 4px 8px; border-radius: 4px; display: inline-block; margin-top: 8px; }
+    .sec65b { margin-top: 30px; font-size: 10px; color: #404040; border-top: 1px dashed #CBD5E1; padding-top: 12px; text-align: center; }
   </style>
 </head>
 <body>
   <div class="header">
-    <div style="font-size: 20px; font-weight: bold; color: #4338ca; text-transform: uppercase;">Zolexora App Suite</div>
-    <div style="font-size: 12px; color: #64748b;">Software Development & Intellectual Property Services</div>
-    <h1 style="font-size: 22px; margin: 16px 0 4px 0; color: #0f172a;">${contract.title}</h1>
-    <div style="font-size: 12px; color: #64748b;">Contract Ref ID: ${contract.id} · Date of Issue: ${executionDate}</div>
+    <div style="font-size: 20px; font-weight: bold; color: #0B1F3A; text-transform: uppercase;">Zolexora AppSuite</div>
+    <div style="font-size: 12px; color: #404040;">Software Development &amp; Intellectual Property Services</div>
+    <h1 style="font-size: 22px; margin: 16px 0 4px 0; color: #080C14;">${contract.title}</h1>
+    <div style="font-size: 12px; color: #404040;">Contract Ref ID: ${contract.id} · Date of Issue: ${executionDate}</div>
   </div>
 
   <div class="stamp-box">
@@ -85,7 +85,7 @@ export function generateContractLegalHtml({
   </div>
 
   <div style="margin-bottom: 24px;">
-    <h3 style="font-size: 14px; text-transform: uppercase; color: #475569; letter-spacing: 0.05em;">Commercials & Value</h3>
+    <h3 style="font-size: 14px; text-transform: uppercase; color: #0B1F3A; letter-spacing: 0.05em;">Commercials &amp; Value</h3>
     <p style="font-size: 13px; margin: 4px 0;"><strong>Agreed Consideration:</strong> ${contract.total_value_inr ? `₹${Number(contract.total_value_inr).toLocaleString('en-IN')}` : 'As specified in milestone schedule'}</p>
     ${contract.scope_summary ? `<p style="font-size: 13px; margin: 4px 0;"><strong>Scope Summary:</strong> ${contract.scope_summary}</p>` : ''}
   </div>
@@ -98,26 +98,24 @@ export function generateContractLegalHtml({
     <div class="sig-box">
       <strong>For Zolexora Platform:</strong><br /><br />
       <em>Authorized Digital Signatory</em><br />
-      Zolexora Engineering Operations<br />
-      Status: <span style="color: #4338ca; font-weight: bold;">Digitally Issued</span>
+      <span class="signed-badge">DIGITALLY SIGNED</span><br />
+      <small style="color: #404040;">Key Ref: SEC10A-DEV-ZOLEXORA</small>
     </div>
     <div class="sig-box">
       <strong>For Client (${clientName}):</strong><br /><br />
       ${
         isSigned
-          ? `<span class="signed-badge">✓ DIGITALLY SIGNED</span><br />
-             Timestamp: ${signedDate} IST<br />
-             Signer Email: ${clientEmail}<br />
-             Mode: ${contract.signing_mode}`
-          : `<span style="color: #b45309; font-weight: bold;">AWAITING CLIENT EXECUTION</span><br />
-             Sign electronically via Zolexora App Suite Portal`
+          ? `<em>${clientName || 'Client Signatory'}</em><br />
+             <span class="signed-badge">EXECUTED &amp; SEALED</span><br />
+             <small style="color: #404040;">Timestamp: ${signedDate} (IST)<br />Verification: ${contract.signing_mode}</small>`
+          : `<span style="color: #404040; font-style: italic;">Awaiting Digital Signature Execution</span>`
       }
     </div>
   </div>
 
   <div class="sec65b">
-    Digitally generated and cryptographically verifiable document pursuant to Section 10A of the Information Technology Act, 2000.<br />
-    Audit Trail Certificate admissible under Section 65B of the Indian Evidence Act, 1872.
+    This document constitutes an electronic record under Section 10A of the Information Technology Act, 2000.<br />
+    Cryptographic SHA-256 Digest is logged for Section 65B Indian Evidence Act admissibility.
   </div>
 </body>
 </html>`

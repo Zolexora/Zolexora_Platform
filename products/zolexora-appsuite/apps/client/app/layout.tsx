@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: 'Zolexora App Suite',
-    template: '%s | Zolexora App Suite',
+    default: 'Zolexora AppSuite',
+    template: '%s | Zolexora AppSuite',
   },
   description:
     'Commission custom software applications built by the Zolexora development team. Describe your idea, we build it.',

@@ -18,17 +18,19 @@ export function Button({
   ...props
 }: ButtonProps) {
   const base =
-    'inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-primary)] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer'
+    'inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#CBD5E1] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer'
 
   const variants = {
     primary:
-      'bg-[var(--color-brand-primary)] text-black font-semibold hover:opacity-90 active:scale-[0.98]',
+      'bg-[#0B1F3A] text-white hover:bg-[#142E54] border border-[#CBD5E1]/40 hover:border-[#CBD5E1]/70 font-semibold shadow-sm active:scale-[0.98]',
     ghost:
-      'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)]',
+      'text-[#CBD5E1] hover:text-white hover:bg-[#121824]',
     outline:
-      'border border-[var(--color-border)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)]',
-    danger: 'bg-red-600 text-white hover:bg-red-700 active:scale-[0.98]',
-    success: 'bg-emerald-600 text-white hover:bg-emerald-700 active:scale-[0.98]',
+      'border border-[#404040] text-[#CBD5E1] hover:text-white hover:border-[#CBD5E1]/50 hover:bg-[#0B1F3A]/40',
+    danger:
+      'bg-[#0A0A0A] border border-[#404040] text-white hover:bg-[#404040]/50 active:scale-[0.98]',
+    success:
+      'bg-[#0B1F3A] border border-[#CBD5E1]/50 text-white hover:bg-[#142E54] active:scale-[0.98]',
   }
 
   const sizes = {
