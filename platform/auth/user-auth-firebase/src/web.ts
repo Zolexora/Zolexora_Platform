@@ -1,4 +1,4 @@
-import { getApp, getApps, initializeApp } from "firebase/app";
+import { getApp, getApps, initializeApp, deleteApp } from "firebase/app";
 import {
   createUserWithEmailAndPassword,
   deleteUser,
@@ -39,13 +39,6 @@ export function resolveFirebaseConfig(customConfig?: Partial<FirebaseClientConfi
       }
     } catch {}
     try {
-      // @ts-ignore
-      if (typeof import.meta !== "undefined" && import.meta?.env?.[key]) {
-        // @ts-ignore
-        return String(import.meta.env[key]);
-      }
-    } catch {}
-    try {
       if (typeof process !== "undefined" && process?.env?.[key]) {
         return String(process.env[key]);
       }
@@ -79,18 +72,7 @@ export function resolveFirebaseConfig(customConfig?: Partial<FirebaseClientConfi
       }
     } catch {}
 
-    try {
-      // @ts-ignore
-      const metaEnv = typeof import.meta !== "undefined" && import.meta?.env;
-      if (metaEnv) {
-        for (const k of Object.keys(metaEnv)) {
-          if ((k.startsWith("NEXT_PUBLIC_FIREBASE_ACC") || k.startsWith("VITE_FIREBASE_ACC")) && k.endsWith(`_${suffix}`)) {
-            const v = String(metaEnv[k]);
-            if (v) return v;
-          }
-        }
-      }
-    } catch {}
+
 
     try {
       if (typeof process !== "undefined" && process?.env) {
@@ -106,13 +88,49 @@ export function resolveFirebaseConfig(customConfig?: Partial<FirebaseClientConfi
     return fallback;
   };
 
+  const literalApiKey =
+    (typeof process !== "undefined" && (
+      process.env.NEXT_PUBLIC_FIREBASE_API_KEY ||
+      process.env.NEXT_PUBLIC_APPSUITE_CLIENT_FIREBASE_API_KEY ||
+      process.env.NEXT_PUBLIC_APPSUITE_DEVTEAM_FIREBASE_API_KEY ||
+      process.env.NEXT_PUBLIC_FIREBASE_CLIENT_API_KEY ||
+      process.env.NEXT_PUBLIC_FIREBASE_DEVTEAM_API_KEY ||
+      process.env.FIREBASE_API_KEY
+    )) || "";
+
+  const literalAuthDomain =
+    (typeof process !== "undefined" && (
+      process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ||
+      process.env.NEXT_PUBLIC_APPSUITE_CLIENT_FIREBASE_AUTH_DOMAIN ||
+      process.env.NEXT_PUBLIC_APPSUITE_DEVTEAM_FIREBASE_AUTH_DOMAIN ||
+      process.env.FIREBASE_AUTH_DOMAIN
+    )) || "";
+
+  const literalProjectId =
+    (typeof process !== "undefined" && (
+      process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ||
+      process.env.NEXT_PUBLIC_APPSUITE_CLIENT_FIREBASE_PROJECT_ID ||
+      process.env.NEXT_PUBLIC_APPSUITE_DEVTEAM_FIREBASE_PROJECT_ID ||
+      process.env.FIREBASE_PROJECT_ID
+    )) || "";
+
+  const literalAppId =
+    (typeof process !== "undefined" && (
+      process.env.NEXT_PUBLIC_FIREBASE_APP_ID ||
+      process.env.NEXT_PUBLIC_APPSUITE_CLIENT_FIREBASE_APP_ID ||
+      process.env.NEXT_PUBLIC_APPSUITE_DEVTEAM_FIREBASE_APP_ID ||
+      process.env.NEXT_PUBLIC_FIREBASE_CLIENT_APP_ID ||
+      process.env.NEXT_PUBLIC_FIREBASE_DEVTEAM_APP_ID ||
+      process.env.FIREBASE_APP_ID
+    )) || "";
+
   return {
-    apiKey: customConfig?.apiKey || resolveKey("API_KEY", "AIzaSyDummyKeyForZolexoraPlatform2026"),
-    authDomain: customConfig?.authDomain || resolveKey("AUTH_DOMAIN", "zolexora-platform.firebaseapp.com"),
-    projectId: customConfig?.projectId || resolveKey("PROJECT_ID", "zolexora-platform"),
-    appId: customConfig?.appId || resolveKey("APP_ID", "1:1234567890:web:abcdef123456"),
-    messagingSenderId: customConfig?.messagingSenderId || resolveKey("MESSAGING_SENDER_ID", "") || undefined,
-    storageBucket: customConfig?.storageBucket || resolveKey("STORAGE_BUCKET", "") || undefined,
+    apiKey: customConfig?.apiKey || literalApiKey || resolveKey("API_KEY", "AIzaSyAogbrOXGDbmnUBfgMrMLtIDqT4EijJLZ8"),
+    authDomain: customConfig?.authDomain || literalAuthDomain || resolveKey("AUTH_DOMAIN", "zolexora-authentication.firebaseapp.com"),
+    projectId: customConfig?.projectId || literalProjectId || resolveKey("PROJECT_ID", "zolexora-authentication"),
+    appId: customConfig?.appId || literalAppId || resolveKey("APP_ID", "1:743211765178:web:d655fa9a2cfb612203a183"),
+    messagingSenderId: customConfig?.messagingSenderId || resolveKey("MESSAGING_SENDER_ID", "743211765178") || undefined,
+    storageBucket: customConfig?.storageBucket || resolveKey("STORAGE_BUCKET", "zolexora-authentication.firebasestorage.app") || undefined,
   };
 }
 
@@ -129,9 +147,20 @@ export function getWebFirebaseAuth(config?: Partial<FirebaseClientConfig>): Auth
   }
   const resolved = resolveFirebaseConfig(config);
   const appName = "zolexora-user-auth-firebase";
-  const app = getApps().some((candidate) => candidate.name === appName)
-    ? getApp(appName)
-    : initializeApp(resolved, appName);
+  let app;
+  if (getApps().some((candidate) => candidate.name === appName)) {
+    app = getApp(appName);
+    if (config?.apiKey && app.options.apiKey !== resolved.apiKey) {
+      try {
+        deleteApp(app);
+        app = initializeApp(resolved, appName);
+      } catch {
+        app = getApp(appName);
+      }
+    }
+  } else {
+    app = initializeApp(resolved, appName);
+  }
   cachedAuth = getAuth(app);
   return cachedAuth;
 }
