@@ -125,12 +125,12 @@ export function resolveFirebaseConfig(customConfig?: Partial<FirebaseClientConfi
     )) || "";
 
   return {
-    apiKey: customConfig?.apiKey || literalApiKey || resolveKey("API_KEY", "AIzaSyAogbrOXGDbmnUBfgMrMLtIDqT4EijJLZ8"),
-    authDomain: customConfig?.authDomain || literalAuthDomain || resolveKey("AUTH_DOMAIN", "zolexora-authentication.firebaseapp.com"),
-    projectId: customConfig?.projectId || literalProjectId || resolveKey("PROJECT_ID", "zolexora-authentication"),
-    appId: customConfig?.appId || literalAppId || resolveKey("APP_ID", "1:743211765178:web:d655fa9a2cfb612203a183"),
-    messagingSenderId: customConfig?.messagingSenderId || resolveKey("MESSAGING_SENDER_ID", "743211765178") || undefined,
-    storageBucket: customConfig?.storageBucket || resolveKey("STORAGE_BUCKET", "zolexora-authentication.firebasestorage.app") || undefined,
+    apiKey: customConfig?.apiKey || literalApiKey || resolveKey("API_KEY", ""),
+    authDomain: customConfig?.authDomain || literalAuthDomain || resolveKey("AUTH_DOMAIN", ""),
+    projectId: customConfig?.projectId || literalProjectId || resolveKey("PROJECT_ID", ""),
+    appId: customConfig?.appId || literalAppId || resolveKey("APP_ID", ""),
+    messagingSenderId: customConfig?.messagingSenderId || resolveKey("MESSAGING_SENDER_ID", "") || undefined,
+    storageBucket: customConfig?.storageBucket || resolveKey("STORAGE_BUCKET", "") || undefined,
   };
 }
 
