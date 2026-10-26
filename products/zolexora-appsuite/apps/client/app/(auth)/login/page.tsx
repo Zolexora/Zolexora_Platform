@@ -1,14 +1,7 @@
-import { LoginPage } from '@zolexora/user-auth-zolexora/pages'
-import { signInAction } from '@/lib/actions/auth'
+import { ClientAuthCard } from '@/components/auth/client-auth-card'
 
-export const metadata = { title: 'Sign In' }
+export const metadata = { title: 'Sign In | Zolexora AppSuite' }
 
-export default function Page() {
-  return (
-    <LoginPage
-      signInAction={signInAction}
-      registerHref="/register"
-      resetHref="/reset-password"
-    />
-  )
+export default function LoginPage() {
+  return <ClientAuthCard initialMode="select" />
 }

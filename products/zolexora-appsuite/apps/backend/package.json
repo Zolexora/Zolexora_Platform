@@ -11,6 +11,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@zolexora/user-auth-firebase": "workspace:*",
     "@zolexora/user-auth-zolexora": "workspace:^",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",

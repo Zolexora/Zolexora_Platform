@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect, useCallback, useMemo, type FormEvent } from "react";
 import {
   GoogleIcon,

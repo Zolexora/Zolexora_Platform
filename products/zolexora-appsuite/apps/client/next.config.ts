@@ -4,7 +4,7 @@ const config: NextConfig = {
   output: 'standalone',
   // Tell Next.js/webpack to transpile the local workspace package
   // (it ships raw TypeScript with .js ESM imports — webpack needs to handle it)
-  transpilePackages: ['@zolexora/user-auth-zolexora'],
+  transpilePackages: ['@zolexora/user-auth-zolexora', '@zolexora/user-auth-firebase'],
   eslint: {
     ignoreDuringBuilds: true,
   },
