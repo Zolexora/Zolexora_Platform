@@ -1,3 +1,5 @@
+"use client";
+
 import { useRef, useEffect, type KeyboardEvent, type ClipboardEvent } from "react";
 
 export interface OtpInputProps {

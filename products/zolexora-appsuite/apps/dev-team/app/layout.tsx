@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import { TeamAuthProvider } from '@/components/providers/auth-provider'
 
 export const metadata: Metadata = {
   title: {
@@ -28,7 +29,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-[var(--color-surface-dark)] text-[var(--color-text-primary)] min-h-screen antialiased">
-        {children}
+        <TeamAuthProvider>
+          {children}
+        </TeamAuthProvider>
       </body>
     </html>
   )

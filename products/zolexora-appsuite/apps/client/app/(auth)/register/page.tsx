@@ -1,15 +1,7 @@
-import { RegisterPage } from '@zolexora/user-auth-zolexora/pages'
-import { signUpAction, verifyOtpAction } from '@/lib/actions/auth'
+import { ClientAuthCard } from '@/components/auth/client-auth-card'
 
-export const metadata = { title: 'Create Account' }
+export const metadata = { title: 'Create Account | Zolexora AppSuite' }
 
-export default function Page() {
-  return (
-    <RegisterPage
-      signUpAction={signUpAction}
-      verifyOtpAction={verifyOtpAction}
-      loginHref="/login"
-      minPasswordLength={12}
-    />
-  )
+export default function RegisterPage() {
+  return <ClientAuthCard initialMode="email_register" />
 }
