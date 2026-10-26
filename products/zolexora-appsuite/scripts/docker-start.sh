@@ -7,6 +7,7 @@ REPO_ROOT="$(pwd)"
 
 COMPOSE_FILE="products/zolexora-appsuite/compose.yaml"
 ENV_FILE="products/zolexora-appsuite/.env"
+INFISICAL_CONFIG="products/zolexora-appsuite/.infisical.json"
 
 # Auto-generate .env from .env.example if missing
 if [ ! -f "$ENV_FILE" ] && [ -f "products/zolexora-appsuite/.env.example" ]; then
@@ -15,7 +16,19 @@ if [ ! -f "$ENV_FILE" ] && [ -f "products/zolexora-appsuite/.env.example" ]; the
 fi
 
 run_compose() {
-  docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" "$@"
+  if [ -f "$INFISICAL_CONFIG" ] && { [ -n "$INFISICAL_TOKEN" ] || [ -n "$INFISICAL_ACCESS_TOKEN" ] || { command -v infisical >/dev/null 2>&1 && infisical login status >/dev/null 2>&1; }; }; then
+    WORKSPACE_ID=$(python3 -c "import json; d=json.load(open('$INFISICAL_CONFIG')); print(d.get('workspaceId',''))" 2>/dev/null || echo "188824cd-59ce-468f-b60f-f2da7aeefe63")
+    SECRET_PATH=$(python3 -c "import json; d=json.load(open('$INFISICAL_CONFIG')); print(d.get('secretsPath','/Zolexora_AppSuite'))" 2>/dev/null || echo "/Zolexora_AppSuite")
+    ENV_SLUG=$(python3 -c "import json; d=json.load(open('$INFISICAL_CONFIG')); print(d.get('defaultEnvironment','dev'))" 2>/dev/null || echo "dev")
+    PROJECT_FLAG=""
+    [ -n "$WORKSPACE_ID" ] && PROJECT_FLAG="--projectId=$WORKSPACE_ID"
+
+    echo "🔐 Infisical credentials detected — injecting runtime cloud secrets ($SECRET_PATH, env: $ENV_SLUG)..."
+    infisical run $PROJECT_FLAG --path="$SECRET_PATH" --env="$ENV_SLUG" -- docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" "$@"
+  else
+    echo "ℹ️  Executing docker compose with local .env file..."
+    docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" "$@"
+  fi
 }
 
 ACTION="${1:-start}"
