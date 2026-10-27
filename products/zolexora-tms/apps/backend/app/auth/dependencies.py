@@ -7,6 +7,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.tenant import TenantContext
+from app.core.config import settings
 from app.modules.core.platform.models import ProviderType
 from app.auth.jwks import verify_firebase_jwt
 from app.db.session import get_db
@@ -230,14 +231,38 @@ async def get_tenant_context(
 async def require_platform_admin(identity: AuthenticatedIdentity = Depends(get_current_identity), db: AsyncSession = Depends(get_db)) -> AuthenticatedIdentity:
     """
     Platform Admin relies ONLY on platform context, never on organization context.
+    Checks configured PLATFORM_ADMIN_EMAILS first (and auto-provisions), then checks platform_admins table.
     """
-    query = text("""
-        SELECT 1 FROM public.platform_admins WHERE user_id = :user_id AND status = 'ACTIVE'
-    """)
-    result = await db.execute(query, {"user_id": identity.id})
-    if not result.scalar():
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only Platform Administrators can perform this action",
-        )
-    return identity
+    admin_emails = getattr(settings, "PLATFORM_ADMIN_EMAILS", []) or [
+        "zolexora.official@gmail.com",
+        "admin@zolexora.com",
+    ]
+    if identity.email and identity.email.lower() in [e.lower() for e in admin_emails]:
+        try:
+            await db.execute(
+                text("""
+                    INSERT INTO public.platform_admins (id, user_id, email, status, created_at, updated_at)
+                    VALUES (:id, :user_id, :email, 'ACTIVE', NOW(), NOW())
+                    ON CONFLICT (user_id) DO UPDATE SET status = 'ACTIVE', email = EXCLUDED.email
+                """),
+                {"id": uuid.uuid4(), "user_id": identity.id, "email": identity.email},
+            )
+            await db.commit()
+        except Exception:
+            await db.rollback()
+        return identity
+
+    try:
+        query = text("""
+            SELECT 1 FROM public.platform_admins WHERE user_id = :user_id AND status = 'ACTIVE'
+        """)
+        result = await db.execute(query, {"user_id": identity.id})
+        if result.scalar():
+            return identity
+    except Exception:
+        pass
+
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Only Platform Administrators can perform this action",
+    )

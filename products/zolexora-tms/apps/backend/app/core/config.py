@@ -17,6 +17,12 @@ class Settings(BaseSettings):
     API_V1_PREFIX: str = "/api/v1"
     DEBUG: bool = False
 
+    # Platform Admins
+    PLATFORM_ADMIN_EMAILS: List[str] = [
+        "zolexora.official@gmail.com",
+        "admin@zolexora.com",
+    ]
+
     # CORS
     CORS_ORIGINS: List[str] = [
         "https://tms.zolexora.worker.dev",

@@ -138,3 +138,28 @@ class TenantMigrationJob(Base):
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class PlatformAdmin(Base):
+    __tablename__ = "platform_admins"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), nullable=False, unique=True, index=True)
+    email = Column(String(255), nullable=True)
+    status = Column(String(20), default="ACTIVE", nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class TenantQuota(Base):
+    __tablename__ = "tenant_quotas"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organisation_id = Column(UUID(as_uuid=True), ForeignKey("organisations.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
+    tier = Column(String(50), default="STANDARD", nullable=False)  # FREE, STANDARD, PRO, ENTERPRISE
+    max_members = Column(Integer, default=50, nullable=False)
+    max_vehicles = Column(Integer, default=100, nullable=False)
+    max_duties_per_month = Column(Integer, default=1000, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
