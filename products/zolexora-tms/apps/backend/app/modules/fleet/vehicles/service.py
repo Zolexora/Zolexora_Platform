@@ -14,7 +14,7 @@ from app.modules.fleet.vehicles.enums import (
     VehicleOperationalStatus,
     VehicleOwnershipType,
 )
-from app.modules.fleet.vehicles.schemas import VehicleCreate, VehicleResponse, VehicleUpdate
+from app.modules.fleet.vehicles.schemas import VehicleCreate, VehicleResponse, VehicleUpdate, VehicleBulkCreateItem, VehicleBulkResult
 
 
 def _row_to_response(row: dict, org_id: uuid.UUID) -> VehicleResponse:
@@ -124,6 +124,76 @@ async def create_vehicle(
             
     finally:
         await provider.close()
+
+
+async def bulk_create_vehicles(
+    org_id: uuid.UUID,
+    actor_id: uuid.UUID,
+    items: list[VehicleBulkCreateItem],
+    tenant_ctx: TenantContext,
+) -> VehicleBulkResult:
+    provider = D1TenantProvider(tenant_ctx.tenant_database_identifier)
+    conn = await provider.get_connection()
+    succeeded = 0
+    errors = []
+
+    try:
+        for idx, item in enumerate(items):
+            row_num = idx + 1
+            try:
+                reg_clean = item.registration_number.strip().upper().replace(" ", "")
+                async with conn.execute("SELECT id FROM vehicles WHERE registration_number = ?", (reg_clean,)) as cursor:
+                    if await cursor.fetchone():
+                        errors.append({"row": row_num, "registration_number": reg_clean, "error": "Duplicate registration number"})
+                        continue
+
+                vehicle_id = str(uuid.uuid4())
+                now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+                vtype = item.vehicle_type.strip().upper() if item.vehicle_type else "TRUCK"
+                otype = item.ownership_type.strip().upper() if item.ownership_type else "OWNED"
+                ftype = item.fuel_type.strip().upper() if item.fuel_type else "DIESEL"
+
+                await conn.execute(
+                    """
+                    INSERT INTO vehicles (
+                        id, registration_number, vehicle_type, ownership_type,
+                        make, model, year, fuel_type, payload_capacity_kg,
+                        odometer_km, fastag_id, gps_device_id,
+                        status, documents, created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        vehicle_id, reg_clean, vtype, otype,
+                        item.make.strip() if item.make else None,
+                        item.model.strip() if item.model else None,
+                        item.year,
+                        ftype,
+                        float(item.payload_capacity_kg) if item.payload_capacity_kg else None,
+                        float(item.odometer_km) if item.odometer_km else 0.0,
+                        item.fastag_id.strip().upper() if item.fastag_id else None,
+                        item.gps_device_id.strip().upper() if item.gps_device_id else None,
+                        VehicleOperationalStatus.AVAILABLE.value,
+                        "{}",
+                        now_str,
+                        now_str,
+                    ),
+                )
+                succeeded += 1
+            except Exception as e:
+                reg = item.registration_number if item.registration_number else f"row-{row_num}"
+                errors.append({"row": row_num, "registration_number": reg, "error": str(e)})
+
+        await conn.commit()
+    finally:
+        await provider.close()
+
+    return VehicleBulkResult(
+        total=len(items),
+        succeeded=succeeded,
+        failed=len(errors),
+        errors=errors,
+    )
 
 
 async def list_vehicles(
