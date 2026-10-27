@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@hookform/resolvers": "^3.9.1",
+    "@hookform/resolvers": "^6.0.0",
     "@zolexora/user-auth-firebase": "workspace:*",
     "firebase": "^12.19.0",
     "@tanstack/react-query": "^5.66.0",
