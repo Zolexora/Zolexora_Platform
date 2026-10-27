@@ -7,7 +7,7 @@ const queryClient = new QueryClient();
 function AdminHomePage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-6 text-center">
-      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-600/20 text-amber-400 mb-6 border border-amber-500/30">
+      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-silver-800/40 text-silver-500 mb-6 border border-silver-700/30">
         <ShieldAlert className="h-8 w-8" />
       </div>
       <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
