@@ -4,10 +4,24 @@ from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, status
 
 from app.auth.dependencies import get_current_active_organisation, get_tenant_context, CurrentUserContext
 from app.core.tenant import TenantContext
-from app.modules.fleet.vehicles.schemas import VehicleCreate, VehicleResponse, VehicleUpdate, VehicleBodyType, VehicleOperationalStatus, VehicleOwnershipType
+from app.modules.fleet.vehicles.schemas import VehicleCreate, VehicleResponse, VehicleUpdate, VehicleBodyType, VehicleOperationalStatus, VehicleOwnershipType, VehicleBulkCreateRequest, VehicleBulkResult
 from app.modules.fleet.vehicles import service
 
 router = APIRouter(prefix="/api/v1/vehicles", tags=["Vehicles"])
+
+
+@router.post("/bulk", response_model=VehicleBulkResult, status_code=status.HTTP_200_OK)
+async def bulk_create_vehicles_route(
+    req: VehicleBulkCreateRequest,
+    ctx: CurrentUserContext = Depends(get_current_active_organisation),
+    tenant_ctx: TenantContext = Depends(get_tenant_context),
+):
+    return await service.bulk_create_vehicles(
+        org_id=ctx.organisation_id,
+        actor_id=ctx.user_id,
+        items=req.vehicles,
+        tenant_ctx=tenant_ctx,
+    )
 
 
 @router.post("", response_model=VehicleResponse, status_code=status.HTTP_201_CREATED)

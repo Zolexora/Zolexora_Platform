@@ -38,6 +38,32 @@ class VehicleCreate(VehicleBase):
     pass
 
 
+class VehicleBulkCreateItem(BaseModel):
+    """Single vehicle row for bulk import (CSV-friendly, all optional except reg_number)."""
+    registration_number: str = Field(..., min_length=4, max_length=32)
+    vehicle_type: Optional[str] = "TRUCK"
+    ownership_type: Optional[str] = "OWNED"
+    make: Optional[str] = None
+    model: Optional[str] = None
+    year: Optional[int] = None
+    fuel_type: Optional[str] = "DIESEL"
+    payload_capacity_kg: Optional[Decimal] = None
+    odometer_km: Optional[Decimal] = Decimal("0.0")
+    fastag_id: Optional[str] = None
+    gps_device_id: Optional[str] = None
+
+
+class VehicleBulkCreateRequest(BaseModel):
+    vehicles: list[VehicleBulkCreateItem] = Field(..., min_length=1, max_length=500)
+
+
+class VehicleBulkResult(BaseModel):
+    total: int
+    succeeded: int
+    failed: int
+    errors: list[dict]  # [{row, registration_number, error}]
+
+
 class VehicleUpdate(BaseModel):
     vendor_id: Optional[uuid.UUID] = None
     registration_number: Optional[str] = Field(None, min_length=4, max_length=32)

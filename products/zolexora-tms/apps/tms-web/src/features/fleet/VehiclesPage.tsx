@@ -1,9 +1,39 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Truck, Plus, Search, AlertCircle, X, Navigation, ShieldCheck } from 'lucide-react';
+import { Truck, Plus, Search, AlertCircle, X, Navigation, ShieldCheck, Upload, Download, CheckCircle2 } from 'lucide-react';
 import { apiClient } from '../../lib/api';
 import type { Vehicle, VehicleCreate } from '../../types';
 import { EntityComplianceManager } from '../compliance/EntityComplianceManager';
+
+const CSV_TEMPLATE_COLS = 'registration_number,vehicle_type,ownership_type,make,model,year,fuel_type,payload_capacity_kg,odometer_km,fastag_id,gps_device_id';
+const CSV_SAMPLE_ROWS = [
+  'MH12AB1234,TRUCK,OWNED,Tata Motors,Signa 4825,2022,DIESEL,25000,0,,',
+  'GJ01CD5678,CONTAINER,LEASED,Ashok Leyland,4923 HB,2021,DIESEL,32000,15000,,',
+].join('\n');
+
+type BulkRow = Record<string, string>;
+interface BulkResult { succeeded: number; failed: number; errors: { row: number; registration_number?: string; error: string }[] }
+
+function parseVehicleCSV(text: string): BulkRow[] {
+  const [header, ...rows] = text.trim().split('\n');
+  const cols = header.split(',').map((c) => c.trim().toLowerCase());
+  return rows.filter((r) => r.trim()).map((row) => {
+    const vals = row.split(',').map((v) => v.trim());
+    const obj: BulkRow = {};
+    cols.forEach((col, i) => { obj[col] = vals[i] ?? ''; });
+    return obj;
+  });
+}
+
+function downloadCSVTemplate() {
+  const content = CSV_TEMPLATE_COLS + '\n' + CSV_SAMPLE_ROWS;
+  const blob = new Blob([content], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'vehicles_bulk_template.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
 
 export function VehiclesPage() {
   const queryClient = useQueryClient();
@@ -11,6 +41,54 @@ export function VehiclesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [complianceModalId, setComplianceModalId] = useState<string | null>(null);
   const [formError, setFormError] = useState('');
+
+  // Bulk import state
+  const [isBulkOpen, setIsBulkOpen] = useState(false);
+  const [bulkRows, setBulkRows] = useState<BulkRow[]>([]);
+  const [bulkResult, setBulkResult] = useState<BulkResult | null>(null);
+  const [bulkError, setBulkError] = useState('');
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setBulkResult(null);
+    setBulkError('');
+    setBulkRows([]);
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const rows = parseVehicleCSV(ev.target?.result as string);
+        if (rows.length === 0) { setBulkError('No data rows found in CSV.'); return; }
+        if (rows.length > 500) { setBulkError('Max 500 rows per import.'); return; }
+        setBulkRows(rows);
+      } catch {
+        setBulkError('Failed to parse CSV. Ensure it matches the template format.');
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  const bulkMutation = useMutation({
+    mutationFn: (vehicles: BulkRow[]) =>
+      apiClient<BulkResult>('/api/v1/vehicles/bulk', {
+        method: 'POST',
+        body: JSON.stringify({ vehicles }),
+      }),
+    onSuccess: (res) => {
+      setBulkResult(res);
+      if (res.succeeded > 0) queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+    },
+    onError: (err: any) => setBulkError(err.message || 'Bulk import failed'),
+  });
+
+  function closeBulkModal() {
+    setIsBulkOpen(false);
+    setBulkRows([]);
+    setBulkResult(null);
+    setBulkError('');
+    if (fileRef.current) fileRef.current.value = '';
+  }
 
   const [formData, setFormData] = useState<VehicleCreate>({
     registration_number: '',
@@ -85,13 +163,22 @@ export function VehiclesPage() {
           <h1 className="text-2xl font-bold text-white">Fleet Vehicles</h1>
           <p className="text-sm text-slate-400">Manage heavy commercial vehicles, ownership, and tracking devices.</p>
         </div>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="inline-flex items-center gap-2 rounded-xl bg-navy-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-navy-800/30 hover:bg-navy-600 transition"
-        >
-          <Plus className="h-4 w-4" />
-          Add Vehicle
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setIsBulkOpen(true)}
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-200 hover:bg-slate-700 transition"
+          >
+            <Upload className="h-4 w-4" />
+            Bulk Import
+          </button>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="inline-flex items-center gap-2 rounded-xl bg-navy-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-navy-800/30 hover:bg-navy-600 transition"
+          >
+            <Plus className="h-4 w-4" />
+            Add Vehicle
+          </button>
+        </div>
       </div>
 
       <div className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/60 px-3 py-2 max-w-md">
@@ -189,6 +276,141 @@ export function VehiclesPage() {
           </tbody>
         </table>
       </div>
+
+      {/* Bulk Import Modal */}
+      {isBulkOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="w-full max-w-2xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl space-y-4 my-8">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                <Upload className="h-5 w-5 text-navy-400" />
+                Bulk Import Vehicles
+              </h2>
+              <button onClick={closeBulkModal} className="text-slate-400 hover:text-white">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {!bulkResult ? (
+              <div className="space-y-4 text-sm">
+                <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-3 text-xs text-slate-400 space-y-1">
+                  <p>Upload a CSV file with up to <span className="text-white font-semibold">500 vehicles</span>.</p>
+                  <p>Required columns: <span className="font-mono text-slate-300">registration_number, vehicle_type, ownership_type</span></p>
+                  <p>Vehicle types: TRUCK, CONTAINER, TRAILER, TANKER, TIPPER, TEMPO, PICKUP, OTHER</p>
+                  <p>Ownership: OWNED, LEASED, ATTACHED &nbsp;|&nbsp; Fuel: DIESEL, CNG, ELECTRIC, PETROL</p>
+                </div>
+
+                <button
+                  onClick={downloadCSVTemplate}
+                  className="inline-flex items-center gap-2 text-xs text-navy-400 hover:text-navy-300 underline underline-offset-2"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  Download CSV Template
+                </button>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1">Select CSV File</label>
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept=".csv,text/csv"
+                    onChange={handleFileChange}
+                    className="w-full text-xs text-slate-400 file:mr-3 file:rounded file:border-0 file:bg-slate-700 file:px-3 file:py-1 file:text-xs file:text-slate-200 file:cursor-pointer hover:file:bg-slate-600"
+                  />
+                </div>
+
+                {bulkError && (
+                  <p className="flex items-center gap-1 text-xs text-red-400">
+                    <AlertCircle className="h-3.5 w-3.5" /> {bulkError}
+                  </p>
+                )}
+
+                {bulkRows.length > 0 && (
+                  <div>
+                    <p className="text-xs text-slate-400 mb-2">
+                      Preview — <span className="text-white font-semibold">{bulkRows.length} row{bulkRows.length !== 1 ? 's' : ''}</span> detected
+                      {bulkRows.length > 5 ? ` (showing first 5)` : ''}
+                    </p>
+                    <div className="overflow-x-auto rounded border border-slate-700">
+                      <table className="w-full text-xs text-slate-300">
+                        <thead className="bg-slate-800 text-slate-400">
+                          <tr>
+                            {['registration_number', 'vehicle_type', 'ownership_type', 'make', 'model', 'fuel_type'].map((col) => (
+                              <th key={col} className="px-3 py-2 text-left font-medium">{col}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-800">
+                          {bulkRows.slice(0, 5).map((row, i) => (
+                            <tr key={i}>
+                              {['registration_number', 'vehicle_type', 'ownership_type', 'make', 'model', 'fuel_type'].map((col) => (
+                                <td key={col} className="px-3 py-2 font-mono">{row[col] || '—'}</td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-3 pt-3 border-t border-slate-800">
+                  <button type="button" onClick={closeBulkModal} className="rounded-lg px-4 py-2 text-sm text-slate-400 hover:text-white">
+                    Cancel
+                  </button>
+                  <button
+                    disabled={bulkRows.length === 0 || bulkMutation.isPending}
+                    onClick={() => bulkMutation.mutate(bulkRows)}
+                    className="inline-flex items-center gap-2 rounded-lg bg-navy-600 px-5 py-2 text-sm font-semibold text-white hover:bg-navy-600 disabled:opacity-50 transition"
+                  >
+                    {bulkMutation.isPending ? 'Importing...' : `Import ${bulkRows.length || ''} Vehicles`}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4 text-sm">
+                <div className="flex items-center gap-3">
+                  <CheckCircle2 className="h-6 w-6 text-green-400 shrink-0" />
+                  <div>
+                    <p className="font-semibold text-white">Import Complete</p>
+                    <p className="text-xs text-slate-400">
+                      <span className="text-green-400 font-bold">{bulkResult.succeeded} succeeded</span>
+                      {bulkResult.failed > 0 && <span>, <span className="text-red-400 font-bold">{bulkResult.failed} failed</span></span>}
+                    </p>
+                  </div>
+                </div>
+                {bulkResult.errors.length > 0 && (
+                  <div className="overflow-x-auto rounded border border-slate-700">
+                    <table className="w-full text-xs text-slate-300">
+                      <thead className="bg-slate-800 text-slate-400">
+                        <tr>
+                          <th className="px-3 py-2 text-left">Row</th>
+                          <th className="px-3 py-2 text-left">Registration</th>
+                          <th className="px-3 py-2 text-left">Error</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800">
+                        {bulkResult.errors.map((e, i) => (
+                          <tr key={i}>
+                            <td className="px-3 py-2 font-mono">{e.row}</td>
+                            <td className="px-3 py-2 font-mono">{e.registration_number || '—'}</td>
+                            <td className="px-3 py-2 text-red-400">{e.error}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+                <div className="flex justify-end pt-3 border-t border-slate-800">
+                  <button onClick={closeBulkModal} className="rounded-lg bg-navy-600 px-5 py-2 text-sm font-semibold text-white hover:bg-navy-600 transition">
+                    Done
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Compliance Modal */}
       {complianceModalId && (
