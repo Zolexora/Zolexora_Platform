@@ -8,7 +8,7 @@ REPO_ROOT="$(pwd)"
 COMPOSE_FILE="products/zolexora-tms/compose.yaml"
 INFISICAL_PROJECT_ID="188824cd-59ce-468f-b60f-f2da7aeefe63"
 INFISICAL_ENV="dev"
-INFISICAL_PATH="/Zolexora_Auth_TMS"
+INFISICAL_PATH="/Zolexora_TMS"
 
 # Non-blocking secret injection helper
 run_compose() {

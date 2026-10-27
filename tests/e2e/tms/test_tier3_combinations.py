@@ -65,7 +65,7 @@ class TestTier3CrossFeatureCombinations(unittest.TestCase):
         ]
         self.assertIn("188824cd-59ce-468f-b60f-f2da7aeefe63", expected_cmd_tokens[2])
         self.assertIn("dev", expected_cmd_tokens[3])
-        self.assertIn("/Zolexora_Auth_TMS", expected_cmd_tokens[4])
+        self.assertIn("/Zolexora_TMS", expected_cmd_tokens[4])
 
         # Test CLI accepts the flag structure non-destructively
         rc, stdout, stderr = run_cmd(
@@ -177,9 +177,10 @@ class TestTier3CrossFeatureCombinations(unittest.TestCase):
         self.assertIn("NEXT_PUBLIC", entrypoint_content)
 
         # Verify tms-web and tms-admin declare NEXT_PUBLIC variables
-        for service in ["tms-web", "tms-admin"]:
-            self.assertIn(f"container_name: {service}", compose_content)
-            self.assertIn("NEXT_PUBLIC_FIREBASE_ACC1_TMS_API_KEY", compose_content)
+        self.assertIn("container_name: tms-web", compose_content)
+        self.assertIn("NEXT_PUBLIC_TMS_CLIENT_FIREBASE_API_KEY", compose_content)
+        self.assertIn("container_name: tms-admin", compose_content)
+        self.assertIn("NEXT_PUBLIC_TMS_ADMIN_FIREBASE_API_KEY", compose_content)
 
     def test_c7_multi_service_dependency_and_ordering(self):
         """Pair 7: Multi-Service Startup Ordering & Healthcheck Dependencies.
