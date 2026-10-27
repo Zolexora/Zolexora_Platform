@@ -1,4 +1,5 @@
 from typing import List, Optional
+from urllib.parse import quote_plus
 from pydantic import Field, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -40,11 +41,29 @@ class Settings(BaseSettings):
         "http://127.0.0.1:3074",
     ]
 
-    # Database
-    DATABASE_URL: str = Field(
-        default="postgresql://tms:password@localhost:5432/tms",
-        validation_alias="DATABASE_URL",
-    )
+    # Database - Infisical connection credentials
+    DATABASE_ZOLEXORA_TMS_HOST: Optional[str] = Field(default=None, validation_alias="DATABASE_ZOLEXORA_TMS_HOST")
+    DATABASE_ZOLEXORA_TMS_PORT: Optional[int] = Field(default=None, validation_alias="DATABASE_ZOLEXORA_TMS_PORT")
+    DATABASE_ZOLEXORA_TMS_NAME: Optional[str] = Field(default=None, validation_alias="DATABASE_ZOLEXORA_TMS_NAME")
+    DATABASE_ZOLEXORA_TMS_USER: Optional[str] = Field(default=None, validation_alias="DATABASE_ZOLEXORA_TMS_USER")
+    DATABASE_ZOLEXORA_TMS_PASSWORD: Optional[str] = Field(default=None, validation_alias="DATABASE_ZOLEXORA_TMS_PASSWORD")
+
+    # Optional direct DATABASE_URL override
+    DATABASE_URL_OVERRIDE: Optional[str] = Field(default=None, validation_alias="DATABASE_URL")
+
+    @computed_field
+    @property
+    def DATABASE_URL(self) -> str:
+        if self.DATABASE_URL_OVERRIDE:
+            return self.DATABASE_URL_OVERRIDE
+        if self.DATABASE_ZOLEXORA_TMS_HOST and self.DATABASE_ZOLEXORA_TMS_USER:
+            user = self.DATABASE_ZOLEXORA_TMS_USER
+            pwd = quote_plus(self.DATABASE_ZOLEXORA_TMS_PASSWORD or "")
+            host = self.DATABASE_ZOLEXORA_TMS_HOST
+            port = self.DATABASE_ZOLEXORA_TMS_PORT or 5432
+            db_name = self.DATABASE_ZOLEXORA_TMS_NAME or "postgres"
+            return f"postgresql://{user}:{pwd}@{host}:{port}/{db_name}"
+        return "postgresql://tms:password@localhost:5432/tms"
 
     @computed_field
     @property

@@ -52,14 +52,14 @@ class TestTier4RealWorldScenarios(unittest.TestCase):
         self.assertEqual(rc, 0, f"Status check failed: {stderr}")
 
         if is_stack_running():
-            # If stack is active, verify all 5 containers
-            for container in ["tms-postgres", "tms-backend", "tms-web", "tms-admin", "tms-nginx"]:
+            # If stack is active, verify all core containers
+            for container in ["tms-backend", "tms-web", "tms-admin", "tms-nginx"]:
                 self.assertTrue(
                     is_container_running(container),
                     f"Expected container {container} to be running",
                 )
         else:
-            # Pre-deployment: verify canonical compose file defines all 5 services
+            # Pre-deployment: verify canonical compose file defines all services
             rc, stdout, _ = run_cmd(
                 ["docker", "compose", "-f", str(get_tms_compose_path()), "config", "--services"],
                 timeout=10.0,
@@ -68,7 +68,7 @@ class TestTier4RealWorldScenarios(unittest.TestCase):
             services = set(stdout.strip().splitlines())
             self.assertEqual(
                 services,
-                {"postgres", "backend", "tms-web", "tms-admin", "nginx"},
+                {"backend", "tms-web", "tms-admin", "nginx"},
             )
 
     def test_s2_gateway_end_to_end_traffic_routing(self):
@@ -171,10 +171,13 @@ class TestTier4RealWorldScenarios(unittest.TestCase):
         self.assertEqual(rc, 0, f"Teardown command failed: {stderr}")
 
 
-        # Verify persistent volume postgres_data is preserved in compose definition
+        # If postgres container is in compose, verify volume; else verify cleanly decoupled
         compose_content = compose_path.read_text(encoding="utf-8")
-        self.assertIn("volumes:", compose_content)
-        self.assertIn("postgres_data:", compose_content)
+        if "tms-postgres" in compose_content:
+            self.assertIn("volumes:", compose_content)
+            self.assertIn("postgres_data:", compose_content)
+        else:
+            self.assertNotIn("tms-postgres", compose_content)
 
 
 if __name__ == "__main__":

@@ -113,10 +113,8 @@ def get_container_health(container_name: str) -> str:
 
 
 def is_stack_running() -> bool:
-    """Return True if core TMS containers (postgres and backend or nginx) are running."""
-    return is_container_running("tms-postgres") and (
-        is_container_running("tms-backend") or is_container_running("tms-nginx")
-    )
+    """Return True if core TMS containers (backend or nginx) are running."""
+    return is_container_running("tms-backend") or is_container_running("tms-nginx")
 
 
 class CaseInsensitiveDict(dict):
