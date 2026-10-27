@@ -80,7 +80,7 @@ export function VendorsPage() {
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-600/30 hover:bg-indigo-500 transition"
+          className="inline-flex items-center gap-2 rounded-xl bg-navy-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-navy-800/30 hover:bg-navy-600 transition"
         >
           <Plus className="h-4 w-4" />
           Add Vendor
@@ -125,7 +125,7 @@ export function VendorsPage() {
                     <div className="text-xs text-slate-400 font-mono">{v.gstin || 'No GSTIN'}</div>
                   </td>
                   <td className="px-5 py-4">
-                    <span className="rounded-md bg-indigo-500/10 px-2 py-0.5 text-xs font-medium text-indigo-300 border border-indigo-500/20">
+                    <span className="rounded-md bg-navy-800/40 px-2 py-0.5 text-xs font-medium text-silver-300 border border-navy-600/20">
                       {v.vendor_type.replace('_', ' ')}
                     </span>
                   </td>
@@ -141,7 +141,7 @@ export function VendorsPage() {
                     <span
                       className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                         v.status === 'ACTIVE'
-                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                          ? 'bg-silver-900/60 text-silver-300 border border-silver-700/30'
                           : 'bg-slate-700/20 text-slate-400'
                       }`}
                     >
@@ -154,7 +154,7 @@ export function VendorsPage() {
                       className="inline-flex items-center gap-1 rounded bg-slate-800 px-2 py-1 text-xs font-medium text-slate-300 hover:bg-slate-700 hover:text-white"
                       title="Manage Compliance"
                     >
-                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+                      <ShieldCheck className="h-3.5 w-3.5 text-silver-300" />
                       Docs
                     </button>
                   </td>
@@ -181,7 +181,7 @@ export function VendorsPage() {
           <div className="w-full max-w-2xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl space-y-4 my-8">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <ShieldCheck className="h-5 w-5 text-emerald-400" />
+                <ShieldCheck className="h-5 w-5 text-silver-300" />
                 Vendor Compliance
               </h2>
               <button onClick={() => setComplianceModalId(null)} className="text-slate-400 hover:text-white">
@@ -216,7 +216,7 @@ export function VendorsPage() {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="e.g. Western Fleet Logistics"
-                  className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-indigo-500 focus:outline-none"
+                  className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
                 />
               </div>
 
@@ -225,7 +225,7 @@ export function VendorsPage() {
                 <select
                   value={formData.vendor_type}
                   onChange={(e) => setFormData({ ...formData, vendor_type: e.target.value as any })}
-                  className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-indigo-500 focus:outline-none"
+                  className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
                 >
                   <option value="FLEET_SUPPLIER">Fleet Supplier (Market Vehicles)</option>
                   <option value="WORKSHOP">Maintenance Workshop</option>
@@ -243,7 +243,7 @@ export function VendorsPage() {
                     value={formData.contact_person}
                     onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })}
                     placeholder="e.g. Rajesh Sharma"
-                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-indigo-500 focus:outline-none"
+                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
                   />
                 </div>
                 <div>
@@ -253,7 +253,7 @@ export function VendorsPage() {
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     placeholder="+919811223344"
-                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-indigo-500 focus:outline-none"
+                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -267,7 +267,7 @@ export function VendorsPage() {
                     onChange={(e) => setFormData({ ...formData, gstin: e.target.value.toUpperCase() })}
                     placeholder="07AAAAA0000A1Z5"
                     maxLength={15}
-                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white font-mono text-xs focus:border-indigo-500 focus:outline-none"
+                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white font-mono text-xs focus:border-navy-500 focus:outline-none"
                   />
                 </div>
                 <div>
@@ -278,7 +278,7 @@ export function VendorsPage() {
                     onChange={(e) => setFormData({ ...formData, bank_ifsc: e.target.value.toUpperCase() })}
                     placeholder="HDFC0001234"
                     maxLength={11}
-                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white font-mono text-xs focus:border-indigo-500 focus:outline-none"
+                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white font-mono text-xs focus:border-navy-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -291,7 +291,7 @@ export function VendorsPage() {
                     value={formData.bank_account_number}
                     onChange={(e) => setFormData({ ...formData, bank_account_number: e.target.value })}
                     placeholder="918273645019"
-                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white font-mono text-xs focus:border-indigo-500 focus:outline-none"
+                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white font-mono text-xs focus:border-navy-500 focus:outline-none"
                   />
                 </div>
                 <div>
@@ -301,7 +301,7 @@ export function VendorsPage() {
                     value={formData.bank_name}
                     onChange={(e) => setFormData({ ...formData, bank_name: e.target.value })}
                     placeholder="HDFC Bank"
-                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-indigo-500 focus:outline-none"
+                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -324,7 +324,7 @@ export function VendorsPage() {
                 <button
                   type="submit"
                   disabled={createMutation.isPending}
-                  className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50 transition"
+                  className="inline-flex items-center gap-2 rounded-lg bg-navy-600 px-5 py-2 text-sm font-semibold text-white hover:bg-navy-600 disabled:opacity-50 transition"
                 >
                   {createMutation.isPending ? 'Saving...' : 'Save Vendor'}
                 </button>

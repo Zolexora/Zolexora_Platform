@@ -20,7 +20,7 @@ export function ExpensesPage() {
         </div>
         <button 
           onClick={() => setIsFormOpen(true)}
-          className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-600/30 hover:bg-indigo-500 transition"
+          className="inline-flex items-center gap-2 rounded-xl bg-navy-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-navy-800/30 hover:bg-navy-600 transition"
         >
           <Plus className="h-4 w-4" />
           Log Expense
@@ -29,11 +29,11 @@ export function ExpensesPage() {
 
       {isLoading ? (
         <div className="flex justify-center p-12">
-          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-t-2 border-indigo-500"></div>
+          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-t-2 border-navy-500"></div>
         </div>
       ) : expenses?.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-800 bg-slate-900/30 p-12 text-center">
-          <div className="rounded-2xl bg-indigo-500/10 p-4 text-indigo-400 mb-4">
+          <div className="rounded-2xl bg-navy-800/40 p-4 text-silver-400 mb-4">
             <Receipt className="h-8 w-8" />
           </div>
           <h3 className="text-base font-semibold text-white">No expenses recorded</h3>

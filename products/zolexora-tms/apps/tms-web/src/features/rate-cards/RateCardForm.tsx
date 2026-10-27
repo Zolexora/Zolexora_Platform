@@ -101,7 +101,7 @@ export function RateCardForm({ onClose, defaultSide = 'CUSTOMER' }: RateCardForm
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-white focus:border-indigo-500 focus:outline-none"
+                className="w-full rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
                 placeholder="e.g. ABC Ltd - ETS Sedan 2026"
               />
             </div>
@@ -110,7 +110,7 @@ export function RateCardForm({ onClose, defaultSide = 'CUSTOMER' }: RateCardForm
               <select
                 value={side}
                 onChange={(e) => setSide(e.target.value as 'CUSTOMER'|'VENDOR')}
-                className="w-full rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-white focus:border-indigo-500 focus:outline-none"
+                className="w-full rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
               >
                 <option value="CUSTOMER">CUSTOMER (Revenue)</option>
                 <option value="VENDOR">VENDOR (Cost / Payable)</option>
@@ -226,7 +226,7 @@ export function RateCardForm({ onClose, defaultSide = 'CUSTOMER' }: RateCardForm
           <button 
             onClick={handleSubmit}
             disabled={createMutation.isPending}
-            className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-6 py-2 text-sm font-bold text-white hover:bg-indigo-500 disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-lg bg-navy-600 px-6 py-2 text-sm font-bold text-white hover:bg-navy-600 disabled:opacity-50"
           >
             {createMutation.isPending ? 'Saving...' : (
               <><CheckCircle2 className="h-4 w-4" /> Save Rate Card</>

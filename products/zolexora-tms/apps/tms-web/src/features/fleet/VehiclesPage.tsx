@@ -87,7 +87,7 @@ export function VehiclesPage() {
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-600/30 hover:bg-indigo-500 transition"
+          className="inline-flex items-center gap-2 rounded-xl bg-navy-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-navy-800/30 hover:bg-navy-600 transition"
         >
           <Plus className="h-4 w-4" />
           Add Vehicle
@@ -134,7 +134,7 @@ export function VehiclesPage() {
                   </td>
                   <td className="px-5 py-4 text-xs">
                     <div className="font-medium text-slate-200">{v.vehicle_type}</div>
-                    <div className="text-indigo-400 text-[11px] font-semibold">{v.ownership_type}</div>
+                    <div className="text-silver-400 text-[11px] font-semibold">{v.ownership_type}</div>
                   </td>
                   <td className="px-5 py-4 text-xs">
                     <div>{v.payload_capacity_kg ? `${v.payload_capacity_kg} kg` : 'Standard'}</div>
@@ -142,7 +142,7 @@ export function VehiclesPage() {
                   </td>
                   <td className="px-5 py-4 text-xs font-mono">
                     <div className="flex items-center gap-1 text-slate-300">
-                      <Navigation className="h-3 w-3 text-cyan-400" />
+                      <Navigation className="h-3 w-3 text-navy-300" />
                       {v.gps_device_id || 'No GPS'}
                     </div>
                     <div className="text-[11px] text-slate-500">{v.fastag_id ? `FASTag: ${v.fastag_id.slice(-6)}` : ''}</div>
@@ -154,9 +154,9 @@ export function VehiclesPage() {
                     <span
                       className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                         v.status === 'AVAILABLE'
-                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                          ? 'bg-silver-900/60 text-silver-300 border border-silver-700/30'
                           : v.status === 'ON_DUTY'
-                          ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                          ? 'bg-silver-900/30 text-silver-500 border border-silver-700/20'
                           : 'bg-red-500/10 text-red-400 border border-red-500/20'
                       }`}
                     >
@@ -169,7 +169,7 @@ export function VehiclesPage() {
                       className="inline-flex items-center gap-1 rounded bg-slate-800 px-2 py-1 text-xs font-medium text-slate-300 hover:bg-slate-700 hover:text-white"
                       title="Manage Compliance"
                     >
-                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+                      <ShieldCheck className="h-3.5 w-3.5 text-silver-300" />
                       Docs
                     </button>
                   </td>
@@ -196,7 +196,7 @@ export function VehiclesPage() {
           <div className="w-full max-w-2xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl space-y-4 my-8">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <ShieldCheck className="h-5 w-5 text-emerald-400" />
+                <ShieldCheck className="h-5 w-5 text-silver-300" />
                 Vehicle Compliance
               </h2>
               <button onClick={() => setComplianceModalId(null)} className="text-slate-400 hover:text-white">
@@ -231,7 +231,7 @@ export function VehiclesPage() {
                   value={formData.registration_number}
                   onChange={(e) => setFormData({ ...formData, registration_number: e.target.value.toUpperCase().replace(/\s+/g, '') })}
                   placeholder="e.g. MH12AB1234"
-                  className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white font-mono font-bold text-sm tracking-wider focus:border-indigo-500 focus:outline-none"
+                  className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white font-mono font-bold text-sm tracking-wider focus:border-navy-500 focus:outline-none"
                 />
               </div>
 
@@ -241,7 +241,7 @@ export function VehiclesPage() {
                   <select
                     value={formData.vehicle_type}
                     onChange={(e) => setFormData({ ...formData, vehicle_type: e.target.value as any })}
-                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-indigo-500 focus:outline-none"
+                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
                   >
                     <option value="TRUCK">Open Truck</option>
                     <option value="CONTAINER">Container Body</option>
@@ -258,7 +258,7 @@ export function VehiclesPage() {
                   <select
                     value={formData.ownership_type}
                     onChange={(e) => setFormData({ ...formData, ownership_type: e.target.value as any })}
-                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-indigo-500 focus:outline-none"
+                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
                   >
                     <option value="OWNED">Self Owned</option>
                     <option value="LEASED">Leased</option>
@@ -275,7 +275,7 @@ export function VehiclesPage() {
                     value={formData.make}
                     onChange={(e) => setFormData({ ...formData, make: e.target.value })}
                     placeholder="e.g. Tata Motors"
-                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-indigo-500 focus:outline-none"
+                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
                   />
                 </div>
                 <div>
@@ -285,7 +285,7 @@ export function VehiclesPage() {
                     value={formData.model}
                     onChange={(e) => setFormData({ ...formData, model: e.target.value })}
                     placeholder="e.g. Signa 4825.TK"
-                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-indigo-500 focus:outline-none"
+                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -296,7 +296,7 @@ export function VehiclesPage() {
                   <select
                     value={formData.fuel_type}
                     onChange={(e) => setFormData({ ...formData, fuel_type: e.target.value as any })}
-                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-indigo-500 focus:outline-none"
+                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
                   >
                     <option value="DIESEL">Diesel</option>
                     <option value="CNG">CNG</option>
@@ -311,7 +311,7 @@ export function VehiclesPage() {
                     value={formData.payload_capacity_kg}
                     onChange={(e) => setFormData({ ...formData, payload_capacity_kg: e.target.value })}
                     placeholder="25000"
-                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-indigo-500 focus:outline-none"
+                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
                   />
                 </div>
                 <div>
@@ -321,7 +321,7 @@ export function VehiclesPage() {
                     value={formData.odometer_km}
                     onChange={(e) => setFormData({ ...formData, odometer_km: e.target.value })}
                     placeholder="0"
-                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-indigo-500 focus:outline-none"
+                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -334,7 +334,7 @@ export function VehiclesPage() {
                     value={formData.fastag_id}
                     onChange={(e) => setFormData({ ...formData, fastag_id: e.target.value.toUpperCase() })}
                     placeholder="34161FA123456"
-                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white font-mono text-xs focus:border-indigo-500 focus:outline-none"
+                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white font-mono text-xs focus:border-navy-500 focus:outline-none"
                   />
                 </div>
                 <div>
@@ -344,7 +344,7 @@ export function VehiclesPage() {
                     value={formData.gps_device_id}
                     onChange={(e) => setFormData({ ...formData, gps_device_id: e.target.value.toUpperCase() })}
                     placeholder="GPS-TRACK-9988"
-                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white font-mono text-xs focus:border-indigo-500 focus:outline-none"
+                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white font-mono text-xs focus:border-navy-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -367,7 +367,7 @@ export function VehiclesPage() {
                 <button
                   type="submit"
                   disabled={createMutation.isPending}
-                  className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50 transition"
+                  className="inline-flex items-center gap-2 rounded-lg bg-navy-600 px-5 py-2 text-sm font-semibold text-white hover:bg-navy-600 disabled:opacity-50 transition"
                 >
                   {createMutation.isPending ? 'Registering...' : 'Register Vehicle'}
                 </button>

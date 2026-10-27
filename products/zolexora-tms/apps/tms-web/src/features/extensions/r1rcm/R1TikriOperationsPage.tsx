@@ -82,12 +82,12 @@ export function R1TikriOperationsPage() {
               type="file" 
               accept=".csv"
               onChange={(e) => setFile(e.target.files?.[0] || null)}
-              className="text-slate-300 file:mr-4 file:rounded-full file:border-0 file:bg-indigo-600/20 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-indigo-400 hover:file:bg-indigo-600/30"
+              className="text-slate-300 file:mr-4 file:rounded-full file:border-0 file:bg-navy-600/20 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-silver-400 hover:file:bg-navy-600/30"
             />
             <button 
               onClick={handleUpload}
               disabled={!file || uploading}
-              className="flex items-center gap-2 rounded bg-indigo-600 px-4 py-2 font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+              className="flex items-center gap-2 rounded bg-navy-600 px-4 py-2 font-medium text-white hover:bg-navy-600 disabled:opacity-50"
             >
               <Upload className="h-4 w-4" />
               {uploading ? 'Processing...' : 'Upload & Preview'}
@@ -101,13 +101,13 @@ export function R1TikriOperationsPage() {
               <p className="text-sm text-slate-400">Total Rows</p>
               <p className="text-2xl font-bold text-white">{preview.total_rows}</p>
             </div>
-            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4">
-              <p className="text-sm text-emerald-400">Valid</p>
-              <p className="text-2xl font-bold text-emerald-300">{preview.valid_count}</p>
+            <div className="rounded-xl border border-silver-700/30 bg-silver-900/60 p-4">
+              <p className="text-sm text-silver-300">Valid</p>
+              <p className="text-2xl font-bold text-silver-200">{preview.valid_count}</p>
             </div>
-            <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-4">
-              <p className="text-sm text-amber-400">Warnings</p>
-              <p className="text-2xl font-bold text-amber-300">{preview.warning_count}</p>
+            <div className="rounded-xl border border-silver-700/20 bg-silver-900/30 p-4">
+              <p className="text-sm text-silver-500">Warnings</p>
+              <p className="text-2xl font-bold text-silver-400">{preview.warning_count}</p>
             </div>
             <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-4">
               <p className="text-sm text-red-400">Errors</p>
@@ -133,7 +133,7 @@ export function R1TikriOperationsPage() {
                     <td className="py-3 pr-4">{r.row_index}</td>
                     <td className="py-3 pr-4">
                       {r.is_valid ? (
-                        <span className="inline-flex items-center gap-1 text-emerald-400"><CheckCircle className="h-3 w-3" /> Valid</span>
+                        <span className="inline-flex items-center gap-1 text-silver-300"><CheckCircle className="h-3 w-3" /> Valid</span>
                       ) : (
                         <span className="inline-flex items-center gap-1 text-red-400"><AlertCircle className="h-3 w-3" /> Error</span>
                       )}
@@ -143,7 +143,7 @@ export function R1TikriOperationsPage() {
                     <td className="py-3 pr-4">{r.row_data.route_number}</td>
                     <td className="py-3">
                       {r.errors.map((e: string) => <div className="text-red-400 text-xs" key={e}>{e}</div>)}
-                      {r.warnings.map((w: string) => <div className="text-amber-400 text-xs" key={w}>{w}</div>)}
+                      {r.warnings.map((w: string) => <div className="text-silver-500 text-xs" key={w}>{w}</div>)}
                     </td>
                   </tr>
                 ))}
@@ -162,7 +162,7 @@ export function R1TikriOperationsPage() {
             <button 
               onClick={confirmImport}
               disabled={preview.valid_count === 0 || uploading}
-              className="rounded bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
+              className="rounded bg-navy-600 px-4 py-2 text-sm font-medium text-white hover:bg-silver-700 disabled:opacity-50"
             >
               Confirm & Create {preview.valid_count} Bookings
             </button>

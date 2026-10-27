@@ -60,7 +60,7 @@ export function PaymentsPage() {
         <div className="flex gap-3">
           <button 
             onClick={() => setModalOpen(true)}
-            className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 transition"
+            className="inline-flex items-center gap-2 rounded-xl bg-navy-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-navy-600 transition"
           >
             <Plus className="h-4 w-4" />
             Record Payment
@@ -77,11 +77,11 @@ export function PaymentsPage() {
 
       {isLoading ? (
         <div className="flex justify-center p-12">
-          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-t-2 border-indigo-500"></div>
+          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-t-2 border-navy-500"></div>
         </div>
       ) : payments?.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-800 bg-slate-900/30 p-12 text-center">
-          <div className="rounded-2xl bg-indigo-500/10 p-4 text-indigo-400 mb-4">
+          <div className="rounded-2xl bg-navy-800/40 p-4 text-silver-400 mb-4">
             <CreditCard className="h-8 w-8" />
           </div>
           <h3 className="text-base font-semibold text-white">No payments recorded</h3>
@@ -108,7 +108,7 @@ export function PaymentsPage() {
                   <td className="p-4 text-white font-semibold text-right">
                     <IndianRupee className="inline h-3 w-3 text-slate-500"/> {pay.amount}
                   </td>
-                  <td className="p-4 text-amber-400 font-semibold text-right">
+                  <td className="p-4 text-silver-500 font-semibold text-right">
                     <IndianRupee className="inline h-3 w-3 text-slate-500"/> {pay.unallocated_amount}
                   </td>
                 </tr>
@@ -143,7 +143,7 @@ export function PaymentsPage() {
             </div>
             <div className="mt-6 flex justify-end gap-3">
               <button onClick={() => setModalOpen(false)} className="rounded-lg px-4 py-2 text-sm text-slate-300 hover:bg-slate-800">Cancel</button>
-              <button onClick={() => createMutation.mutate()} disabled={createMutation.isPending || !amount} className="rounded-lg bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-500">Save</button>
+              <button onClick={() => createMutation.mutate()} disabled={createMutation.isPending || !amount} className="rounded-lg bg-navy-600 px-4 py-2 text-sm text-white hover:bg-navy-600">Save</button>
             </div>
           </div>
         </div>

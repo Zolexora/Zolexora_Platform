@@ -39,7 +39,7 @@ export function MembersPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-semibold text-white flex items-center gap-2">
-            <Users className="h-6 w-6 text-indigo-400" />
+            <Users className="h-6 w-6 text-silver-400" />
             Organisation Members
           </h2>
           <p className="mt-1 text-sm text-slate-400">
@@ -64,7 +64,7 @@ export function MembersPage() {
                 <td className="whitespace-nowrap px-6 py-4">
                   <div className="font-medium text-slate-200">{member.member_id}</div>
                   {member.is_commander && (
-                    <div className="mt-1 flex items-center gap-1 text-xs font-medium text-amber-500">
+                    <div className="mt-1 flex items-center gap-1 text-xs font-medium text-silver-500">
                       <ShieldAlert className="h-3.5 w-3.5" />
                       Commander
                     </div>
@@ -74,7 +74,7 @@ export function MembersPage() {
                   {member.is_commander ? (
                     <span className="text-sm text-slate-500 italic">Full Access</span>
                   ) : member.role_id ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-500/10 px-2.5 py-0.5 text-xs font-medium text-indigo-300 border border-indigo-500/20">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-navy-800/40 px-2.5 py-0.5 text-xs font-medium text-silver-300 border border-navy-600/20">
                       <Shield className="h-3.5 w-3.5" />
                       {member.role_name}
                     </span>
@@ -83,7 +83,7 @@ export function MembersPage() {
                   )}
                 </td>
                 <td className="whitespace-nowrap px-6 py-4">
-                  <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-400 border border-emerald-500/20">
+                  <span className="inline-flex items-center rounded-full bg-silver-900/60 px-2.5 py-0.5 text-xs font-medium text-silver-300 border border-silver-700/30">
                     {member.status}
                   </span>
                 </td>
@@ -91,7 +91,7 @@ export function MembersPage() {
                   {!member.is_commander && (
                     <button
                       onClick={() => setSelectedMember(member)}
-                      className="text-indigo-400 hover:text-indigo-300 transition"
+                      className="text-silver-400 hover:text-silver-300 transition"
                     >
                       Manage Access
                     </button>
@@ -107,7 +107,7 @@ export function MembersPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
           <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl">
             <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-              <Key className="h-5 w-5 text-indigo-400" />
+              <Key className="h-5 w-5 text-silver-400" />
               Manage Access
             </h3>
             
@@ -125,7 +125,7 @@ export function MembersPage() {
                     });
                   }}
                   disabled={assignRoleMutation.isPending}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-white focus:border-navy-500 focus:outline-none focus:ring-1 focus:ring-navy-500"
                 >
                   <option value="">-- No Role --</option>
                   {roles?.filter(r => r.status === 'ACTIVE').map(role => (

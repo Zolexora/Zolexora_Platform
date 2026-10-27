@@ -111,7 +111,7 @@ export function RoleBuilder({ role, onClose, onSuccess }: RoleBuilderProps) {
         <form onSubmit={handleSubmit} className="flex flex-1 flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto p-6 space-y-8">
             {role?.source === 'SYSTEM' && (
-              <div className="rounded-lg bg-indigo-500/10 p-4 border border-indigo-500/20 text-sm text-indigo-200">
+              <div className="rounded-lg bg-navy-800/40 p-4 border border-navy-600/20 text-sm text-silver-200">
                 This is a system-managed role. You cannot change its name, but you may alter its permissions for your organization.
               </div>
             )}
@@ -125,7 +125,7 @@ export function RoleBuilder({ role, onClose, onSuccess }: RoleBuilderProps) {
                   disabled={role?.source === 'SYSTEM'}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="mt-1 block w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white placeholder-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50"
+                  className="mt-1 block w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white placeholder-slate-400 focus:border-navy-500 focus:outline-none focus:ring-1 focus:ring-navy-500 disabled:opacity-50"
                   placeholder="e.g. Dispatch Manager"
                 />
               </div>
@@ -135,7 +135,7 @@ export function RoleBuilder({ role, onClose, onSuccess }: RoleBuilderProps) {
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="mt-1 block w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white placeholder-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="mt-1 block w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white placeholder-slate-400 focus:border-navy-500 focus:outline-none focus:ring-1 focus:ring-navy-500"
                   placeholder="Describe the purpose of this role"
                   rows={2}
                 />
@@ -149,7 +149,7 @@ export function RoleBuilder({ role, onClose, onSuccess }: RoleBuilderProps) {
                     required
                     value={changeNote}
                     onChange={(e) => setChangeNote(e.target.value)}
-                    className="mt-1 block w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white placeholder-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    className="mt-1 block w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white placeholder-slate-400 focus:border-navy-500 focus:outline-none focus:ring-1 focus:ring-navy-500"
                     placeholder="e.g. Added vendor management permissions"
                   />
                 </div>
@@ -182,7 +182,7 @@ export function RoleBuilder({ role, onClose, onSuccess }: RoleBuilderProps) {
                                   onClick={() => handleTogglePermission(capStr)}
                                   className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition ${
                                     isSelected 
-                                      ? 'bg-indigo-600 text-white shadow-sm' 
+                                      ? 'bg-navy-600 text-white shadow-sm' 
                                       : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-300'
                                   }`}
                                 >
@@ -212,7 +212,7 @@ export function RoleBuilder({ role, onClose, onSuccess }: RoleBuilderProps) {
             <button
               type="submit"
               disabled={saveMutation.isPending}
-              className="rounded-lg bg-indigo-600 px-6 py-2 text-sm font-medium text-white hover:bg-indigo-500 transition disabled:opacity-50"
+              className="rounded-lg bg-navy-600 px-6 py-2 text-sm font-medium text-white hover:bg-navy-600 transition disabled:opacity-50"
             >
               {saveMutation.isPending ? 'Saving...' : 'Save Role'}
             </button>

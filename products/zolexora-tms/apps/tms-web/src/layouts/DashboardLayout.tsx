@@ -119,12 +119,10 @@ export function DashboardLayout() {
       <aside className="fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-slate-800/80 bg-slate-900/90 backdrop-blur-xl">
         {/* Brand Header */}
         <div className="flex h-16 items-center gap-3 border-b border-slate-800/80 px-6">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-lg shadow-indigo-600/30">
-            <Truck className="h-5 w-5" />
-          </div>
+          <img src="/logo.png" alt="Zolexora TMS" className="h-10 w-10 rounded-xl object-contain" />
           <div className="flex flex-col">
             <span className="font-bold tracking-tight text-white text-base">{runtime.branding.application_name}</span>
-            <span className="text-[10px] font-medium uppercase tracking-widest text-indigo-400">Transport Hub</span>
+            <span className="text-[10px] font-medium uppercase tracking-widest text-silver-500">Transport Hub</span>
           </div>
         </div>
 
@@ -136,12 +134,12 @@ export function DashboardLayout() {
                 {organisation?.name || 'Loading Workspace...'}
               </span>
               {isCommander ? (
-                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-400 border border-amber-500/30">
+                <span className="inline-flex items-center gap-1 rounded-full bg-silver-900/30 px-2 py-0.5 text-[10px] font-semibold text-silver-500 border border-silver-700/30">
                   <Crown className="h-3 w-3" />
                   Commander
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 rounded-full bg-indigo-500/10 px-2 py-0.5 text-[10px] font-semibold text-indigo-400 border border-indigo-500/30">
+                <span className="inline-flex items-center gap-1 rounded-full bg-navy-800/40 px-2 py-0.5 text-[10px] font-semibold text-silver-500 border border-navy-600/30">
                   <Shield className="h-3 w-3" />
                   {authMe?.role_code || 'Member'}
                 </span>
@@ -171,7 +169,7 @@ export function DashboardLayout() {
                       className={({ isActive }) =>
                         `group flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition ${
                           isActive
-                            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                            ? 'bg-navy-600 text-white shadow-md shadow-navy-800/20'
                             : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
                         }`
                       }
@@ -220,13 +218,13 @@ export function DashboardLayout() {
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-400">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+            <div className="flex items-center gap-2 rounded-full border border-silver-700/30 bg-silver-900/60 px-3 py-1 text-xs font-medium text-silver-300">
+              <span className="h-2 w-2 rounded-full bg-silver-300 animate-pulse" />
               API Connected: Render
             </div>
 
             {isCommander && (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-300">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-silver-700/30 bg-silver-900/30 px-3 py-1 text-xs font-medium text-silver-400">
                 <Crown className="h-3.5 w-3.5" />
                 Commander Authority Active
               </span>

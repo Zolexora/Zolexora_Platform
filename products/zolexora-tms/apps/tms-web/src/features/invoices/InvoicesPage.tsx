@@ -98,11 +98,11 @@ export function InvoicesPage() {
 
       {isLoading ? (
         <div className="flex justify-center p-12">
-          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-t-2 border-indigo-500"></div>
+          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-t-2 border-navy-500"></div>
         </div>
       ) : invoices?.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-800 bg-slate-900/30 p-12 text-center">
-          <div className="rounded-2xl bg-indigo-500/10 p-4 text-indigo-400 mb-4">
+          <div className="rounded-2xl bg-navy-800/40 p-4 text-silver-400 mb-4">
             <FileText className="h-8 w-8" />
           </div>
           <h3 className="text-base font-semibold text-white">No invoices issued</h3>
@@ -134,14 +134,14 @@ export function InvoicesPage() {
                     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
                       invoice.status === 'FINALIZED' ? 'bg-blue-500/10 text-blue-400' :
                       invoice.status === 'DRAFT' ? 'bg-slate-500/10 text-slate-400' :
-                      invoice.status === 'PARTIALLY_PAID' ? 'bg-amber-500/10 text-amber-400' :
-                      invoice.status === 'PAID' ? 'bg-emerald-500/10 text-emerald-400' :
+                      invoice.status === 'PARTIALLY_PAID' ? 'bg-silver-900/30 text-silver-500' :
+                      invoice.status === 'PAID' ? 'bg-silver-900/60 text-silver-300' :
                       'bg-red-500/10 text-red-400'
                     }`}>
                       {invoice.status}
                     </span>
                   </td>
-                  <td className="p-4 text-amber-400 font-semibold text-right">
+                  <td className="p-4 text-silver-500 font-semibold text-right">
                     <IndianRupee className="inline h-3 w-3 text-slate-500"/> {invoice.amount_due || 0}
                   </td>
                   <td className="p-4 text-white font-semibold text-right">
@@ -153,7 +153,7 @@ export function InvoicesPage() {
                         <button 
                           onClick={() => issueMutation.mutate(invoice.id)}
                           disabled={issueMutation.isPending}
-                          className="rounded-md bg-emerald-600/20 px-2 py-1 text-xs font-medium text-emerald-400 hover:bg-emerald-600/30"
+                          className="rounded-md bg-silver-800/40 px-2 py-1 text-xs font-medium text-silver-300 hover:bg-silver-800/60"
                         >
                           Finalize
                         </button>
@@ -171,14 +171,14 @@ export function InvoicesPage() {
                           <button 
                             onClick={() => openAdj(invoice.id, 'CREDIT')}
                             title="Credit Note"
-                            className="rounded-md bg-indigo-600/20 p-1 text-indigo-400 hover:bg-indigo-600/30"
+                            className="rounded-md bg-navy-600/20 p-1 text-silver-400 hover:bg-navy-600/30"
                           >
                             <MinusCircle className="h-4 w-4" />
                           </button>
                           <button 
                             onClick={() => openAdj(invoice.id, 'DEBIT')}
                             title="Debit Note"
-                            className="rounded-md bg-indigo-600/20 p-1 text-indigo-400 hover:bg-indigo-600/30"
+                            className="rounded-md bg-navy-600/20 p-1 text-silver-400 hover:bg-navy-600/30"
                           >
                             <PlusCircle className="h-4 w-4" />
                           </button>
@@ -207,7 +207,7 @@ export function InvoicesPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
             <h2 className="text-lg font-semibold text-white">Cancel Invoice</h2>
-            <div className="mt-2 rounded-lg bg-amber-500/10 p-3 text-sm text-amber-400 border border-amber-500/20">
+            <div className="mt-2 rounded-lg bg-silver-900/30 p-3 text-sm text-silver-500 border border-silver-700/20">
               Warning: This action changes the invoice lifecycle and creates an audit record. The snapshot will be unlocked.
             </div>
             <div className="mt-4">
@@ -215,7 +215,7 @@ export function InvoicesPage() {
               <textarea
                 value={cancelReason}
                 onChange={e => setCancelReason(e.target.value)}
-                className="w-full rounded-lg border border-slate-700 bg-slate-950 p-2 text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="w-full rounded-lg border border-slate-700 bg-slate-950 p-2 text-white focus:border-navy-500 focus:outline-none focus:ring-1 focus:ring-navy-500"
                 rows={3}
                 required
               />
@@ -250,7 +250,7 @@ export function InvoicesPage() {
                   type="number"
                   value={adjAmount}
                   onChange={e => setAdjAmount(e.target.value)}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-950 p-2 text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="w-full rounded-lg border border-slate-700 bg-slate-950 p-2 text-white focus:border-navy-500 focus:outline-none focus:ring-1 focus:ring-navy-500"
                   required
                 />
               </div>
@@ -259,7 +259,7 @@ export function InvoicesPage() {
                 <textarea
                   value={adjReason}
                   onChange={e => setAdjReason(e.target.value)}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-950 p-2 text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="w-full rounded-lg border border-slate-700 bg-slate-950 p-2 text-white focus:border-navy-500 focus:outline-none focus:ring-1 focus:ring-navy-500"
                   rows={2}
                   required
                 />
@@ -275,7 +275,7 @@ export function InvoicesPage() {
               <button
                 onClick={() => adjMutation.mutate()}
                 disabled={!adjAmount || !adjReason || adjMutation.isPending}
-                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+                className="rounded-lg bg-navy-600 px-4 py-2 text-sm font-medium text-white hover:bg-navy-600 disabled:opacity-50"
               >
                 {adjMutation.isPending ? 'Saving...' : 'Create Note'}
               </button>

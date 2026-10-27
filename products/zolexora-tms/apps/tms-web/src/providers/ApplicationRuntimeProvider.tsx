@@ -53,7 +53,7 @@ export function ApplicationRuntimeProvider({ children }: { children: ReactNode }
   if (isLoading) {
     return (
       <div className="flex h-screen w-full flex-col items-center justify-center bg-slate-950 text-slate-400">
-        <Loader2 className="h-8 w-8 animate-spin text-indigo-500 mb-4" />
+        <Loader2 className="h-8 w-8 animate-spin text-navy-300 mb-4" />
         <p className="text-sm font-medium">Loading Application Configuration...</p>
       </div>
     );

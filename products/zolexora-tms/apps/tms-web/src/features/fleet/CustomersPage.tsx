@@ -84,7 +84,7 @@ export function CustomersPage() {
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-600/30 hover:bg-indigo-500 transition"
+          className="inline-flex items-center gap-2 rounded-xl bg-navy-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-navy-800/30 hover:bg-navy-600 transition"
         >
           <Plus className="h-4 w-4" />
           Add Customer
@@ -142,7 +142,7 @@ export function CustomersPage() {
                     <span
                       className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                         c.status === 'ACTIVE'
-                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                          ? 'bg-silver-900/60 text-silver-300 border border-silver-700/30'
                           : 'bg-slate-700/20 text-slate-400'
                       }`}
                     >
@@ -155,7 +155,7 @@ export function CustomersPage() {
                       className="inline-flex items-center gap-1 rounded bg-slate-800 px-2 py-1 text-xs font-medium text-slate-300 hover:bg-slate-700 hover:text-white"
                       title="Manage Compliance"
                     >
-                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+                      <ShieldCheck className="h-3.5 w-3.5 text-silver-300" />
                       Docs
                     </button>
                   </td>
@@ -182,7 +182,7 @@ export function CustomersPage() {
           <div className="w-full max-w-2xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl space-y-4 my-8">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <ShieldCheck className="h-5 w-5 text-emerald-400" />
+                <ShieldCheck className="h-5 w-5 text-silver-300" />
                 Customer Compliance
               </h2>
               <button onClick={() => setComplianceModalId(null)} className="text-slate-400 hover:text-white">
@@ -217,7 +217,7 @@ export function CustomersPage() {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="e.g. Tata Consumer Products Ltd"
-                  className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-indigo-500 focus:outline-none"
+                  className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
                 />
               </div>
 
@@ -229,7 +229,7 @@ export function CustomersPage() {
                     value={formData.contact_person}
                     onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })}
                     placeholder="e.g. Vikram Malhotra"
-                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-indigo-500 focus:outline-none"
+                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
                   />
                 </div>
                 <div>
@@ -239,7 +239,7 @@ export function CustomersPage() {
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     placeholder="+919876543210"
-                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-indigo-500 focus:outline-none"
+                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -253,7 +253,7 @@ export function CustomersPage() {
                     onChange={(e) => setFormData({ ...formData, gstin: e.target.value.toUpperCase() })}
                     placeholder="27AAACT2727Q1ZW"
                     maxLength={15}
-                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white font-mono text-xs focus:border-indigo-500 focus:outline-none"
+                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white font-mono text-xs focus:border-navy-500 focus:outline-none"
                   />
                 </div>
                 <div>
@@ -264,7 +264,7 @@ export function CustomersPage() {
                     onChange={(e) => setFormData({ ...formData, pan: e.target.value.toUpperCase() })}
                     placeholder="AAACT2727Q"
                     maxLength={10}
-                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white font-mono text-xs focus:border-indigo-500 focus:outline-none"
+                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white font-mono text-xs focus:border-navy-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -276,7 +276,7 @@ export function CustomersPage() {
                     type="number"
                     value={formData.payment_terms_days}
                     onChange={(e) => setFormData({ ...formData, payment_terms_days: Number(e.target.value) })}
-                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-indigo-500 focus:outline-none"
+                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
                   />
                 </div>
                 <div>
@@ -285,7 +285,7 @@ export function CustomersPage() {
                     type="number"
                     value={formData.credit_limit}
                     onChange={(e) => setFormData({ ...formData, credit_limit: e.target.value })}
-                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-indigo-500 focus:outline-none"
+                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -297,7 +297,7 @@ export function CustomersPage() {
                   value={formData.billing_address}
                   onChange={(e) => setFormData({ ...formData, billing_address: e.target.value })}
                   placeholder="Official registered address for invoices..."
-                  className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-indigo-500 focus:outline-none"
+                  className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
                 />
               </div>
 
@@ -319,7 +319,7 @@ export function CustomersPage() {
                 <button
                   type="submit"
                   disabled={createMutation.isPending}
-                  className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50 transition"
+                  className="inline-flex items-center gap-2 rounded-lg bg-navy-600 px-5 py-2 text-sm font-semibold text-white hover:bg-navy-600 disabled:opacity-50 transition"
                 >
                   {createMutation.isPending ? 'Saving...' : 'Save Customer'}
                 </button>

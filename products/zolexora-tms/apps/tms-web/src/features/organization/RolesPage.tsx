@@ -31,7 +31,7 @@ export function RolesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-semibold text-white flex items-center gap-2">
-            <Shield className="h-6 w-6 text-indigo-400" />
+            <Shield className="h-6 w-6 text-silver-400" />
             Roles & Permissions
           </h2>
           <p className="mt-1 text-sm text-slate-400">
@@ -43,7 +43,7 @@ export function RolesPage() {
             setEditingRole(null);
             setIsBuilderOpen(true);
           }}
-          className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500"
+          className="inline-flex items-center gap-2 rounded-lg bg-navy-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-navy-600"
         >
           <Plus className="h-4 w-4" />
           Create Role
@@ -86,7 +86,7 @@ export function RolesPage() {
                 <td className="whitespace-nowrap px-6 py-4">
                   <span
                     className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                      role.status === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-slate-800 text-slate-400 border border-slate-700'
+                      role.status === 'ACTIVE' ? 'bg-silver-900/60 text-silver-300 border border-silver-700/30' : 'bg-slate-800 text-slate-400 border border-slate-700'
                     }`}
                   >
                     {role.status}
@@ -99,7 +99,7 @@ export function RolesPage() {
                         setEditingRole(role);
                         setIsBuilderOpen(true);
                       }}
-                      className="text-slate-400 hover:text-indigo-400 transition"
+                      className="text-slate-400 hover:text-silver-400 transition"
                       title="Edit Role"
                     >
                       <Edit2 className="h-4 w-4" />
