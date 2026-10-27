@@ -21,7 +21,12 @@
     "cli:docs": "bash ../../scripts/dev/setup-cli-ecosystem.sh --docs",
     "ecosystem:check": "bash ../../scripts/dev/setup-cli-ecosystem.sh --check",
     "ecosystem:setup": "bash ../../scripts/dev/setup-cli-ecosystem.sh",
-    "ecosystem:docs": "bash ../../scripts/dev/setup-cli-ecosystem.sh --docs"
+    "ecosystem:docs": "bash ../../scripts/dev/setup-cli-ecosystem.sh --docs",
+    "dev:mobile": "pnpm --filter @zolexora/tms-mobile run dev",
+    "dev:mobile:tunnel": "pnpm --filter @zolexora/tms-mobile run dev:tunnel",
+    "mobile:android": "pnpm --filter @zolexora/tms-mobile run android",
+    "mobile:ios": "pnpm --filter @zolexora/tms-mobile run ios",
+    "mobile:typecheck": "pnpm --filter @zolexora/tms-mobile run typecheck"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",
