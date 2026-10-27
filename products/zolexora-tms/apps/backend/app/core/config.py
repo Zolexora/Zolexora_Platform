@@ -47,6 +47,12 @@ class Settings(BaseSettings):
     DATABASE_ZOLEXORA_TMS_NAME: Optional[str] = Field(default=None, validation_alias="DATABASE_ZOLEXORA_TMS_NAME")
     DATABASE_ZOLEXORA_TMS_USER: Optional[str] = Field(default=None, validation_alias="DATABASE_ZOLEXORA_TMS_USER")
     DATABASE_ZOLEXORA_TMS_PASSWORD: Optional[str] = Field(default=None, validation_alias="DATABASE_ZOLEXORA_TMS_PASSWORD")
+    DATABASE_ZOLEXORA_TMS_EXTERNAL_DATABASE_URL: Optional[str] = Field(
+        default=None, validation_alias="DATABASE_ZOLEXORA_TMS_EXTERNAL_DATABASE_URL"
+    )
+    DATABASE_ZOLEXORA_TMS_INTERNAL_DATABASE_URL: Optional[str] = Field(
+        default=None, validation_alias="DATABASE_ZOLEXORA_TMS_INTERNAL_DATABASE_URL"
+    )
 
     # Optional direct DATABASE_URL override
     DATABASE_URL_OVERRIDE: Optional[str] = Field(default=None, validation_alias="DATABASE_URL")
@@ -56,6 +62,8 @@ class Settings(BaseSettings):
     def DATABASE_URL(self) -> str:
         if self.DATABASE_URL_OVERRIDE:
             return self.DATABASE_URL_OVERRIDE
+        if self.DATABASE_ZOLEXORA_TMS_EXTERNAL_DATABASE_URL:
+            return self.DATABASE_ZOLEXORA_TMS_EXTERNAL_DATABASE_URL
         if self.DATABASE_ZOLEXORA_TMS_HOST and self.DATABASE_ZOLEXORA_TMS_USER:
             user = self.DATABASE_ZOLEXORA_TMS_USER
             pwd = quote_plus(self.DATABASE_ZOLEXORA_TMS_PASSWORD or "")
@@ -63,6 +71,8 @@ class Settings(BaseSettings):
             port = self.DATABASE_ZOLEXORA_TMS_PORT or 5432
             db_name = self.DATABASE_ZOLEXORA_TMS_NAME or "postgres"
             return f"postgresql://{user}:{pwd}@{host}:{port}/{db_name}"
+        if self.DATABASE_ZOLEXORA_TMS_INTERNAL_DATABASE_URL:
+            return self.DATABASE_ZOLEXORA_TMS_INTERNAL_DATABASE_URL
         return "postgresql://tms:password@localhost:5432/tms"
 
     @computed_field
