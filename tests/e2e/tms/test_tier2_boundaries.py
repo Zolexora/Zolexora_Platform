@@ -130,8 +130,8 @@ class TestTier2Domain2MissingEnvVariables(unittest.TestCase):
     def test_b2_04_missing_firebase_frontend_keys(self):
         """Verify compose declares frontend keys without values so empty env does not crash."""
         content = get_tms_compose_path().read_text(encoding="utf-8")
-        self.assertIn("- NEXT_PUBLIC_FIREBASE_ACC1_TMS_API_KEY", content)
-        self.assertIn("- NEXT_PUBLIC_FIREBASE_ACC1_TMS_AUTH_DOMAIN", content)
+        self.assertIn("- NEXT_PUBLIC_TMS_CLIENT_FIREBASE_API_KEY", content)
+        self.assertIn("- NEXT_PUBLIC_TMS_CLIENT_FIREBASE_AUTH_DOMAIN", content)
 
     def test_b2_05_default_database_credentials(self):
         """Verify backend default DATABASE_URL points to postgres service on port 5432."""

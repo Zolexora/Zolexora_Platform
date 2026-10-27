@@ -47,9 +47,13 @@ export function resolveFirebaseConfig(customConfig?: Partial<FirebaseClientConfi
   };
 
   const resolveKey = (suffix: string, fallback: string): string => {
-    // 1. Direct match for TMS Account 1 (Infisical alias)
-    const tmsVal = getEnv(`NEXT_PUBLIC_FIREBASE_ACC1_TMS_${suffix}`) || getEnv(`VITE_FIREBASE_ACC1_TMS_${suffix}`);
-    if (tmsVal) return tmsVal;
+    // 1. Product-scoped matches (TMS Client & Admin)
+    const productVal =
+      getEnv(`NEXT_PUBLIC_TMS_CLIENT_FIREBASE_${suffix}`) ||
+      getEnv(`NEXT_PUBLIC_TMS_ADMIN_FIREBASE_${suffix}`) ||
+      getEnv(`VITE_TMS_CLIENT_FIREBASE_${suffix}`) ||
+      getEnv(`VITE_TMS_ADMIN_FIREBASE_${suffix}`);
+    if (productVal) return productVal;
 
     // 2. Standard product-level env vars
     const standardVal =
@@ -58,13 +62,13 @@ export function resolveFirebaseConfig(customConfig?: Partial<FirebaseClientConfi
       getEnv(`FIREBASE_${suffix}`);
     if (standardVal) return standardVal;
 
-    // 3. Dynamic scan for any account-scoped key in runtime environment (e.g., ACC2_MKT_*, etc.)
+    // 3. Dynamic scan for any product/account-scoped key in runtime environment
     try {
       // @ts-ignore
       const winEnv = typeof window !== "undefined" && window.__ENV__;
       if (winEnv) {
         for (const k of Object.keys(winEnv)) {
-          if ((k.startsWith("NEXT_PUBLIC_FIREBASE_ACC") || k.startsWith("VITE_FIREBASE_ACC")) && k.endsWith(`_${suffix}`)) {
+          if ((k.startsWith("NEXT_PUBLIC_") || k.startsWith("VITE_")) && k.endsWith(`_FIREBASE_${suffix}`)) {
             const v = String(winEnv[k]);
             if (v) return v;
           }
@@ -72,12 +76,10 @@ export function resolveFirebaseConfig(customConfig?: Partial<FirebaseClientConfi
       }
     } catch {}
 
-
-
     try {
       if (typeof process !== "undefined" && process?.env) {
         for (const k of Object.keys(process.env)) {
-          if ((k.startsWith("NEXT_PUBLIC_FIREBASE_ACC") || k.startsWith("VITE_FIREBASE_ACC")) && k.endsWith(`_${suffix}`)) {
+          if ((k.startsWith("NEXT_PUBLIC_") || k.startsWith("VITE_")) && k.endsWith(`_FIREBASE_${suffix}`)) {
             const v = String(process.env[k]);
             if (v) return v;
           }
@@ -90,6 +92,8 @@ export function resolveFirebaseConfig(customConfig?: Partial<FirebaseClientConfi
 
   const literalApiKey =
     (typeof process !== "undefined" && (
+      process.env.NEXT_PUBLIC_TMS_CLIENT_FIREBASE_API_KEY ||
+      process.env.NEXT_PUBLIC_TMS_ADMIN_FIREBASE_API_KEY ||
       process.env.NEXT_PUBLIC_FIREBASE_API_KEY ||
       process.env.NEXT_PUBLIC_APPSUITE_CLIENT_FIREBASE_API_KEY ||
       process.env.NEXT_PUBLIC_APPSUITE_DEVTEAM_FIREBASE_API_KEY ||
@@ -100,6 +104,8 @@ export function resolveFirebaseConfig(customConfig?: Partial<FirebaseClientConfi
 
   const literalAuthDomain =
     (typeof process !== "undefined" && (
+      process.env.NEXT_PUBLIC_TMS_CLIENT_FIREBASE_AUTH_DOMAIN ||
+      process.env.NEXT_PUBLIC_TMS_ADMIN_FIREBASE_AUTH_DOMAIN ||
       process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ||
       process.env.NEXT_PUBLIC_APPSUITE_CLIENT_FIREBASE_AUTH_DOMAIN ||
       process.env.NEXT_PUBLIC_APPSUITE_DEVTEAM_FIREBASE_AUTH_DOMAIN ||
@@ -108,6 +114,8 @@ export function resolveFirebaseConfig(customConfig?: Partial<FirebaseClientConfi
 
   const literalProjectId =
     (typeof process !== "undefined" && (
+      process.env.NEXT_PUBLIC_TMS_CLIENT_FIREBASE_PROJECT_ID ||
+      process.env.NEXT_PUBLIC_TMS_ADMIN_FIREBASE_PROJECT_ID ||
       process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ||
       process.env.NEXT_PUBLIC_APPSUITE_CLIENT_FIREBASE_PROJECT_ID ||
       process.env.NEXT_PUBLIC_APPSUITE_DEVTEAM_FIREBASE_PROJECT_ID ||
@@ -116,6 +124,8 @@ export function resolveFirebaseConfig(customConfig?: Partial<FirebaseClientConfi
 
   const literalAppId =
     (typeof process !== "undefined" && (
+      process.env.NEXT_PUBLIC_TMS_CLIENT_FIREBASE_APP_ID ||
+      process.env.NEXT_PUBLIC_TMS_ADMIN_FIREBASE_APP_ID ||
       process.env.NEXT_PUBLIC_FIREBASE_APP_ID ||
       process.env.NEXT_PUBLIC_APPSUITE_CLIENT_FIREBASE_APP_ID ||
       process.env.NEXT_PUBLIC_APPSUITE_DEVTEAM_FIREBASE_APP_ID ||

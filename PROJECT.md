@@ -4,7 +4,7 @@
 - **Monorepo Root**: `/workspaces/Zolexora_Platform`
 - **Product Location**: `products/zolexora-tms`
 - **Compose Definition**: `products/zolexora-tms/compose.yaml`
-- **Secret Management**: Infisical CLI (`infisical run`) linked to workspace `188824cd-59ce-468f-b60f-f2da7aeefe63`, environment `dev`, path `/Zolexora_Auth_TMS`.
+- **Secret Management**: Infisical CLI (`infisical run`) linked to workspace `188824cd-59ce-468f-b60f-f2da7aeefe63`, environment `dev`, path `/Zolexora_TMS`.
 - **Services Architecture**:
   1. `tms-postgres`: PostgreSQL 16 on internal port 5432, host port `5448`.
   2. `tms-backend`: FastAPI/uvicorn application on port 4030, exposed on host `4030`, healthcheck on `/health`.
@@ -41,7 +41,7 @@
 ## Interface Contracts
 ### Startup Scripts ↔ Docker Compose
 - `scripts/zolexora-tms/start-docker.sh [start|stop|restart|status|logs|build]`
-- Invocation: `infisical run --projectId=188824cd-59ce-468f-b60f-f2da7aeefe63 --env=dev --path=/Zolexora_Auth_TMS -- docker compose -f products/zolexora-tms/compose.yaml <action>`
+- Invocation: `infisical run --projectId=188824cd-59ce-468f-b60f-f2da7aeefe63 --env=dev --path=/Zolexora_TMS -- docker compose -f products/zolexora-tms/compose.yaml <action>`
 - Fallback: If Infisical is not authenticated or unavailable, notify user and run `docker compose -f products/zolexora-tms/compose.yaml <action>` using existing environment without writing plaintext secret files to disk.
 
 ### Host Endpoints

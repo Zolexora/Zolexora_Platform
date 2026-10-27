@@ -117,7 +117,7 @@ class TestTier1Feature2NonBlockingAuth(unittest.TestCase):
             data = json.load(f)
         self.assertEqual(data.get("workspaceId"), "188824cd-59ce-468f-b60f-f2da7aeefe63")
         self.assertEqual(data.get("defaultEnvironment"), "dev")
-        self.assertEqual(data.get("secretsPath"), "/Zolexora_Auth_TMS")
+        self.assertEqual(data.get("secretsPath"), "/Zolexora_TMS")
 
     def test_f2_05_infisical_script_detection_pattern(self):
         """Verify shell detection pattern runs non-blocking and executes in < 2 seconds."""
