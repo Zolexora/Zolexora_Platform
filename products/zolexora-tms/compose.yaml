@@ -1,30 +1,4 @@
 services:
-  postgres:
-    image: postgres:15-alpine
-    container_name: tms-postgres
-    environment:
-      POSTGRES_USER: tms
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: tms
-    volumes:
-    - postgres_data:/var/lib/postgresql/data
-    ports:
-    - "${TMS_POSTGRES_PORT:-5449}:5432"
-    healthcheck:
-      test:
-      - CMD-SHELL
-      - pg_isready -U tms -d tms
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 512M
-        reservations:
-          cpus: '0.1'
-          memory: 128M
   backend:
     image: ${TMS_BACKEND_IMAGE:-ghcr.io/zolexora/tms-backend:latest}
     pull_policy: missing
@@ -35,12 +9,14 @@ services:
     ports:
     - "${TMS_BACKEND_PORT:-4031}:4030"
     environment:
-    - DATABASE_URL=postgresql://tms:password@postgres:5432/tms
-    - FIREBASE_PROJECT_ID=zolexora-platform
-    - PATH=/app/.venv/bin:/usr/local/bin:/usr/bin:/bin
-    depends_on:
-      postgres:
-        condition: service_healthy
+      - DATABASE_ZOLEXORA_TMS_HOST
+      - DATABASE_ZOLEXORA_TMS_PORT
+      - DATABASE_ZOLEXORA_TMS_NAME
+      - DATABASE_ZOLEXORA_TMS_USER
+      - DATABASE_ZOLEXORA_TMS_PASSWORD
+      - DATABASE_URL
+      - FIREBASE_PROJECT_ID=zolexora-platform
+      - PATH=/app/.venv/bin:/usr/local/bin:/usr/bin:/bin
     healthcheck:
       test:
       - CMD
@@ -162,5 +138,3 @@ services:
       timeout: 5s
       retries: 3
       start_period: 5s
-volumes:
-  postgres_data: null

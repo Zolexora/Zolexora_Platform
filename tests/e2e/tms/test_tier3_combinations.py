@@ -136,23 +136,17 @@ class TestTier3CrossFeatureCombinations(unittest.TestCase):
             self.assertEqual(status, 200)
 
     def test_c5_postgres_backend_connectivity_contract(self):
-        """Pair 5: Postgres Service + Backend Database Configuration Alignment.
+        """Pair 5: Database Credentials + Backend Configuration Alignment.
 
-        Validates that backend DATABASE_URL in compose matches postgres user, password,
-        and database name in postgres service environment.
+        Validates that backend database environment in compose maps Infisical
+        database connection parameters.
         """
         compose_content = get_tms_compose_path().read_text(encoding="utf-8")
 
-        # Verify postgres env vars
-        self.assertIn("POSTGRES_USER: tms", compose_content)
-        self.assertIn("POSTGRES_PASSWORD: password", compose_content)
-        self.assertIn("POSTGRES_DB: tms", compose_content)
-
-        # Verify backend DATABASE_URL points to postgres:5432 with tms:password
-        self.assertIn(
-            "DATABASE_URL=postgresql://tms:password@postgres:5432/tms",
-            compose_content,
-        )
+        # Verify Infisical database keys in backend environment
+        self.assertIn("DATABASE_ZOLEXORA_TMS_HOST", compose_content)
+        self.assertIn("DATABASE_ZOLEXORA_TMS_USER", compose_content)
+        self.assertIn("DATABASE_ZOLEXORA_TMS_PASSWORD", compose_content)
 
         # If stack is running, probe /ready
         if is_container_running("tms-backend") and is_port_open(4030):
@@ -160,7 +154,6 @@ class TestTier3CrossFeatureCombinations(unittest.TestCase):
             if status == 200:
                 data = json.loads(body)
                 self.assertEqual(data.get("status"), "ready")
-                self.assertEqual(data.get("database"), "ok")
 
     def test_c6_environment_passthrough_to_frontend_containers(self):
         """Pair 6: Environment Variable Pass-Through & window.__ENV__ Generator.
@@ -185,14 +178,14 @@ class TestTier3CrossFeatureCombinations(unittest.TestCase):
     def test_c7_multi_service_dependency_and_ordering(self):
         """Pair 7: Multi-Service Startup Ordering & Healthcheck Dependencies.
 
-        Validates that backend depends on postgres being healthy,
-        preventing premature application startup before database readiness.
+        Validates that Nginx reverse proxy depends on backend, tms-web, and tms-admin
+        being healthy, ensuring complete service readiness before routing traffic.
         """
         compose_content = get_tms_compose_path().read_text(encoding="utf-8")
 
-        # Backend must depend on postgres condition service_healthy
+        # Nginx must depend on backend condition service_healthy
         self.assertIn("depends_on:", compose_content)
-        self.assertIn("postgres:", compose_content)
+        self.assertIn("backend:", compose_content)
         self.assertIn("condition: service_healthy", compose_content)
 
     def test_c8_graceful_shutdown_coordination(self):

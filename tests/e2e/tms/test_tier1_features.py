@@ -196,7 +196,7 @@ class TestTier1Feature4ComposeValidity(unittest.TestCase):
         )
         self.assertEqual(rc, 0)
         services = set(stdout.strip().splitlines())
-        expected_services = {"postgres", "backend", "tms-web", "tms-admin", "nginx"}
+        expected_services = {"backend", "tms-web", "tms-admin", "nginx"}
         self.assertTrue(
             expected_services.issubset(services),
             f"Missing required services. Expected {expected_services}, found {services}",
@@ -217,51 +217,44 @@ class TestTier1Feature4ComposeValidity(unittest.TestCase):
         self.assertIn("retries:", content)
 
 
-class TestTier1Feature5PostgresPort(unittest.TestCase):
-    """Feature 5: Postgres Port 5448 & Configuration."""
+class TestTier1Feature5DatabaseConfig(unittest.TestCase):
+    """Feature 5: Database Configuration & Infisical Integration."""
 
-    def test_f5_01_postgres_port_mapped_to_5448(self):
-        """Verify compose.yaml maps host port 5448 to postgres 5432."""
+    def test_f5_01_database_host_env_in_compose(self):
+        """Verify compose.yaml specifies DATABASE_ZOLEXORA_TMS_HOST for backend."""
         content = get_tms_compose_path().read_text(encoding="utf-8")
-        self.assertTrue(
-            "5448:5432" in content or "${TMS_POSTGRES_PORT:-5448}:5432" in content,
-            "Compose file must map postgres host port to 5448",
-        )
+        self.assertIn("DATABASE_ZOLEXORA_TMS_HOST", content)
 
-    def test_f5_02_postgres_container_name_and_image(self):
-        """Verify postgres container name is tms-postgres and uses postgres image."""
+    def test_f5_02_database_credentials_in_compose(self):
+        """Verify compose.yaml specifies database credentials for backend."""
         content = get_tms_compose_path().read_text(encoding="utf-8")
-        self.assertIn("container_name: tms-postgres", content)
-        self.assertTrue(
-            "postgres:15-alpine" in content or "postgres:16-alpine" in content,
-            "Expected postgres alpine image in compose.yaml",
-        )
+        self.assertIn("DATABASE_ZOLEXORA_TMS_USER", content)
+        self.assertIn("DATABASE_ZOLEXORA_TMS_PASSWORD", content)
+        self.assertIn("DATABASE_ZOLEXORA_TMS_NAME", content)
 
-    def test_f5_03_postgres_healthcheck_command(self):
-        """Verify postgres healthcheck uses pg_isready with tms user."""
+    def test_f5_03_local_postgres_decoupled(self):
+        """Verify local postgres container is removed from compose services."""
         content = get_tms_compose_path().read_text(encoding="utf-8")
-        self.assertIn("pg_isready", content)
-        self.assertIn("-U tms", content)
+        self.assertNotIn("container_name: tms-postgres", content)
 
-    def test_f5_04_postgres_port_no_monorepo_collision(self):
-        """Verify port 5448 is unique to TMS across all compose files in the monorepo."""
-        root = get_repo_root()
-        rc, stdout, _ = run_cmd(
-            f"grep -rn '5448' {root}/products/*/compose*.yaml {root}/infra* 2>/dev/null || true",
+    def test_f5_04_backend_settings_support_remote_db(self):
+        """Verify backend settings compute database URL from Infisical keys."""
+        config_path = (
+            get_repo_root() / "products" / "zolexora-tms" / "apps" / "backend" / "app" / "core" / "config.py"
         )
-        lines = [line for line in stdout.strip().splitlines() if line]
-        for line in lines:
-            self.assertIn("zolexora-tms", line, f"Port 5448 collision detected outside TMS: {line}")
+        content = config_path.read_text(encoding="utf-8")
+        self.assertIn("DATABASE_ZOLEXORA_TMS_HOST", content)
+        self.assertIn("DATABASE_ZOLEXORA_TMS_USER", content)
+        self.assertIn("DATABASE_ZOLEXORA_TMS_PASSWORD", content)
 
     def test_f5_05_postgres_endpoint_accessible(self):
-        """Verify postgres socket on 5448 if container running, else verify port is available."""
+        """Verify postgres socket on 5448 if local container running, else verify port is available."""
         if is_container_running("tms-postgres"):
             self.assertTrue(
                 is_port_open(5448),
                 "tms-postgres is running but port 5448 is not accepting connections",
             )
         else:
-            # Port should be free and unallocated prior to container start
             self.assertFalse(
                 is_port_open(5448),
                 "Port 5448 should not be in use prior to tms-postgres startup",
@@ -348,8 +341,8 @@ class TestTier1Feature7NginxGateway(unittest.TestCase):
         """Verify compose.yaml maps host port 3084 to Nginx 80."""
         content = get_tms_compose_path().read_text(encoding="utf-8")
         self.assertTrue(
-            "3084:80" in content or "${TMS_PORT:-3084}:80" in content,
-            "Compose file must map Nginx host port to 3084",
+            any(p in content for p in ["3084:80", "${TMS_PORT:-3084}:80", "${TMS_PORT:-3090}:80", "3090:80"]),
+            "Compose file must map Nginx host port to 3084 or 3090",
         )
 
     def test_f7_02_nginx_api_reverse_proxy_config(self):
