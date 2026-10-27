@@ -60,7 +60,7 @@ export function VehiclesPage() {
       try {
         const rows = parseVehicleCSV(ev.target?.result as string);
         if (rows.length === 0) { setBulkError('No data rows found in CSV.'); return; }
-        if (rows.length > 500) { setBulkError('Max 500 rows per import.'); return; }
+        if (rows.length > 5000) { setBulkError('Max 5000 rows per import.'); return; }
         setBulkRows(rows);
       } catch {
         setBulkError('Failed to parse CSV. Ensure it matches the template format.');

@@ -54,7 +54,7 @@ class VehicleBulkCreateItem(BaseModel):
 
 
 class VehicleBulkCreateRequest(BaseModel):
-    vehicles: list[VehicleBulkCreateItem] = Field(..., min_length=1, max_length=500)
+    vehicles: list[VehicleBulkCreateItem] = Field(..., min_length=1, max_length=5000)
 
 
 class VehicleBulkResult(BaseModel):
