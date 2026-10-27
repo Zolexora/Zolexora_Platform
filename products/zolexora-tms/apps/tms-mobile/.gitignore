@@ -1,0 +1,10 @@
+.expo/
+dist/
+web-build/
+*.tsbuildinfo
+node_modules/
+.env.local
+.env.*.local
+npm-debug.*
+yarn-debug.*
+yarn-error.*
