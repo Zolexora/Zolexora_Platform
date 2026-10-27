@@ -24,6 +24,16 @@ if settings.SENTRY_DSN:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting Zolexora TMS API service...")
+    try:
+        from app.db.base import Base
+        from app.db.session import engine
+        from app.modules.identity.roles.seed_platform_templates import seed as seed_role_templates
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        await seed_role_templates()
+        logger.info("Database schema and platform role templates verified.")
+    except Exception as e:
+        logger.warning(f"Database auto-init on startup skipped or failed: {e}")
     yield
     logger.info("Shutting down Zolexora TMS API service...")
 
