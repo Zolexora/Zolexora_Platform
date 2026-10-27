@@ -20,6 +20,12 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    conn = op.get_bind()
+    has_perms = conn.execute(sa.text("SELECT to_regclass('public.permissions')")).scalar()
+    has_roles = conn.execute(sa.text("SELECT to_regclass('public.roles')")).scalar()
+    if not has_perms or not has_roles:
+        return
+
     now = datetime.now(timezone.utc)
     
     roles_table = sa.table(

@@ -48,9 +48,13 @@ from app.modules.operations.operating_units.models import (
     OperatingUnitLocation,
     OperatingUnitStatus
 )
+from app.modules.fleet.vehicles.models import Vehicle
+from app.modules.fleet.drivers.models import Driver
 
 __all__ = [
     "Base",
+    "Vehicle",
+    "Driver",
     "TenantDatabaseRegistry",
     "OrganisationDatabaseAssignment",
     "TenantMongodbRegistry",

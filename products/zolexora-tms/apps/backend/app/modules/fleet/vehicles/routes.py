@@ -1,10 +1,21 @@
 import uuid
 from typing import Optional
 from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import get_current_active_organisation, get_tenant_context, CurrentUserContext
 from app.core.tenant import TenantContext
-from app.modules.fleet.vehicles.schemas import VehicleCreate, VehicleResponse, VehicleUpdate, VehicleBodyType, VehicleOperationalStatus, VehicleOwnershipType, VehicleBulkCreateRequest, VehicleBulkResult
+from app.db.session import get_db
+from app.modules.fleet.vehicles.schemas import (
+    VehicleBulkCreateRequest,
+    VehicleBulkResult,
+    VehicleCreate,
+    VehicleResponse,
+    VehicleUpdate,
+    VehicleBodyType,
+    VehicleOperationalStatus,
+    VehicleOwnershipType,
+)
 from app.modules.fleet.vehicles import service
 
 router = APIRouter(prefix="/api/v1/vehicles", tags=["Vehicles"])
@@ -15,11 +26,13 @@ async def bulk_create_vehicles_route(
     req: VehicleBulkCreateRequest,
     ctx: CurrentUserContext = Depends(get_current_active_organisation),
     tenant_ctx: TenantContext = Depends(get_tenant_context),
+    db: AsyncSession = Depends(get_db),
 ):
     return await service.bulk_create_vehicles(
         org_id=ctx.organisation_id,
         actor_id=ctx.user_id,
         items=req.vehicles,
+        db=db,
         tenant_ctx=tenant_ctx,
     )
 
@@ -29,11 +42,13 @@ async def create_vehicle(
     req: VehicleCreate,
     ctx: CurrentUserContext = Depends(get_current_active_organisation),
     tenant_ctx: TenantContext = Depends(get_tenant_context),
+    db: AsyncSession = Depends(get_db),
 ):
     return await service.create_vehicle(
         org_id=ctx.organisation_id,
         actor_id=ctx.user_id,
         req=req,
+        db=db,
         tenant_ctx=tenant_ctx,
     )
 
@@ -48,9 +63,11 @@ async def list_vehicles(
     limit: int = Query(50, ge=1, le=200),
     ctx: CurrentUserContext = Depends(get_current_active_organisation),
     tenant_ctx: TenantContext = Depends(get_tenant_context),
+    db: AsyncSession = Depends(get_db),
 ):
     return await service.list_vehicles(
         org_id=ctx.organisation_id,
+        db=db,
         tenant_ctx=tenant_ctx,
         status_filter=status,
         vehicle_type=vehicle_type,
@@ -66,10 +83,12 @@ async def get_vehicle(
     vehicle_id: uuid.UUID,
     ctx: CurrentUserContext = Depends(get_current_active_organisation),
     tenant_ctx: TenantContext = Depends(get_tenant_context),
+    db: AsyncSession = Depends(get_db),
 ):
     return await service.get_vehicle(
         org_id=ctx.organisation_id,
         vehicle_id=vehicle_id,
+        db=db,
         tenant_ctx=tenant_ctx,
     )
 
@@ -80,12 +99,14 @@ async def update_vehicle(
     req: VehicleUpdate,
     ctx: CurrentUserContext = Depends(get_current_active_organisation),
     tenant_ctx: TenantContext = Depends(get_tenant_context),
+    db: AsyncSession = Depends(get_db),
 ):
     return await service.update_vehicle(
         org_id=ctx.organisation_id,
         vehicle_id=vehicle_id,
         actor_id=ctx.user_id,
         req=req,
+        db=db,
         tenant_ctx=tenant_ctx,
     )
 
@@ -95,11 +116,13 @@ async def delete_vehicle(
     vehicle_id: uuid.UUID,
     ctx: CurrentUserContext = Depends(get_current_active_organisation),
     tenant_ctx: TenantContext = Depends(get_tenant_context),
+    db: AsyncSession = Depends(get_db),
 ):
     await service.delete_vehicle(
         org_id=ctx.organisation_id,
         vehicle_id=vehicle_id,
         actor_id=ctx.user_id,
+        db=db,
         tenant_ctx=tenant_ctx,
     )
 
@@ -111,6 +134,7 @@ async def upload_document(
     file: UploadFile = File(...),
     ctx: CurrentUserContext = Depends(get_current_active_organisation),
     tenant_ctx: TenantContext = Depends(get_tenant_context),
+    db: AsyncSession = Depends(get_db),
 ):
     content = await file.read()
     url = await service.upload_vehicle_doc(
@@ -120,6 +144,7 @@ async def upload_document(
         file_name=file.filename or "document.pdf",
         file_bytes=content,
         content_type=file.content_type or "application/pdf",
+        db=db,
         tenant_ctx=tenant_ctx,
     )
     return {"doc_type": doc_type, "document_url": url}
