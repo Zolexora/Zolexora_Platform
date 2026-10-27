@@ -60,11 +60,11 @@ export function PayablesPage() {
 
       {isLoading ? (
         <div className="flex justify-center p-12">
-          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-t-2 border-indigo-500"></div>
+          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-t-2 border-navy-500"></div>
         </div>
       ) : payables?.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-800 bg-slate-900/30 p-12 text-center">
-          <div className="rounded-2xl bg-indigo-500/10 p-4 text-indigo-400 mb-4">
+          <div className="rounded-2xl bg-navy-800/40 p-4 text-silver-400 mb-4">
             <Receipt className="h-8 w-8" />
           </div>
           <h3 className="text-base font-semibold text-white">No payables found</h3>
@@ -93,7 +93,7 @@ export function PayablesPage() {
                     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
                       payable.status === 'APPROVED' ? 'bg-blue-500/10 text-blue-400' :
                       payable.status === 'DRAFT' ? 'bg-slate-500/10 text-slate-400' :
-                      payable.status === 'SETTLED' ? 'bg-emerald-500/10 text-emerald-400' :
+                      payable.status === 'SETTLED' ? 'bg-silver-900/60 text-silver-300' :
                       'bg-slate-500/10 text-slate-400'
                     }`}>
                       {payable.status}
@@ -105,7 +105,7 @@ export function PayablesPage() {
                   <td className="p-4 text-right">
                     <div className="flex items-center justify-end gap-2">
                       {payable.status === 'DRAFT' && (
-                        <button onClick={() => approveMutation.mutate(payable.id)} disabled={approveMutation.isPending} className="rounded-md bg-emerald-600/20 p-1 text-emerald-400 hover:bg-emerald-600/30" title="Approve">
+                        <button onClick={() => approveMutation.mutate(payable.id)} disabled={approveMutation.isPending} className="rounded-md bg-silver-800/40 p-1 text-silver-300 hover:bg-silver-800/60" title="Approve">
                           <CheckCircle className="h-4 w-4" />
                         </button>
                       )}
@@ -142,7 +142,7 @@ export function PayablesPage() {
             </div>
             <div className="mt-6 flex justify-end gap-3">
               <button onClick={() => setSettleModalOpen(false)} className="rounded-lg px-4 py-2 text-sm text-slate-300 hover:bg-slate-800">Cancel</button>
-              <button onClick={() => settleMutation.mutate()} disabled={settleMutation.isPending || !amount} className="rounded-lg bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-500">Save</button>
+              <button onClick={() => settleMutation.mutate()} disabled={settleMutation.isPending || !amount} className="rounded-lg bg-navy-600 px-4 py-2 text-sm text-white hover:bg-navy-600">Save</button>
             </div>
           </div>
         </div>

@@ -137,7 +137,7 @@ export function DutiesPage() {
               onClick={() => setStatusFilter(st)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
                 statusFilter === st
-                  ? 'bg-indigo-600 text-white shadow-sm'
+                  ? 'bg-navy-600 text-white shadow-sm'
                   : 'bg-slate-900/60 border border-slate-800 text-slate-400 hover:text-white'
               }`}
             >
@@ -196,13 +196,13 @@ export function DutiesPage() {
                   </td>
                   <td className="px-5 py-4 text-slate-200">
                     <div className="flex items-center gap-2">
-                      <UserCheck className={`h-4 w-4 ${duty.driver_id ? 'text-emerald-400' : 'text-slate-600'}`} />
+                      <UserCheck className={`h-4 w-4 ${duty.driver_id ? 'text-silver-300' : 'text-slate-600'}`} />
                       <span>{getDriverName(duty.driver_id)}</span>
                     </div>
                   </td>
                   <td className="px-5 py-4 text-slate-200">
                     <div className="flex items-center gap-2">
-                      <Truck className={`h-4 w-4 ${duty.vehicle_id ? 'text-indigo-400' : 'text-slate-600'}`} />
+                      <Truck className={`h-4 w-4 ${duty.vehicle_id ? 'text-silver-400' : 'text-slate-600'}`} />
                       <span>{getVehicleReg(duty.vehicle_id)}</span>
                     </div>
                   </td>
@@ -214,15 +214,15 @@ export function DutiesPage() {
                     <span
                       className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                         duty.status === 'ALLOCATED'
-                          ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                          ? 'bg-silver-900/30 text-silver-500 border border-silver-700/20'
                           : duty.status === 'DISPATCHED'
-                          ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
+                          ? 'bg-navy-800/40 text-silver-400 border border-navy-700/20'
                           : duty.status === 'ARRIVED_PICKUP'
-                          ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
+                          ? 'bg-navy-800/60 text-navy-300 border border-navy-600/30'
                           : duty.status === 'IN_TRANSIT'
-                          ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
+                          ? 'bg-navy-800/40 text-silver-400 border border-navy-600/20'
                           : duty.status === 'DUTY_COMPLETED'
-                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                          ? 'bg-silver-900/60 text-silver-300 border border-silver-700/30'
                           : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
                       }`}
                     >
@@ -242,7 +242,7 @@ export function DutiesPage() {
                           <button
                             onClick={() => dispatchMutation.mutate(duty.id)}
                             disabled={dispatchMutation.isPending}
-                            className="inline-flex items-center gap-1 rounded-lg bg-indigo-600/20 border border-indigo-500/30 px-3 py-1.5 text-xs font-semibold text-indigo-300 hover:bg-indigo-600 hover:text-white transition"
+                            className="inline-flex items-center gap-1 rounded-lg bg-navy-600/20 border border-navy-600/30 px-3 py-1.5 text-xs font-semibold text-silver-300 hover:bg-navy-600 hover:text-white transition"
                           >
                             <Send className="h-3.5 w-3.5" />
                             Dispatch
@@ -254,7 +254,7 @@ export function DutiesPage() {
                       <button
                         onClick={() => acceptMutation.mutate(duty.id)}
                         disabled={acceptMutation.isPending}
-                        className="inline-flex items-center gap-1 rounded-lg bg-emerald-600/20 border border-emerald-500/30 px-2.5 py-1.5 text-xs font-semibold text-emerald-400 hover:bg-emerald-600 hover:text-white transition"
+                        className="inline-flex items-center gap-1 rounded-lg bg-silver-800/40 border border-silver-700/40 px-2.5 py-1.5 text-xs font-semibold text-silver-300 hover:bg-navy-600 hover:text-white transition"
                       >
                         <CheckCircle2 className="h-3.5 w-3.5" />
                         Driver Accept
@@ -276,7 +276,7 @@ export function DutiesPage() {
               <div>
                 <h3 className="text-lg font-bold text-white">Allocate Driver & Vehicle</h3>
                 <p className="text-xs text-slate-400">
-                  Duty <span className="font-mono text-indigo-400 font-semibold">{selectedDuty.duty_number}</span>
+                  Duty <span className="font-mono text-silver-400 font-semibold">{selectedDuty.duty_number}</span>
                 </p>
               </div>
               <button
@@ -310,7 +310,7 @@ export function DutiesPage() {
                   required
                   value={assignmentForm.driver_id}
                   onChange={(e) => setAssignmentForm({ ...assignmentForm, driver_id: e.target.value })}
-                  className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none"
+                  className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:border-navy-500 focus:outline-none"
                 >
                   <option value="">Select an enrolled driver...</option>
                   {drivers?.map((d) => (
@@ -327,7 +327,7 @@ export function DutiesPage() {
                   required
                   value={assignmentForm.vehicle_id}
                   onChange={(e) => setAssignmentForm({ ...assignmentForm, vehicle_id: e.target.value })}
-                  className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none"
+                  className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:border-navy-500 focus:outline-none"
                 >
                   <option value="">Select a fleet vehicle...</option>
                   {vehicles?.map((v) => (
@@ -340,7 +340,7 @@ export function DutiesPage() {
 
               <div className="rounded-xl border border-slate-800/80 bg-slate-950/60 p-3 text-xs text-slate-400">
                 <div className="flex items-center gap-1.5 font-semibold text-slate-300 mb-1">
-                  <ShieldAlert className="h-3.5 w-3.5 text-amber-400" />
+                  <ShieldAlert className="h-3.5 w-3.5 text-silver-500" />
                   Compliance & Conflict Prevention
                 </div>
                 The system strictly checks driver commercial license validity and rejects overlapping
@@ -358,7 +358,7 @@ export function DutiesPage() {
                 <button
                   type="submit"
                   disabled={assignMutation.isPending}
-                  className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition disabled:opacity-50"
+                  className="rounded-xl bg-navy-600 px-4 py-2 text-sm font-semibold text-white hover:bg-navy-600 transition disabled:opacity-50"
                 >
                   {assignMutation.isPending ? 'Verifying & Allocating...' : 'Confirm Allocation'}
                 </button>

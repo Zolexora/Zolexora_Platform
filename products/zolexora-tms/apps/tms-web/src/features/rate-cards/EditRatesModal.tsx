@@ -81,7 +81,7 @@ export function EditRatesModal({ card, onClose }: { card: any, onClose: () => vo
                     type="number"
                     value={rule.rate}
                     onChange={(e) => handleRateChange(rule.id, e.target.value)}
-                    className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 text-right text-sm text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 text-right text-sm text-white focus:border-navy-500 focus:outline-none focus:ring-1 focus:ring-navy-500"
                   />
                 </div>
               </div>
@@ -96,7 +96,7 @@ export function EditRatesModal({ card, onClose }: { card: any, onClose: () => vo
           <button 
             onClick={() => updateMutation.mutate(rules)}
             disabled={updateMutation.isPending}
-            className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-6 py-2 text-sm font-bold text-white hover:bg-indigo-500 disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-lg bg-navy-600 px-6 py-2 text-sm font-bold text-white hover:bg-navy-600 disabled:opacity-50"
           >
             {updateMutation.isPending ? 'Saving...' : (
               <><CheckCircle2 className="h-4 w-4" /> Save Rates</>

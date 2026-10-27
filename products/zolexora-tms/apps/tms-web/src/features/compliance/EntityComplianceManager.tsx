@@ -26,7 +26,7 @@ export function EntityComplianceManager({ entityType, entityId }: { entityType: 
   const [expiryDate, setExpiryDate] = useState('');
 
   if (reqLoading || recLoading) {
-    return <div className="p-4 text-center text-sm text-zinc-500">Loading compliance data...</div>;
+    return <div className="p-4 text-center text-sm text-silver-500">Loading compliance data...</div>;
   }
 
   const recordMap = new Map(records.map(r => [r.requirement_id, r]));
@@ -62,14 +62,14 @@ export function EntityComplianceManager({ entityType, entityId }: { entityType: 
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Compliance Documents</h3>
-        <span className="text-sm text-zinc-500">
+        <span className="text-sm text-silver-500">
           {records.filter(r => r.status === 'VALID').length} of {requirements.length} Valid
         </span>
       </div>
 
       <div className="grid gap-3">
         {requirements.length === 0 ? (
-          <div className="text-center p-6 border border-dashed border-zinc-700 rounded-xl text-zinc-500 text-sm">
+          <div className="text-center p-6 border border-dashed border-silver-800 rounded-xl text-silver-500 text-sm">
             No compliance requirements configured for this entity type.
           </div>
         ) : (
@@ -78,11 +78,11 @@ export function EntityComplianceManager({ entityType, entityId }: { entityType: 
             const status = record?.status || 'MISSING';
             
             return (
-              <div key={req.id} className="flex items-center justify-between rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 p-4">
+              <div key={req.id} className="flex items-center justify-between rounded-xl border border-silver-200 dark:border-silver-900 bg-white dark:bg-brand-near/50 p-4">
                 <div className="flex items-center gap-4">
                   <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${
-                    status === 'VALID' ? 'bg-emerald-500/10 text-emerald-500' :
-                    status === 'EXPIRING_SOON' ? 'bg-amber-500/10 text-amber-500' :
+                    status === 'VALID' ? 'bg-silver-900/60 text-silver-300' :
+                    status === 'EXPIRING_SOON' ? 'bg-silver-900/30 text-silver-500' :
                     status === 'VERIFICATION_REQUIRED' ? 'bg-blue-500/10 text-blue-500' :
                     'bg-red-500/10 text-red-500'
                   }`}>
@@ -100,10 +100,10 @@ export function EntityComplianceManager({ entityType, entityId }: { entityType: 
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-zinc-500">{req.category}</p>
+                    <p className="text-xs text-silver-500">{req.category}</p>
                     
                     {record && record.document_number && (
-                      <p className="mt-1 font-mono text-xs text-zinc-400">
+                      <p className="mt-1 font-mono text-xs text-silver-500">
                         ID: {record.document_number} 
                         {record.expiry_date && ` • Exp: ${formatDate(record.expiry_date)}`}
                       </p>
@@ -113,8 +113,8 @@ export function EntityComplianceManager({ entityType, entityId }: { entityType: 
 
                 <div className="flex items-center gap-2">
                   <span className={`text-xs font-semibold ${
-                    status === 'VALID' ? 'text-emerald-500' :
-                    status === 'EXPIRING_SOON' ? 'text-amber-500' :
+                    status === 'VALID' ? 'text-silver-300' :
+                    status === 'EXPIRING_SOON' ? 'text-silver-500' :
                     status === 'VERIFICATION_REQUIRED' ? 'text-blue-500' :
                     'text-red-500'
                   }`}>
@@ -126,7 +126,7 @@ export function EntityComplianceManager({ entityType, entityId }: { entityType: 
                       href={record.document_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="ml-4 inline-flex items-center gap-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 px-3 py-1.5 text-xs font-medium hover:bg-zinc-200 dark:hover:bg-zinc-700 transition"
+                      className="ml-4 inline-flex items-center gap-1 rounded-lg bg-silver-100 dark:bg-silver-900 px-3 py-1.5 text-xs font-medium hover:bg-silver-200 dark:hover:bg-silver-800 transition"
                     >
                       <FileText className="h-3.5 w-3.5" />
                       View
@@ -136,7 +136,7 @@ export function EntityComplianceManager({ entityType, entityId }: { entityType: 
                   {(status === 'MISSING' || status === 'EXPIRED' || status === 'REJECTED' || status === 'EXPIRING_SOON') && (
                     <button
                       onClick={() => handleUploadClick(req.id)}
-                      className="ml-2 inline-flex items-center gap-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 px-3 py-1.5 text-xs font-medium hover:bg-zinc-200 dark:hover:bg-zinc-700 transition"
+                      className="ml-2 inline-flex items-center gap-1 rounded-lg bg-silver-100 dark:bg-silver-900 px-3 py-1.5 text-xs font-medium hover:bg-silver-200 dark:hover:bg-silver-800 transition"
                     >
                       <Upload className="h-3.5 w-3.5" />
                       Upload
@@ -147,7 +147,7 @@ export function EntityComplianceManager({ entityType, entityId }: { entityType: 
                     <div className="ml-2 flex items-center gap-1">
                       <button
                         onClick={() => verifyRecord.mutateAsync({ id: record.id, method: 'MANUAL', comments: 'Looks good' })}
-                        className="inline-flex items-center gap-1 rounded-lg bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-500 hover:bg-emerald-500/20 transition"
+                        className="inline-flex items-center gap-1 rounded-lg bg-silver-900/60 px-3 py-1.5 text-xs font-medium text-silver-300 hover:bg-silver-700/20 transition"
                       >
                         <CheckCircle className="h-3.5 w-3.5" />
                         Approve
@@ -170,50 +170,50 @@ export function EntityComplianceManager({ entityType, entityId }: { entityType: 
 
       {uploadModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-950 p-6 shadow-xl">
+          <div className="w-full max-w-md rounded-2xl border border-silver-900 bg-brand-black p-6 shadow-xl">
             <h2 className="text-xl font-bold text-white mb-4">Upload Compliance Document</h2>
             <form onSubmit={handleUploadSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-zinc-400">Document Number / ID</label>
+                <label className="block text-sm font-medium text-silver-500">Document Number / ID</label>
                 <input
                   type="text"
                   required
                   value={documentNumber}
                   onChange={(e) => setDocumentNumber(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-white focus:border-indigo-500 focus:outline-none"
+                  className="mt-1 w-full rounded-lg border border-silver-900 bg-brand-near px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
                   placeholder="e.g. DL-142023001"
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-zinc-400">Expiry Date</label>
+                <label className="block text-sm font-medium text-silver-500">Expiry Date</label>
                 <input
                   type="date"
                   required
                   value={expiryDate}
                   onChange={(e) => setExpiryDate(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-white focus:border-indigo-500 focus:outline-none"
+                  className="mt-1 w-full rounded-lg border border-silver-900 bg-brand-near px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
                 />
               </div>
 
-              <div className="rounded-xl border border-dashed border-zinc-700 p-6 text-center">
-                <Upload className="mx-auto h-8 w-8 text-zinc-500 mb-2" />
-                <p className="text-sm text-zinc-400">Drag & drop a PDF or Image here</p>
-                <p className="text-xs text-zinc-500 mt-1">Simulated upload for this demo</p>
+              <div className="rounded-xl border border-dashed border-silver-800 p-6 text-center">
+                <Upload className="mx-auto h-8 w-8 text-silver-500 mb-2" />
+                <p className="text-sm text-silver-500">Drag & drop a PDF or Image here</p>
+                <p className="text-xs text-silver-500 mt-1">Simulated upload for this demo</p>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-zinc-800">
+              <div className="flex justify-end gap-3 pt-4 border-t border-silver-900">
                 <button
                   type="button"
                   onClick={() => setUploadModalOpen(false)}
-                  className="rounded-lg px-4 py-2 text-sm font-medium text-zinc-400 hover:text-white transition"
+                  className="rounded-lg px-4 py-2 text-sm font-medium text-silver-500 hover:text-white transition"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={updateRecord.isPending}
-                  className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 transition disabled:opacity-50"
+                  className="rounded-lg bg-navy-600 px-4 py-2 text-sm font-medium text-white hover:bg-navy-600 transition disabled:opacity-50"
                 >
                   {updateRecord.isPending ? 'Uploading...' : 'Submit Document'}
                 </button>
@@ -225,32 +225,32 @@ export function EntityComplianceManager({ entityType, entityId }: { entityType: 
       {/* Waiver Modal */}
       {waivingRecordId && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-950 shadow-xl overflow-hidden p-6">
+          <div className="w-full max-w-md rounded-2xl border border-silver-900 bg-brand-black shadow-xl overflow-hidden p-6">
             <h2 className="text-xl font-bold text-white mb-4">Waive Requirement</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-1">Reason for Waiver</label>
+                <label className="block text-sm font-medium text-silver-500 mb-1">Reason for Waiver</label>
                 <input
                   type="text"
                   value={waiverReason}
                   onChange={(e) => setWaiverReason(e.target.value)}
-                  className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-white"
+                  className="w-full rounded-lg border border-silver-900 bg-brand-near px-3 py-2 text-white"
                   placeholder="e.g. RTO delay, official receipt held"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-1">Valid Until</label>
+                <label className="block text-sm font-medium text-silver-500 mb-1">Valid Until</label>
                 <input
                   type="date"
                   value={waiverDate}
                   onChange={(e) => setWaiverDate(e.target.value)}
-                  className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-white"
+                  className="w-full rounded-lg border border-silver-900 bg-brand-near px-3 py-2 text-white"
                 />
               </div>
               <div className="flex justify-end gap-2 pt-4">
                 <button
                   onClick={() => setWaivingRecordId(null)}
-                  className="rounded-lg px-4 py-2 text-sm text-zinc-400 hover:text-white"
+                  className="rounded-lg px-4 py-2 text-sm text-silver-500 hover:text-white"
                 >
                   Cancel
                 </button>
@@ -263,7 +263,7 @@ export function EntityComplianceManager({ entityType, entityId }: { entityType: 
                     setWaiverDate('');
                   }}
                   disabled={!waiverReason || !waiverDate || waiveRecord.isPending}
-                  className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-bold text-white hover:bg-amber-500 disabled:opacity-50"
+                  className="rounded-lg bg-silver-700 px-4 py-2 text-sm font-bold text-white hover:bg-silver-700 disabled:opacity-50"
                 >
                   {waiveRecord.isPending ? 'Saving...' : 'Grant Waiver'}
                 </button>

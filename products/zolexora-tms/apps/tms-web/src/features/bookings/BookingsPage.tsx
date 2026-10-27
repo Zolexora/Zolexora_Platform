@@ -166,7 +166,7 @@ export function BookingsPage() {
             setFormError('');
             setIsRequestModalOpen(true);
           }}
-          className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-600/30 hover:bg-indigo-500 transition"
+          className="inline-flex items-center gap-2 rounded-xl bg-navy-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-navy-800/30 hover:bg-navy-600 transition"
         >
           <Plus className="h-4 w-4" />
           New Booking Request
@@ -180,7 +180,7 @@ export function BookingsPage() {
             onClick={() => setActiveTab('bookings')}
             className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
               activeTab === 'bookings'
-                ? 'bg-indigo-600 text-white shadow-sm'
+                ? 'bg-navy-600 text-white shadow-sm'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
@@ -190,7 +190,7 @@ export function BookingsPage() {
             onClick={() => setActiveTab('requests')}
             className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
               activeTab === 'requests'
-                ? 'bg-indigo-600 text-white shadow-sm'
+                ? 'bg-navy-600 text-white shadow-sm'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
@@ -248,7 +248,7 @@ export function BookingsPage() {
                       <span className="inline-block rounded-md bg-slate-800 px-2 py-0.5 text-xs font-semibold text-slate-300 mr-2">
                         {booking.booking_type}
                       </span>
-                      <span className="inline-block rounded-md bg-indigo-950/60 border border-indigo-800/40 px-2 py-0.5 text-xs font-semibold text-indigo-300">
+                      <span className="inline-block rounded-md bg-navy-900/60 border border-navy-700/40 px-2 py-0.5 text-xs font-semibold text-silver-300">
                         {booking.service_type}
                       </span>
                     </td>
@@ -265,9 +265,9 @@ export function BookingsPage() {
                     <td className="px-5 py-4">
                       <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                         booking.status === 'CONFIRMED'
-                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                          ? 'bg-silver-900/60 text-silver-300 border border-silver-700/30'
                           : booking.status === 'IN_PROGRESS'
-                          ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                          ? 'bg-silver-900/30 text-silver-500 border border-silver-700/20'
                           : booking.status === 'COMPLETED'
                           ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
                           : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
@@ -279,7 +279,7 @@ export function BookingsPage() {
                       {booking.status === 'CONFIRMED' && (
                         <button
                           onClick={() => openDutyModal(booking)}
-                          className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600/20 border border-indigo-500/30 px-3 py-1.5 text-xs font-semibold text-indigo-300 hover:bg-indigo-600 hover:text-white transition"
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-navy-600/20 border border-navy-600/30 px-3 py-1.5 text-xs font-semibold text-silver-300 hover:bg-navy-600 hover:text-white transition"
                         >
                           <Truck className="h-3.5 w-3.5" />
                           Create Duty
@@ -332,7 +332,7 @@ export function BookingsPage() {
                       <span className="inline-block rounded-md bg-slate-800 px-2 py-0.5 text-xs font-semibold text-slate-300 mr-2">
                         {req.booking_type}
                       </span>
-                      <span className="inline-block rounded-md bg-indigo-950/60 border border-indigo-800/40 px-2 py-0.5 text-xs font-semibold text-indigo-300">
+                      <span className="inline-block rounded-md bg-navy-900/60 border border-navy-700/40 px-2 py-0.5 text-xs font-semibold text-silver-300">
                         {req.service_type}
                       </span>
                     </td>
@@ -349,9 +349,9 @@ export function BookingsPage() {
                     <td className="px-5 py-4">
                       <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                         req.status === 'CONFIRMED'
-                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                          ? 'bg-silver-900/60 text-silver-300 border border-silver-700/30'
                           : req.status === 'REQUESTED'
-                          ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
+                          ? 'bg-navy-800/40 text-silver-400 border border-navy-600/20'
                           : req.status === 'DRAFT'
                           ? 'bg-slate-800 text-slate-400 border border-slate-700'
                           : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
@@ -374,7 +374,7 @@ export function BookingsPage() {
                         <button
                           onClick={() => confirmRequestMutation.mutate(req.id)}
                           disabled={confirmRequestMutation.isPending}
-                          className="inline-flex items-center gap-1 rounded-lg bg-emerald-600/20 border border-emerald-500/30 px-3 py-1.5 text-xs font-semibold text-emerald-400 hover:bg-emerald-600 hover:text-white transition"
+                          className="inline-flex items-center gap-1 rounded-lg bg-silver-800/40 border border-silver-700/40 px-3 py-1.5 text-xs font-semibold text-silver-300 hover:bg-navy-600 hover:text-white transition"
                         >
                           <CheckCircle2 className="h-3.5 w-3.5" />
                           Confirm Booking
@@ -420,7 +420,7 @@ export function BookingsPage() {
                   required
                   value={requestForm.customer_id}
                   onChange={(e) => setRequestForm({ ...requestForm, customer_id: e.target.value })}
-                  className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none"
+                  className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:border-navy-500 focus:outline-none"
                 >
                   <option value="">Select a customer...</option>
                   {customers?.map((c) => (
@@ -437,7 +437,7 @@ export function BookingsPage() {
                   <select
                     value={requestForm.booking_type}
                     onChange={(e) => setRequestForm({ ...requestForm, booking_type: e.target.value as BookingType })}
-                    className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none"
+                    className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:border-navy-500 focus:outline-none"
                   >
                     <option value="SPOT">Spot / Ad-hoc</option>
                     <option value="CONTRACT">Contract / Dedicated</option>
@@ -456,7 +456,7 @@ export function BookingsPage() {
                   <select
                     value={requestForm.service_type}
                     onChange={(e) => setRequestForm({ ...requestForm, service_type: e.target.value as BookingServiceType })}
-                    className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none"
+                    className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:border-navy-500 focus:outline-none"
                   >
                     <option value="CARGO">Cargo / Freight</option>
                     <option value="PASSENGER">Passenger Transit</option>
@@ -472,7 +472,7 @@ export function BookingsPage() {
                   placeholder="e.g. Warehouse 3, Bhiwandi Logistics Park, Maharashtra"
                   value={requestForm.pickup_address}
                   onChange={(e) => setRequestForm({ ...requestForm, pickup_address: e.target.value })}
-                  className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-indigo-500 focus:outline-none"
+                  className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-navy-500 focus:outline-none"
                 />
               </div>
 
@@ -484,7 +484,7 @@ export function BookingsPage() {
                   placeholder="e.g. JNPT Port Container Terminal 2, Navi Mumbai"
                   value={requestForm.drop_address}
                   onChange={(e) => setRequestForm({ ...requestForm, drop_address: e.target.value })}
-                  className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-indigo-500 focus:outline-none"
+                  className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-navy-500 focus:outline-none"
                 />
               </div>
 
@@ -496,7 +496,7 @@ export function BookingsPage() {
                     required
                     value={requestForm.pickup_datetime}
                     onChange={(e) => setRequestForm({ ...requestForm, pickup_datetime: e.target.value })}
-                    className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none"
+                    className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:border-navy-500 focus:outline-none"
                   />
                 </div>
                 <div>
@@ -507,7 +507,7 @@ export function BookingsPage() {
                     placeholder="e.g. 18500.00"
                     value={requestForm.estimated_pricing}
                     onChange={(e) => setRequestForm({ ...requestForm, estimated_pricing: e.target.value })}
-                    className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-indigo-500 focus:outline-none"
+                    className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-navy-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -523,7 +523,7 @@ export function BookingsPage() {
                 <button
                   type="submit"
                   disabled={createRequestMutation.isPending}
-                  className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition disabled:opacity-50"
+                  className="rounded-xl bg-navy-600 px-4 py-2 text-sm font-semibold text-white hover:bg-navy-600 transition disabled:opacity-50"
                 >
                   {createRequestMutation.isPending ? 'Creating...' : 'Create Request'}
                 </button>
@@ -541,7 +541,7 @@ export function BookingsPage() {
               <div>
                 <h3 className="text-lg font-bold text-white">Generate Duty Roster</h3>
                 <p className="text-xs text-slate-400">
-                  Creating operational duty for Booking <span className="font-mono text-indigo-400 font-semibold">{selectedBooking.booking_number}</span>
+                  Creating operational duty for Booking <span className="font-mono text-silver-400 font-semibold">{selectedBooking.booking_number}</span>
                 </p>
               </div>
               <button
@@ -574,7 +574,7 @@ export function BookingsPage() {
                     required
                     value={dutyForm.scheduled_start_time}
                     onChange={(e) => setDutyForm({ ...dutyForm, scheduled_start_time: e.target.value })}
-                    className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none"
+                    className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:border-navy-500 focus:outline-none"
                   />
                 </div>
                 <div>
@@ -584,7 +584,7 @@ export function BookingsPage() {
                     required
                     value={dutyForm.scheduled_end_time}
                     onChange={(e) => setDutyForm({ ...dutyForm, scheduled_end_time: e.target.value })}
-                    className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none"
+                    className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:border-navy-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -596,7 +596,7 @@ export function BookingsPage() {
                   placeholder="Special instructions for driver, cargo handling instructions, or client gate pass requirements..."
                   value={dutyForm.notes}
                   onChange={(e) => setDutyForm({ ...dutyForm, notes: e.target.value })}
-                  className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-indigo-500 focus:outline-none"
+                  className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-navy-500 focus:outline-none"
                 />
               </div>
 
@@ -611,7 +611,7 @@ export function BookingsPage() {
                 <button
                   type="submit"
                   disabled={createDutyMutation.isPending}
-                  className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition disabled:opacity-50"
+                  className="rounded-xl bg-navy-600 px-4 py-2 text-sm font-semibold text-white hover:bg-navy-600 transition disabled:opacity-50"
                 >
                   {createDutyMutation.isPending ? 'Generating...' : 'Confirm & Generate Duty'}
                 </button>

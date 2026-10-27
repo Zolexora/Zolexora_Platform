@@ -19,7 +19,7 @@ export function PnLReportsPage() {
 
       {isLoading ? (
         <div className="flex justify-center p-12">
-          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-t-2 border-indigo-500"></div>
+          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-t-2 border-navy-500"></div>
         </div>
       ) : !plSummary ? (
         <div className="flex justify-center p-12 text-slate-400">Failed to load P&L summary.</div>
@@ -27,7 +27,7 @@ export function PnLReportsPage() {
         <div className="grid gap-6">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-6">
-              <div className="flex items-center gap-2 text-sm font-medium text-emerald-400 mb-2">
+              <div className="flex items-center gap-2 text-sm font-medium text-silver-300 mb-2">
                 <TrendingUp className="h-4 w-4" /> Billed Revenue
               </div>
               <div className="text-3xl font-bold text-white">
@@ -47,7 +47,7 @@ export function PnLReportsPage() {
             </div>
             
             <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-6">
-              <div className="flex items-center gap-2 text-sm font-medium text-amber-400 mb-2">
+              <div className="flex items-center gap-2 text-sm font-medium text-silver-500 mb-2">
                 <Activity className="h-4 w-4" /> Operational Expenses
               </div>
               <div className="text-3xl font-bold text-white">
@@ -56,14 +56,14 @@ export function PnLReportsPage() {
               <p className="text-xs text-slate-500 mt-2">Fuel, Tolls, Maint.</p>
             </div>
             
-            <div className="rounded-2xl border border-slate-800 bg-indigo-900/20 p-6">
-              <div className="flex items-center gap-2 text-sm font-medium text-indigo-400 mb-2">
+            <div className="rounded-2xl border border-slate-800 bg-navy-900/20 p-6">
+              <div className="flex items-center gap-2 text-sm font-medium text-silver-400 mb-2">
                 <IndianRupee className="h-4 w-4" /> Gross Margin
               </div>
               <div className="text-3xl font-bold text-white">
-                <IndianRupee className="inline h-6 w-6 text-indigo-500"/> {plSummary.gross_profit || 0}
+                <IndianRupee className="inline h-6 w-6 text-navy-300"/> {plSummary.gross_profit || 0}
               </div>
-              <p className="text-xs text-indigo-300 mt-2">
+              <p className="text-xs text-silver-300 mt-2">
                 {plSummary.total_revenue > 0 ? 
                   ((plSummary.gross_profit / plSummary.total_revenue) * 100).toFixed(1) + '%' 
                   : '0%'} Margin

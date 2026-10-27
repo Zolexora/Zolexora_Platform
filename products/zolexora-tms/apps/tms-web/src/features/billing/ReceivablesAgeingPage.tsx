@@ -17,7 +17,7 @@ export function ReceivablesAgeingPage() {
 
       {isLoading ? (
         <div className="flex justify-center p-12">
-          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-t-2 border-indigo-500"></div>
+          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-t-2 border-navy-500"></div>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -38,7 +38,7 @@ export function ReceivablesAgeingPage() {
           
           <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-6">
             <div className="flex items-center gap-4">
-              <div className="rounded-xl bg-emerald-500/10 p-3 text-emerald-400">
+              <div className="rounded-xl bg-silver-900/60 p-3 text-silver-300">
                 <CheckCircle className="h-6 w-6" />
               </div>
               <div>
@@ -53,7 +53,7 @@ export function ReceivablesAgeingPage() {
           
           <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-6">
             <div className="flex items-center gap-4">
-              <div className="rounded-xl bg-amber-500/10 p-3 text-amber-400">
+              <div className="rounded-xl bg-silver-900/30 p-3 text-silver-500">
                 <Clock className="h-6 w-6" />
               </div>
               <div>
@@ -68,7 +68,7 @@ export function ReceivablesAgeingPage() {
 
           <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-6">
             <div className="flex items-center gap-4">
-              <div className="rounded-xl bg-orange-500/10 p-3 text-orange-400">
+              <div className="rounded-xl bg-silver-900/30 p-3 text-silver-500">
                 <AlertTriangle className="h-6 w-6" />
               </div>
               <div>

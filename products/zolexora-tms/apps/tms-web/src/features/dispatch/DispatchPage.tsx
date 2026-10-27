@@ -22,12 +22,12 @@ import type {
 } from '../../types';
 
 const STATUS_COLUMNS: { key: DutyLifecycleStatus; label: string; color: string }[] = [
-  { key: 'ALLOCATED', label: 'Allocated', color: 'border-amber-500/30 bg-amber-500/5 text-amber-400' },
-  { key: 'DISPATCHED', label: 'Dispatched', color: 'border-purple-500/30 bg-purple-500/5 text-purple-400' },
-  { key: 'ARRIVED_PICKUP', label: 'At Pickup', color: 'border-cyan-500/30 bg-cyan-500/5 text-cyan-400' },
-  { key: 'IN_TRANSIT', label: 'In Transit', color: 'border-indigo-500/30 bg-indigo-500/5 text-indigo-400' },
+  { key: 'ALLOCATED', label: 'Allocated', color: 'border-silver-700/30 bg-silver-900/20 text-silver-500' },
+  { key: 'DISPATCHED', label: 'Dispatched', color: 'border-navy-700/30 bg-navy-800/20 text-silver-400' },
+  { key: 'ARRIVED_PICKUP', label: 'At Pickup', color: 'border-navy-600/40 bg-navy-800/40 text-navy-300' },
+  { key: 'IN_TRANSIT', label: 'In Transit', color: 'border-navy-600/30 bg-navy-600/5 text-silver-400' },
   { key: 'ARRIVED_DROP', label: 'At Destination', color: 'border-blue-500/30 bg-blue-500/5 text-blue-400' },
-  { key: 'DUTY_COMPLETED', label: 'Completed', color: 'border-emerald-500/30 bg-emerald-500/5 text-emerald-400' },
+  { key: 'DUTY_COMPLETED', label: 'Completed', color: 'border-silver-700/40 bg-silver-900/40 text-silver-300' },
 ];
 
 export function DispatchPage() {
@@ -230,13 +230,13 @@ export function DispatchPage() {
           <div
             className={`flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold ${
               wsConnected
-                ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
-                : 'border-amber-500/30 bg-amber-500/10 text-amber-400'
+                ? 'border-silver-700/40 bg-silver-900/60 text-silver-300'
+                : 'border-silver-700/30 bg-silver-900/30 text-silver-500'
             }`}
           >
             <span
               className={`h-2 w-2 rounded-full ${
-                wsConnected ? 'bg-emerald-400 animate-ping' : 'bg-amber-400'
+                wsConnected ? 'bg-silver-300 animate-ping' : 'bg-[#404040]'
               }`}
             />
             {wsConnected ? 'WebSocket Live' : 'REST Polling (15s)'}
@@ -286,18 +286,18 @@ export function DispatchPage() {
 
                       <div className="space-y-1 text-xs text-slate-400">
                         <div className="flex items-center gap-1.5 text-slate-300 truncate">
-                          <User className="h-3 w-3 text-indigo-400 flex-shrink-0" />
+                          <User className="h-3 w-3 text-silver-400 flex-shrink-0" />
                           <span className="truncate">{duty.driver_name || 'Driver unassigned'}</span>
                         </div>
                         <div className="flex items-center gap-1.5 text-slate-300 truncate">
-                          <Truck className="h-3 w-3 text-emerald-400 flex-shrink-0" />
+                          <Truck className="h-3 w-3 text-silver-300 flex-shrink-0" />
                           <span className="truncate">{duty.vehicle_registration || 'Vehicle unassigned'}</span>
                         </div>
                       </div>
 
                       <div className="rounded-lg bg-slate-950/60 p-2 text-[11px] text-slate-400 space-y-1">
                         <div className="flex items-start gap-1 text-slate-300 truncate">
-                          <MapPin className="h-3 w-3 text-amber-400 flex-shrink-0 mt-0.5" />
+                          <MapPin className="h-3 w-3 text-silver-500 flex-shrink-0 mt-0.5" />
                           <span className="truncate">{duty.pickup_address}</span>
                         </div>
                         <div className="flex items-start gap-1 text-slate-400 truncate">
@@ -312,7 +312,7 @@ export function DispatchPage() {
                           <button
                             onClick={() => arrivePickupMutation.mutate(duty.id)}
                             disabled={arrivePickupMutation.isPending}
-                            className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-cyan-600/20 border border-cyan-500/30 py-1.5 text-xs font-semibold text-cyan-300 hover:bg-cyan-600 hover:text-white transition"
+                            className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-navy-700/40 border border-navy-600/40 py-1.5 text-xs font-semibold text-navy-200 hover:bg-navy-500 hover:text-white transition"
                           >
                             <MapPin className="h-3.5 w-3.5" />
                             Arrived Pickup
@@ -326,7 +326,7 @@ export function DispatchPage() {
                               setStartOdo('50000.00');
                               setFormError('');
                             }}
-                            className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-indigo-600/20 border border-indigo-500/30 py-1.5 text-xs font-semibold text-indigo-300 hover:bg-indigo-600 hover:text-white transition"
+                            className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-navy-600/20 border border-navy-600/30 py-1.5 text-xs font-semibold text-silver-300 hover:bg-navy-600 hover:text-white transition"
                           >
                             <Gauge className="h-3.5 w-3.5" />
                             Start Trip
@@ -359,7 +359,7 @@ export function DispatchPage() {
                               });
                               setFormError('');
                             }}
-                            className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-emerald-600/20 border border-emerald-500/30 py-1.5 text-xs font-semibold text-emerald-300 hover:bg-emerald-600 hover:text-white transition"
+                            className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-silver-800/40 border border-silver-700/40 py-1.5 text-xs font-semibold text-silver-200 hover:bg-navy-600 hover:text-white transition"
                           >
                             <FileCheck2 className="h-3.5 w-3.5" />
                             Complete Trip & Duty
@@ -367,7 +367,7 @@ export function DispatchPage() {
                         )}
 
                         {duty.status === 'DUTY_COMPLETED' && (
-                          <div className="flex items-center justify-center gap-1 text-[11px] font-semibold text-emerald-400 py-1">
+                          <div className="flex items-center justify-center gap-1 text-[11px] font-semibold text-silver-300 py-1">
                             <CheckCircle2 className="h-3.5 w-3.5" />
                             Billing Ready Record
                           </div>
@@ -390,7 +390,7 @@ export function DispatchPage() {
               <div>
                 <h3 className="text-lg font-bold text-white">Initiate Trip Execution</h3>
                 <p className="text-xs text-slate-400">
-                  Duty <span className="font-mono text-indigo-400 font-semibold">{startTripModalDuty.duty_number}</span>
+                  Duty <span className="font-mono text-silver-400 font-semibold">{startTripModalDuty.duty_number}</span>
                 </p>
               </div>
               <button
@@ -417,7 +417,7 @@ export function DispatchPage() {
                   required
                   value={startOdo}
                   onChange={(e) => setStartOdo(e.target.value)}
-                  className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none"
+                  className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:border-navy-500 focus:outline-none"
                 />
               </div>
 
@@ -437,7 +437,7 @@ export function DispatchPage() {
                 <button
                   type="submit"
                   disabled={startTripMutation.isPending}
-                  className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition disabled:opacity-50"
+                  className="rounded-xl bg-navy-600 px-4 py-2 text-sm font-semibold text-white hover:bg-navy-600 transition disabled:opacity-50"
                 >
                   {startTripMutation.isPending ? 'Starting...' : 'Confirm Trip Start'}
                 </button>
@@ -455,7 +455,7 @@ export function DispatchPage() {
               <div>
                 <h3 className="text-lg font-bold text-white">Complete Trip & Finalize Duty</h3>
                 <p className="text-xs text-slate-400">
-                  Duty <span className="font-mono text-indigo-400 font-semibold">{completeTripModalDuty.duty_number}</span>
+                  Duty <span className="font-mono text-silver-400 font-semibold">{completeTripModalDuty.duty_number}</span>
                 </p>
               </div>
               <button
@@ -484,7 +484,7 @@ export function DispatchPage() {
                   required
                   value={completeForm.end_odometer}
                   onChange={(e) => setCompleteForm({ ...completeForm, end_odometer: e.target.value })}
-                  className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none"
+                  className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:border-navy-500 focus:outline-none"
                 />
               </div>
 
@@ -496,7 +496,7 @@ export function DispatchPage() {
                     step="0.01"
                     value={completeForm.toll_amount}
                     onChange={(e) => setCompleteForm({ ...completeForm, toll_amount: e.target.value })}
-                    className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none"
+                    className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:border-navy-500 focus:outline-none"
                   />
                 </div>
                 <div>
@@ -506,7 +506,7 @@ export function DispatchPage() {
                     step="0.01"
                     value={completeForm.fuel_amount}
                     onChange={(e) => setCompleteForm({ ...completeForm, fuel_amount: e.target.value })}
-                    className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none"
+                    className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:border-navy-500 focus:outline-none"
                   />
                 </div>
                 <div>
@@ -516,7 +516,7 @@ export function DispatchPage() {
                     step="0.01"
                     value={completeForm.parking_amount}
                     onChange={(e) => setCompleteForm({ ...completeForm, parking_amount: e.target.value })}
-                    className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none"
+                    className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:border-navy-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -528,7 +528,7 @@ export function DispatchPage() {
                   placeholder="Gate pass number, POD remarks, delivery signature confirmation..."
                   value={completeForm.notes}
                   onChange={(e) => setCompleteForm({ ...completeForm, notes: e.target.value })}
-                  className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-indigo-500 focus:outline-none"
+                  className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-navy-500 focus:outline-none"
                 />
               </div>
 
@@ -543,7 +543,7 @@ export function DispatchPage() {
                 <button
                   type="submit"
                   disabled={completeTripMutation.isPending}
-                  className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500 transition disabled:opacity-50"
+                  className="rounded-xl bg-navy-600 px-4 py-2 text-sm font-semibold text-white hover:bg-silver-700 transition disabled:opacity-50"
                 >
                   {completeTripMutation.isPending ? 'Finalizing...' : 'Finalize Trip & Complete Duty'}
                 </button>

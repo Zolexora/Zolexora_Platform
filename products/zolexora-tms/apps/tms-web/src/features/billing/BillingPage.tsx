@@ -74,13 +74,13 @@ export function BillingPage() {
               type="date" 
               value={dueDate}
               onChange={e => setDueDate(e.target.value)}
-              className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+              className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white focus:border-navy-500 focus:ring-1 focus:ring-navy-500"
             />
           </div>
           <button
             onClick={() => generateMutation.mutate()}
             disabled={selectedIds.length === 0 || selectedCustomerIds.length > 1 || generateMutation.isPending}
-            className="mt-5 inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-600/30 hover:bg-indigo-500 transition disabled:opacity-50"
+            className="mt-5 inline-flex items-center gap-2 rounded-xl bg-navy-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-navy-800/30 hover:bg-navy-600 transition disabled:opacity-50"
           >
             {generateMutation.isPending ? 'Generating...' : `Generate Invoice (${selectedIds.length})`}
           </button>
@@ -96,11 +96,11 @@ export function BillingPage() {
 
       {isLoading ? (
         <div className="flex justify-center p-12">
-          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-t-2 border-indigo-500"></div>
+          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-t-2 border-navy-500"></div>
         </div>
       ) : pendingRecords.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-800 bg-slate-900/30 p-12 text-center">
-          <div className="rounded-2xl bg-indigo-500/10 p-4 text-indigo-400 mb-4">
+          <div className="rounded-2xl bg-navy-800/40 p-4 text-silver-400 mb-4">
             <FileText className="h-8 w-8" />
           </div>
           <h3 className="text-base font-semibold text-white">No billable duties</h3>
@@ -118,7 +118,7 @@ export function BillingPage() {
                     type="checkbox" 
                     onChange={handleSelectAll} 
                     checked={selectedIds.length === pendingRecords.length && pendingRecords.length > 0}
-                    className="rounded border-slate-700 bg-slate-800 text-indigo-500 focus:ring-indigo-500" 
+                    className="rounded border-slate-700 bg-slate-800 text-navy-300 focus:ring-navy-500" 
                   />
                 </th>
                 <th className="p-4 font-medium">Duty ID</th>
@@ -136,7 +136,7 @@ export function BillingPage() {
                       type="checkbox" 
                       checked={selectedIds.includes(record.id)}
                       onChange={() => handleSelect(record.id)}
-                      className="rounded border-slate-700 bg-slate-800 text-indigo-500 focus:ring-indigo-500" 
+                      className="rounded border-slate-700 bg-slate-800 text-navy-300 focus:ring-navy-500" 
                     />
                   </td>
                   <td className="p-4 text-slate-300 font-mono text-xs">{record.duty_id.split('-')[0]}</td>

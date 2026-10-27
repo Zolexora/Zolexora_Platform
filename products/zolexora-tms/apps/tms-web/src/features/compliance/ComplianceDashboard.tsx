@@ -67,64 +67,64 @@ export function ComplianceDashboard() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {/* Valid Records */}
-        <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-sm">
+        <div className="rounded-xl border border-silver-200 dark:border-silver-900 bg-white dark:bg-brand-near p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium uppercase tracking-wider text-zinc-500">Valid Records</span>
-            <ShieldCheck className="h-5 w-5 text-emerald-500" />
+            <span className="text-sm font-medium uppercase tracking-wider text-silver-500">Valid Records</span>
+            <ShieldCheck className="h-5 w-5 text-silver-300" />
           </div>
           <div className="mt-4">
             <span className="text-3xl font-bold">{stats.valid}</span>
-            <p className="mt-1 text-xs text-zinc-500">Currently compliant documents</p>
+            <p className="mt-1 text-xs text-silver-500">Currently compliant documents</p>
           </div>
         </div>
         
         {/* Expiring Soon */}
-        <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-sm">
+        <div className="rounded-xl border border-silver-200 dark:border-silver-900 bg-white dark:bg-brand-near p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium uppercase tracking-wider text-zinc-500">Expiring Soon</span>
-            <Clock className="h-5 w-5 text-amber-500" />
+            <span className="text-sm font-medium uppercase tracking-wider text-silver-500">Expiring Soon</span>
+            <Clock className="h-5 w-5 text-silver-500" />
           </div>
           <div className="mt-4">
             <span className="text-3xl font-bold">{stats.expiring}</span>
-            <p className="mt-1 text-xs text-zinc-500">Expiring within 30 days</p>
+            <p className="mt-1 text-xs text-silver-500">Expiring within 30 days</p>
           </div>
         </div>
 
         {/* Missing */}
-        <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-sm">
+        <div className="rounded-xl border border-silver-200 dark:border-silver-900 bg-white dark:bg-brand-near p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium uppercase tracking-wider text-zinc-500">Missing</span>
-            <FileWarning className="h-5 w-5 text-orange-500" />
+            <span className="text-sm font-medium uppercase tracking-wider text-silver-500">Missing</span>
+            <FileWarning className="h-5 w-5 text-silver-400" />
           </div>
           <div className="mt-4">
             <span className="text-3xl font-bold">{stats.missing}</span>
-            <p className="mt-1 text-xs text-zinc-500">Required but not uploaded</p>
+            <p className="mt-1 text-xs text-silver-500">Required but not uploaded</p>
           </div>
         </div>
 
         {/* Blocked Assets */}
-        <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-sm">
+        <div className="rounded-xl border border-silver-200 dark:border-silver-900 bg-white dark:bg-brand-near p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium uppercase tracking-wider text-zinc-500">Blocked Assets</span>
+            <span className="text-sm font-medium uppercase tracking-wider text-silver-500">Blocked Assets</span>
             <ShieldAlert className="h-5 w-5 text-red-500" />
           </div>
           <div className="mt-4">
             <span className="text-3xl font-bold">{stats.blocked}</span>
-            <p className="mt-1 text-xs text-zinc-500">Vehicles/Drivers prevented</p>
+            <p className="mt-1 text-xs text-silver-500">Vehicles/Drivers prevented</p>
           </div>
         </div>
       </div>
 
-      <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm overflow-hidden">
-        <div className="p-6 flex flex-row items-center justify-between border-b border-zinc-200 dark:border-zinc-800">
+      <div className="rounded-xl border border-silver-200 dark:border-silver-900 bg-white dark:bg-brand-near shadow-sm overflow-hidden">
+        <div className="p-6 flex flex-row items-center justify-between border-b border-silver-200 dark:border-silver-900">
           <div>
             <h3 className="text-lg font-bold">Compliance Records</h3>
-            <p className="text-sm text-zinc-500">Overview of all tracked compliance records across the organisation.</p>
+            <p className="text-sm text-silver-500">Overview of all tracked compliance records across the organisation.</p>
           </div>
           <div className="flex items-center gap-3">
             <button
               onClick={handleExportCSV}
-              className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-2 text-sm font-medium hover:bg-zinc-100 dark:hover:bg-zinc-800 transition"
+              className="inline-flex items-center gap-2 rounded-lg border border-silver-200 dark:border-silver-900 bg-white dark:bg-brand-near px-4 py-2 text-sm font-medium hover:bg-silver-100 dark:hover:bg-silver-900 transition"
             >
               Export CSV
             </button>
@@ -132,7 +132,7 @@ export function ComplianceDashboard() {
             <select 
               value={statusFilter} 
               onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="flex h-10 w-full rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:focus:ring-zinc-400 dark:focus:ring-offset-zinc-900"
+              className="flex h-10 w-full rounded-md border border-silver-700 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-silver-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-silver-800 dark:focus:ring-silver-400 dark:focus:ring-offset-brand-black"
             >
               <option value="ALL">All Statuses</option>
               <option value="VALID">Valid</option>
@@ -147,22 +147,22 @@ export function ComplianceDashboard() {
         </div>
         <div className="p-0 overflow-x-auto">
           {recordsLoading ? (
-            <div className="text-center py-8 text-zinc-500">Loading records...</div>
+            <div className="text-center py-8 text-silver-500">Loading records...</div>
           ) : (
             <table className="w-full caption-bottom text-sm">
-              <thead className="[&_tr]:border-b border-zinc-200 dark:border-zinc-800">
-                <tr className="border-b transition-colors hover:bg-zinc-100/50 data-[state=selected]:bg-zinc-100 dark:hover:bg-zinc-800/50 dark:data-[state=selected]:bg-zinc-800">
-                  <th className="h-12 px-6 text-left align-middle font-medium text-zinc-500">Entity</th>
-                  <th className="h-12 px-6 text-left align-middle font-medium text-zinc-500">Requirement</th>
-                  <th className="h-12 px-6 text-left align-middle font-medium text-zinc-500">Status</th>
-                  <th className="h-12 px-6 text-left align-middle font-medium text-zinc-500">Expiry Date</th>
-                  <th className="h-12 px-6 text-left align-middle font-medium text-zinc-500">Actions</th>
+              <thead className="[&_tr]:border-b border-silver-200 dark:border-silver-900">
+                <tr className="border-b transition-colors hover:bg-silver-100/50 data-[state=selected]:bg-silver-100 dark:hover:bg-silver-900/50 dark:data-[state=selected]:bg-silver-900">
+                  <th className="h-12 px-6 text-left align-middle font-medium text-silver-500">Entity</th>
+                  <th className="h-12 px-6 text-left align-middle font-medium text-silver-500">Requirement</th>
+                  <th className="h-12 px-6 text-left align-middle font-medium text-silver-500">Status</th>
+                  <th className="h-12 px-6 text-left align-middle font-medium text-silver-500">Expiry Date</th>
+                  <th className="h-12 px-6 text-left align-middle font-medium text-silver-500">Actions</th>
                 </tr>
               </thead>
               <tbody className="[&_tr:last-child]:border-0">
                 {records.length === 0 ? (
-                  <tr className="border-b border-zinc-200 dark:border-zinc-800">
-                    <td colSpan={5} className="p-6 text-center text-zinc-500">
+                  <tr className="border-b border-silver-200 dark:border-silver-900">
+                    <td colSpan={5} className="p-6 text-center text-silver-500">
                       No compliance records found.
                     </td>
                   </tr>
@@ -170,19 +170,19 @@ export function ComplianceDashboard() {
                   records.map((record) => {
                     const req = reqMap.get(record.requirement_id);
                     return (
-                      <tr key={record.id} className="border-b border-zinc-200 dark:border-zinc-800 transition-colors hover:bg-zinc-100/50 dark:hover:bg-zinc-800/50">
+                      <tr key={record.id} className="border-b border-silver-200 dark:border-silver-900 transition-colors hover:bg-silver-100/50 dark:hover:bg-silver-900/50">
                         <td className="p-6 align-middle">
                           <div className="font-medium">{record.entity_type}</div>
-                          <div className="text-xs text-zinc-500 font-mono">{record.entity_id.split('-')[0]}...</div>
+                          <div className="text-xs text-silver-500 font-mono">{record.entity_id.split('-')[0]}...</div>
                         </td>
                         <td className="p-6 align-middle">
                           <div className="font-medium">{req?.name || 'Unknown'}</div>
-                          <div className="text-xs text-zinc-500">{req?.category}</div>
+                          <div className="text-xs text-silver-500">{req?.category}</div>
                         </td>
                         <td className="p-6 align-middle">
-                          <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2 dark:focus:ring-offset-zinc-900 ${
-                            record.status === 'VALID' ? 'border-transparent bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400' :
-                            record.status === 'EXPIRING_SOON' ? 'border-transparent bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400' :
+                          <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-silver-400 focus:ring-offset-2 dark:focus:ring-offset-brand-black ${
+                            record.status === 'VALID' ? 'border-transparent bg-silver-200 text-silver-200 dark:bg-silver-900/30 dark:text-silver-300' :
+                            record.status === 'EXPIRING_SOON' ? 'border-transparent bg-silver-200 text-silver-200 dark:bg-silver-900/30 dark:text-silver-500' :
                             record.status === 'VERIFICATION_REQUIRED' ? 'text-blue-500 bg-blue-500/10 dark:text-blue-400' :
                             'border-transparent bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
                           }`}>
@@ -202,7 +202,7 @@ export function ComplianceDashboard() {
                                 href={record.document_url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 px-3 py-1.5 text-xs font-medium hover:bg-zinc-200 dark:hover:bg-zinc-700 transition"
+                                className="inline-flex items-center gap-1 rounded-lg bg-silver-100 dark:bg-silver-900 px-3 py-1.5 text-xs font-medium hover:bg-silver-200 dark:hover:bg-silver-800 transition"
                               >
                                 View
                               </a>
@@ -211,7 +211,7 @@ export function ComplianceDashboard() {
                               <>
                                 <button
                                   onClick={() => verifyRecord.mutateAsync({ id: record.id, method: 'MANUAL', comments: 'Looks good' })}
-                                  className="inline-flex items-center gap-1 rounded-lg bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-500 hover:bg-emerald-500/20 transition"
+                                  className="inline-flex items-center gap-1 rounded-lg bg-silver-900/60 px-3 py-1.5 text-xs font-medium text-silver-300 hover:bg-silver-700/20 transition"
                                 >
                                   Approve
                                 </button>

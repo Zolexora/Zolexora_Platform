@@ -56,7 +56,7 @@ export function OperatingUnitsPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Building className="h-6 w-6 text-indigo-400" />
+            <Building className="h-6 w-6 text-silver-400" />
             Operating Units
           </h1>
           <p className="mt-1 text-sm text-slate-400">
@@ -65,7 +65,7 @@ export function OperatingUnitsPage() {
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500"
+          className="inline-flex items-center gap-2 rounded-lg bg-navy-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-navy-600"
         >
           <Plus className="h-4 w-4" />
           Add Unit
@@ -106,7 +106,7 @@ export function OperatingUnitsPage() {
                     <span>0 Locations mapped</span>
                   </div>
                 </div>
-                <div className={`rounded-full px-2 py-1 text-xs font-medium ${unit.status === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}`}>
+                <div className={`rounded-full px-2 py-1 text-xs font-medium ${unit.status === 'ACTIVE' ? 'bg-silver-900/60 text-silver-300 border border-silver-700/30' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}`}>
                   {unit.status}
                 </div>
               </div>
@@ -133,7 +133,7 @@ export function OperatingUnitsPage() {
                   value={formData.code}
                   onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
                   placeholder="e.g. MUM-01"
-                  className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-indigo-500 focus:outline-none"
+                  className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
                 />
               </div>
 
@@ -144,7 +144,7 @@ export function OperatingUnitsPage() {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="e.g. Mumbai HQ"
-                  className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-indigo-500 focus:outline-none"
+                  className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
                 />
               </div>
 
@@ -166,7 +166,7 @@ export function OperatingUnitsPage() {
                 <button
                   type="submit"
                   disabled={createMutation.isPending}
-                  className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:opacity-50"
+                  className="rounded-lg bg-navy-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-navy-600 disabled:opacity-50"
                 >
                   {createMutation.isPending ? 'Creating...' : 'Create Unit'}
                 </button>

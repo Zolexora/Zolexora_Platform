@@ -45,7 +45,7 @@ export function FinancialPeriodsPage() {
         </div>
         <button 
           onClick={() => setModalOpen(true)}
-          className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 transition"
+          className="inline-flex items-center gap-2 rounded-xl bg-navy-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-navy-600 transition"
         >
           <Plus className="h-4 w-4" />
           Open New Period
@@ -54,7 +54,7 @@ export function FinancialPeriodsPage() {
 
       {isLoading ? (
         <div className="flex justify-center p-12">
-          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-t-2 border-indigo-500"></div>
+          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-t-2 border-navy-500"></div>
         </div>
       ) : (
         <div className="rounded-2xl border border-slate-800 bg-slate-900/50 overflow-hidden">
@@ -77,7 +77,7 @@ export function FinancialPeriodsPage() {
                   </td>
                   <td className="p-4">
                     {p.status === 'OPEN' ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-400">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-silver-900/60 px-2 py-0.5 text-xs font-medium text-silver-300">
                         <Unlock className="h-3 w-3" /> OPEN
                       </span>
                     ) : (
@@ -126,7 +126,7 @@ export function FinancialPeriodsPage() {
             </div>
             <div className="mt-6 flex justify-end gap-3">
               <button onClick={() => setModalOpen(false)} className="rounded-lg px-4 py-2 text-sm text-slate-300 hover:bg-slate-800">Cancel</button>
-              <button onClick={() => createMutation.mutate()} disabled={createMutation.isPending || !month || !year} className="rounded-lg bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-500">Open</button>
+              <button onClick={() => createMutation.mutate()} disabled={createMutation.isPending || !month || !year} className="rounded-lg bg-navy-600 px-4 py-2 text-sm text-white hover:bg-navy-600">Open</button>
             </div>
           </div>
         </div>

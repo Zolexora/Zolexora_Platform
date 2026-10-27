@@ -72,7 +72,7 @@ export function ExpenseForm({ onClose }: { onClose: () => void }) {
 
           <div className="pt-4 flex justify-end gap-3 border-t border-slate-800 mt-6">
             <button type="button" onClick={onClose} className="text-sm text-slate-400 hover:text-white">Cancel</button>
-            <button type="submit" disabled={mutation.isPending} className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50">
+            <button type="submit" disabled={mutation.isPending} className="rounded-lg bg-navy-600 px-4 py-2 text-sm font-semibold text-white hover:bg-navy-600 disabled:opacity-50">
               {mutation.isPending ? 'Saving...' : 'Save Expense'}
             </button>
           </div>

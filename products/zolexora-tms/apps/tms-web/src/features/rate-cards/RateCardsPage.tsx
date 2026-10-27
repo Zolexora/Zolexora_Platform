@@ -37,7 +37,7 @@ export function RateCardsPage({ type = 'customer' }: { type?: 'customer' | 'vend
             {type === 'customer' ? 'Manage pricing contracts and rules for client billing.' : 'Manage payable rules and contracts for transport vendors.'}
           </p>
         </div>
-        <button onClick={() => setIsFormOpen(true)} className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-600/30 hover:bg-indigo-500 transition">
+        <button onClick={() => setIsFormOpen(true)} className="inline-flex items-center gap-2 rounded-xl bg-navy-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-navy-800/30 hover:bg-navy-600 transition">
           <Plus className="h-4 w-4" />
           Create Rate Card
         </button>
@@ -51,18 +51,18 @@ export function RateCardsPage({ type = 'customer' }: { type?: 'customer' | 'vend
             placeholder="Search by rate card name or customer..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full rounded-xl border border-slate-800 bg-slate-950 py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="w-full rounded-xl border border-slate-800 bg-slate-950 py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-500 focus:border-navy-500 focus:outline-none focus:ring-1 focus:ring-navy-500"
           />
         </div>
       </div>
 
       {isLoading ? (
         <div className="flex justify-center p-12">
-          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-t-2 border-indigo-500"></div>
+          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-t-2 border-navy-500"></div>
         </div>
       ) : filteredCards.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-800 bg-slate-900/30 p-12 text-center">
-          <div className="rounded-2xl bg-indigo-500/10 p-4 text-indigo-400 mb-4">
+          <div className="rounded-2xl bg-navy-800/40 p-4 text-silver-400 mb-4">
             <FileText className="h-8 w-8" />
           </div>
           <h3 className="text-base font-semibold text-white">No rate cards found</h3>
@@ -81,7 +81,7 @@ export function RateCardsPage({ type = 'customer' }: { type?: 'customer' | 'vend
                     <p className="text-xs text-slate-400 mt-1">{card.service_type}</p>
                   </div>
                   {card.is_active && (
-                    <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-400 mb-2">
+                    <span className="inline-flex items-center gap-1 rounded-full border border-silver-700/40 bg-silver-900/60 px-2 py-0.5 text-[10px] font-semibold text-silver-300 mb-2">
                       <ShieldCheck className="h-3 w-3" />
                       Active
                     </span>
@@ -104,7 +104,7 @@ export function RateCardsPage({ type = 'customer' }: { type?: 'customer' | 'vend
               <div className="mt-4 pt-4 border-t border-slate-800/80 flex justify-end">
                 <button
                   onClick={() => setEditingCard(card)}
-                  className="inline-flex items-center gap-1 text-xs font-medium text-indigo-400 hover:text-indigo-300"
+                  className="inline-flex items-center gap-1 text-xs font-medium text-silver-400 hover:text-silver-300"
                 >
                   <Edit2 className="h-3.5 w-3.5" /> Edit Rates
                 </button>
