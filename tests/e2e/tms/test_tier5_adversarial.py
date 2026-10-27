@@ -42,6 +42,10 @@ from helpers import (
 )
 
 
+BACKEND_PORT = int(os.environ.get("TMS_BACKEND_PORT", "4031"))
+GATEWAY_PORT = int(os.environ.get("TMS_PORT", "3090"))
+
+
 class NoRedirectHandler(urllib.request.HTTPRedirectHandler):
     """HTTP redirect handler that intercepts redirects instead of following."""
 
@@ -100,7 +104,7 @@ class TestTier5Domain1ApiHeaderTracing(unittest.TestCase):
         """Verify custom X-Request-ID is preserved and reflected back verbatim."""
         custom_id = "zolexora-trace-adv-9999"
         status, body, headers = http_request(
-            "http://localhost:4030/api/health",
+            "http://localhost:4031/api/health",
             headers={"X-Request-ID": custom_id},
         )
         self.assertEqual(status, 200)
@@ -108,7 +112,7 @@ class TestTier5Domain1ApiHeaderTracing(unittest.TestCase):
 
         # Also verify passthrough via Nginx gateway on port 3084
         status_ng, _, headers_ng = http_request(
-            "http://localhost:3084/api/health",
+            "http://localhost:3090/api/health",
             headers={"X-Request-ID": custom_id},
         )
         self.assertEqual(status_ng, 200)
@@ -116,7 +120,7 @@ class TestTier5Domain1ApiHeaderTracing(unittest.TestCase):
 
     def test_adv_02_missing_correlation_id_generates_uuid(self):
         """Verify omitted correlation header automatically generates a valid UUID."""
-        status, body, headers = http_request("http://localhost:4030/api/health")
+        status, body, headers = http_request("http://localhost:4031/api/health")
         self.assertEqual(status, 200)
         returned_id = headers.get("x-request-id", "")
         self.assertTrue(len(returned_id) > 0)
@@ -125,7 +129,7 @@ class TestTier5Domain1ApiHeaderTracing(unittest.TestCase):
     def test_adv_02b_blank_correlation_id_graceful_handling(self):
         """Verify sending a blank X-Request-ID: '' succeeds with HTTP 200 without 500 crashes."""
         status, body, headers = http_request(
-            "http://localhost:4030/api/health",
+            "http://localhost:4031/api/health",
             headers={"X-Request-ID": ""},
         )
         self.assertEqual(status, 200)
@@ -134,7 +138,7 @@ class TestTier5Domain1ApiHeaderTracing(unittest.TestCase):
 
     def test_adv_03_response_time_header_precision_format(self):
         """Verify X-Response-Time header is present and formatted as XX.XXms."""
-        status, body, headers = http_request("http://localhost:4030/health")
+        status, body, headers = http_request("http://localhost:4031/health")
         self.assertEqual(status, 200)
         self.assertIn("x-response-time", headers)
         time_header = headers.get("x-response-time")
@@ -144,7 +148,7 @@ class TestTier5Domain1ApiHeaderTracing(unittest.TestCase):
         """Verify unsupported HTTP verbs on /health return 405 Method Not Allowed."""
         for verb in ["POST", "PUT", "DELETE"]:
             status, body, headers = http_request(
-                "http://localhost:4030/health",
+                "http://localhost:4031/health",
                 method=verb,
             )
             self.assertEqual(status, 405, f"Expected 405 for verb {verb}")
@@ -153,7 +157,7 @@ class TestTier5Domain1ApiHeaderTracing(unittest.TestCase):
 
     def test_adv_05_nonexistent_api_endpoint_404_trace(self):
         """Verify non-existent API routes return 404 with trace headers attached."""
-        status, body, headers = http_request("http://localhost:4030/api/v1/invalid_probe_path_xyz")
+        status, body, headers = http_request("http://localhost:4031/api/v1/invalid_probe_path_xyz")
         self.assertEqual(status, 404)
         self.assertIn("x-request-id", headers)
         self.assertIn("x-response-time", headers)
@@ -163,7 +167,7 @@ class TestTier5Domain1ApiHeaderTracing(unittest.TestCase):
     def test_adv_06_malformed_json_body_422_validation(self):
         """Verify sending syntactically malformed JSON returns 422 Unprocessable Entity."""
         status, body, headers = http_request(
-            "http://localhost:4030/api/v1/auth/resend-otp",
+            "http://localhost:4031/api/v1/auth/resend-otp",
             method="POST",
             headers={"Content-Type": "application/json"},
             data="{malformed_json_payload",
@@ -176,7 +180,7 @@ class TestTier5Domain1ApiHeaderTracing(unittest.TestCase):
     def test_adv_07_invalid_field_schema_422_validation(self):
         """Verify Pydantic schema validation returns 422 for invalid email format."""
         status, body, headers = http_request(
-            "http://localhost:4030/api/v1/auth/resend-otp",
+            "http://localhost:4031/api/v1/auth/resend-otp",
             method="POST",
             headers={"Content-Type": "application/json"},
             data=json.dumps({"email": "not_an_email_address"}),
@@ -198,7 +202,7 @@ class TestTier5Domain2CorsSecurity(unittest.TestCase):
     def test_adv_08_cors_preflight_authorized_origin_allowed(self):
         """Verify CORS preflight succeeds for whitelisted origin."""
         status, body, headers = http_request(
-            "http://localhost:4030/api/health",
+            "http://localhost:4031/api/health",
             method="OPTIONS",
             headers={
                 "Origin": "http://localhost:3000",
@@ -212,7 +216,7 @@ class TestTier5Domain2CorsSecurity(unittest.TestCase):
     def test_adv_09_cors_preflight_untrusted_origin_rejected(self):
         """Verify CORS preflight rejects untrusted/malicious origins with HTTP 400."""
         status, body, headers = http_request(
-            "http://localhost:4030/api/health",
+            "http://localhost:4031/api/health",
             method="OPTIONS",
             headers={
                 "Origin": "http://untrusted-attacker-domain.evil",
@@ -226,7 +230,7 @@ class TestTier5Domain2CorsSecurity(unittest.TestCase):
     def test_adv_10_cors_preflight_allowed_methods(self):
         """Verify preflight response specifies standard allowed REST methods."""
         status, body, headers = http_request(
-            "http://localhost:4030/api/health",
+            "http://localhost:4031/api/health",
             method="OPTIONS",
             headers={
                 "Origin": "http://localhost:3000",
@@ -241,7 +245,7 @@ class TestTier5Domain2CorsSecurity(unittest.TestCase):
     def test_adv_11_cors_simple_get_preserves_origin(self):
         """Verify simple GET request with whitelisted Origin returns Access-Control-Allow-Origin."""
         status, body, headers = http_request(
-            "http://localhost:4030/health",
+            "http://localhost:4031/health",
             headers={"Origin": "http://127.0.0.1:3000"},
         )
         self.assertEqual(status, 200)
@@ -259,7 +263,7 @@ class TestTier5Domain3NginxGatewayHardening(unittest.TestCase):
     def test_adv_12_virtual_host_admin_routing(self):
         """Verify Nginx routes Host: admin.localhost to tms-admin service."""
         status, body, headers = http_request(
-            "http://localhost:3084/",
+            "http://localhost:3090/",
             headers={"Host": "admin.localhost"},
         )
         self.assertEqual(status, 200)
@@ -268,7 +272,7 @@ class TestTier5Domain3NginxGatewayHardening(unittest.TestCase):
     def test_adv_13_virtual_host_app_web_routing(self):
         """Verify Nginx routes Host: app.localhost to tms-web service."""
         status, body, headers = http_request(
-            "http://localhost:3084/",
+            "http://localhost:3090/",
             headers={"Host": "app.localhost"},
         )
         self.assertEqual(status, 200)
@@ -277,7 +281,7 @@ class TestTier5Domain3NginxGatewayHardening(unittest.TestCase):
     def test_adv_14_virtual_host_api_routing(self):
         """Verify Nginx routes Host: api.localhost to tms-backend service directly."""
         status, body, headers = http_request(
-            "http://localhost:3084/health",
+            "http://localhost:3090/health",
             headers={"Host": "api.localhost"},
         )
         self.assertEqual(status, 200)
@@ -286,7 +290,7 @@ class TestTier5Domain3NginxGatewayHardening(unittest.TestCase):
 
     def test_adv_15_spa_fallback_routing(self):
         """Verify deep client routes fall back to index.html for SPA routing on tms-web."""
-        status, body, headers = http_request("http://localhost:3084/operations/trips/live")
+        status, body, headers = http_request("http://localhost:3090/operations/trips/live")
         self.assertEqual(status, 200)
         self.assertIn('<div id="root"></div>', body)
         self.assertIn("Zolexora TMS — Transport Management System", body)
@@ -294,7 +298,7 @@ class TestTier5Domain3NginxGatewayHardening(unittest.TestCase):
     def test_adv_16_spa_fallback_admin_routing(self):
         """Verify deep client routes fall back to admin index.html on admin.localhost."""
         status, body, headers = http_request(
-            "http://localhost:3084/management/fleet",
+            "http://localhost:3090/management/fleet",
             headers={"Host": "admin.localhost"},
         )
         self.assertEqual(status, 200)
@@ -304,18 +308,18 @@ class TestTier5Domain3NginxGatewayHardening(unittest.TestCase):
     def test_adv_17_uri_length_boundary_414_rejection(self):
         """Verify Nginx rejects excessively long URIs with 414 Request-URI Too Large."""
         oversized_path = "/" + "a" * 16384
-        status, body, headers = http_request(f"http://localhost:3084{oversized_path}")
+        status, body, headers = http_request(f"http://localhost:3090{oversized_path}")
         self.assertEqual(status, 414)
 
     def test_adv_18_path_traversal_rejection_400(self):
         """Verify Nginx traps directory traversal attempts with 400 Bad Request."""
-        status, body, headers = http_request("http://localhost:3084/../../../../etc/passwd")
+        status, body, headers = http_request("http://localhost:3090/../../../../etc/passwd")
         self.assertEqual(status, 400)
 
     def test_adv_19_sql_injection_probe_resilience(self):
         """Verify API endpoints safely ignore SQL injection parameters without crashing."""
         status, body, headers = http_request(
-            "http://localhost:4030/api/ready?probe=%27%20OR%201=1--",
+            "http://localhost:4031/api/ready?probe=%27%20OR%201=1--",
         )
         self.assertEqual(status, 200)
         data = json.loads(body)
@@ -333,14 +337,14 @@ class TestTier5Domain4DatabaseSecurity(unittest.TestCase):
     def test_adv_20_live_database_readiness_probe(self):
         """Verify /api/ready performs active database check returning database: ok."""
         # Check directly on backend port 4030
-        status, body, _ = http_request("http://localhost:4030/api/ready")
+        status, body, _ = http_request("http://localhost:4031/api/ready")
         self.assertEqual(status, 200)
         data = json.loads(body)
         self.assertEqual(data.get("status"), "ready")
         self.assertEqual(data.get("database"), "ok")
 
         # Check through Nginx gateway on port 3084
-        status_ng, body_ng, _ = http_request("http://localhost:3084/api/ready")
+        status_ng, body_ng, _ = http_request("http://localhost:3090/api/ready")
         self.assertEqual(status_ng, 200)
         data_ng = json.loads(body_ng)
         self.assertEqual(data_ng.get("database"), "ok")
@@ -404,7 +408,7 @@ class TestTier5Domain5SecurityAndAuth(unittest.TestCase):
 
     def test_adv_25_unauthenticated_protected_route_rejection(self):
         """Verify protected endpoints reject requests without token with 401 Unauthorized."""
-        status, body, headers = http_request("http://localhost:4030/api/v1/vehicles")
+        status, body, headers = http_request("http://localhost:4031/api/v1/vehicles")
         self.assertEqual(status, 401)
         self.assertIn("www-authenticate", headers)
         self.assertIn("bearer", headers.get("www-authenticate", "").lower())
@@ -414,7 +418,7 @@ class TestTier5Domain5SecurityAndAuth(unittest.TestCase):
     def test_adv_26_invalid_bearer_token_rejection(self):
         """Verify sending an invalid Bearer token is rejected with 401 Unauthorized."""
         status, body, headers = http_request(
-            "http://localhost:4030/api/v1/vehicles",
+            "http://localhost:4031/api/v1/vehicles",
             headers={"Authorization": "Bearer invalid_bearer_token_999"},
         )
         self.assertEqual(status, 401)
@@ -423,13 +427,13 @@ class TestTier5Domain5SecurityAndAuth(unittest.TestCase):
 
     def test_adv_27_nginx_proxy_preserves_auth_challenge(self):
         """Verify Nginx reverse proxy preserves 401 and WWW-Authenticate challenge header."""
-        status, body, headers = http_request("http://localhost:3084/api/v1/vehicles")
+        status, body, headers = http_request("http://localhost:3090/api/v1/vehicles")
         self.assertEqual(status, 401)
         self.assertIn("www-authenticate", headers)
 
     def test_adv_28_openapi_spec_documents_bearer_security(self):
         """Verify OpenAPI 3 specification defines HTTPBearer security scheme."""
-        status, body, headers = http_request("http://localhost:4030/openapi.json")
+        status, body, headers = http_request("http://localhost:4031/openapi.json")
         self.assertEqual(status, 200)
         spec = json.loads(body)
         self.assertIn("openapi", spec)
@@ -448,7 +452,7 @@ class TestTier5Domain6EnvAndResources(unittest.TestCase):
 
     def test_adv_29_runtime_env_config_js_web(self):
         """Verify tms-web serves /env-config.js declaring window.__ENV__."""
-        status, body, headers = http_request("http://localhost:3084/env-config.js")
+        status, body, headers = http_request("http://localhost:3090/env-config.js")
         self.assertEqual(status, 200)
         self.assertTrue(headers.get("content-type", "").startswith("application/javascript"))
         self.assertIn("window.__ENV__", body)
@@ -456,7 +460,7 @@ class TestTier5Domain6EnvAndResources(unittest.TestCase):
     def test_adv_30_runtime_env_config_js_admin(self):
         """Verify tms-admin serves /env-config.js declaring window.__ENV__."""
         status, body, headers = http_request(
-            "http://localhost:3084/env-config.js",
+            "http://localhost:3090/env-config.js",
             headers={"Host": "admin.localhost"},
         )
         self.assertEqual(status, 200)
@@ -487,15 +491,15 @@ class TestTier5Domain6EnvAndResources(unittest.TestCase):
         rc, stdout, stderr = run_cmd([str(script), "ps", "--services"], timeout=10.0)
         self.assertEqual(rc, 0)
         services = set(stdout.strip().split())
-        self.assertTrue({"backend", "nginx", "postgres", "tms-admin", "tms-web"}.issubset(services))
+        self.assertTrue({"backend", "nginx", "tms-admin", "tms-web"}.issubset(services))
 
     def test_adv_34_concurrent_burst_stress_all_200(self):
         """Verify 20 concurrent requests across health endpoints all succeed under burst."""
         urls = [
-            "http://localhost:3084/api/health",
-            "http://localhost:4030/api/ready",
-            "http://localhost:4030/health",
-            "http://localhost:3084/api/ready",
+            "http://localhost:3090/api/health",
+            "http://localhost:4031/api/ready",
+            "http://localhost:4031/health",
+            "http://localhost:3090/api/ready",
         ] * 5
 
         def fetch(u):
@@ -525,7 +529,7 @@ class TestTier5Domain7OperationalHardening(unittest.TestCase):
     def test_adv_35_backend_root_redirects_to_docs(self):
         """Verify GET / on backend returns HTTP 307 redirecting to /docs."""
         status, body, headers = http_request(
-            "http://localhost:4030/",
+            "http://localhost:4031/",
             follow_redirects=False,
         )
         self.assertEqual(status, 307)
@@ -533,7 +537,7 @@ class TestTier5Domain7OperationalHardening(unittest.TestCase):
 
     def test_adv_36_swagger_ui_docs_accessible(self):
         """Verify Swagger UI documentation is served on /docs with HTTP 200."""
-        status, body, headers = http_request("http://localhost:4030/docs")
+        status, body, headers = http_request("http://localhost:4031/docs")
         self.assertEqual(status, 200)
         self.assertIn("swagger-ui", body.lower())
 

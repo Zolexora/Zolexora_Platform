@@ -7,14 +7,20 @@ REPO_ROOT="$(pwd)"
 
 COMPOSE_FILE="products/zolexora-tms/compose.yaml"
 INFISICAL_PROJECT_ID="188824cd-59ce-468f-b60f-f2da7aeefe63"
-INFISICAL_ENV="dev"
+INFISICAL_ENV="${INFISICAL_ENV:-dev}"
 INFISICAL_PATH="/Zolexora_TMS"
+
+# Canonical database credentials location in Infisical
+INFISICAL_DB_PROJECT_ID="c4ac7d07-f26f-4fb8-bd04-6d3e037079f9"
+INFISICAL_DB_PATH="/Render_Postgraes"
 
 # Non-blocking secret injection helper
 run_compose() {
   if [ -n "$INFISICAL_TOKEN" ] || [ -n "$INFISICAL_ACCESS_TOKEN" ] || { command -v infisical >/dev/null 2>&1 && infisical login status >/dev/null 2>&1; }; then
     echo "🔐 Infisical credentials detected - executing with runtime secret injection..."
-    infisical run --projectId="$INFISICAL_PROJECT_ID" --env="$INFISICAL_ENV" --path="$INFISICAL_PATH" -- docker compose -f "$COMPOSE_FILE" "$@"
+    infisical run --projectId="$INFISICAL_DB_PROJECT_ID" --env="$INFISICAL_ENV" --path="$INFISICAL_DB_PATH" -- \
+      infisical run --projectId="$INFISICAL_PROJECT_ID" --env="$INFISICAL_ENV" --path="$INFISICAL_PATH" -- \
+      docker compose -f "$COMPOSE_FILE" "$@"
   else
     echo "⚠️  Infisical not authenticated or unavailable."
     echo "ℹ️  Run 'infisical login' or export INFISICAL_TOKEN to enable automatic secret injection."
