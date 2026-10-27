@@ -1,49 +1,33 @@
-import { supabase } from './supabase';
+import { getIdToken } from './firebase';
 
 export function getApiBaseUrl(): string {
   try {
     // @ts-ignore
-    if (typeof window !== 'undefined' && window.__ENV__?.VITE_API_BASE_URL !== undefined) {
+    if (typeof window !== 'undefined' && window.__ENV__?.VITE_API_BASE_URL) {
       // @ts-ignore
       return String(window.__ENV__.VITE_API_BASE_URL);
     }
   } catch {}
-
   try {
-    if (import.meta.env.VITE_API_BASE_URL !== undefined) {
-      return String(import.meta.env.VITE_API_BASE_URL);
-    }
+    if (import.meta.env.VITE_API_BASE_URL) return String(import.meta.env.VITE_API_BASE_URL);
   } catch {}
-
   return '';
 }
 
 export async function apiClient<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const { data: { session } } = await supabase.auth.getSession();
+  const token = await getIdToken();
   const baseUrl = getApiBaseUrl();
-  
+
   const headers = new Headers(options.headers || {});
   headers.set('Content-Type', 'application/json');
-  
-  if (session?.access_token) {
-    headers.set('Authorization', `Bearer ${session.access_token}`);
-  }
+  if (token) headers.set('Authorization', `Bearer ${token}`);
 
-  const response = await fetch(`${baseUrl}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  const response = await fetch(`${baseUrl}${endpoint}`, { ...options, headers });
 
   if (!response.ok) {
-    let errorDetail = 'API request failed';
-    try {
-      const errorJson = await response.json();
-      errorDetail = errorJson.error?.message || errorJson.detail || errorDetail;
-    } catch {
-      // ignore
-    }
-    throw new Error(errorDetail);
+    let detail = 'API request failed';
+    try { detail = (await response.json()).detail || detail; } catch {}
+    throw new Error(detail);
   }
-
   return response.json();
 }

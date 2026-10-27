@@ -93,6 +93,7 @@ from app.modules.operations.duties.routes import router as duties_router
 from app.modules.core.customization.routes import router as customization_router
 from app.modules.finance.billing.routes import router as billing_router
 from app.modules.core.platform.routes import router as platform_router
+from app.modules.core.platform.admin_routes import router as admin_router
 from app.modules.identity.auth.routes import router as auth_router
 from app.modules.core.extensions.r1rcm.routes import router as r1rcm_router
 from app.modules.crm.clients.routes import router as clients_router
@@ -111,6 +112,7 @@ app.include_router(bookings_router)
 app.include_router(duties_router)
 app.include_router(billing_router)
 app.include_router(platform_router)
+app.include_router(admin_router)
 app.include_router(auth_router)
 app.include_router(r1rcm_router)
 app.include_router(clients_router)
