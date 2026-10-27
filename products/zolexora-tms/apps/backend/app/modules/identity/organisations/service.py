@@ -10,6 +10,8 @@ from app.modules.core.platform.models import (
     OrganisationMongodbAssignment,
     OrganisationStorageAssignment,
     RegistryStatus,
+    ProviderType,
+    PlatformAuditLog,
 )
 from sqlalchemy import update
 
