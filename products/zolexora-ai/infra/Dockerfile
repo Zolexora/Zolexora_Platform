@@ -7,7 +7,7 @@
 FROM node:22-alpine AS frontend-builder
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
-RUN npm ci --silent
+RUN npm install --silent
 COPY frontend/ ./
 ARG VITE_API_KEY
 ENV VITE_API_KEY=$VITE_API_KEY

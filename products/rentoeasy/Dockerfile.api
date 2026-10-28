@@ -1,4 +1,5 @@
 FROM node:22-alpine AS builder
+RUN apk add --no-cache openssl libc6-compat
 RUN corepack enable && corepack prepare pnpm@9 --activate
 WORKDIR /app
 
@@ -13,10 +14,8 @@ RUN pnpm --filter @zolexora/rentoeasy-api prisma:generate
 RUN pnpm --filter @zolexora/rentoeasy-api build
 
 FROM node:22-alpine
-# Prisma's query engine requires libssl 1.1 (not available on Alpine 3.17+ by default)
 RUN apk add --no-cache openssl libc6-compat
 WORKDIR /app
-# Copy the entire workspace so pnpm symlinks (into .pnpm) are intact
 COPY --from=builder /app ./
 WORKDIR /app/products/rentoeasy/services/api
 EXPOSE 3000
