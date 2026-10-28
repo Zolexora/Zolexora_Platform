@@ -5,20 +5,17 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-# Enable corepack and pin pnpm to monorepo packageManager version
-RUN corepack enable && corepack prepare pnpm@10.32.1 --activate
-
 # Copy package manifests
 COPY package.json ./
 
 # Install dependencies
-RUN pnpm install
+RUN npm install
 
 # Copy application source
 COPY . .
 
 # Build production bundle
-RUN pnpm run build
+RUN npm run build
 
 # ------------------------------------------------------------------------------
 # Stage 2: Production Nginx Server
