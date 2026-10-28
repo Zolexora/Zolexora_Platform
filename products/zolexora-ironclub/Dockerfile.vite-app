@@ -12,13 +12,12 @@ WORKDIR /build
 COPY packages/ ./packages/
 
 # Copy the specific app
-COPY ${APP_DIR}/package.json ./${APP_DIR}/package.json
-COPY ${APP_DIR}/tsconfig.json ./${APP_DIR}/tsconfig.json
-COPY ${APP_DIR}/vite.config.ts ./${APP_DIR}/vite.config.ts
-COPY ${APP_DIR}/index.html ./${APP_DIR}/index.html
-COPY ${APP_DIR}/src ./${APP_DIR}/src
+COPY ${APP_DIR} ./${APP_DIR}
 
 WORKDIR /build/${APP_DIR}
+
+# If package.json contains workspace:*, replace with local file: path
+RUN sed -i 's|"workspace:\*"|"file:../../packages/types"|g' package.json
 
 # Install deps fresh (no lockfile - standalone apps)
 RUN npm install
