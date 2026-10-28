@@ -13,7 +13,8 @@ ENV PORT=$PORT
 RUN pnpm --filter "@zolexora/engage-api-server" build
 
 FROM node:22-alpine
-WORKDIR /app
+WORKDIR /app/products/zolexora-engage/services/api
 COPY --from=builder /app/products/zolexora-engage/services/api/dist ./dist
+RUN mkdir -p /app && ln -s /app/products/zolexora-engage/services/api/dist /app/dist
 EXPOSE 3000
 CMD ["node", "--enable-source-maps", "./dist/index.mjs"]

@@ -46,4 +46,4 @@ EXPOSE 4090
 
 CMD ["uvicorn", "backend.api.server:app", \
      "--host", "0.0.0.0", "--port", "4090", \
-     "--workers", "2", "--log-level", "info"]
+     "--workers", "1", "--log-level", "info"]
