@@ -19,49 +19,88 @@
     }
   },
   "forwardPorts": [
+    // 1. Frontend Development Servers
     3000, 3001, 3002, 3003,
+
+    // 2. Product Nginx Ingress Gateways & Web Portals (3070–3099)
     3070, 3071, 3072, 3075, 3076, 3077, 3079, 3080, 3081, 3082, 3083, 3084,
-    3085, 3086, 3087, 3088, 3089,
-    4010, 4030, 4090, 4100, 4110, 4120,
+    3085, 3086, 3087, 3088, 3089, 3090,
+
+    // 3. Backend APIs & Microservices (4000–4199)
+    4010, 4020, 4030, 4031, 4040, 4050, 4060, 4070, 4080, 4090, 4100, 4110, 4120,
+
+    // 4. ERPNext / Frappe Stack (8000–8443)
     8000, 8001, 8080, 8443,
-    5433, 5434, 5435, 5436, 5437, 5438, 5439, 5440,
-    5441, 5442, 5443, 5444, 5445, 5448,
-    6379, 27017,
+
+    // 5. Dedicated PostgreSQL Host Offsets (5433–5448)
+    5433, 5434, 5435, 5436, 5437, 5438, 5439, 5440, 5441, 5442, 5443, 5444, 5445, 5448,
+
+    // 6. Shared Databases & Cache Services
+    3306, 6379, 6380, 27017,
+
+    // 7. Supabase Local Development Stack
     54321, 54322, 54323, 54324
   ],
   "portsAttributes": {
-    "3000": { "label": "Next.js / Frontend Dev", "onAutoForward": "notify" },
-    "3001": { "label": "Next.js App 2", "onAutoForward": "silent" },
-    "3002": { "label": "Next.js App 3", "onAutoForward": "silent" },
-    "3003": { "label": "Next.js App 4", "onAutoForward": "silent" },
-    "3070": { "label": "Zolexora AppSuite Gateway", "onAutoForward": "notify" },
-    "3071": { "label": "Zolexora AI Gateway", "onAutoForward": "notify" },
-    "3072": { "label": "Zolexora IMS Gateway", "onAutoForward": "notify" },
+    // -------------------------------------------------------------
+    // Tier 1: Frontend Development Servers
+    // -------------------------------------------------------------
+    "3000": { "label": "Frontend Dev (Primary / Next.js)", "onAutoForward": "notify" },
+    "3001": { "label": "Frontend Dev (Secondary / Admin)", "onAutoForward": "silent" },
+    "3002": { "label": "Frontend Dev (Tertiary / Seller)", "onAutoForward": "silent" },
+    "3003": { "label": "Frontend Dev (Spare)", "onAutoForward": "silent" },
+
+    // -------------------------------------------------------------
+    // Tier 2: Product Nginx Ingress Gateways & Web Portals (3070–3099)
+    // -------------------------------------------------------------
+    "3070": { "label": "AppSuite Gateway", "onAutoForward": "notify" },
+    "3071": { "label": "AI Gateway", "onAutoForward": "notify" },
+    "3072": { "label": "IMS Gateway", "onAutoForward": "notify" },
     "3075": { "label": "ClarityFi Gateway", "onAutoForward": "notify" },
     "3076": { "label": "Rentoeasy Gateway", "onAutoForward": "notify" },
-    "3077": { "label": "Zolexora Engage Gateway", "onAutoForward": "notify" },
-    "3079": { "label": "Zolexora Marketplace Gateway", "onAutoForward": "notify" },
+    "3077": { "label": "Engage Gateway", "onAutoForward": "notify" },
+    "3079": { "label": "Marketplace Gateway", "onAutoForward": "notify" },
     "3080": { "label": "The Textile Care Gateway", "onAutoForward": "notify" },
     "3081": { "label": "Platform Admin API", "onAutoForward": "silent" },
     "3082": { "label": "Platform Admin Web", "onAutoForward": "notify" },
     "3083": { "label": "Maun Kavach Gateway", "onAutoForward": "notify" },
-    "3084": { "label": "Zolexora TMS Gateway", "onAutoForward": "notify" },
+    "3084": { "label": "TMS Gateway (Alt)", "onAutoForward": "notify" },
     "3085": { "label": "Future App 1 Gateway", "onAutoForward": "notify" },
     "3086": { "label": "Future App 2 Gateway", "onAutoForward": "notify" },
     "3087": { "label": "Future App 3 Gateway", "onAutoForward": "notify" },
     "3088": { "label": "Future App 4 Gateway", "onAutoForward": "notify" },
     "3089": { "label": "Future App 5 Gateway", "onAutoForward": "notify" },
+    "3090": { "label": "TMS Nginx Gateway (Primary)", "onAutoForward": "notify" },
+
+    // -------------------------------------------------------------
+    // Tier 3: Backend APIs & Microservices (4000–4199)
+    // -------------------------------------------------------------
     "4010": { "label": "The Textile Care API", "onAutoForward": "silent" },
-    "4030": { "label": "Zolexora TMS Backend API", "onAutoForward": "silent" },
-    "4090": { "label": "Zolexora AI API", "onAutoForward": "silent" },
+    "4020": { "label": "ClarityFi Backend API", "onAutoForward": "silent" },
+    "4030": { "label": "TMS Backend (Container Internal)", "onAutoForward": "silent" },
+    "4031": { "label": "TMS Backend API (FastAPI)", "onAutoForward": "notify" },
+    "4040": { "label": "Rentoeasy Backend API", "onAutoForward": "silent" },
+    "4050": { "label": "Engage Backend API", "onAutoForward": "silent" },
+    "4060": { "label": "IMS User Backend API", "onAutoForward": "silent" },
+    "4070": { "label": "IMS Admin Backend API", "onAutoForward": "silent" },
+    "4080": { "label": "Maun Kavach Backend API", "onAutoForward": "silent" },
+    "4090": { "label": "AI Backend API", "onAutoForward": "silent" },
     "4100": { "label": "Marketplace API (FastAPI)", "onAutoForward": "notify" },
     "4110": { "label": "Future App 1 Backend API", "onAutoForward": "silent" },
     "4120": { "label": "Future App 2 Backend API", "onAutoForward": "silent" },
-    "8000": { "label": "Frappe Backend / FastAPI Dev", "onAutoForward": "notify" },
-    "8001": { "label": "FastAPI App 2", "onAutoForward": "silent" },
-    "8080": { "label": "Zolexora ERP Frontend (Nginx)", "onAutoForward": "openBrowser" },
-    "8443": { "label": "Zolexora ERP HTTPS (Nginx)", "onAutoForward": "silent" },
-    "5432": { "label": "Host OS PostgreSQL (Ignore)", "onAutoForward": "ignore" },
+
+    // -------------------------------------------------------------
+    // Tier 4: ERPNext / Frappe Stack (8000–8443)
+    // -------------------------------------------------------------
+    "8000": { "label": "Frappe Backend (Dev)", "onAutoForward": "notify" },
+    "8001": { "label": "Frappe SocketIO / API Dev", "onAutoForward": "silent" },
+    "8080": { "label": "Zolexora ERP Web (Nginx HTTP)", "onAutoForward": "openBrowser" },
+    "8443": { "label": "Zolexora ERP Web (Nginx HTTPS)", "onAutoForward": "silent" },
+
+    // -------------------------------------------------------------
+    // Tier 5: Isolated Product PostgreSQL Host Offsets (5432–5448)
+    // -------------------------------------------------------------
+    "5432": { "label": "Host Workstation Postgres (Do Not Bind)", "onAutoForward": "ignore" },
     "5433": { "label": "Marketplace Postgres", "onAutoForward": "silent" },
     "5434": { "label": "IMS Postgres", "onAutoForward": "silent" },
     "5435": { "label": "The Textile Care Postgres", "onAutoForward": "silent" },
@@ -75,13 +114,23 @@
     "5443": { "label": "Future App 3 Postgres", "onAutoForward": "silent" },
     "5444": { "label": "Future App 4 Postgres", "onAutoForward": "silent" },
     "5445": { "label": "Future App 5 Postgres", "onAutoForward": "silent" },
-    "5448": { "label": "Zolexora TMS Postgres", "onAutoForward": "silent" },
-    "6379": { "label": "Redis", "onAutoForward": "silent" },
-    "27017": { "label": "MongoDB (ZolexoraMarketplace)", "onAutoForward": "silent" },
-    "54321": { "label": "Supabase API", "onAutoForward": "silent" },
-    "54322": { "label": "Supabase DB", "onAutoForward": "silent" },
-    "54323": { "label": "Supabase Studio", "onAutoForward": "notify" },
-    "54324": { "label": "Supabase Inbucket", "onAutoForward": "silent" }
+    "5448": { "label": "TMS Postgres", "onAutoForward": "silent" },
+
+    // -------------------------------------------------------------
+    // Tier 6: Shared Databases & Cache Services
+    // -------------------------------------------------------------
+    "3306": { "label": "ERP MariaDB", "onAutoForward": "silent" },
+    "6379": { "label": "Redis (Platform Cache)", "onAutoForward": "silent" },
+    "6380": { "label": "ERP Redis (Queue / Cache)", "onAutoForward": "silent" },
+    "27017": { "label": "Marketplace MongoDB", "onAutoForward": "silent" },
+
+    // -------------------------------------------------------------
+    // Tier 7: Supabase Local Development Stack
+    // -------------------------------------------------------------
+    "54321": { "label": "Supabase API (Kong Gateway)", "onAutoForward": "silent" },
+    "54322": { "label": "Supabase Postgres DB", "onAutoForward": "silent" },
+    "54323": { "label": "Supabase Studio UI", "onAutoForward": "notify" },
+    "54324": { "label": "Supabase Inbucket (Mail)", "onAutoForward": "silent" }
   },
   "customizations": {
     "vscode": {
