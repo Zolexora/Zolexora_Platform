@@ -9,6 +9,7 @@ import sentry_sdk
 
 from app.core.config import settings
 from app.core.logging import setup_logging
+from app.core.storage import StorageError
 from app.modules.core.health.routes import router as health_router
 
 setup_logging()
@@ -28,8 +29,11 @@ async def lifespan(app: FastAPI):
         from app.db.base import Base
         from app.db.session import engine
         from app.modules.identity.roles.seed_platform_templates import seed as seed_role_templates
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
+        # Production schema is managed only by Alembic (which also applies RLS policies);
+        # create_all would add tables without tenant isolation.
+        if settings.IS_DEV_OR_TEST:
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
         await seed_role_templates()
         logger.info("Database schema and platform role templates verified.")
     except Exception as e:
@@ -40,8 +44,8 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version="0.1.0",
-    docs_url="/docs" if settings.ENVIRONMENT != "production" else None,
-    redoc_url="/redoc" if settings.ENVIRONMENT != "production" else None,
+    docs_url="/docs" if settings.IS_DEV_OR_TEST else None,
+    redoc_url="/redoc" if settings.IS_DEV_OR_TEST else None,
     lifespan=lifespan,
 )
 
@@ -65,6 +69,14 @@ async def correlation_id_middleware(request: Request, call_next):
     response.headers["X-Response-Time"] = f"{process_time:.2f}ms"
     return response
 
+@app.exception_handler(StorageError)
+async def storage_exception_handler(request: Request, exc: StorageError):
+    logger.error(f"Storage failure [req_id={getattr(request.state, 'request_id', 'unknown')}]: {exc}")
+    return JSONResponse(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        content={"error": {"code": "STORAGE_UNAVAILABLE", "message": "File storage is unavailable. Please try again later."}},
+    )
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     req_id = getattr(request.state, "request_id", "unknown")
@@ -75,7 +87,7 @@ async def global_exception_handler(request: Request, exc: Exception):
             "error": {
                 "code": "INTERNAL_SERVER_ERROR",
                 "message": "An unexpected error occurred. Please try again later.",
-                "details": {"request_id": req_id} if settings.ENVIRONMENT != "production" else {},
+                "details": {"request_id": req_id} if settings.IS_DEV_OR_TEST else {},
             }
         },
     )
@@ -99,6 +111,16 @@ from app.modules.core.extensions.r1rcm.routes import router as r1rcm_router
 from app.modules.crm.clients.routes import router as clients_router
 from app.modules.operations.operating_units.routes import router as operating_units_router
 from app.modules.crm.vendors.routes import router as vendors_router
+from app.modules.fleet.drivers.routes import router as drivers_router
+from app.modules.operations.trips.routes import router as trips_router
+from app.modules.operations.dispatch.routes import router as dispatch_router
+from app.modules.core.compliance.routes import router as compliance_router
+from app.modules.finance.invoices.routes import router as invoices_router
+from app.modules.finance.invoices.adjustment_routes import router as adjustments_router
+from app.modules.finance.payments.routes import router as payments_router
+from app.modules.finance.payables.routes import router as payables_router
+from app.modules.finance.expenses.routes import router as expenses_router
+from app.modules.finance.pl.routes import router as pl_router
 
 app.include_router(health_router)
 app.include_router(health_router, prefix="/api")
@@ -118,6 +140,13 @@ app.include_router(r1rcm_router)
 app.include_router(clients_router)
 app.include_router(operating_units_router)
 app.include_router(vendors_router)
+app.include_router(drivers_router)
+app.include_router(trips_router)
+app.include_router(dispatch_router)
+app.include_router(compliance_router)
+# Finance routers declare short prefixes (/invoices, /payments, ...)
+for finance_router in (invoices_router, adjustments_router, payments_router, payables_router, expenses_router, pl_router):
+    app.include_router(finance_router, prefix="/api/v1")
 
 @app.get("/", include_in_schema=False)
 async def root():

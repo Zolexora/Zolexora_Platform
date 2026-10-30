@@ -2,10 +2,9 @@ import argparse
 import asyncio
 import os
 import glob
-from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
-from app.db.session import engine, AsyncSessionLocal
+from app.db.session import AsyncSessionLocal
 from app.core.config import settings
 
 def get_tenant_tables():
@@ -106,19 +105,16 @@ async def run_audit():
     print("\n[CLOUDFLARE R2]")
     print("Total disposable objects: 0 (Simulated)")
     
-    print("\n[MONGODB ATLAS]")
-    print("Total disposable namespaces: 0 (Simulated)")
-    
     print("\n[CLOUDINARY]")
     print("Total disposable assets: 0 (Simulated)")
     
-    print("\n[SUPABASE CONTROL PLANE]")
+    print("\n[POSTGRES CONTROL PLANE]")
     print("Status: PRESERVE. Platform admin, RBAC, and auth will not be deleted.")
     print("--- END AUDIT ---\n")
 
 async def run_clean(confirm: bool):
-    if settings.ENVIRONMENT == "production":
-        print("ERROR: FULL DATA RESET MUST FAIL IN PRODUCTION. Cannot bypass.")
+    if not settings.IS_DEV_OR_TEST:
+        print("ERROR: FULL DATA RESET MUST FAIL OUTSIDE DEVELOPMENT/TEST. Cannot bypass.")
         return
         
     if not confirm:
@@ -139,7 +135,6 @@ async def run_clean(confirm: bool):
     print(f"D1 CLEANED ({d1_cleaned} databases removed).")
     
     # Others
-    print("Cleaning MongoDB Atlas namespaces... CLEANED.")
     print("Cleaning Cloudflare R2 prefixes... CLEANED.")
     print("Cleaning Cloudinary media... CLEANED.")
     
@@ -161,7 +156,6 @@ async def run_verify():
     else:
         print("[X] D1 pilot data = NOT CLEAN")
         
-    print("[ ] MongoDB test data = CLEAN")
     print("[ ] R2 test objects = CLEAN")
     print("[ ] Cloudinary test assets = CLEAN")
     print("[ ] schema intact")

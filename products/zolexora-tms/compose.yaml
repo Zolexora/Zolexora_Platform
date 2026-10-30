@@ -3,8 +3,8 @@ services:
     image: ${TMS_BACKEND_IMAGE:-ghcr.io/zolexora/tms-backend:latest}
     pull_policy: missing
     build:
-      context: ./apps/backend
-      dockerfile: Dockerfile
+      context: ../../
+      dockerfile: products/zolexora-tms/apps/backend/Dockerfile
     container_name: tms-backend
     ports:
     - "${TMS_BACKEND_PORT:-4031}:4030"
@@ -17,8 +17,29 @@ services:
       - DATABASE_ZOLEXORA_TMS_EXTERNAL_DATABASE_URL
       - DATABASE_ZOLEXORA_TMS_INTERNAL_DATABASE_URL
       - DATABASE_URL
-      - FIREBASE_PROJECT_ID=zolexora-platform
-      - PATH=/app/.venv/bin:/usr/local/bin:/usr/bin:/bin
+      # All values below are injected by Infisical (scripts/with-secrets.sh); nothing is hardcoded.
+      # NODE_ENV unset => backend runs in production mode (strict auth, no /docs).
+      - NODE_ENV
+      - FIREBASE_PROJECT_ID
+      - FIREBASE_ALLOWED_PROJECTS
+      - PLATFORM_ADMIN_EMAILS
+      - CORS_ORIGINS
+      - OPERATIONS_TIMEZONE
+      - REDIS_URL
+      - SENTRY_DSN
+      - RESEND_API_KEY
+      - CASHFREE_APP_ID
+      - CASHFREE_SECRET_KEY
+      - CASHFREE_ENV
+      - CLOUDFLARE_ACCOUNT_ID
+      - CLOUDFLARE_API_TOKEN
+      - CLOUDFLARE_R2_ACCESS_KEY
+      - CLOUDFLARE_R2_SECRET_KEY
+      - CLOUDFLARE_R2_BUCKET
+      - R2_ENDPOINT_URL
+      - R2_PUBLIC_BASE_URL
+      - CLOUDINARY_URL
+      - CLOUDINARY_CLOUD_NAME
     healthcheck:
       test:
       - CMD
@@ -114,8 +135,8 @@ services:
     image: ${TMS_NGINX_IMAGE:-ghcr.io/zolexora/tms-nginx:latest}
     pull_policy: missing
     build:
-      context: .
-      dockerfile: Dockerfile.nginx
+      context: ../../
+      dockerfile: products/zolexora-tms/Dockerfile.nginx
     container_name: tms-nginx
     ports:
     - "${TMS_PORT:-3090}:80"

@@ -3,42 +3,39 @@
 ## Getting Started
 
 ```bash
-git clone https://github.com/Zolexora/Zolexora_TMS
 pnpm install
+infisical login          # one-time; secrets come only from Infisical
 ```
-
-> `pnpm install` automatically installs the pre-commit hook via the `prepare` script.
 
 ---
 
-## Environment Variables
+## Secrets & Environment Variables
 
-This repo uses [dotenvx](https://dotenvx.com) to safely commit an **encrypted** `.env` to version control.
+**Infisical is the only secret source.** No `.env` files are read, and there is no dotenvx or Bitwarden step.
 
-### How it works
-- `.env` — encrypted, committed to the repo (safe to share)
-- `.env.keys` — your private decryption key, **never committed** (gitignored)
+Every command that needs secrets runs through one wrapper:
 
-### Adding a new key
-1. Add it in plain text to `.env`:
-   ```bash
-   echo "NEW_KEY=value" >> .env
-   ```
-2. Re-encrypt:
-   ```bash
-   echo "" | pnpm dotenvx encrypt
-   ```
-3. Commit:
-   ```bash
-   git add -f .env && git commit -m "chore: add NEW_KEY"
-   ```
-
-### Pre-commit hook
-A pre-commit hook in [`scripts/hooks/pre-commit`](scripts/hooks/pre-commit) automatically encrypts `.env` before every commit — so you can't accidentally commit plaintext secrets.
-
-It is installed automatically by `pnpm install` via the `prepare` script in [`package.json`](package.json).
-
-### Running with decrypted env
 ```bash
-pnpm dotenvx run -- <your-command>
+bash products/zolexora-tms/scripts/with-secrets.sh <command>
 ```
+
+It injects two Infisical scopes (env from `INFISICAL_ENV`, default `dev`):
+
+| Scope | Project | Path |
+|---|---|---|
+| App secrets | `188824cd-…` | `/Firebase_Credentials/Zolexora_TMS` |
+| Database | `c4ac7d07-…` | `/Render_Postgraes` |
+
+If Infisical isn't authenticated, the wrapper warns and continues with the current shell environment (non-blocking).
+
+The keys that must exist in Infisical are listed in [`.env.example`](.env.example) (reference only — don't copy it to `.env`).
+
+### Running
+
+```bash
+pnpm start:tms              # local dev (backend + web + admin) via scripts/local-start.sh
+pnpm docker:tms:start       # Docker stack via scripts/docker-start.sh
+pnpm dev:tms:api:infisical  # backend only
+```
+
+`NODE_ENV` controls backend strictness: `development` / `test` enable `/docs`; anything else (including unset) runs in production mode.

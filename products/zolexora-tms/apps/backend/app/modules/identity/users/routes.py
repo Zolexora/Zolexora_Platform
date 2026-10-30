@@ -5,7 +5,7 @@ from typing import List, Optional
 from sqlalchemy import text
 
 from app.auth.dependencies import AuthenticatedIdentity, get_current_identity, AuthenticatedUser, get_current_user
-from app.db.session import get_db
+from app.db.session import get_db, rls_bypass
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Auth"])
@@ -48,7 +48,8 @@ async def get_current_user_profile(
                 FROM public.organisation_members m
                 WHERE m.user_id = :user_id AND m.organisation_id = :org_id AND m.status = 'ACTIVE'
             """)
-            result = await db.execute(query, {"user_id": identity.id, "org_id": requested_org_id})
+            async with rls_bypass(db):
+                result = await db.execute(query, {"user_id": identity.id, "org_id": requested_org_id})
             row = result.mappings().first()
         except ValueError:
             pass
@@ -64,7 +65,8 @@ async def get_current_user_profile(
             ORDER BY m.created_at ASC
             LIMIT 1
         """)
-        result = await db.execute(query, {"user_id": identity.id})
+        async with rls_bypass(db):
+            result = await db.execute(query, {"user_id": identity.id})
         row = result.mappings().first()
 
     return UserMeResponse(
@@ -103,7 +105,8 @@ async def get_my_organisations(
             OrganisationMember.status == MemberStatus.ACTIVE
         )
     )
-    res = await db.execute(stmt)
+    async with rls_bypass(db):  # lists the caller's memberships across organisations
+        res = await db.execute(stmt)
     rows = res.all()
     return [
         UserOrganisationResponse(

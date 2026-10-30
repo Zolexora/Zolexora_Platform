@@ -34,12 +34,12 @@ class Driver(Base, TimestampMixin):
     aadhaar_last4: Mapped[str | None] = mapped_column(String(4), nullable=True)
     pan: Mapped[str | None] = mapped_column(String(10), nullable=True)
     driver_type: Mapped[DriverType] = mapped_column(
-        Enum(DriverType, name="driver_type", create_type=False),
+        Enum(DriverType, name="driver_employment_type", create_type=False),
         nullable=False,
         default=DriverType.PERMANENT,
     )
     status: Mapped[DriverStatus] = mapped_column(
-        Enum(DriverStatus, name="driver_status", create_type=False),
+        Enum(DriverStatus, name="driver_operational_status", create_type=False),
         nullable=False,
         default=DriverStatus.AVAILABLE,
     )

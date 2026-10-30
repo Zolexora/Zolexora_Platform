@@ -5,14 +5,16 @@ from app.core.config import settings
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
-# Initialize Redis client
-redis_client = redis.from_url(settings.REDIS_URL, decode_responses=True)
+# Redis client (created only when REDIS_URL is configured)
+redis_client = redis.from_url(settings.REDIS_URL, decode_responses=True) if settings.REDIS_URL else None
 
 class ResendOTPRequest(BaseModel):
     email: EmailStr
 
 @router.post("/resend-otp")
 async def resend_otp(request: ResendOTPRequest, req: Request):
+    if redis_client is None:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="OTP rate limiting is not configured")
     email = request.email.lower().strip()
     redis_key = f"otp_resend_count:{email}"
 

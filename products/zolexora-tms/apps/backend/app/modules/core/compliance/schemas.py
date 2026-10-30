@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 from typing import List, Optional
 import uuid
 import datetime
@@ -75,7 +75,8 @@ class ComplianceRecordBase(BaseModel):
     mime_type: Optional[str] = None
     issued_date: Optional[datetime.date] = None
     expiry_date: Optional[datetime.date] = None
-    metadata_: Optional[dict] = Field(None, alias="metadata")
+    # ORM attribute is metadata_ (SQLAlchemy reserves "metadata"); the API field is "metadata"
+    metadata_: Optional[dict] = Field(None, validation_alias=AliasChoices("metadata_", "metadata"), serialization_alias="metadata")
 
 class ComplianceRecordCreate(ComplianceRecordBase):
     pass

@@ -8,7 +8,6 @@ export function PaymentsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   
   // Simple form state
-  const [customerId] = useState('');
   const [invoiceId, setInvoiceId] = useState('');
   const [amount, setAmount] = useState('');
   const [paymentMethod] = useState('BANK_TRANSFER');
@@ -30,7 +29,8 @@ export function PaymentsPage() {
     mutationFn: () => apiClient('/api/v1/payments', {
       method: 'POST',
       body: JSON.stringify({
-        customer_id: customerId || "00000000-0000-0000-0000-000000000000",
+        // Payments are attributed to the allocated invoice's customer; unallocated receipts have none
+        customer_id: allocatableInvoices.find((i) => i.id === invoiceId)?.customer_id ?? null,
         provider: "BANK",
         provider_transaction_id: refId,
         payment_method: paymentMethod,

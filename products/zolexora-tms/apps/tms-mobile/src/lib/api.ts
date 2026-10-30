@@ -10,7 +10,7 @@ export function getApiBaseUrl(): string {
   if (extraUrl) {
     return String(extraUrl);
   }
-  return 'http://localhost:4030';
+  throw new Error('EXPO_PUBLIC_API_BASE_URL is not configured');
 }
 
 export async function apiClient<T>(

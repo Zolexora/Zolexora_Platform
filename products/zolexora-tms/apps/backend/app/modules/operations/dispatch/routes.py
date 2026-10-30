@@ -2,13 +2,13 @@ import logging
 import uuid
 from typing import Optional
 from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect, status
-from sqlalchemy import desc, select
+from sqlalchemy import desc, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.dependencies import get_current_active_organisation, CurrentUserContext
+from app.auth.dependencies import get_current_active_organisation, get_current_identity, CurrentUserContext
 from app.auth.jwks import verify_firebase_jwt
 from app.core.websocket import ws_manager
-from app.db.session import get_db
+from app.db.session import AsyncSessionLocal, get_db, rls_bypass
 from app.modules.operations.duties.models import Duty, DutyStatus
 from app.modules.operations.duties.schemas import DutyResponse
 
@@ -47,9 +47,12 @@ async def get_dispatch_board(
         "DUTY_COMPLETED": [],
     }
 
+    # Assigned / accepted duties are not yet dispatched: show them in the ALLOCATED lane
+    allocated = {DutyStatus.ASSIGNED, DutyStatus.ACCEPTED, DutyStatus.DRIVER_ACCEPTANCE_PENDING}
     for d in all_duties:
-        if d.status.value in board:
-            board[d.status.value].append(d)
+        lane = "ALLOCATED" if d.status in allocated else d.status.value
+        if lane in board:
+            board[lane].append(d)
 
     return {
         "organisation_id": ctx.organisation_id,
@@ -74,11 +77,20 @@ async def websocket_ops_endpoint(
 
     try:
         claims = await verify_firebase_jwt(token)
-        if not claims.get("sub"):
-            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-            return
+        identity = await get_current_identity(claims)
     except Exception as e:
         logger.warning(f"WebSocket auth rejected: {e}")
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
+    # The caller must be an active member of the organisation whose events they subscribe to
+    async with AsyncSessionLocal() as db, rls_bypass(db):
+        res = await db.execute(
+            text("SELECT 1 FROM public.organisation_members WHERE user_id = :u AND organisation_id = :o AND status = 'ACTIVE'"),
+            {"u": identity.id, "o": org_id},
+        )
+        is_member = res.scalar() is not None
+    if not is_member:
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
 

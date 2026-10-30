@@ -39,13 +39,11 @@ async def create_payment(
         payment_date=request.payment_date,
         status=PaymentStatus.SUCCESS, # Assume success for manual entry
         notes=request.notes,
-        metadata_dict={},
+        metadata_={},
         created_by_user_id=current_user.id
     )
     db.add(payment)
     await db.flush() # Get payment.id
-    
-    allocations_db = []
     
     # Process allocations and update invoices
     for alloc in request.allocations:
@@ -59,6 +57,11 @@ async def create_payment(
         if not invoice:
             raise HTTPException(status_code=404, detail=f"Invoice {alloc.invoice_id} not found")
             
+        if payment.customer_id is None:
+            payment.customer_id = invoice.customer_id
+        elif invoice.customer_id != payment.customer_id:
+            raise HTTPException(status_code=400, detail=f"Invoice {invoice.id} belongs to a different customer")
+
         if invoice.status not in [InvoiceStatus.FINALIZED, InvoiceStatus.PARTIALLY_PAID]:
             raise HTTPException(status_code=400, detail=f"Cannot allocate payment to invoice {invoice.id} because it is {invoice.status}")
             
@@ -70,7 +73,6 @@ async def create_payment(
             invoice_id=invoice.id,
             amount_allocated=alloc.amount_allocated
         )
-        allocations_db.append(pa)
         db.add(pa)
         
         invoice.amount_paid += alloc.amount_allocated
@@ -81,9 +83,9 @@ async def create_payment(
         elif invoice.amount_paid > 0:
             invoice.status = InvoiceStatus.PARTIALLY_PAID
             
-    payment.allocations = allocations_db
     await db.commit()
     await db.refresh(payment)
+    await db.refresh(payment, ["allocations"])
     return payment
 
 @router.get("", response_model=List[PaymentResponse])

@@ -1,3 +1,4 @@
+from types import SimpleNamespace
 import uuid
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -73,6 +74,7 @@ async def create_payable(
     db.add(payable)
     await db.commit()
     await db.refresh(payable)
+    await db.refresh(payable, ["lines"])
     
     return payable
 
@@ -225,10 +227,8 @@ async def generate_payable_pdf(
         d_query = await db.execute(select(Driver).where(Driver.id == payable.driver_id))
         driver = d_query.scalar_one_or_none()
         if driver:
-            # Create a mock vendor object for the PDF
-            class MockVendor:
-                name = f"{driver.first_name} {driver.last_name}"
-            vendor = MockVendor()
+            # The PDF only needs a payee name
+            vendor = SimpleNamespace(name=f"{driver.first_name} {driver.last_name}")
             
     pdf_bytes = generate_vendor_payable_pdf_bytes(payable, org, vendor)
     
@@ -237,10 +237,9 @@ async def generate_payable_pdf(
     
     pdf_url = await upload_document_to_r2(
         file_bytes=pdf_bytes,
-        filename=filename,
+        file_name=filename,
         content_type="application/pdf",
         folder=folder,
-        org_id=current_org_user.organisation_id
     )
     
     return {"pdf_url": pdf_url}

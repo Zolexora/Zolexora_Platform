@@ -100,6 +100,21 @@ export const createOrUpdateRecord = async (data: Partial<ComplianceRecord>): Pro
   });
 };
 
+export const uploadRecordDocument = async (data: {
+  file: File;
+  requirement_id: string;
+  entity_type: ComplianceEntityType;
+  entity_id: string;
+  document_number?: string;
+  expiry_date?: string;
+}): Promise<ComplianceRecord> => {
+  const form = new FormData();
+  for (const [key, value] of Object.entries(data)) {
+    if (value) form.append(key, value);
+  }
+  return apiClient<ComplianceRecord>('/api/v1/compliance/records/upload', { method: 'POST', body: form });
+};
+
 export const verifyRecord = async (recordId: string, method: string = 'MANUAL', comments?: string): Promise<ComplianceRecord> => {
   return apiClient<ComplianceRecord>(`/api/v1/compliance/records/${recordId}/verify`, {
     method: 'POST',

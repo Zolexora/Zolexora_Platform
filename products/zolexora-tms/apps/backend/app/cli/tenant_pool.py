@@ -2,21 +2,16 @@ import argparse
 import asyncio
 import os
 import httpx
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 from app.db.session import AsyncSessionLocal
 from app.core.config import settings
-from dotenv import load_dotenv
-
-load_dotenv()
 
 def print_section(title):
     print(f"\n{title}")
     print("-" * len(title))
 
 async def check_env():
-    env = getattr(settings, "ENVIRONMENT", "development")
-    if env == "production" or env == "prod" or env == "live":
+    if not settings.IS_DEV_OR_TEST:
         print("PRODUCTION SAFETY GATE: BLOCKED")
         return False
     return True
@@ -41,28 +36,6 @@ async def attempt_d1_provisioning():
             return "AVAILABLE"
         except Exception as e:
             print(f"CLOUDFLARE D1 NETWORK ERROR: {str(e)}")
-            return "BLOCKED"
-
-async def attempt_mongo_provisioning():
-    mongo_project = os.getenv("MONGODB_ATLAS_PROJECT_ID")
-    mongo_token = os.getenv("MONGODB_ATLAS_ACCESS_TOKEN")
-    
-    if not mongo_project or not mongo_token:
-        print("MONGODB CREDENTIALS: NOT FOUND")
-        return "BLOCKED"
-        
-    async with httpx.AsyncClient() as client:
-        try:
-            res = await client.get(
-                f"https://cloud.mongodb.com/api/atlas/v2/groups/{mongo_project}/clusters",
-                headers={"Authorization": f"Bearer {mongo_token}", "Accept": "application/vnd.atlas.2023-01-01+json"}
-            )
-            if res.status_code != 200:
-                print(f"MONGODB ATLAS API ERROR: {res.status_code} - {res.text}")
-                return "BLOCKED"
-            return "AVAILABLE"
-        except Exception as e:
-            print(f"MONGODB ATLAS NETWORK ERROR: {str(e)}")
             return "BLOCKED"
 
 async def attempt_cloudinary_provisioning():
@@ -98,12 +71,6 @@ async def provision():
     for i in range(1, 11):
         print(f"zolexora-tms-dev-{i:03d} -> {d1_status}")
     print(f"D1 POOL PROVISIONING: {d1_status}")
-    
-    print_section("Checking MongoDB Atlas")
-    mongo_status = await attempt_mongo_provisioning()
-    for i in range(1, 11):
-        print(f"zolexora_tenant_{i:03d} -> {mongo_status}")
-    print(f"MONGODB POOL PROVISIONING: {mongo_status}")
     
     print_section("Checking Cloudinary")
     cld_status = await attempt_cloudinary_provisioning()

@@ -115,3 +115,32 @@ __all__.extend([
     "VendorStatus",
     "VendorType"
 ])
+
+# Operations, finance and compliance models (schema defined by Alembic migrations)
+from app.modules.core.audit.models import AuditLog
+from app.modules.crm.customers.models import Customer
+from app.modules.operations.bookings.models import Booking, BookingRequest
+from app.modules.operations.duties.models import Duty, DutyAssignment
+from app.modules.operations.trips.models import Trip, TripEvent
+from app.modules.finance.billing.models import (
+    BillingRecord, FinancialSnapshot, FinancialSnapshotLine, RateCard, RateCardVersion, RateCardRule,
+)
+from app.modules.finance.expenses.models import Expense
+from app.modules.finance.invoices.models import (
+    Invoice, InvoiceLine, InvoiceTaxLine,
+    FinancialAdjustmentNote, FinancialAdjustmentNoteLine, FinancialAdjustmentNoteTaxLine,
+)
+from app.modules.finance.payables.models import Payable, PayableLine, Settlement, VendorSettlementStatement
+from app.modules.finance.payments.models import Payment, PaymentAllocation, PaymentEvent
+from app.modules.finance.pl.models import FinancialPeriod, FinancialAuditLog
+from app.modules.core.compliance.models import ComplianceRequirement, ComplianceRecord, ComplianceVerification
+
+__all__.extend([
+    "AuditLog", "Customer", "Booking", "BookingRequest", "Duty", "DutyAssignment", "Trip", "TripEvent",
+    "BillingRecord", "FinancialSnapshot", "FinancialSnapshotLine", "RateCard", "RateCardVersion", "RateCardRule",
+    "Expense", "Invoice", "InvoiceLine", "InvoiceTaxLine",
+    "FinancialAdjustmentNote", "FinancialAdjustmentNoteLine", "FinancialAdjustmentNoteTaxLine",
+    "Payable", "PayableLine", "Settlement", "VendorSettlementStatement",
+    "Payment", "PaymentAllocation", "PaymentEvent", "FinancialPeriod", "FinancialAuditLog",
+    "ComplianceRequirement", "ComplianceRecord", "ComplianceVerification",
+])

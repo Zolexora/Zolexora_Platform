@@ -1,3 +1,5 @@
+import logging
+from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional
 import uuid
 from fastapi import Depends, HTTPException, Security, status, Request
@@ -10,13 +12,16 @@ from app.core.tenant import TenantContext
 from app.core.config import settings
 from app.modules.core.platform.models import ProviderType
 from app.auth.jwks import verify_firebase_jwt
-from app.db.session import get_db
+from app.db.session import get_db, rls_bypass, set_tenant_context
+
+logger = logging.getLogger(__name__)
 
 security = HTTPBearer(auto_error=False)
 
 class AuthenticatedIdentity(BaseModel):
     id: uuid.UUID
     email: Optional[str] = None
+    email_verified: bool = False
     full_name: Optional[str] = None
 
 class AuthenticatedUser(AuthenticatedIdentity):
@@ -52,9 +57,10 @@ async def get_current_claims(
         claims = await verify_firebase_jwt(credentials.credentials)
         return claims
     except Exception as e:
+        logger.info(f"Rejected authorization token: {e}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Invalid or expired authorization token: {str(e)}",
+            detail="Invalid or expired authorization token",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -81,6 +87,7 @@ async def get_current_identity(
     return AuthenticatedIdentity(
         id=user_uuid,
         email=claims.get("email"),
+        email_verified=claims.get("email_verified") is True,
         full_name=full_name,
     )
 
@@ -110,7 +117,8 @@ async def get_current_active_organisation(
             FROM public.organisation_members m
             WHERE m.user_id = :user_id AND m.organisation_id = :org_id AND m.status = 'ACTIVE'
         """)
-        result = await db.execute(query, {"user_id": identity.id, "org_id": requested_org_id})
+        async with rls_bypass(db):
+            result = await db.execute(query, {"user_id": identity.id, "org_id": requested_org_id})
         row = result.mappings().first()
         
         if not row:
@@ -130,7 +138,8 @@ async def get_current_active_organisation(
             ORDER BY m.created_at ASC
             LIMIT 1
         """)
-        result = await db.execute(query, {"user_id": identity.id})
+        async with rls_bypass(db):
+            result = await db.execute(query, {"user_id": identity.id})
         row = result.mappings().first()
         
         if not row:
@@ -140,16 +149,7 @@ async def get_current_active_organisation(
             )
 
     # Establish transaction-scoped PostgreSQL session context for Row-Level Security (RLS)
-    org_id_str = str(row["organisation_id"])
-    await db.execute(
-        text("SELECT set_config('app.current_organisation_id', :org_id, true)"),
-        {"org_id": org_id_str}
-    )
-    if row.get("is_commander"):
-        commander_bypass = request.headers.get("X-Commander-Bypass-RLS", "").lower()
-        if commander_bypass == "true":
-            await db.execute(text("SELECT set_config('app.bypass_rls', 'on', true)"))
-
+    await set_tenant_context(db, row["organisation_id"])
     return AuthenticatedUser(
         id=identity.id,
         email=identity.email,
@@ -158,6 +158,21 @@ async def get_current_active_organisation(
         is_creator=row["is_creator"],
         is_commander=row["is_commander"],
     )
+
+@dataclass
+class OrgContext:
+    """Request-scoped tenant context for Postgres-backed services (RLS is already set on `db`)."""
+    organisation_id: uuid.UUID
+    user_id: uuid.UUID
+    db: AsyncSession
+
+
+async def get_org_context(
+    user: AuthenticatedUser = Depends(get_current_active_organisation),
+    db: AsyncSession = Depends(get_db),
+) -> OrgContext:
+    return OrgContext(organisation_id=user.organisation_id, user_id=user.id, db=db)
+
 
 async def get_current_user(user: AuthenticatedUser = Depends(get_current_active_organisation)) -> AuthenticatedUser:
     # Alias to not break legacy routes
@@ -221,7 +236,7 @@ async def get_tenant_context(
         mongodb_cluster_identifier=row["cluster_identifier"],
         mongodb_database_name=row["mongo_db_name"],
         cloudinary_prefix=row["cloudinary_folder_prefix"] or f"zolexora/organisations/{user.organisation_id}/",
-        r2_bucket=row["r2_bucket"] or "tms-documents",
+        r2_bucket=row["r2_bucket"] or settings.R2_BUCKET_NAME,
         r2_prefix=row["r2_prefix"],
         user_id=user.id,
         role_code="CREATOR" if user.is_creator else "MEMBER",
@@ -234,7 +249,9 @@ async def require_platform_admin(identity: AuthenticatedIdentity = Depends(get_c
     Checks configured PLATFORM_ADMIN_EMAILS first (and auto-provisions), then checks platform_admins table.
     """
     admin_emails = getattr(settings, "PLATFORM_ADMIN_EMAILS", []) or []
-    if identity.email and identity.email.lower() in [e.lower() for e in admin_emails]:
+    # Only a Firebase-verified email may claim admin rights; otherwise anyone could
+    # register an unverified account with an admin address.
+    if identity.email and identity.email_verified and identity.email.lower() in [e.lower() for e in admin_emails]:
         try:
             await db.execute(
                 text("""

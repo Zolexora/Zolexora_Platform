@@ -3,7 +3,7 @@ import logging
 from typing import Any, Dict, Optional
 import httpx
 from jose import jwt, jwk
-from jose.exceptions import JWTError, ExpiredSignatureError
+from jose.exceptions import JWTError
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -40,74 +40,45 @@ async def get_firebase_jwks() -> Dict[str, Any]:
 
 async def verify_firebase_jwt(token: str) -> Dict[str, Any]:
     """
-    Independently verifies Google Firebase ID Token:
-    1. Inspects token header for kid & alg (RS256).
-    2. Matches with Google's public JWKS.
-    3. Validates issuer, audience, and expiration.
+    Verifies a Google Firebase ID token:
+    1. Matches the token's `kid` against Google's public JWKS (RS256 only).
+    2. Validates signature, expiry, audience and issuer for an allowed project.
+    Unsigned or unverifiable tokens are always rejected.
     """
     try:
         headers = jwt.get_unverified_header(token)
     except JWTError as e:
         raise ValueError(f"Invalid token header: {e}")
 
-    alg = headers.get("alg", "RS256")
+    # HS256 test tokens are accepted only when running the test suite.
+    if settings.ENVIRONMENT == "test" and settings.JWT_SECRET and headers.get("alg") == "HS256":
+        return jwt.decode(token, settings.JWT_SECRET, algorithms=["HS256"], options={"verify_aud": False})
+
+    allowed_projects = set(settings.FIREBASE_ALLOWED_PROJECTS) or (
+        {settings.FIREBASE_PROJECT_ID} if settings.FIREBASE_PROJECT_ID else set()
+    )
+    if not allowed_projects:
+        raise ValueError("FIREBASE_PROJECT_ID / FIREBASE_ALLOWED_PROJECTS is not configured")
+
     kid = headers.get("kid")
-
     jwks_data = await get_firebase_jwks()
-    keys = jwks_data.get("keys", [])
-    matched_key = None
-    for k in keys:
-        if k.get("kid") == kid:
-            matched_key = k
-            break
+    matched_key = next((k for k in jwks_data.get("keys", []) if k.get("kid") == kid), None)
+    if not matched_key:
+        raise ValueError("Token signing key not recognised")
 
-    if not matched_key and keys:
-        matched_key = keys[0]
+    public_key = jwk.construct(matched_key)
+    claims = jwt.decode(
+        token,
+        public_key.to_pem().decode("utf-8"),
+        algorithms=["RS256"],
+        options={"verify_aud": False, "verify_iss": False},
+    )
 
-    project_id = getattr(settings, "FIREBASE_PROJECT_ID", "")
-    configured = getattr(settings, "FIREBASE_ALLOWED_PROJECTS", [])
-    allowed_projects = set(configured) if configured else ({project_id} if project_id else set())
-
-    if matched_key:
-        try:
-            public_key = jwk.construct(matched_key)
-            claims = jwt.decode(
-                token,
-                public_key.to_pem().decode("utf-8"),
-                algorithms=["RS256"],
-                options={"verify_aud": False, "verify_iss": False},
-            )
-            aud = claims.get("aud")
-            if aud and aud not in allowed_projects:
-                logger.warning(f"Token audience '{aud}' not in allowed projects: {allowed_projects}")
-                if getattr(settings, "ENVIRONMENT", "development") not in ("development", "test"):
-                    raise ValueError(f"Token issued for unauthorized Firebase audience: {aud}")
-            return claims
-        except Exception as e:
-            logger.warning(f"Signature check failed with JWKS, checking fallback: {e}")
-
-    # Fallback to HS256 symmetric secret if available (for test tokens)
-    if getattr(settings, "JWT_SECRET", None):
-        try:
-            return jwt.decode(
-                token,
-                settings.JWT_SECRET,
-                algorithms=["HS256"],
-                options={"verify_aud": False},
-            )
-        except Exception:
-            pass
-
-    # In development/test mode, gracefully decode claims if signature validation is not strictly required
-    if getattr(settings, "ENVIRONMENT", "development") in ("development", "test"):
-        claims = jwt.get_unverified_claims(token)
-        exp = claims.get("exp")
-        if exp and exp < datetime.now(timezone.utc).timestamp():
-            raise ExpiredSignatureError("Token has expired")
-        return claims
-
-    raise ValueError("Unable to cryptographically verify Firebase token signature")
-
-
-# Backward compatibility alias
-verify_supabase_jwt = verify_firebase_jwt
+    aud = claims.get("aud")
+    if aud not in allowed_projects:
+        raise ValueError(f"Token issued for unauthorized Firebase project: {aud}")
+    if claims.get("iss") != f"https://securetoken.google.com/{aud}":
+        raise ValueError("Token issuer does not match Firebase project")
+    if not claims.get("sub"):
+        raise ValueError("Token subject missing")
+    return claims

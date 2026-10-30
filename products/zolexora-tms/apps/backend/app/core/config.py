@@ -5,15 +5,14 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(
-        env_file=(".env", "../../.env"),
-        env_file_encoding="utf-8",
-        extra="ignore",
-    )
+    # Secrets come only from the process environment, injected by `infisical run`
+    # (see products/zolexora-tms/scripts/with-secrets.sh). No .env files are read.
+    model_config = SettingsConfigDict(extra="ignore")
 
     # Core Application
     PROJECT_NAME: str = "Zolexora TMS API"
-    ENVIRONMENT: str = Field(default="development", validation_alias="NODE_ENV")
+    # Fail closed: anything other than development/test is treated as production.
+    ENVIRONMENT: str = Field(default="production", validation_alias="NODE_ENV")
     PORT: int = 4030
     API_V1_PREFIX: str = "/api/v1"
     DEBUG: bool = False
@@ -52,7 +51,9 @@ class Settings(BaseSettings):
             pwd = quote_plus(self.DATABASE_ZOLEXORA_TMS_PASSWORD or "")
             host = self.DATABASE_ZOLEXORA_TMS_HOST
             port = self.DATABASE_ZOLEXORA_TMS_PORT or 5432
-            db_name = self.DATABASE_ZOLEXORA_TMS_NAME or "postgres"
+            db_name = self.DATABASE_ZOLEXORA_TMS_NAME
+            if not db_name:
+                raise ValueError("DATABASE_ZOLEXORA_TMS_NAME must be set alongside DATABASE_ZOLEXORA_TMS_HOST")
             return f"postgresql://{user}:{pwd}@{host}:{port}/{db_name}"
         if self.DATABASE_ZOLEXORA_TMS_INTERNAL_DATABASE_URL:
             return self.DATABASE_ZOLEXORA_TMS_INTERNAL_DATABASE_URL
@@ -77,13 +78,6 @@ class Settings(BaseSettings):
     )
     # Comma-separated allowed Firebase audience project IDs
     FIREBASE_ALLOWED_PROJECTS: List[str] = Field(default=[], validation_alias="FIREBASE_ALLOWED_PROJECTS")
-    # Supabase (Legacy / DB Storage)
-    SUPABASE_URL: str = Field(default="", validation_alias="SUPABASE_URL")
-    SUPABASE_PROJECT_REF: str = Field(default="", validation_alias="SUPABASE_PROJECT_REF")
-    SUPABASE_ANON_KEY: str = Field(default="", validation_alias="SUPABASE_ANON_KEY")
-    SUPABASE_SERVICE_ROLE_KEY: str = Field(
-        default="", validation_alias="SUPABASE_SERVICE_ROLE_KEY"
-    )
     JWT_SECRET: Optional[str] = Field(default=None, validation_alias="JWT_SECRET")
 
     # Payment Gateway (Cashfree)
@@ -97,8 +91,10 @@ class Settings(BaseSettings):
     )
     R2_ACCESS_KEY_ID: Optional[str] = Field(default=None, validation_alias="CLOUDFLARE_R2_ACCESS_KEY")
     R2_SECRET_ACCESS_KEY: Optional[str] = Field(default=None, validation_alias="CLOUDFLARE_R2_SECRET_KEY")
-    R2_BUCKET_NAME: str = Field(default="zolexora-assets", validation_alias="CLOUDFLARE_R2_BUCKET")
-    R2_ENDPOINT_URL: Optional[str] = None
+    R2_BUCKET_NAME: Optional[str] = Field(default=None, validation_alias="CLOUDFLARE_R2_BUCKET")
+    R2_ENDPOINT_URL: Optional[str] = Field(default=None, validation_alias="R2_ENDPOINT_URL")
+    # Public base URL documents are served from (custom domain or r2.dev URL)
+    R2_PUBLIC_BASE_URL: Optional[str] = Field(default=None, validation_alias="R2_PUBLIC_BASE_URL")
 
     CLOUDINARY_CLOUD_NAME: Optional[str] = Field(default=None, validation_alias="CLOUDINARY_CLOUD_NAME")
     CLOUDINARY_URL: Optional[str] = Field(default=None, validation_alias="CLOUDINARY_URL")
@@ -107,10 +103,17 @@ class Settings(BaseSettings):
     RESEND_API_KEY: Optional[str] = Field(default=None, validation_alias="RESEND_API_KEY")
 
     # Background Tasks (Redis & Dramatiq)
-    REDIS_URL: str = Field(default="redis://localhost:6379/0", validation_alias="REDIS_URL")
+    REDIS_URL: Optional[str] = Field(default=None, validation_alias="REDIS_URL")
+
+    # IANA timezone for operational dates without an offset (e.g. R1 CSV imports), e.g. Asia/Kolkata
+    OPERATIONS_TIMEZONE: Optional[str] = Field(default=None, validation_alias="OPERATIONS_TIMEZONE")
 
     # Observability (Sentry)
     SENTRY_DSN: Optional[str] = Field(default=None, validation_alias="SENTRY_DSN")
+
+    @property
+    def IS_DEV_OR_TEST(self) -> bool:
+        return self.ENVIRONMENT in ("development", "test")
 
 
 settings = Settings()

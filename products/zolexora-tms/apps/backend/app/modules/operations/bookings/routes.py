@@ -2,7 +2,7 @@ import uuid
 from typing import Optional
 from fastapi import APIRouter, Body, Depends, Query, status
 
-from app.auth.dependencies import TenantContext, get_tenant_context
+from app.auth.dependencies import OrgContext, get_org_context
 from app.modules.operations.bookings.schemas import BookingCreate, BookingResponse
 from app.modules.operations.bookings import service
 from app.modules.operations.bookings.schemas import BookingStatus
@@ -13,7 +13,7 @@ router = APIRouter(prefix="/api/v1/bookings", tags=["Bookings"])
 @router.post("", response_model=BookingResponse, status_code=status.HTTP_201_CREATED)
 async def create_booking(
     req: BookingCreate,
-    ctx: TenantContext = Depends(get_tenant_context),
+    ctx: OrgContext = Depends(get_org_context),
 ):
     return await service.create_booking(ctx, req)
 
@@ -24,7 +24,7 @@ async def list_bookings(
     customer_id: Optional[uuid.UUID] = None,
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
-    ctx: TenantContext = Depends(get_tenant_context),
+    ctx: OrgContext = Depends(get_org_context),
 ):
     return await service.list_bookings(ctx, status, customer_id, skip, limit)
 
@@ -32,7 +32,7 @@ async def list_bookings(
 @router.get("/{booking_id}", response_model=BookingResponse)
 async def get_booking(
     booking_id: uuid.UUID,
-    ctx: TenantContext = Depends(get_tenant_context),
+    ctx: OrgContext = Depends(get_org_context),
 ):
     return await service.get_booking(ctx, booking_id)
 
@@ -41,7 +41,7 @@ async def get_booking(
 async def cancel_booking(
     booking_id: uuid.UUID,
     reason: Optional[str] = Body(None, embed=True),
-    ctx: TenantContext = Depends(get_tenant_context),
+    ctx: OrgContext = Depends(get_org_context),
 ):
     return await service.cancel_booking(ctx, booking_id, reason)
 
@@ -50,7 +50,7 @@ async def cancel_booking(
 async def create_duty_from_booking(
     booking_id: uuid.UUID,
     req: dict = Body(...),
-    ctx: TenantContext = Depends(get_tenant_context),
+    ctx: OrgContext = Depends(get_org_context),
 ):
     from app.modules.operations.duties.schemas import DutyCreate, DutyResponse
     from app.modules.operations.duties import service as duty_service

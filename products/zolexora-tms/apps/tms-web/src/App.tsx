@@ -27,7 +27,6 @@ import { WorkspaceSettingsPage } from './features/organization/WorkspaceSettings
 import { RolesPage } from './features/organization/RolesPage';
 import { MembersPage } from './features/organization/MembersPage';
 import { OperatingUnitsPage } from './features/operations/OperatingUnitsPage';
-import { R1TikriOperationsPage } from './features/extensions/r1rcm/R1TikriOperationsPage';
 import { AuthCallback } from './features/auth/AuthCallback';
 import CompliancePage from './pages/compliance/CompliancePage';
 import { ApplicationRuntimeProvider } from './providers/ApplicationRuntimeProvider';
@@ -95,7 +94,6 @@ export function App() {
 
                 
                 {/* Customer Specific Extensions */}
-                <Route path="/operations/r1rcm/tikri" element={<R1TikriOperationsPage />} />
               </Route>
             </Route>
 

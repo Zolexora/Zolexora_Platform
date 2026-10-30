@@ -41,9 +41,6 @@
     "experiments": {
       "typedRoutes": true
     },
-    "extra": {
-      "apiBaseUrl": "http://localhost:4030"
-    },
     "owner": "zolexora"
   }
 }

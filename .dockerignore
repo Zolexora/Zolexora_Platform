@@ -9,6 +9,10 @@ __pycache__/
 .env
 .env.*
 node_modules/
+**/.venv/
+**/.pytest_cache/
+**/.ruff_cache/
+**/.mypy_cache/
 **/node_modules/
 **/.next/
 **/.turbo/

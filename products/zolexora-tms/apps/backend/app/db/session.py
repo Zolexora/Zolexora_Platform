@@ -1,5 +1,8 @@
+from contextlib import asynccontextmanager
 from typing import AsyncGenerator
+from sqlalchemy import event, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import Session
 from app.core.config import settings
 
 connect_args = {"statement_cache_size": 0}
@@ -23,6 +26,34 @@ AsyncSessionLocal = async_sessionmaker(
     autocommit=False,
     autoflush=False,
 )
+
+
+@event.listens_for(Session, "after_begin")
+def _apply_tenant_context(session, transaction, connection):
+    """Re-apply the RLS tenant context at the start of every transaction.
+    set_config(..., true) is transaction-local, so without this a commit() would
+    drop the context and later queries in the same request would see no rows."""
+    org_id = session.info.get("organisation_id")
+    if org_id:
+        connection.execute(
+            text("SELECT set_config('app.current_organisation_id', :org_id, true)"), {"org_id": org_id}
+        )
+
+
+async def set_tenant_context(db: AsyncSession, org_id) -> None:
+    """Pin the session to one tenant for RLS: applied now and on every later transaction."""
+    db.info["organisation_id"] = str(org_id)
+    await db.execute(text("SELECT set_config('app.current_organisation_id', :org_id, true)"), {"org_id": str(org_id)})
+
+
+@asynccontextmanager
+async def rls_bypass(db: AsyncSession):
+    """Transaction-local RLS bypass for lookups that run before the tenant is known
+    (a user's own memberships). Keep the block to the lookup itself; on error the
+    rollback discards the setting."""
+    await db.execute(text("SELECT set_config('app.bypass_rls', 'on', true)"))
+    yield
+    await db.execute(text("SELECT set_config('app.bypass_rls', 'off', true)"))
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:

@@ -54,7 +54,7 @@ export function BookingsPage() {
   // Fetch Customers for selector
   const { data: customers } = useQuery({
     queryKey: ['customers'],
-    queryFn: () => apiClient<Customer[]>('/api/v1/customers'),
+    queryFn: () => apiClient<Customer[]>('/api/v1/crm/clients'),
   });
 
   // Fetch Bookings

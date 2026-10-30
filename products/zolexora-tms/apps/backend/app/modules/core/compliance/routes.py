@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query, Body, Path
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Body, Path, UploadFile, File, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from typing import List, Optional
 import uuid
 import datetime
 
+from app.core.storage import upload_document_to_r2
 from app.db.session import get_db
 from app.auth.dependencies import get_current_user, require_permission
 from app.modules.identity.users.models import Profile
@@ -78,49 +79,87 @@ async def list_records(
     res = await db.execute(stmt)
     return res.scalars().all()
 
+async def _upsert_record(req: ComplianceRecordCreate, org_id: uuid.UUID, db: AsyncSession) -> ComplianceRecord:
+    req_obj = (await db.execute(select(ComplianceRequirement).where(
+        ComplianceRequirement.id == req.requirement_id,
+        (ComplianceRequirement.organisation_id == org_id) | (ComplianceRequirement.organisation_id.is_(None)),
+    ))).scalars().first()
+    if not req_obj:
+        raise HTTPException(status_code=404, detail="Compliance requirement not found")
+
+    record = (await db.execute(select(ComplianceRecord).where(
+        ComplianceRecord.organisation_id == org_id,
+        ComplianceRecord.requirement_id == req.requirement_id,
+        ComplianceRecord.entity_id == req.entity_id,
+        ComplianceRecord.entity_type == req.entity_type,
+    ))).scalars().first()
+
+    if record:
+        for k, v in req.model_dump(exclude_unset=True).items():
+            setattr(record, k, v)
+        # A replacement document must be re-verified
+        if req.document_url and record.status != ComplianceStatus.VALID:
+            record.status = ComplianceStatus.VERIFICATION_REQUIRED if req_obj.verification_required else ComplianceStatus.VALID
+    else:
+        record = ComplianceRecord(organisation_id=org_id, **req.model_dump())
+        if req.document_url and req_obj.verification_required:
+            record.status = ComplianceStatus.VERIFICATION_REQUIRED
+        db.add(record)
+
+    await db.commit()
+    await db.refresh(record)
+    return record
+
+
 @router.post("/records", response_model=ComplianceRecordResponse)
 async def create_or_update_record(
     req: ComplianceRecordCreate,
     current_user: Profile = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    stmt = select(ComplianceRecord).where(
-        ComplianceRecord.organisation_id == current_user.organisation_id,
-        ComplianceRecord.requirement_id == req.requirement_id,
-        ComplianceRecord.entity_id == req.entity_id,
-        ComplianceRecord.entity_type == req.entity_type,
+    return await _upsert_record(req, current_user.organisation_id, db)
+
+
+UPLOAD_TYPES = {"application/pdf", "image/jpeg", "image/png", "image/webp"}
+UPLOAD_MAX_BYTES = 10 * 1024 * 1024
+
+
+@router.post("/records/upload", response_model=ComplianceRecordResponse)
+async def upload_record_document(
+    file: UploadFile = File(...),
+    requirement_id: uuid.UUID = Form(...),
+    entity_type: ComplianceEntityType = Form(...),
+    entity_id: uuid.UUID = Form(...),
+    document_number: Optional[str] = Form(None),
+    expiry_date: Optional[datetime.date] = Form(None),
+    current_user: Profile = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stores the document in R2 and attaches it to the entity's compliance record."""
+    if file.content_type not in UPLOAD_TYPES:
+        raise HTTPException(status_code=415, detail="Only PDF, JPEG, PNG or WebP documents are accepted")
+    data = await file.read(UPLOAD_MAX_BYTES + 1)
+    if len(data) > UPLOAD_MAX_BYTES:
+        raise HTTPException(status_code=413, detail="Document exceeds 10 MB")
+
+    url = await upload_document_to_r2(
+        file_bytes=data,
+        file_name=file.filename or "document",
+        content_type=file.content_type,
+        folder=f"organisations/{current_user.organisation_id}/compliance/{entity_type.value.lower()}/{entity_id}",
     )
-    res = await db.execute(stmt)
-    record = res.scalars().first()
-
-    if record:
-        for k, v in req.model_dump(exclude_unset=True).items():
-            setattr(record, k, v)
-        # Reset verification if replacing document
-        if req.document_url and record.status != ComplianceStatus.VALID:
-            if record.requirement.verification_required:
-                record.status = ComplianceStatus.VERIFICATION_REQUIRED
-            else:
-                record.status = ComplianceStatus.VALID
-    else:
-        req_obj_stmt = select(ComplianceRequirement).where(ComplianceRequirement.id == req.requirement_id)
-        req_obj_res = await db.execute(req_obj_stmt)
-        req_obj = req_obj_res.scalars().first()
-        
-        status = req.status
-        if req.document_url and req_obj and req_obj.verification_required:
-            status = ComplianceStatus.VERIFICATION_REQUIRED
-
-        record = ComplianceRecord(
-            organisation_id=current_user.organisation_id,
-            **req.model_dump(by_alias=True)
-        )
-        record.status = status
-        db.add(record)
-
-    await db.commit()
-    await db.refresh(record)
-    return record
+    req = ComplianceRecordCreate(
+        requirement_id=requirement_id,
+        entity_type=entity_type,
+        entity_id=entity_id,
+        status=ComplianceStatus.VERIFICATION_REQUIRED,
+        document_number=document_number,
+        document_url=url,
+        original_filename=file.filename,
+        mime_type=file.content_type,
+        expiry_date=expiry_date,
+    )
+    return await _upsert_record(req, current_user.organisation_id, db)
 
 @router.post("/records/{record_id}/verify", response_model=ComplianceRecordResponse)
 async def verify_record(

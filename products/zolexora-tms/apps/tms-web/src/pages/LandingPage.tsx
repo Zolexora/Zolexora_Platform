@@ -686,9 +686,6 @@ export function LandingPage() {
           </div>
 
           <div className="flex items-center gap-6 text-silver-500">
-            <a href="http://localhost:4030/docs" target="_blank" rel="noreferrer" className="hover:text-silver-300 transition">
-              API Docs
-            </a>
             <Link to="/authentication" className="hover:text-silver-300 transition">
               Authentication
             </Link>

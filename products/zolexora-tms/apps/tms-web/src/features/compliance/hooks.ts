@@ -4,6 +4,7 @@ import {
   createRequirement,
   getRecords,
   createOrUpdateRecord,
+  uploadRecordDocument,
   verifyRecord, waiveRecord,
   evaluateCompliance,
   ComplianceEntityType,
@@ -33,6 +34,17 @@ export const useComplianceRecords = (params?: { entity_type?: ComplianceEntityTy
   return useQuery({
     queryKey: ['compliance', 'records', params],
     queryFn: () => getRecords(params),
+  });
+};
+
+export const useUploadComplianceDocument = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: uploadRecordDocument,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['compliance', 'records'] });
+      queryClient.invalidateQueries({ queryKey: ['compliance', 'evaluate'] });
+    },
   });
 };
 

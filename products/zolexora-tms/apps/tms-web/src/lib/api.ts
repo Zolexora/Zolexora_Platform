@@ -23,7 +23,10 @@ export async function apiClient<T>(endpoint: string, options: RequestInit = {}):
   const baseUrl = getApiBaseUrl();
   
   const headers = new Headers(options.headers || {});
-  headers.set('Content-Type', 'application/json');
+  // Let the browser set the multipart boundary for uploads
+  if (!(options.body instanceof FormData)) {
+    headers.set('Content-Type', 'application/json');
+  }
   
   if (token) {
     headers.set('Authorization', `Bearer ${token}`);

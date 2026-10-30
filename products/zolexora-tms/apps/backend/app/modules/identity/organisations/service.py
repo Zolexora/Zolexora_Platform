@@ -2,6 +2,8 @@ import logging
 import uuid
 from fastapi import HTTPException, status
 from sqlalchemy import select
+from app.core.config import settings
+from app.db.session import rls_bypass, set_tenant_context
 
 from app.modules.core.platform.models import (
     TenantDatabaseRegistry,
@@ -46,10 +48,12 @@ async def complete_onboarding(
         )
         .order_by(OrganisationMember.created_at.asc())
     )
-    res = await db.execute(stmt)
-    existing_membership = res.scalars().first()
+    async with rls_bypass(db):  # no tenant yet: the caller's own memberships
+        res = await db.execute(stmt)
+        existing_membership = res.scalars().first()
 
     if existing_membership:
+        await set_tenant_context(db, existing_membership.organisation_id)
         org_stmt = select(Organisation).where(Organisation.id == existing_membership.organisation_id)
         org_res = await db.execute(org_stmt)
         org = org_res.scalars().first()
@@ -62,6 +66,7 @@ async def complete_onboarding(
 
 
     org_id = uuid.uuid4()
+    await set_tenant_context(db, org_id)  # every row below belongs to the new tenant
     
     # 1. Create Organisation first so foreign key references to organisation_id succeed
     org = Organisation(
@@ -160,7 +165,7 @@ async def complete_onboarding(
         id=uuid.uuid4(),
         organisation_id=org_id,
         cloudinary_folder_prefix=f"zolexora/organisations/{org_id}/",
-        r2_bucket="tms-documents",
+        r2_bucket=settings.R2_BUCKET_NAME,
         r2_prefix=f"organisations/{org_id}/"
     )
     db.add(storage_assignment)
@@ -246,6 +251,7 @@ async def list_organisation_members(
                 status=member.status,
                 created_at=member.created_at,
                 is_creator=member.is_creator,
+                is_commander=member.is_commander,
             )
         )
     return members
@@ -336,6 +342,7 @@ async def transfer_commander(
 
     # Atomically transfer
     old_commander.is_commander = False
+    await db.flush()  # one commander per org (unique index): demote before promoting
     new_commander.is_commander = True
     
     # In a full system (Prompt 07), we would assign the old_commander to `req.former_commander_role`.

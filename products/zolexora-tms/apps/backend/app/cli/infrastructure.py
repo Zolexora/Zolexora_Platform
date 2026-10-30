@@ -6,18 +6,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 from app.db.session import AsyncSessionLocal
 from app.core.config import settings
-from app.modules.core.platform.models import ProviderType, RegistryStatus
-from dotenv import load_dotenv
-
-load_dotenv()
 
 def print_section(title):
     print(f"\n{title}")
     print("-" * len(title))
 
 async def check_env():
-    env = getattr(settings, "ENVIRONMENT", "development")
-    if env in ["production", "prod", "live"]:
+    if not settings.IS_DEV_OR_TEST:
         print("PRODUCTION SAFETY GATE: BLOCKED")
         return False
     return True
@@ -44,56 +39,14 @@ async def attempt_d1_provisioning():
         except Exception:
             return "BLOCKED", 0
 
-async def attempt_mongo_provisioning():
-    mongo_project = os.getenv("MONGODB_ATLAS_PROJECT_ID")
-    pub_key = os.getenv("MONGODB_ATLAS_PUBLIC_KEY")
-    priv_key = os.getenv("MONGODB_ATLAS_PRIVATE_KEY")
-    
-    
-    if not mongo_project or not pub_key or not priv_key:
-        return "BLOCKED", 0
-        
-    async with httpx.AsyncClient() as client:
-        try:
-            auth = httpx.DigestAuth(pub_key, priv_key)
-            res = await client.get(
-                f"https://cloud.mongodb.com/api/atlas/v2/groups/{mongo_project}/clusters",
-                auth=auth,
-                headers={"Accept": "application/vnd.atlas.2023-01-01+json"}
-            )
-            if res.status_code != 200:
-                print(f"Mongo API Error: {res.status_code} - {res.text}")
-                return "BLOCKED", 0
-            
-            data = res.json()
-            tms_cluster = [c for c in data.get("results", []) if c["name"] == "Zolexora-tms"]
-            return "AVAILABLE", 10 if len(tms_cluster) > 0 else 0
-        except Exception as e:
-            print(f"Mongo Exception: {e}")
-            return "BLOCKED", 0
-        
-    async with httpx.AsyncClient() as client:
-        try:
-            res = await client.get(
-                f"https://cloud.mongodb.com/api/atlas/v2/groups/{mongo_project}/clusters",
-                headers={"Authorization": f"Bearer {mongo_token}", "Accept": "application/vnd.atlas.2023-01-01+json"}
-            )
-            if res.status_code != 200:
-                return "BLOCKED", 0
-            
-            data = res.json()
-            tms_cluster = [c for c in data.get("results", []) if c["name"] == "Zolexora-tms"]
-            return "AVAILABLE", 10 if len(tms_cluster) > 0 else 0
-        except Exception:
-            return "BLOCKED", 0
-
 async def check_r2_provisioning():
     if os.getenv("CLOUDFLARE_R2_ACCESS_KEY") and os.getenv("CLOUDFLARE_R2_SECRET_KEY"):
         return "AVAILABLE"
     return "BLOCKED"
 
 async def attempt_cloudinary_provisioning():
-    cld_name = os.getenv("CLOUDINARY_CLOUD_NAME") or os.getenv("CLOUDINARY_URL", "").split("@")[-1] if "@" in os.getenv("CLOUDINARY_URL", "") else "yfsczn8k"
+    cloudinary_url = os.getenv("CLOUDINARY_URL", "")
+    cld_name = os.getenv("CLOUDINARY_CLOUD_NAME") or (cloudinary_url.split("@")[-1] if "@" in cloudinary_url else None)
     cld_key = os.getenv("CLOUDINARY_API_KEY")
     cld_secret = os.getenv("CLOUDINARY_API_SECRET")
     
@@ -142,12 +95,6 @@ async def verify():
     print("D1:")
     print(f"    10/10 verified? {'YES' if d1_actual == 10 and d1_status == 'AVAILABLE' else 'NO (' + str(d1_actual) + ' actual - ' + d1_status + ')'}")
     
-    mongo_status, mongo_actual = await attempt_mongo_provisioning()
-    print("\nMongoDB:")
-    print(f"    Cluster Zolexora-tms verified? {'YES' if mongo_status == 'AVAILABLE' else 'NO (BLOCKED)'}")
-    print("\nMongoDB logical namespaces:")
-    print(f"    10/10 verified? {'YES' if mongo_actual == 10 else 'NO (' + str(mongo_actual) + ' actual - ' + mongo_status + ')'}")
-    
     print("\nR2:")
     r2_status = "BLOCKED"
     try:
@@ -159,17 +106,17 @@ async def verify():
           aws_secret_access_key=os.getenv("CLOUDFLARE_R2_SECRET_KEY"),
           region_name="auto"
         )
-        s3.head_bucket(Bucket="tms-documents")
+        s3.head_bucket(Bucket=settings.R2_BUCKET_NAME)
         r2_status = "AVAILABLE"
     except Exception as e:
         r2_status = f"BLOCKED ({e})"
-    print(f"    tms-documents physically verified? {'YES' if r2_status == 'AVAILABLE' else 'NO (' + r2_status + ')'}")
+    print(f"    {settings.R2_BUCKET_NAME} physically verified? {'YES' if r2_status == 'AVAILABLE' else 'NO (' + r2_status + ')'}")
     
     cld_status = await attempt_cloudinary_provisioning()
     print("\nCloudinary:")
     print(f"    verified? {'YES' if cld_status == 'AVAILABLE' else 'NO (BLOCKED)'}")
     
-    print("\nSupabase:")
+    print("\nPostgres control plane:")
     async with AsyncSessionLocal() as session:
         org_count, assignment_count, orphan_count = await get_db_stats(session)
         print("    control plane verified? YES")
@@ -194,18 +141,10 @@ async def run_command(cmd, confirm=False):
     elif cmd in ["audit", "plan", "orphans"]:
         print(f"Running infrastructure {cmd}...")
         await verify()
-    elif cmd == "provision":
-        if not confirm:
-            print("ERROR: Provisioning requires --confirm-infrastructure-provision flag.")
-            return
-        print("Provisioning infrastructure...")
-        async with AsyncSessionLocal() as session:
-            await setup_registries(session)
-        await verify()
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("command", choices=["audit", "plan", "provision", "verify", "orphans"])
+    parser.add_argument("command", choices=["audit", "plan", "verify", "orphans"])
     parser.add_argument("--confirm-infrastructure-provision", action="store_true")
     args = parser.parse_args()
     

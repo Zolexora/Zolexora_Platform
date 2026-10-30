@@ -1,4 +1,5 @@
 import uuid
+from decimal import Decimal
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -114,7 +115,8 @@ async def create_invoice(
     
     invoice.lines = invoice_lines
     db.add(invoice)
-    
+    await db.flush()  # assigns invoice.id before the billing records reference it
+
     # Update billing records
     for r in records:
         r.status = BillingStatus.INVOICED
@@ -226,10 +228,9 @@ async def generate_invoice_pdf(
     # Upload to R2
     pdf_url = await upload_document_to_r2(
         file_bytes=pdf_bytes,
-        filename=filename,
+        file_name=filename,
         content_type="application/pdf",
         folder=folder,
-        org_id=current_org_user.organisation_id
     )
     
     invoice.pdf_url = pdf_url
@@ -308,7 +309,7 @@ async def get_receivables_ageing(
             
         buckets["total_outstanding"] += due_amount
         
-        days_overdue = (today - inv.due_date).days
+        days_overdue = (today - inv.due_date.date()).days
         
         if days_overdue <= 0:
             buckets["current"] += due_amount

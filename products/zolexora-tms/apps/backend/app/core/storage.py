@@ -1,4 +1,6 @@
+import asyncio
 import logging
+import os
 import uuid
 from typing import Optional
 import cloudinary
@@ -8,6 +10,10 @@ from botocore.config import Config
 from app.core.config import settings
 
 logger = logging.getLogger("zolexora.storage")
+
+
+class StorageError(RuntimeError):
+    """Raised when an upload cannot be completed."""
 
 # Configure Cloudinary if credentials exist
 if settings.CLOUDINARY_URL:
@@ -40,9 +46,12 @@ async def upload_image_to_cloudinary(
     folder: str = "zolexora/avatars",
     public_id: Optional[str] = None,
 ) -> str:
-    """Uploads an image (photo, avatar) to Cloudinary and returns secure URL."""
+    """Uploads an image (photo, avatar) to Cloudinary and returns secure URL.
+    Raises StorageError on failure so callers never persist a fake URL."""
+    if not (settings.CLOUDINARY_URL or settings.CLOUDINARY_CLOUD_NAME):
+        raise StorageError("Cloudinary is not configured")
+    pid = public_id or f"img_{uuid.uuid4().hex}"
     try:
-        pid = public_id or f"img_{uuid.uuid4().hex}"
         res = cloudinary.uploader.upload(
             file_bytes,
             folder=folder,
@@ -50,10 +59,12 @@ async def upload_image_to_cloudinary(
             overwrite=True,
             resource_type="image",
         )
-        return res.get("secure_url", "")
     except Exception as e:
-        logger.warning(f"Cloudinary upload failed: {e}. Falling back to local placeholder URL.")
-        return f"https://res.cloudinary.com/demo/image/upload/{folder}/{uuid.uuid4().hex}.jpg"
+        raise StorageError(f"Cloudinary upload failed: {e}") from e
+    url = res.get("secure_url")
+    if not url:
+        raise StorageError("Cloudinary upload returned no URL")
+    return url
 
 
 async def upload_document_to_r2(
@@ -62,20 +73,24 @@ async def upload_document_to_r2(
     content_type: str = "application/pdf",
     folder: str = "documents",
 ) -> str:
-    """Uploads a compliance document/invoice to Cloudflare R2 and returns asset URL."""
+    """Uploads a compliance document/invoice to Cloudflare R2 and returns asset URL.
+    Raises StorageError on failure so callers never persist a fake URL."""
     client = get_r2_client()
-    key = f"{folder}/{uuid.uuid4().hex}_{file_name}"
+    if not client or not settings.R2_BUCKET_NAME or not settings.R2_PUBLIC_BASE_URL:
+        raise StorageError("Cloudflare R2 is not configured")
 
-    if client:
-        try:
-            client.put_object(
-                Bucket=settings.R2_BUCKET_NAME,
-                Key=key,
-                Body=file_bytes,
-                ContentType=content_type,
-            )
-            return f"https://{settings.R2_BUCKET_NAME}.r2.dev/{key}"
-        except Exception as e:
-            logger.warning(f"Cloudflare R2 upload failed: {e}. Returning placeholder asset key.")
-
-    return f"https://r2.zolexora.com/{key}"
+    # Strip any path components from the client-supplied name
+    safe_name = os.path.basename(file_name).replace(" ", "_") or "file"
+    key = f"{folder}/{uuid.uuid4().hex}_{safe_name}"
+    try:
+        # boto3 is blocking; keep it off the event loop
+        await asyncio.to_thread(
+            client.put_object,
+            Bucket=settings.R2_BUCKET_NAME,
+            Key=key,
+            Body=file_bytes,
+            ContentType=content_type,
+        )
+    except Exception as e:
+        raise StorageError(f"Cloudflare R2 upload failed: {e}") from e
+    return f"{settings.R2_PUBLIC_BASE_URL.rstrip('/')}/{key}"

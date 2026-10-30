@@ -2,7 +2,7 @@ import pytest
 import os
 from sqlalchemy import text
 from app.db.session import AsyncSessionLocal
-from app.cli.infrastructure import check_r2_provisioning, attempt_mongo_provisioning, attempt_d1_provisioning
+from app.cli.infrastructure import check_r2_provisioning, attempt_d1_provisioning
 
 @pytest.mark.asyncio
 async def test_r2_bucket_name_and_privacy():
@@ -15,21 +15,6 @@ async def test_r2_bucket_name_and_privacy():
     status = await check_r2_provisioning()
     assert status in ["AVAILABLE", "BLOCKED"], "R2 should either be available or safely blocked"
 
-@pytest.mark.asyncio
-async def test_mongo_cluster_name_and_namespaces():
-    # Connect to local DB and ensure the registry is correct
-    async with AsyncSessionLocal() as session:
-        # Check exactly one Mongo cluster is configured in the registry
-        res = await session.execute(text("SELECT DISTINCT cluster_identifier FROM tenant_mongodb_registry"))
-        clusters = res.scalars().all()
-        assert len(clusters) == 1, "Exactly one Mongo cluster should be configured"
-        assert clusters[0] == "Zolexora-tms", "Mongo cluster must be named exactly 'Zolexora-tms'"
-
-        # Check exactly ten Mongo logical tenant namespaces are desired
-        res = await session.execute(text("SELECT COUNT(*) FROM tenant_mongodb_registry WHERE database_name LIKE 'zolexora_tenant_%'"))
-        db_count = res.scalar()
-        assert db_count == 10, "Exactly 10 Mongo logical tenant namespaces must be configured"
-        
 @pytest.mark.asyncio
 async def test_d1_databases_configured():
     async with AsyncSessionLocal() as session:

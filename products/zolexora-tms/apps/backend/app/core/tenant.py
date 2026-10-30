@@ -9,7 +9,7 @@ class TenantContext(BaseModel):
     mongodb_cluster_identifier: str | None = None
     mongodb_database_name: str | None = None
     cloudinary_prefix: str
-    r2_bucket: str
+    r2_bucket: str | None = None
     r2_prefix: str
     user_id: uuid.UUID
     role_code: str | None = None

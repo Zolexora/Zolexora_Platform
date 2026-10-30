@@ -1,3 +1,4 @@
+# Build context: monorepo root (docker build -f products/zolexora-tms/apps/backend/Dockerfile .)
 # Stage 1: Build virtualenv with dependencies using pre-compiled uv binary
 FROM python:3.12-slim AS builder
 
@@ -13,7 +14,7 @@ ENV PYTHONUNBUFFERED=1 \
 COPY --from=ghcr.io/astral-sh/uv:0.4.25 /uv /bin/uv
 
 # Copy dependency specifications first to leverage Docker layer caching
-COPY pyproject.toml uv.lock README.md ./
+COPY products/zolexora-tms/apps/backend/pyproject.toml products/zolexora-tms/apps/backend/uv.lock products/zolexora-tms/apps/backend/README.md ./
 
 # Install production dependencies into /app/.venv with persistent cache
 RUN --mount=type=cache,target=/root/.cache/uv \
@@ -37,10 +38,10 @@ RUN groupadd -g 1001 appgroup && \
 COPY --from=builder --chown=appuser:appgroup /app/.venv /app/.venv
 
 # Copy application source code and migrations
-COPY --chown=appuser:appgroup app ./app
-COPY --chown=appuser:appgroup alembic ./alembic
-COPY --chown=appuser:appgroup alembic.ini ./
-COPY --chown=appuser:appgroup init_db.py ./
+COPY --chown=appuser:appgroup products/zolexora-tms/apps/backend/app ./app
+COPY --chown=appuser:appgroup products/zolexora-tms/apps/backend/alembic ./alembic
+COPY --chown=appuser:appgroup products/zolexora-tms/apps/backend/alembic.ini ./
+COPY --chown=appuser:appgroup products/zolexora-tms/apps/backend/init_db.py ./
 
 USER appuser
 EXPOSE 4030

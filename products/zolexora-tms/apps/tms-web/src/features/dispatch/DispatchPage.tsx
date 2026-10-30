@@ -12,7 +12,8 @@ import {
   AlertCircle,
   FileCheck2,
 } from 'lucide-react';
-import { apiClient } from '../../lib/api';
+import { apiClient, getApiBaseUrl } from '../../lib/api';
+import { getIdToken } from '../../lib/firebase';
 import type {
   DispatchBoardItem,
   DutyLifecycleStatus,
@@ -73,9 +74,12 @@ export function DispatchPage() {
         const authMe = await apiClient<{ organisation_id: string }>('/api/v1/auth/me');
         if (!authMe.organisation_id) return;
 
-        const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsHost = window.location.host;
-        const wsUrl = `${wsProto}//${wsHost}/ws/ops/${authMe.organisation_id}`;
+        const token = await getIdToken();
+        if (!token) return;
+        // The backend verifies this token and org membership before accepting the socket
+        const base = new URL(getApiBaseUrl() || window.location.origin, window.location.origin);
+        base.protocol = base.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${base.origin}/ws/ops/${authMe.organisation_id}?token=${encodeURIComponent(token)}`;
 
         ws = new WebSocket(wsUrl);
 

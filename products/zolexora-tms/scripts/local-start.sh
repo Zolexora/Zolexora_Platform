@@ -8,28 +8,17 @@ echo "======================================"
 echo " Zolexora TMS - Local Development"
 echo "======================================"
 
-echo "🔐 Checking dotenvx encryption key..."
-if [ -z "$DOTENV_PRIVATE_KEY" ]; then
-    if [ -f .env.keys ]; then
-        echo "   Using local .env.keys file."
-    else
-        echo "   No .env.keys found. Fetching from Bitwarden..."
-        if [ -f .env.local ]; then
-            export $(grep -v '^#' .env.local | xargs)
-        fi
-        if [ -n "${BW_CLIENTID:-}" ] && [ -n "${BW_CLIENTSECRET:-}" ]; then
-            bw login --apikey >/dev/null 2>&1 || true
-        fi
-        BW_SESSION=$(bw unlock --passwordenv BW_MASTER_PASSWORD --raw 2>/dev/null)
-        if [ -n "$BW_SESSION" ]; then
-            export DOTENV_PRIVATE_KEY=$(bw get notes "ZOLEXORA TMS DOTENV_PRIVATE_KEY" --session "$BW_SESSION" 2>/dev/null)
-            echo "   ✅ Key loaded from Bitwarden."
-        else
-            echo "   ❌ Failed to unlock Bitwarden. Cannot decrypt .env file."
-            exit 1
-        fi
-    fi
+# Re-run this script once under Infisical so every service inherits the secrets
+if [ -z "$TMS_SECRETS_LOADED" ]; then
+    export TMS_SECRETS_LOADED=1
+    exec bash products/zolexora-tms/scripts/with-secrets.sh bash products/zolexora-tms/scripts/local-start.sh "$@"
 fi
+
+# Local dev defaults (non-secret); override via Infisical or the shell
+export NODE_ENV="${NODE_ENV:-development}"
+TMS_BACKEND_PORT="${TMS_BACKEND_PORT:-4030}"
+# Vite dev servers proxy /api to the backend started by this script
+export TMS_DEV_API_PROXY_TARGET="${TMS_DEV_API_PROXY_TARGET:-http://127.0.0.1:$TMS_BACKEND_PORT}"
 
 echo "Which services would you like to start locally?"
 echo "1) All Services (Default)"
@@ -81,11 +70,6 @@ esac
             products/zolexora-tms/apps/backend/.venv/bin/python -m pip install -e products/zolexora-tms/apps/backend
             products/zolexora-tms/apps/backend/.venv/bin/python -m pip install greenlet
         fi
-
-        if command -v docker >/dev/null 2>&1; then
-            echo "Ensuring PostgreSQL container is up..."
-            docker compose -f products/zolexora-tms/compose.yaml up -d postgres >/dev/null 2>&1 || true
-        fi
     }
 
 echo "Starting local services: $SERVICES"
@@ -107,8 +91,8 @@ trap cleanup SIGINT SIGTERM
 
 if [[ "$SERVICES" == *"backend"* ]]; then
     ensure_backend_environment
-    echo "Starting Backend API (port 4030)..."
-    PYTHONPATH=products/zolexora-tms/apps/backend products/zolexora-tms/apps/backend/.venv/bin/python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 4030 --app-dir products/zolexora-tms/apps/backend &
+    echo "Starting Backend API (port $TMS_BACKEND_PORT)..."
+    PYTHONPATH=products/zolexora-tms/apps/backend products/zolexora-tms/apps/backend/.venv/bin/python -m uvicorn app.main:app --reload --host 127.0.0.1 --port "$TMS_BACKEND_PORT" --app-dir products/zolexora-tms/apps/backend &
     PIDS="$PIDS $!"
 fi
 
@@ -128,13 +112,13 @@ echo "======================================"
 echo "Services are starting! (Press Ctrl+C to stop all)"
 
 if [[ "$SERVICES" == *"tms"* ]]; then
-    echo "- TMS Frontend: http://localhost:3031 (or http://localhost:3000)"
+    echo "- TMS Frontend: http://localhost:3031"
 fi
 if [[ "$SERVICES" == *"admin"* ]]; then
-    echo "- Admin Dashboard: http://localhost:3032 (or http://localhost:3001)"
+    echo "- Admin Dashboard: http://localhost:3032"
 fi
 if [[ "$SERVICES" == *"backend"* ]]; then
-    echo "- Backend API: http://localhost:4030/docs"
+    echo "- Backend API: http://localhost:$TMS_BACKEND_PORT/docs"
 fi
 echo "======================================"
 

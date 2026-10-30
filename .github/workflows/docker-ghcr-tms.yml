@@ -26,7 +26,7 @@ jobs:
       matrix:
         include:
           - service: tms-backend
-            context: ./products/zolexora-tms/apps/backend
+            context: .
             file: ./products/zolexora-tms/apps/backend/Dockerfile
             build-args: ""
           - service: tms-web
@@ -38,7 +38,7 @@ jobs:
             file: ./products/zolexora-tms/Dockerfile.web
             build-args: APP_PATH=apps/tms-admin
           - service: tms-nginx
-            context: ./products/zolexora-tms
+            context: .
             file: ./products/zolexora-tms/Dockerfile.nginx
             build-args: ""
 

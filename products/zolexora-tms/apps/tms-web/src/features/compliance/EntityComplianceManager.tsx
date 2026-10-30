@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useComplianceRecords, useComplianceRequirements, useUpdateComplianceRecord, useVerifyComplianceRecord, useWaiveComplianceRecord } from './hooks';
+import { useComplianceRecords, useComplianceRequirements, useUpdateComplianceRecord, useUploadComplianceDocument, useVerifyComplianceRecord, useWaiveComplianceRecord } from './hooks';
 import { ComplianceEntityType } from './api';
 import { FileWarning, ShieldCheck, Clock, Upload, CheckCircle, XCircle, FileText } from 'lucide-react';
 
@@ -12,6 +12,7 @@ export function EntityComplianceManager({ entityType, entityId }: { entityType: 
   const { data: records = [], isLoading: recLoading } = useComplianceRecords({ entity_type: entityType, entity_id: entityId });
   
   const updateRecord = useUpdateComplianceRecord();
+  const uploadDocument = useUploadComplianceDocument();
   const verifyRecord = useVerifyComplianceRecord();
   const waiveRecord = useWaiveComplianceRecord();
 
@@ -24,6 +25,7 @@ export function EntityComplianceManager({ entityType, entityId }: { entityType: 
   // Form State
   const [documentNumber, setDocumentNumber] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
+  const [file, setFile] = useState<File | null>(null);
 
   if (reqLoading || recLoading) {
     return <div className="p-4 text-center text-sm text-silver-500">Loading compliance data...</div>;
@@ -35,27 +37,26 @@ export function EntityComplianceManager({ entityType, entityId }: { entityType: 
     setSelectedReqId(reqId);
     setDocumentNumber('');
     setExpiryDate('');
+    setFile(null);
+    uploadDocument.reset();
     setUploadModalOpen(true);
   };
 
-  const handleUploadSubmit = async (e: React.FormEvent) => {
+  const handleUploadSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedReqId) return;
+    if (!selectedReqId || !file) return;
 
-    // Simulate Cloudinary/R2 upload here with a placeholder
-    const dummyUrl = `https://example.com/docs/${Math.random().toString(36).substring(7)}.pdf`;
-
-    await updateRecord.mutateAsync({
-      requirement_id: selectedReqId,
-      entity_type: entityType,
-      entity_id: entityId,
-      status: 'VERIFICATION_REQUIRED', // Submitting a new doc puts it in pending verification
-      document_number: documentNumber,
-      document_url: dummyUrl,
-      expiry_date: expiryDate ? new Date(expiryDate).toISOString() : undefined,
-    });
-    
-    setUploadModalOpen(false);
+    uploadDocument.mutate(
+      {
+        file,
+        requirement_id: selectedReqId,
+        entity_type: entityType,
+        entity_id: entityId,
+        document_number: documentNumber,
+        expiry_date: expiryDate || undefined,
+      },
+      { onSuccess: () => setUploadModalOpen(false) } // on error the modal stays open and shows the message
+    );
   };
 
   return (
@@ -196,11 +197,21 @@ export function EntityComplianceManager({ entityType, entityId }: { entityType: 
                 />
               </div>
 
-              <div className="rounded-xl border border-dashed border-silver-800 p-6 text-center">
+              <label className="block cursor-pointer rounded-xl border border-dashed border-silver-800 p-6 text-center">
                 <Upload className="mx-auto h-8 w-8 text-silver-500 mb-2" />
-                <p className="text-sm text-silver-500">Drag & drop a PDF or Image here</p>
-                <p className="text-xs text-silver-500 mt-1">Simulated upload for this demo</p>
-              </div>
+                <p className="text-sm text-silver-500">{file ? file.name : 'Choose a PDF or image (max 10 MB)'}</p>
+                <input
+                  type="file"
+                  required
+                  accept="application/pdf,image/jpeg,image/png,image/webp"
+                  onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                  className="sr-only"
+                />
+              </label>
+
+              {uploadDocument.isError && (
+                <p className="text-sm text-red-500">{uploadDocument.error.message}</p>
+              )}
 
               <div className="flex justify-end gap-3 pt-4 border-t border-silver-900">
                 <button
@@ -212,10 +223,10 @@ export function EntityComplianceManager({ entityType, entityId }: { entityType: 
                 </button>
                 <button
                   type="submit"
-                  disabled={updateRecord.isPending}
+                  disabled={uploadDocument.isPending || !file}
                   className="rounded-lg bg-navy-600 px-4 py-2 text-sm font-medium text-white hover:bg-navy-600 transition disabled:opacity-50"
                 >
-                  {updateRecord.isPending ? 'Uploading...' : 'Submit Document'}
+                  {uploadDocument.isPending ? 'Uploading...' : 'Submit Document'}
                 </button>
               </div>
             </form>
