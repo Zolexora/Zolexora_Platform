@@ -178,6 +178,5 @@
         }
       }
     }
-  },
-  "postCreateCommand": "bash scripts/dev/setup-devcontainer.sh"
+  }
 }
