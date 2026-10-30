@@ -77,7 +77,7 @@ jobs:
 
       # ── EAS CLI ───────────────────────────────────────────────────────────
       - name: Setup Expo + EAS CLI
-        uses: expo/expo-github-action@v8
+        uses: expo/expo-github-action@v9
         with:
           expo-version: latest
           eas-version: latest
