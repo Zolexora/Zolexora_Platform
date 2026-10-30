@@ -233,10 +233,7 @@ async def require_platform_admin(identity: AuthenticatedIdentity = Depends(get_c
     Platform Admin relies ONLY on platform context, never on organization context.
     Checks configured PLATFORM_ADMIN_EMAILS first (and auto-provisions), then checks platform_admins table.
     """
-    admin_emails = getattr(settings, "PLATFORM_ADMIN_EMAILS", []) or [
-        "zolexora.official@gmail.com",
-        "admin@zolexora.com",
-    ]
+    admin_emails = getattr(settings, "PLATFORM_ADMIN_EMAILS", []) or []
     if identity.email and identity.email.lower() in [e.lower() for e in admin_emails]:
         try:
             await db.execute(

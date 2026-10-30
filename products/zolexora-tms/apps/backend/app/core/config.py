@@ -18,28 +18,11 @@ class Settings(BaseSettings):
     API_V1_PREFIX: str = "/api/v1"
     DEBUG: bool = False
 
-    # Platform Admins
-    PLATFORM_ADMIN_EMAILS: List[str] = [
-        "zolexora.official@gmail.com",
-        "admin@zolexora.com",
-    ]
+    # Platform Admins (comma-separated emails via PLATFORM_ADMIN_EMAILS env var)
+    PLATFORM_ADMIN_EMAILS: List[str] = Field(default=[], validation_alias="PLATFORM_ADMIN_EMAILS")
 
-    # CORS
-    CORS_ORIGINS: List[str] = [
-        "https://tms.zolexora.worker.dev",
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:3001",
-        "http://127.0.0.1:3001",
-        "http://localhost:3031",
-        "http://127.0.0.1:3031",
-        "http://localhost:3032",
-        "http://127.0.0.1:3032",
-        "http://localhost:3074",
-        "http://127.0.0.1:3074",
-    ]
+    # CORS (comma-separated origins via CORS_ORIGINS env var)
+    CORS_ORIGINS: List[str] = Field(default=[], validation_alias="CORS_ORIGINS")
 
     # Database - Infisical connection credentials
     DATABASE_ZOLEXORA_TMS_HOST: Optional[str] = Field(default=None, validation_alias="DATABASE_ZOLEXORA_TMS_HOST")
@@ -73,7 +56,9 @@ class Settings(BaseSettings):
             return f"postgresql://{user}:{pwd}@{host}:{port}/{db_name}"
         if self.DATABASE_ZOLEXORA_TMS_INTERNAL_DATABASE_URL:
             return self.DATABASE_ZOLEXORA_TMS_INTERNAL_DATABASE_URL
-        return "postgresql://tms:password@localhost:5432/tms"
+        raise ValueError(
+            "No database URL configured. Set DATABASE_URL or DATABASE_ZOLEXORA_TMS_* environment variables."
+        )
 
     @computed_field
     @property
@@ -87,18 +72,14 @@ class Settings(BaseSettings):
 
     # Firebase Auth
     FIREBASE_PROJECT_ID: str = Field(
-        default="zolexora-platform",
+        default="",
         validation_alias="FIREBASE_PROJECT_ID",
     )
+    # Comma-separated allowed Firebase audience project IDs
+    FIREBASE_ALLOWED_PROJECTS: List[str] = Field(default=[], validation_alias="FIREBASE_ALLOWED_PROJECTS")
     # Supabase (Legacy / DB Storage)
-    SUPABASE_URL: str = Field(
-        default="https://culeiqroofltvizgfzim.supabase.co",
-        validation_alias="SUPABASE_URL",
-    )
-    SUPABASE_PROJECT_REF: str = Field(
-        default="culeiqroofltvizgfzim",
-        validation_alias="SUPABASE_PROJECT_REF",
-    )
+    SUPABASE_URL: str = Field(default="", validation_alias="SUPABASE_URL")
+    SUPABASE_PROJECT_REF: str = Field(default="", validation_alias="SUPABASE_PROJECT_REF")
     SUPABASE_ANON_KEY: str = Field(default="", validation_alias="SUPABASE_ANON_KEY")
     SUPABASE_SERVICE_ROLE_KEY: str = Field(
         default="", validation_alias="SUPABASE_SERVICE_ROLE_KEY"

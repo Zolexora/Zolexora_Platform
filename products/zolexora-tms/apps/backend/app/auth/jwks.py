@@ -64,10 +64,9 @@ async def verify_firebase_jwt(token: str) -> Dict[str, Any]:
     if not matched_key and keys:
         matched_key = keys[0]
 
-    project_id = getattr(settings, "FIREBASE_PROJECT_ID", "zolexora-platform")
-    allowed_projects = set(
-        getattr(settings, "FIREBASE_ALLOWED_PROJECTS", [project_id, "zx-tms-prod", "zx-stage-logistics", "zolexora-platform"])
-    )
+    project_id = getattr(settings, "FIREBASE_PROJECT_ID", "")
+    configured = getattr(settings, "FIREBASE_ALLOWED_PROJECTS", [])
+    allowed_projects = set(configured) if configured else ({project_id} if project_id else set())
 
     if matched_key:
         try:
