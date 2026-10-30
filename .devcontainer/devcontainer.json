@@ -12,12 +12,13 @@
       "pnpmVersion": "latest",
       "yarnVersion": "latest"
     },
-    "ghcr.io/devcontainers/features/java:1": {
-      "version": "17",
-      "installMaven": "false",
-      "installGradle": "false"
-    }
   },
+  "mounts": [
+    // Cache pnpm store across rebuilds
+    "source=pnpm-cache,target=/home/vscode/.pnpm-store,type=volume",
+    // Cache pip downloads across rebuilds
+    "source=pip-cache,target=/home/vscode/.cache/pip,type=volume"
+  ],
   "forwardPorts": [
     // 1. Frontend Development Servers
     3000, 3001, 3002, 3003,
