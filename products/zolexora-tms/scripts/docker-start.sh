@@ -8,7 +8,7 @@ REPO_ROOT="$(pwd)"
 COMPOSE_FILE="products/zolexora-tms/compose.yaml"
 INFISICAL_PROJECT_ID="188824cd-59ce-468f-b60f-f2da7aeefe63"
 INFISICAL_ENV="${INFISICAL_ENV:-dev}"
-INFISICAL_PATH="/Zolexora_TMS"
+INFISICAL_PATH="/Firebase_Credentials/Zolexora_TMS"
 
 # Canonical database credentials location in Infisical
 INFISICAL_DB_PROJECT_ID="c4ac7d07-f26f-4fb8-bd04-6d3e037079f9"

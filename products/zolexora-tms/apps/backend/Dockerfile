@@ -5,7 +5,9 @@ WORKDIR /app
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    UV_COMPILE_BYTECODE=1
+    UV_COMPILE_BYTECODE=1 \
+    UV_HTTP_TIMEOUT=120 \
+    UV_CONCURRENT_DOWNLOADS=4
 
 # Use prebuilt uv binary - zero apt/pip overhead
 COPY --from=ghcr.io/astral-sh/uv:0.4.25 /uv /bin/uv
@@ -13,8 +15,9 @@ COPY --from=ghcr.io/astral-sh/uv:0.4.25 /uv /bin/uv
 # Copy dependency specifications first to leverage Docker layer caching
 COPY pyproject.toml uv.lock README.md ./
 
-# Install production dependencies into /app/.venv
-RUN uv sync --no-dev --frozen --no-install-project
+# Install production dependencies into /app/.venv with persistent cache
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --no-dev --frozen --no-install-project
 
 # Stage 2: Minimal runtime image
 FROM python:3.12-slim AS runner
