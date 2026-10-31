@@ -26,7 +26,8 @@ To eliminate collisions, the platform enforces a **Deterministic Port Offset Arc
 | **Zolexora Engage** | `ENGAGE` | **`3077`** | `3041` | **`4050`** | — | — |
 | **Zolexora Marketplace** | `MKT` | **`3079`** | `3000` (Shop), `3001` (Admin), `3002` (Seller) | **`4100`** | **`5433`** (`MARKETPLACE_POSTGRES_PORT`) | MongoDB `27017` |
 | **The Textile Care** | `TTC` | **`3080`** | `3000` (Admin), `3001` (Seller), `3002` (Mkt) | **`4010`** | **`5435`** (`TTC_POSTGRES_PORT`) | Redis `6379` |
-| **Platform Admin** | `ADMIN` | — | **`3082`** | **`3081`** | **`5440`** (`PLATFORM_ADMIN_POSTGRES_PORT`) | — |
+| **Central Auth Service** | `AUTH` | — | — | **`3081`** (`http://localhost:3081`) | — | Dedicated identity authority (`apps/auth-service`) |
+| **Platform Admin** | `ADMIN` | — | **`3082`** | **`4041`** (`PLATFORM_ADMIN_BACKEND_PORT`) | **`5440`** (`PLATFORM_ADMIN_POSTGRES_PORT`) | — |
 | **Maun Kavach** | `MK` | **`3083`** | `3065` | **`4080`** | — | — |
 | **Zolexora TMS** | `TMS` | **`3084`** | `3031` (TMS), `3032` (Admin) | **`4030`** | **`5448`** (`TMS_POSTGRES_PORT`) | — |
 | **Zolexora ERP** | `ERP` | **`8080`**, **`8443`** | — | **`8000`**, **`8001`** | — | MariaDB `3306`, Redis `6380` |

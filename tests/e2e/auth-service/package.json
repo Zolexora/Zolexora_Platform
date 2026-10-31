@@ -1,0 +1,6 @@
+{
+  "name": "@zolexora/e2e-auth-service",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module"
+}

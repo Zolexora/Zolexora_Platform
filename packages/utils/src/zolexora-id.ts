@@ -5,6 +5,12 @@
 export const CROCKFORD_BASE32_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
 
 /**
+ * Official canonical Regular Expressions for Zolexora User and Org IDs.
+ */
+export const ZOLEXORA_ID_REGEX = /^ZX-[2-9A-HJ-NP-Z]{4}-[2-9A-HJ-NP-Z]{4}-[2-9A-HJ-NP-Z]{4}$/i;
+export const ZOLEXORA_ORG_ID_REGEX = /^ZX-ORG-[2-9A-HJ-NP-Z]{4}-[2-9A-HJ-NP-Z]{4}-[2-9A-HJ-NP-Z]{4}$/i;
+
+/**
  * Generates cryptographically secure random bytes across Browser, Node, Edge, and Mobile.
  */
 export function getRandomBytes(length: number): Uint8Array {
@@ -41,15 +47,14 @@ export function generateZolexoraId(prefix = "ZX"): string {
  */
 export function isValidZolexoraId(id: string): boolean {
   if (!id || typeof id !== "string") return false;
-  const regex = /^ZX-[2-9A-HJ-NP-Z]{4}-[2-9A-HJ-NP-Z]{4}-[2-9A-HJ-NP-Z]{4}$/i;
-  return regex.test(id.trim());
+  return ZOLEXORA_ID_REGEX.test(id.trim());
 }
 
 /**
  * Normalizes a Zolexora ID to uppercase standard format.
  */
 export function normalizeZolexoraId(id: string): string {
-  const clean = id.trim().toUpperCase();
+  const clean = id?.trim().toUpperCase();
   if (!isValidZolexoraId(clean)) {
     throw new Error(`Invalid Zolexora ID format: "${id}". Expected ZX-XXXX-XXXX-XXXX`);
   }
@@ -69,6 +74,16 @@ export function generateZolexoraOrgId(): string {
  */
 export function isValidZolexoraOrgId(id: string): boolean {
   if (!id || typeof id !== "string") return false;
-  const regex = /^ZX-ORG-[2-9A-HJ-NP-Z]{4}-[2-9A-HJ-NP-Z]{4}-[2-9A-HJ-NP-Z]{4}$/i;
-  return regex.test(id.trim());
+  return ZOLEXORA_ORG_ID_REGEX.test(id.trim());
+}
+
+/**
+ * Normalizes a Zolexora Organization ID to uppercase standard format.
+ */
+export function normalizeZolexoraOrgId(id: string): string {
+  const clean = id?.trim().toUpperCase();
+  if (!isValidZolexoraOrgId(clean)) {
+    throw new Error(`Invalid Zolexora Organization ID format: "${id}". Expected ZX-ORG-XXXX-XXXX-XXXX`);
+  }
+  return clean;
 }

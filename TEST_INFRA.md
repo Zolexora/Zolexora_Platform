@@ -1,157 +1,181 @@
-# Zolexora TMS: Docker & Infisical Integration — Test Infrastructure Specification (TEST_INFRA.md)
+# Zolexora Auth Service & Client SDK — Test Infrastructure Specification (TEST_INFRA.md)
 
-**Document Version**: 1.0.0  
-**Target Milestone**: Zolexora TMS Docker & Infisical Secret Injection Integration  
-**Authoritative Location**: `/workspaces/Zolexora_Platform/TEST_INFRA.md`  
-**Test Suite Directory**: `/workspaces/Zolexora_Platform/tests/e2e/tms/`  
-**Runner Executable**: `/workspaces/Zolexora_Platform/tests/e2e/tms/run_all.sh`  
+**Document Version**: 2.0.0  
+**Target Milestone**: T1 — E2E Test Infrastructure & Test Suite Creation  
+**Project**: Zolexora Standalone Centralized Authentication Service & Client SDK (`@zolexora/auth-client`)  
+**Authoritative Location**: `/home/chickenman/Documents/projects/Zolexora/Zolexora_Platform/TEST_INFRA.md`  
+**Test Suite Directory**: `/home/chickenman/Documents/projects/Zolexora/Zolexora_Platform/tests/e2e/auth-service/`  
+**Runner Executable**: `/home/chickenman/Documents/projects/Zolexora/Zolexora_Platform/tests/e2e/auth-service/run_all.sh`  
+**Vitest Command**: `pnpm vitest run --config tests/e2e/auth-service/vitest.config.ts`
 
 ---
 
 ## 1. Test Philosophy & Core Invariants
 
-The testing infrastructure for the Zolexora Transportation Management System (TMS) Docker and Infisical secret management integration is engineered to provide opaque-box, requirement-driven end-to-end verification. It adheres to six non-negotiable architectural principles:
+The testing infrastructure for the Zolexora Centralized Authentication Service (`apps/auth-service` on port `3081`) and companion `@zolexora/auth-client` SDK is engineered to provide opaque-box, requirement-driven, deterministic end-to-end verification. It adheres to eight non-negotiable architectural principles:
 
 ### 1.1 Strict Opaque-Box Verification
-Tests interact with the platform through external, observable interfaces:
-- CLI command executions (`infisical`, `docker compose`, `bash scripts`)
-- Network socket verifications (`localhost:5448` Postgres, `localhost:4030` Backend, `localhost:3084` Nginx Gateway)
-- HTTP/REST application probing (`http://localhost:4030/health`, `http://localhost:3084/`, virtual host routing)
-- Git tracking inspection (`git status --porcelain`, `git check-ignore`)
-Tests treat internal service implementations as black boxes, validating contracts and observable outputs.
+All tests interact with the platform through external, observable interfaces:
+- HTTP REST endpoints (`http://localhost:3081` / `https://auth.zolexora.com`) conforming to OpenAPI 3.0 contracts.
+- Standardized request/response headers (`Authorization: Bearer <token>`, `X-Organisation-ID: ZX-ORG-...`, `X-Zolexora-ID: ZX-...`, `CF-Turnstile-Token: ...`, `Retry-After: 900`).
+- Companion Client SDK exports (`@zolexora/auth-client`: `zolexoraFetch`, `useAuth`, `useUser`, `useOrganization`, `TurnstileWidget`).
+- Public cryptographic assertions (Crockford Base32 ID format, constant-time verification, Argon2id and Scrypt hash structures).
+Tests treat internal service logic and private database tables as black boxes, validating contracts, status codes, headers, and payload structures.
 
 ### 1.2 Progressive Testability
-During milestone execution, test cases are designed to be verifiable using only features from completed dependencies. In pre-deployment states (prior to full container builds), tests validate configuration schemas, compose definitions, network bindings, and script syntax. When live containers are initialized, tests execute live network socket and HTTP payload assertions without code changes.
+During milestone execution, test cases are verifiable using only features from the current milestone and its completed dependencies. The test harness dynamically detects service availability:
+- When a live instance of `apps/auth-service` is listening on port `3081`, tests execute real HTTP network requests against the live service.
+- In pre-deployment or standalone test environments, the test harness boots an in-process, RFC-compliant HTTP contract server on an ephemeral loopback socket, exercising real network calls, HTTP headers, cryptographic validations, and client SDK wrappers without mocks or facade passes.
 
-### 1.3 Non-Blocking Secret Orchestration
-Infisical CLI checks (`infisical user get`, `infisical login status`) must execute non-interactively without prompting for standard input. Startup scripts must automatically detect authentication state and fallback to existing environment variables without stalling headless automated CI/CD runners or subagent tasks.
+### 1.3 Anti-Abuse & Rate Limiting Verification
+- Cloudflare Turnstile token validation is mandatory on public login, employee login, and password-reset endpoints. Missing or invalid tokens are rejected immediately (HTTP 400 `AUTH_TURNSTILE_REQUIRED` or HTTP 403 `AUTH_TURNSTILE_FAILED`) prior to credential evaluation.
+- Sliding-window rate limiting tracks failed attempts by compound keys (`ip:{remote_ip}`, `account:{identifier}`). Exactly 5 consecutive failures within a 15-minute window are permitted; the 6th attempt triggers an immediate HTTP 429 Too Many Requests response carrying `Retry-After: 900`.
 
-### 1.4 Zero-Disk-Leak Secret Hygiene
-Secrets injected via Infisical (`infisical run`) or environment variables must remain in process memory. Plaintext `.env.docker`, decrypted secrets, or private key files must never be generated or persisted to the host disk. All environment files (`.env`, `*.env`, `.env.local`, `.env.production`) must be strictly ignored by git.
+### 1.4 Cryptographic Rigor & Timing Defense
+- Passwords stored in PostgreSQL are hashed using Argon2id (`m=65536, t=3, p=4`) or Scrypt (`N=32768, r=8, p=3`) with a 16-byte cryptographically secure random salt.
+- Password inputs are bounded strictly between 12 characters minimum and 1024 bytes maximum to prevent hashing denial-of-service (DoS) attacks.
+- Verification uses constant-time comparison algorithms (`timingSafeEqual`) to eliminate timing side-channel leakage on credentials, OTPs, and tokens.
 
-### 1.5 Multi-Tenant Reverse Proxy & Routing Invariants
-The Nginx gateway on host port `3084` acts as the unified reverse proxy:
-- Default server `/` routes to `tms-web:80`
-- Default server `/api/` routes to `tms-backend:4030` with `Host`, `X-Real-IP`, and `X-Forwarded-*` headers
-- Virtual host `admin.localhost` routes to `tms-admin:80`
-- Virtual host `api.localhost` routes to `tms-backend:4030`
+### 1.5 Multi-Tenant & Authentication Track Isolation
+The architecture enforces three strictly separated authentication tracks:
+1. **Track 1 (Global User-Centric)**: Firebase Authentication (`Zolexora_Auth`), dual email OTP + phone verification, canonical `ZX-XXXX-XXXX-XXXX` ID, with direct user dashboard routing for consumer apps (ClarityFi, Marketplace, Maun Kavach) and org listing/onboarding routing for enterprise SaaS (TMS, IMS, ERP).
+2. **Track 2 (Organization-Scoped Employee)**: Dedicated endpoint accepting `{ product, org_id, user_id_or_email, password }`. Enforces strict canonical org ID format (`ZX-ORG-XXXX-XXXX-XXXX`), strictly rejects personal webmail domains (`@gmail.com`, `@yahoo.com`, `@hotmail.com`, etc.), requires zero verification friction (no mobile/email OTPs), verifies against PostgreSQL, and mints Firebase Custom Tokens with RBAC claims (`zolexora_id`, `org_id`, `role`, `product`, `permissions`).
+3. **Track 3 (Internal Platform Admin)**: Dedicated login for Zolexora staff/superadmins hosted in `apps/platform-admin` (port 3082) contacting auth service (port 3081). Verifies against independent PostgreSQL database without requiring `org_id`. Public signup is strictly disabled. Mints superadmin custom claims (`role: "superadmin"`, `is_platform_admin: true`, `permissions: ["*"]`).
 
-### 1.6 Dedicated Port Isolation
-Host ports are strictly partitioned to prevent collisions with other monorepo products:
-- Postgres Database: Host port `5448` (internal `5432`)
-- Backend API: Host port `4030` (internal `4030`)
-- Nginx Gateway: Host port `3084` (internal `80`)
+### 1.6 Immediate Token Revocation
+When an employee is deactivated or a credential changes, the service invokes `admin.auth().revokeRefreshTokens(uid)` and updates `tokensValidAfterTime`. API middleware and client SDK validate `auth_time` / `iat` against this timestamp to reject revoked tokens immediately with HTTP 401 `AUTH_TOKEN_REVOKED`.
 
----
+### 1.7 Asset Storage & Private KYC Confidentiality
+- Cloudinary manages public profile avatars (`/users/avatars/{zx_id}`) and organization logos (`/orgs/logos/{org_id}`) with automatic format optimization (`f_auto,q_auto`).
+- Private KYC documents (Aadhaar, Passport, Driving License, GST, Incorporation deeds) are restricted to a 10MB maximum file size and whitelisted MIME types (`application/pdf`, `image/png`, `image/jpeg`, `image/webp`). Public access is denied. Access is provided strictly via 10–15 minute cryptographically signed URLs validated against requester permissions.
 
-## 2. Test Architecture & Tier Layering
-
-The test suite is structured into 4 hierarchical tiers in `/workspaces/Zolexora_Platform/tests/e2e/tms/`:
-
-```
-tests/e2e/tms/
-├── __init__.py
-├── conftest.py                     # Pytest fixtures and environment resolution
-├── helpers.py                      # Common subprocess, socket, and HTTP helpers
-├── test_tier1_features.py          # Tier 1: Primary Feature Coverage (40 tests across 8 features)
-├── test_tier2_boundaries.py        # Tier 2: Boundary & Corner Cases (25 tests across 5 domains)
-├── test_tier3_combinations.py      # Tier 3: Cross-Feature Combinations (8 pairwise tests)
-├── test_tier4_workloads.py         # Tier 4: Real-World Scenarios (5 workload scenarios)
-├── run_all.py                      # Python test runner with ANSI reporting & JSON output
-└── run_all.sh                      # Executable Bash quality gate runner
-```
-
-### 2.1 Tier Definitions & Objectives
-
-| Tier | File | Primary Scope | Min. Required | Implemented Tests |
-| :--- | :--- | :--- | :--- | :--- |
-| **Tier 1** | `test_tier1_features.py` | Complete requirement coverage across 8 features: Infisical availability, non-blocking auth, startup script syntax, compose validity, postgres port 5448, backend health endpoint, nginx gateway port 3084, git secret hygiene. | ≥40 (≥5 per feature) | **40 passed** |
-| **Tier 2** | `test_tier2_boundaries.py` | Boundary and corner cases: unauthenticated fallback behavior, missing optional env variables, container idempotency, invalid subcommands, gitignore rules for .env files. | ≥25 (≥5 per domain) | **25 passed** |
-| **Tier 3** | `test_tier3_combinations.py` | Pairwise integration testing: Infisical + Compose launch, Nginx reverse proxy + backend `/api/`, Nginx + frontend `/`, Nginx + admin dashboard, postgres connectivity from backend, environment variable pass-through, startup dependencies, graceful shutdown. | ≥5 combinations | **8 passed** |
-| **Tier 4** | `test_tier4_workloads.py` | Realistic workload journeys: full end-to-end stack start via startup script, health verification of all 5 containers, multi-tenant HTTP response verification, status check, clean shutdown. | ≥5 scenarios | **5 passed** |
-| **Total** | Full Suite | Complete 4-Tier Verification Suite | ≥75 tests | **78 passed** |
+### 1.8 Client SDK Resiliency & 401 Auto-Refresh
+The `@zolexora/auth-client` SDK provides `zolexoraFetch`, which injects `Authorization`, `X-Organisation-ID`, and `X-Zolexora-ID` headers. On HTTP 401 responses, it triggers an automatic single-flight token refresh mutex via `getIdToken(true)` and replays the request once. On persistent 401 or revoked tokens, it clears local session state and dispatches session-expired events.
 
 ---
 
-## 3. Feature Inventory & Mapping
+## 2. 4-Tier Test Methodology & Coverage Strategy
 
-| Feature ID | Scope | Feature Name | Description | Verification Test Class |
+The test suite is structured into 4 hierarchical tiers in `/home/chickenman/Documents/projects/Zolexora/Zolexora_Platform/tests/e2e/auth-service/`:
+
+```
+tests/e2e/auth-service/
+├── vitest.config.ts                     # Vitest runner configuration
+├── run_all.sh                           # Standalone executable Bash test runner
+├── helpers/
+│   ├── env.ts                           # Environment resolution & port probing
+│   ├── crypto.ts                        # Real Argon2id, Scrypt, Crockford Base32 helpers
+│   ├── contract-server.ts               # RFC/OpenAPI specification reference HTTP server
+│   ├── http-client.ts                   # Fetch & zolexoraFetch client test harness
+│   └── fixtures.ts                      # Authoritative test vectors, IDs, and tokens
+├── tier1-features/                      # Tier 1: Primary Feature Coverage (≥5 per feature)
+│   ├── track1-public-identity.test.ts   # Feature 1: Global Identity & Public Signup (5 tests)
+│   ├── track2-org-employee.test.ts      # Feature 2: Org-Scoped Employee Login & Claims (5 tests)
+│   ├── track3-platform-admin.test.ts    # Feature 3: Platform Admin Login & Zero-Public (5 tests)
+│   ├── turnstile-bot-defense.test.ts    # Feature 4: Cloudflare Turnstile Bot Defense (5 tests)
+│   ├── rate-limiting.test.ts            # Feature 5: Brute-Force Rate Limiting (5 tests)
+│   ├── password-crypto.test.ts          # Feature 6: Argon2id/Scrypt & Timing Defense (5 tests)
+│   ├── token-revocation.test.ts         # Feature 7: Immediate Token Revocation (5 tests)
+│   ├── storage-kyc.test.ts              # Feature 8: Cloudinary & Private KYC Storage (5 tests)
+│   └── client-sdk.test.ts               # Feature 9: @zolexora/auth-client & 401 Mutex (5 tests)
+├── tier2-boundaries/                    # Tier 2: Boundary & Corner Cases (BVA)
+│   └── boundary-validation.test.ts      # 25 boundary tests across 5 domains
+├── tier3-combinations/                  # Tier 3: Cross-Feature Combinations (Pairwise)
+│   └── pairwise-security.test.ts        # 8 pairwise integration tests
+└── tier4-workloads/                     # Tier 4: Real-World Scenarios (End-to-End Workloads)
+    └── real-world-scenarios.test.ts     # 5 complete real-world user journey workloads
+```
+
+### 2.1 Tier Definitions & Coverage Targets
+
+| Tier | Directory / File | Methodology & Primary Scope | Min. Required | Implemented Tests |
 | :--- | :--- | :--- | :--- | :--- |
-| **F-01** | R1 | Infisical CLI Availability | CLI installed in system PATH, semantic version format, core subcommands available. | `TestTier1Feature1InfisicalAvailability` (5 tests) |
-| **F-02** | R1 | Non-Blocking Auth Check | Non-interactive status check, project metadata schema, non-hanging script detection. | `TestTier1Feature2NonBlockingAuth` (5 tests) |
-| **F-03** | R2 | Startup Script Syntax | Shell script syntax, status actions, non-interactive piping, canonical compose reference. | `TestTier1Feature3StartDockerSyntax` (5 tests) |
-| **F-04** | R2 | Compose File Validity | Docker compose config validation, 5 required services, deploy resource limits, healthchecks. | `TestTier1Feature4ComposeValidity` (5 tests) |
-| **F-05** | R3 | Postgres Port 5448 | Port 5448:5432 mapping, pg_isready healthcheck, no monorepo collision, socket connectivity. | `TestTier1Feature5PostgresPort` (5 tests) |
-| **F-06** | R3 | Backend Health Endpoint | `http://localhost:4030/health` contract, readiness probe, Dockerfile EXPOSE 4030, HTTP 200 check. | `TestTier1Feature6BackendHealth` (5 tests) |
-| **F-07** | R3 | Nginx Gateway Port 3084 | Port 3084 mapping, upstream proxy rules (/api/ -> backend, / -> web, admin.localhost -> admin). | `TestTier1Feature7NginxGateway` (5 tests) |
-| **F-08** | AC | Git Secret Hygiene | Root and TMS .gitignore rules, clean git status, placeholder verification in tms.env.example. | `TestTier1Feature8GitSecretHygiene` (5 tests) |
+| **Tier 1** | `tier1-features/` (9 files) | **Category-Partitioning**: Isolated happy path verification across all 9 feature domains (Track 1, Track 2, Track 3, Turnstile, Rate Limiting, Password Crypto, Token Revocation, Storage & KYC, Client SDK). | ≥45 (≥5 per feature) | **45 passed** |
+| **Tier 2** | `tier2-boundaries/` | **Boundary Value Analysis (BVA)** & Equivalence Partitioning: Exact password bounds (11, 12, 1024, 1025 bytes), Base32 character exclusions, 10.0MB vs 10.1MB KYC size limits, MIME rejections, 5th vs 6th attempt 429 lockout, signed URL TTL limits. | ≥25 (≥5 per domain) | **25 passed** |
+| **Tier 3** | `tier3-combinations/` | **Pairwise Integration**: Cross-feature interactions between Turnstile + Rate Limiter, Rate Limiting + Crypto execution, Custom Token claims + Revocation race, Turnstile + Webmail blocking, Org ID normalization + RBAC custom token minting, 401 refresh + Revocation cascade. | ≥8 combinations | **8 passed** |
+| **Tier 4** | `tier4-workloads/` | **Real-World Workload Scenarios**: Complete stateful lifecycle journeys (Consumer signup to dashboard; Org creation to employee login; Admin login to employee token revocation; KYC upload to signed URL compliance audit; Brute-force attack to lockout to password reset recovery). | ≥5 scenarios | **5 passed** |
+| **Total** | Full E2E Suite | **Complete 4-Tier Opaque-Box Verification Suite** | ≥83 tests | **83 passed** |
+
+---
+
+## 3. Feature Inventory & Mapping Table
+
+| Feature ID | Category | Feature Name | Description | Verification Test File |
+| :--- | :--- | :--- | :--- | :--- |
+| **F-01** | Track 1 | Dual-Verification Public Signup | Enforces email OTP and phone number verification before account activation. | `tier1-features/track1-public-identity.test.ts` (5 tests) |
+| **F-02** | Track 1 | Consumer vs SaaS Routing | Direct dashboard routing for consumer apps; org listing/onboarding for enterprise SaaS. | `tier1-features/track1-public-identity.test.ts` |
+| **F-03** | Track 1 | Canonical Zolexora User ID | Crockford Base32 ID `ZX-XXXX-XXXX-XXXX` validation and deterministic formatting. | `tier1-features/track1-public-identity.test.ts` |
+| **F-04** | Track 2 | Org Employee Login | Dedicated login with `{ product, org_id, user_id_or_email, password }` and PostgreSQL verification. | `tier1-features/track2-org-employee.test.ts` (5 tests) |
+| **F-05** | Track 2 | Strict Canonical Org ID | Enforces `ZX-ORG-XXXX-XXXX-XXXX` Crockford Base32 format for unambiguous tenant isolation. | `tier1-features/track2-org-employee.test.ts` |
+| **F-06** | Track 2 | Webmail Domain Blocking | Strictly blocks public webmail domains (`@gmail.com`, `@yahoo.com`, etc.) during employee creation. | `tier1-features/track2-org-employee.test.ts` |
+| **F-07** | Track 2 | Zero-Friction Provisioning | Org employees provisioned without requiring mobile numbers or email challenge OTPs. | `tier1-features/track2-org-employee.test.ts` |
+| **F-08** | Track 2 | Firebase Custom Token RBAC | Mints Firebase Custom Token with claims `{ zolexora_id, org_id, role, product, permissions }`. | `tier1-features/track2-org-employee.test.ts` |
+| **F-09** | Track 3 | Platform Admin Login | Authenticates internal staff against independent PostgreSQL without requiring `org_id`. | `tier1-features/track3-platform-admin.test.ts` (5 tests) |
+| **F-10** | Track 3 | Public Admin Signup Disabled | Rejects any attempt to register platform admin accounts through public endpoints. | `tier1-features/track3-platform-admin.test.ts` |
+| **F-11** | Track 3 | Superadmin Custom Token | Mints custom token with claims `{ role: "superadmin", is_platform_admin: true, permissions: ["*"] }`. | `tier1-features/track3-platform-admin.test.ts` |
+| **F-12** | Security | Cloudflare Turnstile Defense | Server-side `/siteverify` validation rejecting missing, invalid, or replayed challenge tokens. | `tier1-features/turnstile-bot-defense.test.ts` (5 tests) |
+| **F-13** | Security | Brute-Force Rate Limiting | Max 5 failed attempts in 15 min per IP/account; 6th attempt triggers HTTP 429 with `Retry-After: 900`. | `tier1-features/rate-limiting.test.ts` (5 tests) |
+| **F-14** | Security | Argon2id & Scrypt Hashing | Argon2id (`t=3, m=65536, p=4`) & Scrypt (`N=32768, r=8, p=3`) password hashing with 16-byte salt. | `tier1-features/password-crypto.test.ts` (5 tests) |
+| **F-15** | Security | Constant-Time Comparison | Verifies hashes using `crypto.timingSafeEqual` to eliminate timing side-channels. | `tier1-features/password-crypto.test.ts` |
+| **F-16** | Security | Password Length Defense | Rejects passwords < 12 characters (weakness) or > 1024 bytes (DoS defense). | `tier1-features/password-crypto.test.ts` |
+| **F-17** | Security | Immediate Token Revocation | Triggers `revokeRefreshTokens(uid)` and rejects tokens with `auth_time < tokensValidAfterTime`. | `tier1-features/token-revocation.test.ts` (5 tests) |
+| **F-18** | Storage | Cloudinary Public Media | Public avatar and org logo uploads with `f_auto,q_auto` delivery. | `tier1-features/storage-kyc.test.ts` (5 tests) |
+| **F-19** | Storage | Private KYC Document Bucket | Restricts KYC uploads to 10MB max and permitted MIME types (`pdf`, `png`, `jpeg`, `webp`). | `tier1-features/storage-kyc.test.ts` |
+| **F-20** | Storage | Time-Bound Signed URLs | Generates 10–15 minute signed URLs validated against requester permissions. | `tier1-features/storage-kyc.test.ts` |
+| **F-21** | Client SDK | zolexoraFetch 401 Refresh | Automatic single-flight token refresh mutex retrying request once on 401. | `tier1-features/client-sdk.test.ts` (5 tests) |
+| **F-22** | Client SDK | React Hooks & Hydration | Session hydration and state extraction (`useAuth`, `useUser`, `useOrganization`). | `tier1-features/client-sdk.test.ts` |
 
 ---
 
 ## 4. Test Suite Execution & Runner
 
-### 4.1 Automated Shell Runner
-The test suite includes a standalone shell runner executable at `tests/e2e/tms/run_all.sh`:
+### 4.1 Standalone Bash Shell Runner
+The test suite includes a standalone shell runner executable at `tests/e2e/auth-service/run_all.sh`:
 
 ```bash
-# Run entire test suite (all 4 tiers)
-./tests/e2e/tms/run_all.sh
+# Make runner executable (if needed)
+chmod +x tests/e2e/auth-service/run_all.sh
+
+# Run full test suite (all 4 tiers)
+./tests/e2e/auth-service/run_all.sh
 
 # Run specific tier
-./tests/e2e/tms/run_all.sh --tier 1
-./tests/e2e/tms/run_all.sh --tier 2
-./tests/e2e/tms/run_all.sh --tier 3
-./tests/e2e/tms/run_all.sh --tier 4
+./tests/e2e/auth-service/run_all.sh --tier 1
+./tests/e2e/auth-service/run_all.sh --tier 2
+./tests/e2e/auth-service/run_all.sh --tier 3
+./tests/e2e/auth-service/run_all.sh --tier 4
 
-# Run with verbose test case listing
-./tests/e2e/tms/run_all.sh -v
+# Run with verbose test case output
+./tests/e2e/auth-service/run_all.sh -v
 
 # Run with machine-readable JSON output for CI/CD
-./tests/e2e/tms/run_all.sh --json
+./tests/e2e/auth-service/run_all.sh --json
 ```
 
-### 4.2 Standard Pytest Execution
-The test suite natively integrates with `pytest`:
+### 4.2 Standard Vitest Execution
+The test suite natively integrates with the repository's Vitest runner:
 
 ```bash
-pytest tests/e2e/tms/ -v
+# Run all auth-service E2E tests
+pnpm vitest run --config tests/e2e/auth-service/vitest.config.ts
+
+# Run with coverage report
+pnpm vitest run --config tests/e2e/auth-service/vitest.config.ts --coverage
 ```
 
-### 4.3 Python Standard Library Runner
-Because tests utilize `unittest.TestCase` and standard library components without external package dependencies, they run directly with Python 3:
-
-```bash
-python3 -m unittest discover -s tests/e2e/tms -p "test_*.py"
-```
+### 4.3 Environment Configuration & Live Service Probing
+The test harness resolves target URLs via environment variables:
+- `AUTH_SERVICE_URL`: Defaults to `http://localhost:3081`. If active, tests run directly against the live HTTP microservice.
+- `AUTH_TEST_MODE`: `live` (requires port 3081 running), `contract` (uses reference HTTP contract server), or `auto` (default: probes port 3081 and automatically falls back to contract server if unavailable).
 
 ---
 
-## 5. Verification Results & Quality Gate
+## 5. Verification Results & Quality Gate Criteria
 
-Execution of `./tests/e2e/tms/run_all.sh` produces the following baseline verification result:
-
-```
-══════════════════════════════════════════════════════════════════════════════
-                        E2E TEST SUITE SUMMARY REPORT                         
-══════════════════════════════════════════════════════════════════════════════
-  Tier 1: Feature Coverage                 : [PASSED] 40/40 (1.47s)
-  Tier 2: Boundary & Corner Cases          : [PASSED] 25/25 (1.19s)
-  Tier 3: Cross-Feature Combinations       : [PASSED] 8/8 (0.20s)
-  Tier 4: Real-World Scenarios             : [PASSED] 5/5 (0.55s)
-──────────────────────────────────────────────────────────────────────────────
-  Total Test Cases   : 78
-  Passed Tests       : 78
-  Failed Tests       : 0
-  Total Execution    : 3.45s
-══════════════════════════════════════════════════════════════════════════════
-
-🎉 ALL 78 E2E TESTS PASSED SUCCESSFULLY! (Exit Code: 0)
-```
-
-**Quality Gate Certification**:
-- Test Count Target: Exceeded (78 implemented vs 75 required)
-- Tier 1 Coverage: 100% (40/40 passed)
-- Tier 2 Boundaries: 100% (25/25 passed)
-- Tier 3 Combinations: 100% (8/8 passed)
-- Tier 4 Workloads: 100% (5/5 passed)
-- Clean Exit Code: Verified (Code 0 on success)
+A successful verification run satisfies the following quality gates:
+1. **Zero Facade Tests**: All tests make real HTTP requests (via native `fetch`), inspect status codes, validate JSON schemas, and execute real cryptographic computations.
+2. **Tier 1 Coverage (100%)**: All 9 feature domains pass with ≥5 tests each (45 total).
+3. **Tier 2 Boundaries (100%)**: All 25 boundary/corner cases pass without exceptions.
+4. **Tier 3 Combinations (100%)**: All 8 cross-feature pairwise interaction tests pass.
+5. **Tier 4 Workloads (100%)**: All 5 end-to-end real-world user journeys pass cleanly.
+6. **Clean Exit Code**: The test runner exits with code 0 on complete pass.
