@@ -13,17 +13,17 @@ Source of truth: the `ports:` entries in each `compose.yaml` (verified 2026-10-3
 | Product | Gateway (nginx) | Backend API | Postgres | Other | Defined in |
 | --- | --- | --- | --- | --- | --- |
 | Zolexora AppSuite | `3070` (`APPSUITE_PORT`), `3443` TLS | — | — | — | `products/zolexora-appsuite/compose.yaml` |
-| Maun Kavach | `3071` (`MAUN_KAVACH_PORT`) | — | — | — | `products/maunkavach/compose.yaml` |
+| Maun Kavach | `3071` (`MAUN_KAVACH_PORT`) | — | — | — | `products/zolexora-maunkavach/compose.yaml` |
 | Zolexora IMS | `3072` | — | — | — | `products/zolexora-ims/compose.yaml` |
-| Rento Easy | `3076` | — | — | — | `products/rentoeasy/compose.yaml` |
+| Rento Easy | `3076` | — | — | — | `products/zolexora-rentoeasy/compose.yaml` |
 | Zolexora Engage | `3077` | — | — | — | `products/zolexora-engage/compose.yaml` |
 | Zolexora Marketplace | `3079` | — | — | — | `products/zolexora-marketplace/compose.yaml` |
-| The Textile Care | `3080` | — | — | — | `products/the-textile-care/compose.yaml` |
-| Auth Service | — | `3081` (`PORT`, Node, no compose) | — | — | `apps/auth-service/src/config/env.ts` |
+| The Textile Care | `3080` | — | — | — | `products/zolexora-textile-care/compose.yaml` |
+| Auth Service | — | `3081` (`PORT`, Node, no compose) | — | — | `apps/zolexora-auth-service/src/config/env.ts` |
 | Zolexora TMS | `3090` (`TMS_PORT`) | `4031` (`TMS_BACKEND_PORT`) | — | — | `products/zolexora-tms/compose.yaml` |
 | Zolexora AI | `3091` | `4090` | — | — | `products/zolexora-ai/compose.yaml` |
-| Platform Admin | `3095` (`PLATFORM_ADMIN_GATEWAY_PORT`), frontend `3092` | `4041` | `5450` | — | `apps/platform-admin/compose.yaml` |
-| ClarityFi | `3110` (`CLARITYFI_PORT`) | — | — | — | `products/clarityfi/compose.yaml` |
+| Platform Admin | `3095` (`PLATFORM_ADMIN_GATEWAY_PORT`), frontend `3092` | `4041` | `5450` | — | `apps/zolexora-platform-admin/compose.yaml` |
+| ClarityFi | `3110` (`CLARITYFI_PORT`) | — | — | — | `products/zolexora-clarityfi/compose.yaml` |
 | Zolexora IronClub | `8085` | `4060` | `5452` (`IRONCLUB_POSTGRES_PORT`) | Redis `6382` | `products/zolexora-ironclub/compose.yaml` |
 | Zolexora ERP (root stack) | `8080` / `8443` (`HTTP_PORT`/`HTTPS_PORT`) | Frappe `8000` (`FRAPPE_PORT`) | — | — | root `compose.yaml` + `config/envs/zolexora-erp/erp.env` |
 | Zolexora ERP (product stack) | `80` | — | — | — | `products/zolexora-erp/compose.yaml` |

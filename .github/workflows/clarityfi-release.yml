@@ -22,7 +22,7 @@ on:
 
 # All jobs share these env vars
 env:
-  WORKING_DIR: products/clarityfi/apps/mobile
+  WORKING_DIR: products/zolexora-clarityfi/apps/mobile
   APP_SLUG: clarityfi
   GITHUB_APK_REPO: Zolexora/Zolexora_Platform   # repo that hosts GitHub Releases
 

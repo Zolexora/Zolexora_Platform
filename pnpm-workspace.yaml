@@ -3,7 +3,7 @@ packages:
   - 'products/*/apps/*'
   - 'products/*/packages/*'
   - 'products/*/services/*'
-  - 'products/the-textile-care/platform/*'
+  - 'products/zolexora-textile-care/platform/*'
   - 'products/zolexora-marketplace/apps/*/*/*'
   - 'products/zolexora-marketplace/packages/*'
   - 'platform/*'

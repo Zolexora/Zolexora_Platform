@@ -41,9 +41,9 @@ replace_in_files('products/zolexora-ims', '8000', '4050', extensions=['.json'])
 replace_in_files('products/zolexora-ims', '8001', '4051', extensions=['.json'])
 
 print("Patching The Textile Care (8000 -> 4010)")
-replace_in_files('products/the-textile-care', '8000', '4010')
+replace_in_files('products/zolexora-textile-care', '8000', '4010')
 
 print("Patching Rento Easy (8000 -> 4020)")
-replace_in_files('products/rentoeasy', '8000', '4020')
+replace_in_files('products/zolexora-rentoeasy', '8000', '4020')
 
 print("Done.")

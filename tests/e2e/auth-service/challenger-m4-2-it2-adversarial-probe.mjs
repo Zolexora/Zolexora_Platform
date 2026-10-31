@@ -1,8 +1,8 @@
 // Adversarial Challenger M4.2 Iteration 2 Empirical Probe Suite
 // Deep stress-testing of Signed URLs & 3-Tier RBAC on live port 3081
 
-import { TokenService } from "../../../apps/auth-service/dist/services/token.service.js";
-import { StorageService } from "../../../apps/auth-service/dist/services/storage.service.js";
+import { TokenService } from "../../../apps/zolexora-auth-service/dist/services/token.service.js";
+import { StorageService } from "../../../apps/zolexora-auth-service/dist/services/storage.service.js";
 import { createHmac } from "node:crypto";
 import fs from "node:fs";
 

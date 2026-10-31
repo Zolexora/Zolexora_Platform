@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'apps/platform-admin/**'
+      - 'apps/zolexora-platform-admin/**'
       - 'packages/**'
       - 'pnpm-lock.yaml'
       - 'package.json'
@@ -26,13 +26,13 @@ jobs:
         include:
           - service: platform-admin-backend
             context: .
-            file: ./apps/platform-admin/backend/Dockerfile
+            file: ./apps/zolexora-platform-admin/backend/Dockerfile
           - service: platform-admin-frontend
             context: .
-            file: ./apps/platform-admin/frontend/Dockerfile
+            file: ./apps/zolexora-platform-admin/frontend/Dockerfile
           - service: platform-admin-nginx
             context: .
-            file: ./apps/platform-admin/Dockerfile.nginx
+            file: ./apps/zolexora-platform-admin/Dockerfile.nginx
 
     steps:
       - name: Checkout repository

@@ -22,11 +22,11 @@ Shared resume point for any agent performing a repository-wide over-engineering 
 | --- | --- | --- |
 | Root workspace and shared packages | Initial pass | Read root manifests/configs; detailed package-source review pending. |
 | `.agents`, docs, config, scripts, infrastructure | Initial pass | Inventory done; some configs/manifests/scripts reviewed; broad review pending. |
-| `products/clarityfi` | Initial pass | README, workspace/package usage, API server routes, and mobile API call sites reviewed; full mobile source review pending. |
-| `products/maunkavach` | Initial pass | README, web manifest, app composition, and UI consumers reviewed; Android/backend source review pending. |
+| `products/zolexora-clarityfi` | Initial pass | README, workspace/package usage, API server routes, and mobile API call sites reviewed; full mobile source review pending. |
+| `products/zolexora-maunkavach` | Initial pass | README, web manifest, app composition, and UI consumers reviewed; Android/backend source review pending. |
 | `products/platform-admin` | Code reviewed | 325 lines read; database router/health/R2 modules are disconnected from the FastAPI app, whose only route is static health. |
-| `products/rentoeasy` | Initial pass | Root/API/workspace manifests reviewed; detailed frontend/backend code review pending. |
-| `products/the-textile-care` | Initial pass | Exact asset duplicate scan and shared-package/call-site review started; backend and app source review pending. |
+| `products/zolexora-rentoeasy` | Initial pass | Root/API/workspace manifests reviewed; detailed frontend/backend code review pending. |
+| `products/zolexora-textile-care` | Initial pass | Exact asset duplicate scan and shared-package/call-site review started; backend and app source review pending. |
 | `products/zolexora-ai` | Initial pass | README/architecture, package manifests, requirement files, Docker/Compose references, source inventory and project history/file/change call graph reviewed; full source files remain pending. |
 | `products/zolexora-appsuite` | Code reviewed | Read 2,631 lines of app/config/schema/README source; excluded `.next`, tsbuildinfo, and `.env.local`. Two unreferenced server actions; request creation also exists as a page handler and API endpoint. |
 | `products/zolexora-engage` | Initial pass | README, workspace/package usage, and exact duplicate packages reviewed; detailed app/API flow review pending. |
@@ -57,7 +57,7 @@ These candidates are not yet final findings; validate file ownership, consumers,
 - `delete:` Clarity FI's `packages/db` is an unused scaffold (empty schema, no code imports); the API server only exposes health and the mobile app stores data locally. Remove the package and its API-server dependency unless a database-backed feature is scheduled now.
 - `delete:` Clarity FI declares `@workspace/api-client-react` in the mobile app but imports no client functions; its optional API server exposes only health. Drop the client package/dependency until a real API feature consumes it.
 - `delete:` Clarity FI and Zolexora Engage each carry an identical empty Drizzle schema package; Engage also has no code imports of `@workspace/db` (only a manifest dependency and setup docs). Remove the unused DB package/dependencies or add an actual schema/consumer when required.
-- `shrink:` Simplify `products/rentoeasy/package.json`: remove the npm/Yarn `workspaces` list and duplicated Nest dependencies; pnpm already defines workspace globs in `pnpm-workspace.yaml`, and `services/api` declares its own runtime dependencies.
+- `shrink:` Simplify `products/zolexora-rentoeasy/package.json`: remove the npm/Yarn `workspaces` list and duplicated Nest dependencies; pnpm already defines workspace globs in `pnpm-workspace.yaml`, and `services/api` declares its own runtime dependencies.
 - `delete:` Remove `products/platform-admin/backend/app/db/` and its unused dependencies until an admin route consumes it; the only FastAPI route returns a static health payload and no code imports the database package.
 - `delete:` Trim the Maun Kavach marketing site's generated `components/ui` catalog and its Radix/form/chart/carousel dependencies to the components actually used. The live app imports only Card, while its Toaster and TooltipProvider have no feature consumers; `@tanstack/react-query` is only mounted in an app with no query hooks.
 - `delete:` Remove `createSignedDownloadUrl` from Maun Kavach storage until a caller needs direct streaming; the Android client currently proxies downloads through the API and the exported function has no callers.

@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'products/maunkavach/**'
+      - 'products/zolexora-maunkavach/**'
       - '.github/workflows/docker-ghcr-maun-kavach.yml'
   workflow_dispatch:
 
@@ -23,13 +23,13 @@ jobs:
         include:
           - service: maun-kavach-backend
             context: .
-            file: ./products/maunkavach/Dockerfile.api
+            file: ./products/zolexora-maunkavach/Dockerfile.api
           - service: maun-kavach-web
             context: .
-            file: ./products/maunkavach/Dockerfile.web
+            file: ./products/zolexora-maunkavach/Dockerfile.web
           - service: maun-kavach-nginx
             context: .
-            file: ./products/maunkavach/Dockerfile.nginx
+            file: ./products/zolexora-maunkavach/Dockerfile.nginx
 
     steps:
       - name: Checkout repository

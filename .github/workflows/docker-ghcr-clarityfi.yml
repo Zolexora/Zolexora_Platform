@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'products/clarityfi/**'
+      - 'products/zolexora-clarityfi/**'
       - 'packages/**'
       - 'pnpm-lock.yaml'
       - 'package.json'
@@ -26,13 +26,13 @@ jobs:
         include:
           - service: clarityfi-web
             context: .
-            file: ./products/clarityfi/Dockerfile.web
+            file: ./products/zolexora-clarityfi/Dockerfile.web
           - service: clarityfi-api
             context: .
-            file: ./products/clarityfi/Dockerfile.api
+            file: ./products/zolexora-clarityfi/Dockerfile.api
           - service: clarityfi-nginx
             context: .
-            file: ./products/clarityfi/Dockerfile.nginx
+            file: ./products/zolexora-clarityfi/Dockerfile.nginx
 
     steps:
       - name: Checkout repository

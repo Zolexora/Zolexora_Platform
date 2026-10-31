@@ -39,9 +39,9 @@ Product-specific deployment, lifecycle, and testing scripts are located in their
 
 | Product | Canonical Path | Key Scripts |
 |---|---|---|
-| **ClarityFi** | [`products/clarityfi/scripts/`](../products/clarityfi/scripts/) | `verify-tunnel.js` |
-| **RentoEasy** | [`products/rentoeasy/scripts/`](../products/rentoeasy/scripts/) | `migrate-prisma-codespaces.sh` |
-| **The Textile Care** | [`products/the-textile-care/scripts/`](../products/the-textile-care/scripts/) | `start-docker.sh`, `start-local.sh` |
+| **ClarityFi** | [`products/zolexora-clarityfi/scripts/`](../products/zolexora-clarityfi/scripts/) | `verify-tunnel.js` |
+| **RentoEasy** | [`products/zolexora-rentoeasy/scripts/`](../products/zolexora-rentoeasy/scripts/) | `migrate-prisma-codespaces.sh` |
+| **The Textile Care** | [`products/zolexora-textile-care/scripts/`](../products/zolexora-textile-care/scripts/) | `start-docker.sh`, `start-local.sh` |
 | **Zolexora AI** | [`products/zolexora-ai/scripts/`](../products/zolexora-ai/scripts/) | `deploy-azure.sh`, `seed-ai-memory.sh`, `setup-azure-resources.sh` |
 | **Zolexora Engage** | [`products/zolexora-engage/scripts/`](../products/zolexora-engage/scripts/) | `start-project.sh`, `start-web-dev.sh`, `run-post-merge-hooks.sh` |
 | **Zolexora ERP** | [`products/zolexora-erp/scripts/`](../products/zolexora-erp/scripts/) | `bootstrap-frappe-site.sh`, `backup-frappe-site.sh`, `restore-frappe-site.sh`, `check-frappe-stack-health.sh`, `cleanup-workspaces.py`, `tests/` |

@@ -11,7 +11,7 @@
 
 ## 1. Test Philosophy & Core Invariants
 
-The testing infrastructure for the Zolexora Centralized Authentication Service (`apps/auth-service` on port `3081`) and companion `@zolexora/auth-client` SDK is engineered to provide opaque-box, requirement-driven, deterministic end-to-end verification. It adheres to eight non-negotiable architectural principles:
+The testing infrastructure for the Zolexora Centralized Authentication Service (`apps/zolexora-auth-service` on port `3081`) and companion `@zolexora/auth-client` SDK is engineered to provide opaque-box, requirement-driven, deterministic end-to-end verification. It adheres to eight non-negotiable architectural principles:
 
 ### 1.1 Strict Opaque-Box Verification
 All tests interact with the platform through external, observable interfaces:
@@ -23,7 +23,7 @@ Tests treat internal service logic and private database tables as black boxes, v
 
 ### 1.2 Progressive Testability
 During milestone execution, test cases are verifiable using only features from the current milestone and its completed dependencies. The test harness dynamically detects service availability:
-- When a live instance of `apps/auth-service` is listening on port `3081`, tests execute real HTTP network requests against the live service.
+- When a live instance of `apps/zolexora-auth-service` is listening on port `3081`, tests execute real HTTP network requests against the live service.
 - In pre-deployment or standalone test environments, the test harness boots an in-process, RFC-compliant HTTP contract server on an ephemeral loopback socket, exercising real network calls, HTTP headers, cryptographic validations, and client SDK wrappers without mocks or facade passes.
 
 ### 1.3 Anti-Abuse & Rate Limiting Verification
@@ -39,7 +39,7 @@ During milestone execution, test cases are verifiable using only features from t
 The architecture enforces three strictly separated authentication tracks:
 1. **Track 1 (Global User-Centric)**: Firebase Authentication (`Zolexora_Auth`), dual email OTP + phone verification, canonical `ZX-XXXX-XXXX-XXXX` ID, with direct user dashboard routing for consumer apps (ClarityFi, Marketplace, Maun Kavach) and org listing/onboarding routing for enterprise SaaS (TMS, IMS, ERP).
 2. **Track 2 (Organization-Scoped Employee)**: Dedicated endpoint accepting `{ product, org_id, user_id_or_email, password }`. Enforces strict canonical org ID format (`ZX-ORG-XXXX-XXXX-XXXX`), strictly rejects personal webmail domains (`@gmail.com`, `@yahoo.com`, `@hotmail.com`, etc.), requires zero verification friction (no mobile/email OTPs), verifies against PostgreSQL, and mints Firebase Custom Tokens with RBAC claims (`zolexora_id`, `org_id`, `role`, `product`, `permissions`).
-3. **Track 3 (Internal Platform Admin)**: Dedicated login for Zolexora staff/superadmins hosted in `apps/platform-admin` (port 3082) contacting auth service (port 3081). Verifies against independent PostgreSQL database without requiring `org_id`. Public signup is strictly disabled. Mints superadmin custom claims (`role: "superadmin"`, `is_platform_admin: true`, `permissions: ["*"]`).
+3. **Track 3 (Internal Platform Admin)**: Dedicated login for Zolexora staff/superadmins hosted in `apps/zolexora-platform-admin` (port 3082) contacting auth service (port 3081). Verifies against independent PostgreSQL database without requiring `org_id`. Public signup is strictly disabled. Mints superadmin custom claims (`role: "superadmin"`, `is_platform_admin: true`, `permissions: ["*"]`).
 
 ### 1.6 Immediate Token Revocation
 When an employee is deactivated or a credential changes, the service invokes `admin.auth().revokeRefreshTokens(uid)` and updates `tokensValidAfterTime`. API middleware and client SDK validate `auth_time` / `iat` against this timestamp to reject revoked tokens immediately with HTTP 401 `AUTH_TOKEN_REVOKED`.

@@ -4,18 +4,18 @@ on:
   push:
     branches: [main]
     paths:
-      - "products/maunkavach/app/**"
-      - "products/maunkavach/gradle/**"
-      - "products/maunkavach/*.kts"
-      - "products/maunkavach/*.properties"
+      - "products/zolexora-maunkavach/app/**"
+      - "products/zolexora-maunkavach/gradle/**"
+      - "products/zolexora-maunkavach/*.kts"
+      - "products/zolexora-maunkavach/*.properties"
       - ".github/workflows/maun-kavach-android.yml"
     tags:
       - "maunkavach-v*"
   pull_request:
     paths:
-      - "products/maunkavach/app/**"
-      - "products/maunkavach/gradle/**"
-      - "products/maunkavach/*.kts"
+      - "products/zolexora-maunkavach/app/**"
+      - "products/zolexora-maunkavach/gradle/**"
+      - "products/zolexora-maunkavach/*.kts"
       - ".github/workflows/maun-kavach-android.yml"
   workflow_dispatch:
     inputs:
@@ -31,7 +31,7 @@ permissions:
 
 defaults:
   run:
-    working-directory: products/maunkavach
+    working-directory: products/zolexora-maunkavach
 
 env:
   JAVA_VERSION: "17"
@@ -70,7 +70,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: maunkavach-debug-${{ github.sha }}
-          path: products/maunkavach/app/build/outputs/apk/debug/*.apk
+          path: products/zolexora-maunkavach/app/build/outputs/apk/debug/*.apk
           retention-days: 7
 
       - name: Distribute to testers via Firebase App Distribution
@@ -82,7 +82,7 @@ jobs:
           appId: ${{ secrets.MAUNKAVACH_FIREBASE_APP_ID }}
           token: ${{ secrets.MAUNKAVACH_FIREBASE_TOKEN }}
           groups: internal-team, qa-team
-          file: products/maunkavach/app/build/outputs/apk/debug/app-debug.apk
+          file: products/zolexora-maunkavach/app/build/outputs/apk/debug/app-debug.apk
           releaseNotes: |
             Branch: ${{ github.ref_name }}
             Commit: ${{ github.sha }}
@@ -175,7 +175,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: maunkavach-release-aab-${{ github.ref_name }}
-          path: products/maunkavach/app/build/outputs/bundle/release/*.aab
+          path: products/zolexora-maunkavach/app/build/outputs/bundle/release/*.aab
           if-no-files-found: error
           retention-days: 30
 
@@ -183,7 +183,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: maunkavach-release-apk-${{ github.ref_name }}
-          path: products/maunkavach/app/build/outputs/apk/release/*.apk
+          path: products/zolexora-maunkavach/app/build/outputs/apk/release/*.apk
           if-no-files-found: error
           retention-days: 30
 
@@ -194,8 +194,8 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           name: MaunKavach ${{ github.ref_name }}
           files: |
-            products/maunkavach/app/build/outputs/bundle/release/*.aab
-            products/maunkavach/app/build/outputs/apk/release/*.apk
+            products/zolexora-maunkavach/app/build/outputs/bundle/release/*.aab
+            products/zolexora-maunkavach/app/build/outputs/apk/release/*.apk
           fail_on_unmatched_files: true
           generate_release_notes: true
           draft: false

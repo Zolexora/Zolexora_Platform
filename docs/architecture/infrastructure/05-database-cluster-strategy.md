@@ -275,7 +275,7 @@ data = await client.schema("ims").from_("products").select("*").execute()
 
 ---
 
-## Part 3 — `config/envs/platform-admin/.env.example`
+## Part 3 — `config/envs/zolexora-platform-admin/.env.example`
 
 ### What It Is
 A single, clearly organised environment variable template that consolidates all database credentials for the entire platform into one file — replacing 10+ scattered `.env` files.
@@ -375,7 +375,7 @@ Step 2: Run migrate-schemas.sql on each project
         → Takes ~2 minutes per project
 
 Step 3: Load all keys into Infisical
-        → Follow config/envs/platform-admin/.env.example
+        → Follow config/envs/zolexora-platform-admin/.env.example
         → Everything in one place
 
 Step 4: Build db/ connection manager in Platform Admin
@@ -416,6 +416,6 @@ infisical login
 | `config.py` | `products/platform-admin/backend/app/db/` | ~80 lines Python |
 | `connections.py` | `products/platform-admin/backend/app/db/` | ~120 lines Python |
 | `health.py` | `products/platform-admin/backend/app/db/` | ~60 lines Python |
-| `.env.example` | `config/envs/platform-admin/` | ~50 lines |
+| `.env.example` | `config/envs/zolexora-platform-admin/` | ~50 lines |
 
 **Nothing is built yet. Read this report and confirm when ready.**

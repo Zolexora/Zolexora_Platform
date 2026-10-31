@@ -7,19 +7,19 @@ Monorepo for every Zolexora product plus the shared identity, admin and library 
 | Product | Path | What it is | Stack | Local gateway |
 | --- | --- | --- | --- | --- |
 | Zolexora Marketplace | `products/zolexora-marketplace` | Multi-storefront e-commerce (Zolexora Shop, Mahila Madel) + seller and admin portals | FastAPI, Next.js, Expo | :3079 |
-| The Textile Care | `products/the-textile-care` | Multi-tenant white-label laundry platform (customer, seller, driver, admin apps) | FastAPI, Next.js, Expo | :3080 |
+| The Textile Care | `products/zolexora-textile-care` | Multi-tenant white-label laundry platform (customer, seller, driver, admin apps) | FastAPI, Next.js, Expo | :3080 |
 | Zolexora TMS | `products/zolexora-tms` | Transport management (web, admin, mobile) | FastAPI, Vite, Expo | :3090 |
 | Zolexora IMS | `products/zolexora-ims` | Multi-tenant inventory management | Cloudflare Workers + D1, FastAPI, Vite | :3072 |
 | Zolexora ERP | `products/zolexora-erp` | ERP on Frappe/ERPNext (submodules) + Zolexora Frappe apps | Frappe, MariaDB | :8080 (root `compose.yaml`) |
 | Zolexora IronClub | `products/zolexora-ironclub` | Gym & health-club management (admin, manager, marketing, member apps) | FastAPI, Vite, Expo | :8085 |
-| Rento Easy | `products/rentoeasy` | Property rental (tenant, owner, admin portals) | NestJS, Prisma, Vite | :3076 |
+| Rento Easy | `products/zolexora-rentoeasy` | Property rental (tenant, owner, admin portals) | NestJS, Prisma, Vite | :3076 |
 | Zolexora AppSuite | `products/zolexora-appsuite` | Client intake + dev-team console for commissioned apps | Next.js, Express | :3070 |
 | Zolexora AI | `products/zolexora-ai` | Multi-agent "Swarm Factory" that turns requirements into codebases | FastAPI, Celery, Vite | :3091 |
 | Zolexora Engage | `products/zolexora-engage` | WhatsApp dispatch for driver duty sheets | Express, Vite, Supabase | :3077 |
-| ClarityFi | `products/clarityfi` | Privacy-first personal finance + lifestyle tracker | Expo, Express | :3110 |
-| Maun Kavach | `products/maunkavach` | Encrypted messenger (Android client + Node backend + web) | Kotlin, Node, Vite | :3071 |
+| ClarityFi | `products/zolexora-clarityfi` | Privacy-first personal finance + lifestyle tracker | Expo, Express | :3110 |
+| Maun Kavach | `products/zolexora-maunkavach` | Encrypted messenger (Android client + Node backend + web) | Kotlin, Node, Vite | :3071 |
 
-Shared: `apps/auth-service` (central identity, :3081), `apps/platform-admin` (:3095), `platform/*` and `packages/*`. Full layout and dependency rules: [docs/architecture.md](docs/architecture.md). All host ports: [docs/ports.md](docs/ports.md).
+Shared: `apps/zolexora-auth-service` (central identity, :3081), `apps/zolexora-platform-admin` (:3095), `platform/*` and `packages/*`. Full layout and dependency rules: [docs/architecture.md](docs/architecture.md). All host ports: [docs/ports.md](docs/ports.md).
 
 ## Getting started
 

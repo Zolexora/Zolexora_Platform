@@ -13,11 +13,11 @@
     { "path": "./platform/auth/user-auth-core" },
     { "path": "./platform/auth/user-auth-firebase" },
     { "path": "./platform/functions" },
-    { "path": "./apps/platform-admin/frontend" },
+    { "path": "./apps/zolexora-platform-admin/frontend" },
     { "path": "./products/zolexora-tms/apps/tms-web" },
     { "path": "./products/zolexora-tms/apps/tms-admin" },
-    { "path": "./products/clarityfi" },
+    { "path": "./products/zolexora-clarityfi" },
     { "path": "./products/zolexora-engage" },
-    { "path": "./products/the-textile-care" }
+    { "path": "./products/zolexora-textile-care" }
   ]
 }

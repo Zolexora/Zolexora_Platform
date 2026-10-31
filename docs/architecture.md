@@ -41,7 +41,7 @@ Stays inside a product (never extracted):
 
 ## Identity
 
-Three auth tracks (public user, org employee, platform admin) are served by `apps/auth-service`; see [architecture/unified-firebase-auth-guide.md](architecture/unified-firebase-auth-guide.md) and the E2E spec in [`tests/e2e/auth-service/README.md`](../tests/e2e/auth-service/README.md).
+Three auth tracks (public user, org employee, platform admin) are served by `apps/zolexora-auth-service`; see [architecture/unified-firebase-auth-guide.md](architecture/unified-firebase-auth-guide.md) and the E2E spec in [`tests/e2e/auth-service/README.md`](../tests/e2e/auth-service/README.md).
 
 ## Further reading
 

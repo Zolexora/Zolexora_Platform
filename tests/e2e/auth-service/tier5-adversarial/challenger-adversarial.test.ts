@@ -3,8 +3,8 @@ import { createHmac } from "node:crypto";
 import { TestHarness } from "../helpers/http-client";
 import { FIXTURES } from "../helpers/fixtures";
 import { validatePassword } from "../helpers/crypto";
-import { StorageService } from "../../../../apps/auth-service/src/services/storage.service.js";
-import { TokenService } from "../../../../apps/auth-service/src/services/token.service.js";
+import { StorageService } from "../../../../apps/zolexora-auth-service/src/services/storage.service.js";
+import { TokenService } from "../../../../apps/zolexora-auth-service/src/services/token.service.js";
 
 describe("Tier 5: Empirical Adversarial Security & Stress Suite (Challenger Probe)", () => {
   let harness: TestHarness;

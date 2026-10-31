@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'products/rentoeasy/**'
+      - 'products/zolexora-rentoeasy/**'
       - '.github/workflows/docker-ghcr-rentoeasy.yml'
   workflow_dispatch:
 
@@ -23,23 +23,23 @@ jobs:
         include:
           - service: rentoeasy-api
             context: .
-            file: ./products/rentoeasy/Dockerfile.api
+            file: ./products/zolexora-rentoeasy/Dockerfile.api
             build-args: ""
 
           - service: rentoeasy-tenant
             context: .
-            file: ./products/rentoeasy/Dockerfile.web
-            build-args: APP_DIR=products/rentoeasy/apps/web-tenant
+            file: ./products/zolexora-rentoeasy/Dockerfile.web
+            build-args: APP_DIR=products/zolexora-rentoeasy/apps/web-tenant
 
           - service: rentoeasy-admin
             context: .
-            file: ./products/rentoeasy/Dockerfile.web
-            build-args: APP_DIR=products/rentoeasy/apps/web-admin
+            file: ./products/zolexora-rentoeasy/Dockerfile.web
+            build-args: APP_DIR=products/zolexora-rentoeasy/apps/web-admin
 
           - service: rentoeasy-owner
             context: .
-            file: ./products/rentoeasy/Dockerfile.web
-            build-args: APP_DIR=products/rentoeasy/apps/web-owner
+            file: ./products/zolexora-rentoeasy/Dockerfile.web
+            build-args: APP_DIR=products/zolexora-rentoeasy/apps/web-owner
 
     steps:
       - name: Checkout repository

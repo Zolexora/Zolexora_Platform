@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'products/the-textile-care/**'
+      - 'products/zolexora-textile-care/**'
       - '.github/workflows/docker-ghcr-the-textile-care.yml'
   workflow_dispatch:
 
@@ -22,23 +22,23 @@ jobs:
       matrix:
         include:
           - service: ttc-backend
-            context: ./products/the-textile-care/backend
-            file: ./products/the-textile-care/backend/Dockerfile
+            context: ./products/zolexora-textile-care/backend
+            file: ./products/zolexora-textile-care/backend/Dockerfile
             build-args: ""
 
           - service: ttc-admin-web
             context: .
-            file: ./products/the-textile-care/infrastructure/Dockerfile.nextjs
+            file: ./products/zolexora-textile-care/infrastructure/Dockerfile.nextjs
             build-args: APP_PATH=apps/admin-web
 
           - service: ttc-seller-web
             context: .
-            file: ./products/the-textile-care/infrastructure/Dockerfile.nextjs
+            file: ./products/zolexora-textile-care/infrastructure/Dockerfile.nextjs
             build-args: APP_PATH=apps/seller-web
 
           - service: ttc-marketplace-web
             context: .
-            file: ./products/the-textile-care/infrastructure/Dockerfile.nextjs
+            file: ./products/zolexora-textile-care/infrastructure/Dockerfile.nextjs
             build-args: APP_PATH=apps/marketplace-web
 
     steps:

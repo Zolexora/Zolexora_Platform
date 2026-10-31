@@ -20,6 +20,6 @@
   ],
   "npm.packageManager": "pnpm",
   "gradle.nestedProjects": [
-    "products/maunkavach"
+    "products/zolexora-maunkavach"
   ]
 }

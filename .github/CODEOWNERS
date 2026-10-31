@@ -8,7 +8,7 @@
 /products/zolexora-marketplace/packages/ @Zolexora/frontend-team
 
 # The Textile Care
-/products/the-textile-care/ @TheTextileCare
+/products/zolexora-textile-care/ @TheTextileCare
 
 # Infrastructure & CI/CD
 /infrastructure/ @Zolexora/devops-team
