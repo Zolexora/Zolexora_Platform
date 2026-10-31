@@ -11,7 +11,6 @@
  * guarantee doesn't change just because the storage backend did. Every column/field it
  * touches is ciphertext or a non-secret identifier (sender_id, receiver_id, timestamp).
  */
-require("dotenv").config();
 const http = require("http");
 const { WebSocketServer } = require("ws");
 const { URL } = require("url");

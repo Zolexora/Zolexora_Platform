@@ -21,6 +21,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT"
 
+# Secrets come only from Infisical (.infisical.json in this product); no .env, no fallback.
+dc() { bash "$REPO_ROOT/../../scripts/setup/with-infisical.sh" "$REPO_ROOT" docker compose "$@"; }
+
 # ── Colour helpers ─────────────────────────────────────────────────────────────
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
 CYAN='\033[0;36m'; BOLD='\033[1m'; RESET='\033[0m'
@@ -170,7 +173,7 @@ done
 # ── --down shortcut ────────────────────────────────────────────────────────────
 if [ "$DO_DOWN" = true ]; then
   info "Stopping and removing all TTC containers..."
-  docker compose \
+  dc \
     --profile mobile-dev \
     --profile mobile-build \
     down --remove-orphans
@@ -181,7 +184,7 @@ fi
 # ── --logs shortcut ────────────────────────────────────────────────────────────
 if [ -n "$DO_LOGS" ]; then
   info "Tailing logs for: $DO_LOGS"
-  docker compose logs -f "$DO_LOGS"
+  dc logs -f "$DO_LOGS"
   exit 0
 fi
 
@@ -189,11 +192,6 @@ fi
 command -v docker >/dev/null 2>&1 || error "Docker is not installed or not in PATH."
 docker info >/dev/null 2>&1      || error "Docker daemon is not running."
 
-if [ ! -f "$REPO_ROOT/.env" ]; then
-  warn ".env not found — copying from .env.example"
-  cp "$REPO_ROOT/.env.example" "$REPO_ROOT/.env"
-  warn "Review and edit .env before running in production."
-fi
 
 # ── Port conflict check ────────────────────────────────────────────────────────
 # Map port → service name for every TTC port
@@ -325,7 +323,7 @@ fi
 # ── Run long-running services ──────────────────────────────────────────────────
 if [ ${#RUN_SVCS[@]} -gt 0 ]; then
   info "Starting: ${RUN_SVCS[*]}"
-  docker compose "${PROFILE_FLAGS[@]}" up "${BUILD_FLAG[@]}" "${DETACH_FLAG[@]}" "${RUN_SVCS[@]}"
+  dc "${PROFILE_FLAGS[@]}" up "${BUILD_FLAG[@]}" "${DETACH_FLAG[@]}" "${RUN_SVCS[@]}"
 fi
 
 # ── Run build-only services (mobile APK builds) ────────────────────────────────
@@ -333,7 +331,7 @@ if [ ${#BUILD_ONLY_SVCS[@]} -gt 0 ]; then
   mkdir -p "$REPO_ROOT/dist/mobile"
   for svc in "${BUILD_ONLY_SVCS[@]}"; do
     info "Building APK: $svc (this may take 10-20 min first run)..."
-    docker compose "${PROFILE_FLAGS[@]}" run --rm "$svc"
+    dc "${PROFILE_FLAGS[@]}" run --rm "$svc"
     success "$svc build complete → ./dist/mobile/"
   done
 fi

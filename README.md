@@ -28,7 +28,7 @@ Prerequisites: Docker + Compose, Node 20+, pnpm 9 (`corepack enable`), Python 3.
 ```bash
 git submodule update --init --recursive   # ERP upstream (frappe, erpnext, payments)
 pnpm install
-infisical login                           # optional; scripts fall back to local env if not logged in
+infisical login                           # required: Infisical is the only secret source
 ./scripts/setup/start.sh                  # interactive: pick product(s) to run in Docker
 ```
 
@@ -46,7 +46,7 @@ Stacks pull prebuilt images from `ghcr.io/zolexora/*` and only build when the im
 
 ## Secrets
 
-Infisical is the only secret source ([ADR 0003](docs/architecture/adrs/0003-secrets-management-infisical.md)). `config/envs/<product>/*.env.example` lists the keys each product needs. Never commit `.env` files; run `pre-commit install` to enable the gitleaks hook.
+Infisical is the only secret source: no `.env` files, no templates, no fallback ([ADR 0003](docs/architecture/adrs/0003-secrets-management-infisical.md)). Each product's `.infisical.json` names its folder, and every start script runs through `scripts/setup/with-infisical.sh`, which stops if you are not logged in. Required key names per product: [docs/secrets.md](docs/secrets.md). Run `pre-commit install` to enable the gitleaks hook.
 
 ## Tests
 

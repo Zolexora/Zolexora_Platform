@@ -14,7 +14,6 @@ import json
 import logging
 from abc import ABC, abstractmethod
 
-from dotenv import load_dotenv
 from openai import AsyncAzureOpenAI
 from tenacity import (
     retry,
@@ -23,7 +22,6 @@ from tenacity import (
     retry_if_exception_type,
 )
 
-load_dotenv()
 logger = logging.getLogger(__name__)
 
 

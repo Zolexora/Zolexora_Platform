@@ -93,8 +93,8 @@ async def sync_secrets_from_infisical() -> Dict[str, Any]:
         except Exception as e:
             _sync_diagnostics.append(f"Infisical API request failed: {str(e)}")
 
-    # Fallback to container environment variables
-    _sync_status = "environment_fallback"
+    # Secrets injected into the container by `infisical run` (scripts/setup/with-infisical.sh)
+    _sync_status = "infisical_injected"
     env_keys = [
         "SUPABASE_CORE_URL", "SUPABASE_CORE_SERVICE_KEY", "SUPABASE_CORE_PG_URL",
         "SUPABASE_COMMERCE_URL", "SUPABASE_COMMERCE_SERVICE_KEY", "SUPABASE_COMMERCE_PG_URL",

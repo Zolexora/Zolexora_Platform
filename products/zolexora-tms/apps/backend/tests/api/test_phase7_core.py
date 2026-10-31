@@ -5,8 +5,6 @@ from httpx import ASGITransport, AsyncClient
 from jose import jwt
 from app.main import app
 import os
-from dotenv import load_dotenv
-load_dotenv()
 from app.core.config import settings
 
 def make_test_token(user_id: uuid.UUID, email: str) -> str:

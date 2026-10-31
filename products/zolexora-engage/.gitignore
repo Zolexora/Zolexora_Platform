@@ -15,7 +15,6 @@ node_modules
 # Local environment files
 .env
 .env.*
-!.env.example
 .env.production
 
 # IDEs and editors

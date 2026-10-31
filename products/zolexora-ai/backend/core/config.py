@@ -35,10 +35,8 @@ class Settings(BaseSettings):
     """
 
     model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
         case_sensitive=True,           # REDIS_URL ≠ redis_url
-        extra="ignore",                # Don't error on extra .env vars
+        extra="ignore",                # Ignore unrelated environment variables
     )
 
     # ── Azure OpenAI ──────────────────────────────────────────────────────────

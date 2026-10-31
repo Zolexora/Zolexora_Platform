@@ -76,7 +76,7 @@ importers:
         specifier: ^5.0.3
         version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(happy-dom@17.6.3)(jsdom@29.1.1)(vite@8.3.3(@types/node@26.6.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
 
-  apps/auth-service:
+  apps/zolexora-auth-service:
     dependencies:
       '@fastify/cors':
         specifier: ^10.0.2
@@ -99,9 +99,6 @@ importers:
       '@zolexora/utils':
         specifier: workspace:*
         version: link:../../packages/utils
-      dotenv:
-        specifier: ^16.4.7
-        version: 16.4.7
       fastify:
         specifier: ^5.2.1
         version: 5.12.7
@@ -137,7 +134,7 @@ importers:
         specifier: ^5.0.3
         version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@25.9.9)(happy-dom@17.6.3)(jsdom@29.1.1)(vite@8.3.3(@types/node@25.9.9)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
 
-  apps/platform-admin/frontend:
+  apps/zolexora-platform-admin/frontend:
     dependencies:
       next:
         specifier: 14.2.3
@@ -366,981 +363,6 @@ importers:
         specifier: ^5.4.5
         version: 5.9.3
 
-  products/clarityfi:
-    devDependencies:
-      '@zolexora/tsconfig':
-        specifier: workspace:*
-        version: link:../../packages/tsconfig
-      prettier:
-        specifier: ^3.8.3
-        version: 3.9.9
-      typescript:
-        specifier: ~5.9.3
-        version: 5.9.3
-
-  products/clarityfi/apps/api-server:
-    dependencies:
-      '@zolexora/clarityfi-api-zod':
-        specifier: workspace:*
-        version: link:../../packages/api-zod
-      '@zolexora/clarityfi-db':
-        specifier: workspace:*
-        version: link:../../packages/db
-      cookie-parser:
-        specifier: ^1.4.7
-        version: 1.4.7
-      cors:
-        specifier: ^2.8.6
-        version: 2.8.6
-      drizzle-orm:
-        specifier: 'catalog:'
-        version: 0.45.4(@cloudflare/workers-types@4.20260702.1)(@opentelemetry/api@1.9.1)(@prisma/client@5.22.0(prisma@5.22.0))(@types/pg@8.23.1)(pg@8.23.1)(prisma@5.22.0)
-      express:
-        specifier: ^5.2.1
-        version: 5.2.1
-      pino:
-        specifier: ^9.14.0
-        version: 9.14.0
-      pino-http:
-        specifier: ^10.5.0
-        version: 10.5.0
-    devDependencies:
-      '@types/cookie-parser':
-        specifier: ^1.4.10
-        version: 1.4.10(@types/express@5.0.6)
-      '@types/cors':
-        specifier: ^2.8.19
-        version: 2.8.19
-      '@types/express':
-        specifier: ^5.0.6
-        version: 5.0.6
-      '@types/node':
-        specifier: 'catalog:'
-        version: 25.9.9
-      esbuild:
-        specifier: 0.27.3
-        version: 0.27.3
-      esbuild-plugin-pino:
-        specifier: ^2.3.3
-        version: 2.3.3(esbuild@0.27.3)(pino-pretty@13.2.0)(pino@9.14.0)(thread-stream@3.1.0)
-      pino-pretty:
-        specifier: ^13.1.3
-        version: 13.2.0
-      thread-stream:
-        specifier: 3.1.0
-        version: 3.1.0
-
-  products/clarityfi/apps/mobile:
-    dependencies:
-      expo-clipboard:
-        specifier: ^8.0.8
-        version: 8.0.8(expo@54.0.37)(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
-      expo-local-authentication:
-        specifier: ^17.0.8
-        version: 17.0.9(expo@54.0.37)
-    devDependencies:
-      '@babel/core':
-        specifier: ^7.25.2
-        version: 7.29.7
-      '@expo-google-fonts/inter':
-        specifier: ^0.4.0
-        version: 0.4.2
-      '@expo/cli':
-        specifier: 54.0.23
-        version: 54.0.23(expo-router@6.0.24)(expo@54.0.37)(graphql@15.8.0)(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(typescript@5.9.3)
-      '@expo/ngrok':
-        specifier: ^4.1.0
-        version: 4.1.3
-      '@expo/vector-icons':
-        specifier: ^15.0.3
-        version: 15.1.1(expo-font@14.0.12(expo@54.0.37)(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
-      '@react-native-async-storage/async-storage':
-        specifier: 2.2.0
-        version: 2.2.0(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))
-      '@stardazed/streams-text-encoding':
-        specifier: ^1.0.2
-        version: 1.0.2
-      '@tanstack/react-query':
-        specifier: 'catalog:'
-        version: 5.104.2(react@19.1.0)
-      '@types/react':
-        specifier: ~19.1.10
-        version: 19.1.17
-      '@types/react-dom':
-        specifier: ~19.1.7
-        version: 19.1.11(@types/react@19.1.17)
-      '@ungap/structured-clone':
-        specifier: ^1.3.0
-        version: 1.4.0
-      '@zolexora/clarityfi-api-client-react':
-        specifier: workspace:*
-        version: link:../../packages/api-client-react
-      babel-plugin-react-compiler:
-        specifier: ^19.0.0-beta-e993439-20250117
-        version: 19.0.0-beta-ebf51a3-20250411
-      babel-preset-expo:
-        specifier: ~54.0.11
-        version: 54.0.12(@babel/core@7.29.7)(@babel/runtime@7.29.10)(expo@54.0.37)(react-refresh@0.14.2)
-      expo:
-        specifier: ~54.0.27
-        version: 54.0.37(@babel/core@7.29.7)(@expo/metro-runtime@6.1.2)(expo-router@6.0.24)(graphql@15.8.0)(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)(typescript@5.9.3)
-      expo-blur:
-        specifier: ~15.0.8
-        version: 15.0.8(expo@54.0.37)(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
-      expo-constants:
-        specifier: ~18.0.11
-        version: 18.0.14(expo@54.0.37)(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))
-      expo-font:
-        specifier: ~14.0.10
-        version: 14.0.12(expo@54.0.37)(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
-      expo-glass-effect:
-        specifier: ~0.1.4
-        version: 0.1.10(expo@54.0.37)(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
-      expo-haptics:
-        specifier: ~15.0.8
-        version: 15.0.8(expo@54.0.37)
-      expo-image:
-        specifier: ~3.0.11
-        version: 3.0.11(expo@54.0.37)(react-native-web@0.21.4(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
-      expo-image-picker:
-        specifier: ~17.0.9
-        version: 17.0.11(expo@54.0.37)
-      expo-linear-gradient:
-        specifier: ~15.0.8
-        version: 15.0.8(expo@54.0.37)(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
-      expo-linking:
-        specifier: ~8.0.10
-        version: 8.0.12(expo@54.0.37)(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
-      expo-location:
-        specifier: ~19.0.8
-        version: 19.0.8(expo@54.0.37)
-      expo-router:
-        specifier: ~6.0.17
-        version: 6.0.24(by7ddcnfa7nxwmhm6i7vjvgdby)
-      expo-splash-screen:
-        specifier: ~31.0.12
-        version: 31.0.13(expo@54.0.37)(typescript@5.9.3)
-      expo-status-bar:
-        specifier: ~3.0.9
-        version: 3.0.9(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
-      expo-symbols:
-        specifier: ~1.0.8
-        version: 1.0.8(expo@54.0.37)(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))
-      expo-system-ui:
-        specifier: ~6.0.9
-        version: 6.0.9(expo@54.0.37)(react-native-web@0.21.4(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))
-      expo-web-browser:
-        specifier: ~15.0.10
-        version: 15.0.11(expo@54.0.37)(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))
-      react:
-        specifier: 19.1.0
-        version: 19.1.0
-      react-dom:
-        specifier: 19.1.0
-        version: 19.1.0(react@19.1.0)
-      react-native:
-        specifier: 0.81.5
-        version: 0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0)
-      react-native-gesture-handler:
-        specifier: ~2.28.0
-        version: 2.28.0(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
-      react-native-keyboard-controller:
-        specifier: 1.18.5
-        version: 1.18.5(react-native-reanimated@4.1.7(react-native-worklets@0.5.1(@babel/core@7.29.7)(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
-      react-native-reanimated:
-        specifier: ~4.1.1
-        version: 4.1.7(react-native-worklets@0.5.1(@babel/core@7.29.7)(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
-      react-native-safe-area-context:
-        specifier: ~5.6.0
-        version: 5.6.2(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
-      react-native-screens:
-        specifier: ~4.16.0
-        version: 4.16.0(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
-      react-native-svg:
-        specifier: 15.12.1
-        version: 15.12.1(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
-      react-native-web:
-        specifier: ^0.21.0
-        version: 0.21.4(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
-      react-native-worklets:
-        specifier: 0.5.1
-        version: 0.5.1(@babel/core@7.29.7)(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
-      typescript:
-        specifier: ~5.9.2
-        version: 5.9.3
-      zod:
-        specifier: 'catalog:'
-        version: 3.25.76
-      zod-validation-error:
-        specifier: ^3.4.0
-        version: 3.5.4(zod@3.25.76)
-
-  products/clarityfi/apps/web: {}
-
-  products/clarityfi/packages/api-client-react:
-    dependencies:
-      '@tanstack/react-query':
-        specifier: 'catalog:'
-        version: 5.104.2(react@19.1.0)
-      react:
-        specifier: 19.1.0
-        version: 19.1.0
-
-  products/clarityfi/packages/api-spec:
-    devDependencies:
-      orval:
-        specifier: ^8.9.1
-        version: 8.41.0(@tanstack/react-query@5.104.2(react@19.3.0))(prettier@3.9.9)(typescript@5.9.3)(zod@4.6.6)
-
-  products/clarityfi/packages/api-zod:
-    dependencies:
-      zod:
-        specifier: 'catalog:'
-        version: 3.25.76
-
-  products/clarityfi/packages/db:
-    dependencies:
-      drizzle-orm:
-        specifier: 'catalog:'
-        version: 0.45.4(@cloudflare/workers-types@4.20260702.1)(@opentelemetry/api@1.9.1)(@prisma/client@5.22.0(prisma@5.22.0))(@types/pg@8.23.1)(pg@8.23.1)(prisma@5.22.0)
-      drizzle-zod:
-        specifier: ^0.8.3
-        version: 0.8.3(drizzle-orm@0.45.4(@cloudflare/workers-types@4.20260702.1)(@opentelemetry/api@1.9.1)(@prisma/client@5.22.0(prisma@5.22.0))(@types/pg@8.23.1)(pg@8.23.1)(prisma@5.22.0))(zod@3.25.76)
-      pg:
-        specifier: ^8.20.0
-        version: 8.23.1
-      zod:
-        specifier: 'catalog:'
-        version: 3.25.76
-    devDependencies:
-      '@types/node':
-        specifier: 'catalog:'
-        version: 25.9.9
-      '@types/pg':
-        specifier: ^8.20.0
-        version: 8.23.1
-      drizzle-kit:
-        specifier: ^0.31.10
-        version: 0.31.11
-
-  products/rentoeasy:
-    dependencies:
-      '@nestjs/common':
-        specifier: 11.1.24
-        version: 11.1.24(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2)
-      '@nestjs/core':
-        specifier: 11.1.24
-        version: 11.1.24(@nestjs/common@11.1.24(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/platform-express@11.1.24)(@nestjs/websockets@11.1.24)(reflect-metadata@0.2.2)(rxjs@7.8.2)
-      '@nestjs/platform-express':
-        specifier: 11.1.24
-        version: 11.1.24(@nestjs/common@11.1.24(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.24)
-      '@nestjs/platform-socket.io':
-        specifier: 11.1.24
-        version: 11.1.24(@nestjs/common@11.1.24(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/websockets@11.1.24)(rxjs@7.8.2)
-      '@nestjs/websockets':
-        specifier: 11.1.24
-        version: 11.1.24(@nestjs/common@11.1.24(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.24)(@nestjs/platform-socket.io@11.1.24)(reflect-metadata@0.2.2)(rxjs@7.8.2)
-      rxjs:
-        specifier: 7.8.2
-        version: 7.8.2
-    devDependencies:
-      prettier:
-        specifier: ^3.2.0
-        version: 3.9.9
-      turbo:
-        specifier: ^2.0.0
-        version: 2.11.7
-      typescript:
-        specifier: ^5.4.0
-        version: 5.9.3
-
-  products/rentoeasy/apps/web-admin:
-    dependencies:
-      '@tanstack/react-query':
-        specifier: ^5.40.0
-        version: 5.104.2(react@19.1.0)
-      '@zolexora/rentoeasy-types':
-        specifier: workspace:*
-        version: link:../../packages/shared-types
-      '@zolexora/rentoeasy-utils':
-        specifier: workspace:*
-        version: link:../../packages/shared-utils
-      axios:
-        specifier: ^1.16.1
-        version: 1.20.0
-      lucide-react:
-        specifier: ^0.383.0
-        version: 0.383.0(react@19.1.0)
-      react:
-        specifier: 19.1.0
-        version: 19.1.0
-      react-dom:
-        specifier: 19.1.0
-        version: 19.1.0(react@19.1.0)
-      react-router-dom:
-        specifier: ^6.23.0
-        version: 6.30.6(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
-      zustand:
-        specifier: ^4.5.0
-        version: 4.5.7(@types/react@18.3.31)(immer@9.0.21)(react@19.1.0)
-    devDependencies:
-      '@types/node':
-        specifier: ^20.12.0
-        version: 20.19.43
-      '@types/react':
-        specifier: ^18.3.0
-        version: 18.3.31
-      '@types/react-dom':
-        specifier: ^18.3.0
-        version: 18.3.7(@types/react@18.3.31)
-      '@vitejs/plugin-react':
-        specifier: ^6.0.2
-        version: 6.1.2(babel-plugin-react-compiler@1.0.0)(vite@8.3.3(@types/node@20.19.43)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
-      tailwindcss:
-        specifier: ^3.4.0
-        version: 3.4.19(tsx@4.23.15)(yaml@2.9.1)
-      typescript:
-        specifier: ^5.4.0
-        version: 5.9.3
-      vite:
-        specifier: ^8.0.14
-        version: 8.3.3(@types/node@20.19.43)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
-
-  products/rentoeasy/apps/web-owner:
-    dependencies:
-      '@tanstack/react-query':
-        specifier: ^5.40.0
-        version: 5.104.2(react@19.1.0)
-      '@zolexora/rentoeasy-types':
-        specifier: workspace:*
-        version: link:../../packages/shared-types
-      '@zolexora/rentoeasy-utils':
-        specifier: workspace:*
-        version: link:../../packages/shared-utils
-      axios:
-        specifier: ^1.7.0
-        version: 1.20.0
-      firebase:
-        specifier: ^12.13.0
-        version: 12.19.0(@react-native-async-storage/async-storage@2.2.0(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@18.3.31)(react@19.1.0)))
-      lucide-react:
-        specifier: ^0.383.0
-        version: 0.383.0(react@19.1.0)
-      react:
-        specifier: 19.1.0
-        version: 19.1.0
-      react-dom:
-        specifier: 19.1.0
-        version: 19.1.0(react@19.1.0)
-      react-router-dom:
-        specifier: ^6.23.0
-        version: 6.30.6(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
-      socket.io-client:
-        specifier: ^4.8.3
-        version: 4.8.4
-      zustand:
-        specifier: ^4.5.0
-        version: 4.5.7(@types/react@18.3.31)(immer@9.0.21)(react@19.1.0)
-    devDependencies:
-      '@types/node':
-        specifier: ^20.12.0
-        version: 20.19.43
-      '@types/react':
-        specifier: ^18.3.0
-        version: 18.3.31
-      '@types/react-dom':
-        specifier: ^18.3.0
-        version: 18.3.7(@types/react@18.3.31)
-      '@vitejs/plugin-react':
-        specifier: ^6.0.2
-        version: 6.1.2(babel-plugin-react-compiler@1.0.0)(vite@8.3.3(@types/node@20.19.43)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
-      autoprefixer:
-        specifier: ^10.4.0
-        version: 10.6.1(postcss@8.5.29)
-      postcss:
-        specifier: ^8.4.0
-        version: 8.5.29
-      tailwindcss:
-        specifier: ^3.4.0
-        version: 3.4.19(tsx@4.23.15)(yaml@2.9.1)
-      typescript:
-        specifier: ^5.4.0
-        version: 5.9.3
-      vite:
-        specifier: ^8.0.14
-        version: 8.3.3(@types/node@20.19.43)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
-
-  products/rentoeasy/apps/web-tenant:
-    dependencies:
-      '@tanstack/react-query':
-        specifier: ^5.40.0
-        version: 5.104.2(react@19.1.0)
-      '@zolexora/rentoeasy-types':
-        specifier: workspace:*
-        version: link:../../packages/shared-types
-      '@zolexora/rentoeasy-utils':
-        specifier: workspace:*
-        version: link:../../packages/shared-utils
-      axios:
-        specifier: ^1.7.0
-        version: 1.20.0
-      firebase:
-        specifier: ^12.13.0
-        version: 12.19.0(@react-native-async-storage/async-storage@2.2.0(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@18.3.31)(react@19.1.0)))
-      lucide-react:
-        specifier: ^0.383.0
-        version: 0.383.0(react@19.1.0)
-      react:
-        specifier: 19.1.0
-        version: 19.1.0
-      react-dom:
-        specifier: 19.1.0
-        version: 19.1.0(react@19.1.0)
-      react-router-dom:
-        specifier: ^6.23.0
-        version: 6.30.6(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
-      socket.io-client:
-        specifier: ^4.7.0
-        version: 4.8.4
-      zustand:
-        specifier: ^4.5.0
-        version: 4.5.7(@types/react@18.3.31)(immer@9.0.21)(react@19.1.0)
-    devDependencies:
-      '@types/node':
-        specifier: ^20.12.0
-        version: 20.19.43
-      '@types/react':
-        specifier: ^18.3.0
-        version: 18.3.31
-      '@types/react-dom':
-        specifier: ^18.3.0
-        version: 18.3.7(@types/react@18.3.31)
-      '@vitejs/plugin-react':
-        specifier: ^6.0.2
-        version: 6.1.2(babel-plugin-react-compiler@1.0.0)(vite@8.3.3(@types/node@20.19.43)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
-      autoprefixer:
-        specifier: ^10.4.0
-        version: 10.6.1(postcss@8.5.29)
-      postcss:
-        specifier: ^8.4.0
-        version: 8.5.29
-      tailwindcss:
-        specifier: ^3.4.0
-        version: 3.4.19(tsx@4.23.15)(yaml@2.9.1)
-      typescript:
-        specifier: ^5.4.0
-        version: 5.9.3
-      vite:
-        specifier: ^8.0.14
-        version: 8.3.3(@types/node@20.19.43)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
-
-  products/rentoeasy/packages/shared-types:
-    dependencies:
-      '@zolexora/api-contracts':
-        specifier: workspace:*
-        version: link:../../../../packages/api-contracts
-
-  products/rentoeasy/packages/shared-utils:
-    devDependencies:
-      typescript:
-        specifier: ^5.5.0
-        version: 5.9.3
-
-  products/rentoeasy/services/api:
-    dependencies:
-      '@aws-sdk/client-s3':
-        specifier: ^3.1053.0
-        version: 3.1152.0
-      '@aws-sdk/s3-request-presigner':
-        specifier: ^3.1053.0
-        version: 3.1152.0
-      '@nestjs/bull':
-        specifier: ^11.0.4
-        version: 11.0.5(@nestjs/common@11.1.24(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.24)(bull@4.16.5)
-      '@nestjs/common':
-        specifier: ^11.1.24
-        version: 11.1.24(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2)
-      '@nestjs/config':
-        specifier: ^4.0.4
-        version: 4.0.4(@nestjs/common@11.1.24(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(rxjs@7.8.2)
-      '@nestjs/core':
-        specifier: ^11.1.24
-        version: 11.1.24(@nestjs/common@11.1.24(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/platform-express@11.1.24)(@nestjs/websockets@11.1.24)(reflect-metadata@0.2.2)(rxjs@7.8.2)
-      '@nestjs/jwt':
-        specifier: ^11.0.0
-        version: 11.0.2(@nestjs/common@11.1.24(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))
-      '@nestjs/passport':
-        specifier: ^11.0.0
-        version: 11.0.5(@nestjs/common@11.1.24(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(passport@0.7.0)
-      '@nestjs/platform-express':
-        specifier: ^11.1.24
-        version: 11.1.24(@nestjs/common@11.1.24(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.24)
-      '@nestjs/platform-socket.io':
-        specifier: ^11.1.24
-        version: 11.1.24(@nestjs/common@11.1.24(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/websockets@11.1.24)(rxjs@7.8.2)
-      '@nestjs/swagger':
-        specifier: ^11.4.4
-        version: 11.4.7(@fastify/static@9.3.0)(@nestjs/common@11.1.24(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.24)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)
-      '@nestjs/websockets':
-        specifier: ^11.1.24
-        version: 11.1.24(@nestjs/common@11.1.24(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.24)(@nestjs/platform-socket.io@11.1.24)(reflect-metadata@0.2.2)(rxjs@7.8.2)
-      '@prisma/client':
-        specifier: ^5.14.0
-        version: 5.22.0(prisma@5.22.0)
-      '@sendgrid/mail':
-        specifier: ^8.1.3
-        version: 8.1.6
-      '@zolexora/rentoeasy-types':
-        specifier: workspace:*
-        version: link:../../packages/shared-types
-      '@zolexora/rentoeasy-utils':
-        specifier: workspace:*
-        version: link:../../packages/shared-utils
-      axios:
-        specifier: ^1.7.0
-        version: 1.20.0
-      bcryptjs:
-        specifier: ^3.0.3
-        version: 3.0.3
-      bull:
-        specifier: ^4.16.5
-        version: 4.16.5
-      class-transformer:
-        specifier: ^0.5.1
-        version: 0.5.1
-      class-validator:
-        specifier: ^0.14.1
-        version: 0.14.4
-      cloudinary:
-        specifier: ^2.5.1
-        version: 2.11.0
-      express:
-        specifier: ^4.19.2
-        version: 4.22.3
-      firebase-admin:
-        specifier: ^13.10.0
-        version: 13.10.0(@firebase/app-compat@0.5.18)(@firebase/app@0.16.2)
-      form-data:
-        specifier: ^4.0.0
-        version: 4.0.6
-      ioredis:
-        specifier: ^5.3.2
-        version: 5.11.1
-      multer:
-        specifier: ^2.1.1
-        version: 2.1.1
-      passport:
-        specifier: ^0.7.0
-        version: 0.7.0
-      passport-jwt:
-        specifier: ^4.0.1
-        version: 4.0.1
-      pdf-lib:
-        specifier: ^1.17.1
-        version: 1.17.1
-      razorpay:
-        specifier: ^2.9.0
-        version: 2.9.8
-      rxjs:
-        specifier: 7.8.2
-        version: 7.8.2
-      socket.io:
-        specifier: ^4.7.0
-        version: 4.8.3
-    devDependencies:
-      '@nestjs/cli':
-        specifier: ^11.0.21
-        version: 11.0.24(@swc/core@1.16.18)(@types/node@20.19.43)(esbuild@0.28.1)(prettier@3.9.9)
-      '@types/express':
-        specifier: ^4.17.21
-        version: 4.17.25
-      '@types/multer':
-        specifier: ^1.4.12
-        version: 1.4.13
-      '@types/node':
-        specifier: ^20.12.0
-        version: 20.19.43
-      '@types/passport-jwt':
-        specifier: ^4.0.1
-        version: 4.0.1
-      prisma:
-        specifier: ^5.14.0
-        version: 5.22.0
-      ts-node:
-        specifier: ^10.9.2
-        version: 10.9.2(@swc/core@1.16.18)(@types/node@20.19.43)(typescript@5.9.3)
-      typescript:
-        specifier: ^5.4.0
-        version: 5.9.3
-
-  products/the-textile-care:
-    devDependencies:
-      '@types/node':
-        specifier: ^20.14.12
-        version: 20.19.43
-      '@typescript-eslint/eslint-plugin':
-        specifier: ^7.17.0
-        version: 7.18.0(@typescript-eslint/parser@7.18.0(eslint@8.57.1)(typescript@5.9.3))(eslint@8.57.1)(typescript@5.9.3)
-      '@typescript-eslint/parser':
-        specifier: ^7.17.0
-        version: 7.18.0(eslint@8.57.1)(typescript@5.9.3)
-      '@zolexora/tsconfig':
-        specifier: workspace:*
-        version: link:../../packages/tsconfig
-      eslint:
-        specifier: ^8.57.0
-        version: 8.57.1
-      eslint-config-next:
-        specifier: ^14.2.15
-        version: 14.2.35(eslint@8.57.1)(typescript@5.9.3)
-      eslint-config-prettier:
-        specifier: ^9.1.2
-        version: 9.1.2(eslint@8.57.1)
-      prettier:
-        specifier: ^3.3.1
-        version: 3.9.9
-      rimraf:
-        specifier: ^5.0.1
-        version: 5.0.10
-      turbo:
-        specifier: ^2.0.5
-        version: 2.11.7
-      typescript:
-        specifier: ^5.5.4
-        version: 5.9.3
-
-  products/the-textile-care/apps/admin-web:
-    dependencies:
-      '@zolexora/ttc-config':
-        specifier: workspace:*
-        version: link:../../packages/config
-      '@zolexora/ttc-ui':
-        specifier: workspace:*
-        version: link:../../packages/ui
-      next:
-        specifier: 14.2.15
-        version: 14.2.15(@opentelemetry/api@1.9.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
-      react:
-        specifier: 19.1.0
-        version: 19.1.0
-      react-dom:
-        specifier: 19.1.0
-        version: 19.1.0(react@19.1.0)
-    devDependencies:
-      '@types/node':
-        specifier: ^20.14.12
-        version: 20.19.43
-      '@types/react':
-        specifier: ^18.3.12
-        version: 18.3.31
-      '@types/react-dom':
-        specifier: ^18.3.1
-        version: 18.3.7(@types/react@18.3.31)
-      autoprefixer:
-        specifier: ^10.4.19
-        version: 10.6.1(postcss@8.5.29)
-      postcss:
-        specifier: ^8.4.39
-        version: 8.5.29
-      tailwindcss:
-        specifier: ^3.4.10
-        version: 3.4.19(tsx@4.23.15)(yaml@2.9.1)
-      typescript:
-        specifier: ^5.5.4
-        version: 5.9.3
-
-  products/the-textile-care/apps/driver-mobile:
-    dependencies:
-      '@zolexora/ttc-api-client':
-        specifier: workspace:*
-        version: link:../../packages/api-client
-      '@zolexora/ttc-config':
-        specifier: workspace:*
-        version: link:../../packages/config
-      expo:
-        specifier: ~51.0.28
-        version: 51.0.39(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(react-native@0.74.5(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@19.1.0))(react@19.1.0)
-      expo-status-bar:
-        specifier: ~1.2.0
-        version: 1.2.0
-      react:
-        specifier: 19.1.0
-        version: 19.1.0
-      react-native:
-        specifier: 0.74.5
-        version: 0.74.5(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@19.1.0)
-    devDependencies:
-      '@types/react':
-        specifier: ^18.2.66
-        version: 18.3.31
-      typescript:
-        specifier: ^5.5.4
-        version: 5.9.3
-
-  products/the-textile-care/apps/marketplace-mobile:
-    dependencies:
-      '@zolexora/ttc-api-client':
-        specifier: workspace:*
-        version: link:../../packages/api-client
-      '@zolexora/ttc-config':
-        specifier: workspace:*
-        version: link:../../packages/config
-      expo:
-        specifier: ~51.0.28
-        version: 51.0.39(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(react-native@0.74.5(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@19.1.0))(react@19.1.0)
-      expo-status-bar:
-        specifier: ~1.2.0
-        version: 1.2.0
-      react:
-        specifier: 19.1.0
-        version: 19.1.0
-      react-native:
-        specifier: 0.74.5
-        version: 0.74.5(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@19.1.0)
-    devDependencies:
-      '@types/react':
-        specifier: ^18.2.66
-        version: 18.3.31
-      typescript:
-        specifier: ^5.5.4
-        version: 5.9.3
-
-  products/the-textile-care/apps/marketplace-web:
-    dependencies:
-      '@radix-ui/react-accordion':
-        specifier: ^1.2.20
-        version: 1.3.0(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
-      '@radix-ui/react-avatar':
-        specifier: ^1.2.6
-        version: 1.3.0(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
-      '@radix-ui/react-checkbox':
-        specifier: ^1.3.11
-        version: 1.4.0(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
-      '@radix-ui/react-dialog':
-        specifier: ^1.1.23
-        version: 1.3.0(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
-      '@radix-ui/react-dropdown-menu':
-        specifier: ^2.1.24
-        version: 2.2.0(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
-      '@radix-ui/react-label':
-        specifier: ^2.1.15
-        version: 2.1.17(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
-      '@radix-ui/react-popover':
-        specifier: ^1.1.23
-        version: 1.3.0(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
-      '@radix-ui/react-radio-group':
-        specifier: ^1.4.7
-        version: 1.5.0(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
-      '@radix-ui/react-select':
-        specifier: ^2.3.7
-        version: 2.4.0(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
-      '@radix-ui/react-separator':
-        specifier: ^1.1.15
-        version: 1.2.0(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
-      '@radix-ui/react-slot':
-        specifier: ^1.3.3
-        version: 1.5.0(@types/react@18.3.31)(react@19.1.0)
-      '@radix-ui/react-switch':
-        specifier: ^1.3.7
-        version: 1.4.0(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
-      '@radix-ui/react-tabs':
-        specifier: ^1.1.21
-        version: 1.2.0(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
-      '@radix-ui/react-toast':
-        specifier: ^1.2.23
-        version: 1.3.0(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
-      '@radix-ui/react-tooltip':
-        specifier: ^1.2.16
-        version: 1.4.0(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
-      '@tanstack/react-query':
-        specifier: '5'
-        version: 5.104.2(react@19.1.0)
-      '@zolexora/ttc-api-client':
-        specifier: workspace:*
-        version: link:../../packages/api-client
-      '@zolexora/ttc-auth':
-        specifier: workspace:*
-        version: link:../../packages/auth
-      '@zolexora/ttc-branding':
-        specifier: workspace:*
-        version: link:../../packages/branding
-      '@zolexora/ttc-config':
-        specifier: workspace:*
-        version: link:../../packages/config
-      '@zolexora/ttc-tenant':
-        specifier: workspace:*
-        version: link:../../packages/tenant
-      '@zolexora/ttc-types':
-        specifier: workspace:*
-        version: link:../../packages/types
-      '@zolexora/ttc-ui':
-        specifier: workspace:*
-        version: link:../../packages/ui
-      class-variance-authority:
-        specifier: ^0.7.1
-        version: 0.7.1
-      clsx:
-        specifier: ^2.1.1
-        version: 2.1.1
-      lucide-react:
-        specifier: ^1.47.0
-        version: 1.55.0(@types/react@18.3.31)(react@19.1.0)
-      next:
-        specifier: 14.2.15
-        version: 14.2.15(@opentelemetry/api@1.9.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
-      next-intl:
-        specifier: ^4.14.5
-        version: 4.14.9(@types/react@18.3.31)(next@14.2.15(@opentelemetry/api@1.9.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0)
-      next-themes:
-        specifier: ^0.4.6
-        version: 0.4.6(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
-      react:
-        specifier: 19.1.0
-        version: 19.1.0
-      react-dom:
-        specifier: 19.1.0
-        version: 19.1.0(react@19.1.0)
-      sonner:
-        specifier: ^2.0.8
-        version: 2.0.8(@types/react@18.3.31)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
-      tailwind-merge:
-        specifier: ^3.7.0
-        version: 3.7.0
-      zod:
-        specifier: '3'
-        version: 3.25.76
-      zustand:
-        specifier: '5'
-        version: 5.0.15(@types/react@18.3.31)(immer@9.0.21)(react@19.1.0)(use-sync-external-store@1.7.0(react@19.1.0))
-    devDependencies:
-      '@types/node':
-        specifier: ^20.14.12
-        version: 20.19.43
-      '@types/react':
-        specifier: ^18.3.12
-        version: 18.3.31
-      '@types/react-dom':
-        specifier: ^18.3.1
-        version: 18.3.7(@types/react@18.3.31)
-      autoprefixer:
-        specifier: ^10.4.19
-        version: 10.6.1(postcss@8.5.29)
-      postcss:
-        specifier: ^8.4.39
-        version: 8.5.29
-      tailwindcss:
-        specifier: ^3.4.10
-        version: 3.4.19(tsx@4.23.15)(yaml@2.9.1)
-      typescript:
-        specifier: ^5.5.4
-        version: 5.9.3
-
-  products/the-textile-care/apps/seller-mobile:
-    dependencies:
-      '@zolexora/ttc-api-client':
-        specifier: workspace:*
-        version: link:../../packages/api-client
-      '@zolexora/ttc-branding':
-        specifier: workspace:^
-        version: link:../../packages/branding
-      '@zolexora/ttc-config':
-        specifier: workspace:*
-        version: link:../../packages/config
-      expo:
-        specifier: ~51.0.28
-        version: 51.0.39(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(react-native@0.74.5(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@19.1.0))(react@19.1.0)
-      expo-status-bar:
-        specifier: ~1.2.0
-        version: 1.2.0
-      react:
-        specifier: 19.1.0
-        version: 19.1.0
-      react-native:
-        specifier: 0.74.5
-        version: 0.74.5(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@19.1.0)
-    devDependencies:
-      '@types/react':
-        specifier: ^18.2.66
-        version: 18.3.31
-      typescript:
-        specifier: ^5.5.4
-        version: 5.9.3
-
-  products/the-textile-care/apps/seller-web:
-    dependencies:
-      '@zolexora/ttc-branding':
-        specifier: workspace:^
-        version: link:../../packages/branding
-      '@zolexora/ttc-config':
-        specifier: workspace:*
-        version: link:../../packages/config
-      '@zolexora/ttc-ui':
-        specifier: workspace:*
-        version: link:../../packages/ui
-      next:
-        specifier: 14.2.15
-        version: 14.2.15(@opentelemetry/api@1.9.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
-      react:
-        specifier: 19.1.0
-        version: 19.1.0
-      react-dom:
-        specifier: 19.1.0
-        version: 19.1.0(react@19.1.0)
-    devDependencies:
-      '@types/node':
-        specifier: ^20.14.12
-        version: 20.19.43
-      '@types/react':
-        specifier: ^18.3.12
-        version: 18.3.31
-      '@types/react-dom':
-        specifier: ^18.3.1
-        version: 18.3.7(@types/react@18.3.31)
-      autoprefixer:
-        specifier: ^10.4.19
-        version: 10.6.1(postcss@8.5.29)
-      postcss:
-        specifier: ^8.4.39
-        version: 8.5.29
-      tailwindcss:
-        specifier: ^3.4.10
-        version: 3.4.19(tsx@4.23.15)(yaml@2.9.1)
-      typescript:
-        specifier: ^5.5.4
-        version: 5.9.3
-
-  products/the-textile-care/packages/api-client: {}
-
-  products/the-textile-care/packages/auth: {}
-
-  products/the-textile-care/packages/branding: {}
-
-  products/the-textile-care/packages/config: {}
-
-  products/the-textile-care/packages/tenant: {}
-
-  products/the-textile-care/packages/types:
-    dependencies:
-      '@zolexora/api-contracts':
-        specifier: workspace:*
-        version: link:../../../../packages/api-contracts
-
-  products/the-textile-care/packages/ui:
-    dependencies:
-      react:
-        specifier: 19.1.0
-        version: 19.1.0
-      react-dom:
-        specifier: 19.1.0
-        version: 19.1.0(react@19.1.0)
-    devDependencies:
-      '@types/react':
-        specifier: ^18.3.12
-        version: 18.3.31
-      '@types/react-dom':
-        specifier: ^18.3.1
-        version: 18.3.7(@types/react@18.3.31)
-
   products/zolexora-appsuite: {}
 
   products/zolexora-appsuite/apps/backend:
@@ -1354,9 +376,6 @@ importers:
       cors:
         specifier: ^2.8.5
         version: 2.8.6
-      dotenv:
-        specifier: ^16.4.7
-        version: 16.4.7
       express:
         specifier: ^4.21.2
         version: 4.22.3
@@ -1504,6 +523,263 @@ importers:
       typescript:
         specifier: ^5.8.0
         version: 5.9.3
+
+  products/zolexora-clarityfi:
+    devDependencies:
+      '@zolexora/tsconfig':
+        specifier: workspace:*
+        version: link:../../packages/tsconfig
+      prettier:
+        specifier: ^3.8.3
+        version: 3.9.9
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
+
+  products/zolexora-clarityfi/apps/api-server:
+    dependencies:
+      '@zolexora/clarityfi-api-zod':
+        specifier: workspace:*
+        version: link:../../packages/api-zod
+      '@zolexora/clarityfi-db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      cookie-parser:
+        specifier: ^1.4.7
+        version: 1.4.7
+      cors:
+        specifier: ^2.8.6
+        version: 2.8.6
+      drizzle-orm:
+        specifier: 'catalog:'
+        version: 0.45.4(@cloudflare/workers-types@4.20260702.1)(@opentelemetry/api@1.9.1)(@prisma/client@5.22.0(prisma@5.22.0))(@types/pg@8.23.1)(pg@8.23.1)(prisma@5.22.0)
+      express:
+        specifier: ^5.2.1
+        version: 5.2.1
+      pino:
+        specifier: ^9.14.0
+        version: 9.14.0
+      pino-http:
+        specifier: ^10.5.0
+        version: 10.5.0
+    devDependencies:
+      '@types/cookie-parser':
+        specifier: ^1.4.10
+        version: 1.4.10(@types/express@5.0.6)
+      '@types/cors':
+        specifier: ^2.8.19
+        version: 2.8.19
+      '@types/express':
+        specifier: ^5.0.6
+        version: 5.0.6
+      '@types/node':
+        specifier: 'catalog:'
+        version: 25.9.9
+      esbuild:
+        specifier: 0.27.3
+        version: 0.27.3
+      esbuild-plugin-pino:
+        specifier: ^2.3.3
+        version: 2.3.3(esbuild@0.27.3)(pino-pretty@13.2.0)(pino@9.14.0)(thread-stream@3.1.0)
+      pino-pretty:
+        specifier: ^13.1.3
+        version: 13.2.0
+      thread-stream:
+        specifier: 3.1.0
+        version: 3.1.0
+
+  products/zolexora-clarityfi/apps/mobile:
+    dependencies:
+      expo-clipboard:
+        specifier: ^8.0.8
+        version: 8.0.8(expo@54.0.37)(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+      expo-local-authentication:
+        specifier: ^17.0.8
+        version: 17.0.9(expo@54.0.37)
+    devDependencies:
+      '@babel/core':
+        specifier: ^7.25.2
+        version: 7.29.7
+      '@expo-google-fonts/inter':
+        specifier: ^0.4.0
+        version: 0.4.2
+      '@expo/cli':
+        specifier: 54.0.23
+        version: 54.0.23(expo-router@6.0.24)(expo@54.0.37)(graphql@15.8.0)(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(typescript@5.9.3)
+      '@expo/ngrok':
+        specifier: ^4.1.0
+        version: 4.1.3
+      '@expo/vector-icons':
+        specifier: ^15.0.3
+        version: 15.1.1(expo-font@14.0.12(expo@54.0.37)(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+      '@react-native-async-storage/async-storage':
+        specifier: 2.2.0
+        version: 2.2.0(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))
+      '@stardazed/streams-text-encoding':
+        specifier: ^1.0.2
+        version: 1.0.2
+      '@tanstack/react-query':
+        specifier: 'catalog:'
+        version: 5.104.2(react@19.1.0)
+      '@types/react':
+        specifier: ~19.1.10
+        version: 19.1.17
+      '@types/react-dom':
+        specifier: ~19.1.7
+        version: 19.1.11(@types/react@19.1.17)
+      '@ungap/structured-clone':
+        specifier: ^1.3.0
+        version: 1.4.0
+      '@zolexora/clarityfi-api-client-react':
+        specifier: workspace:*
+        version: link:../../packages/api-client-react
+      babel-plugin-react-compiler:
+        specifier: ^19.0.0-beta-e993439-20250117
+        version: 19.0.0-beta-ebf51a3-20250411
+      babel-preset-expo:
+        specifier: ~54.0.11
+        version: 54.0.12(@babel/core@7.29.7)(@babel/runtime@7.29.10)(expo@54.0.37)(react-refresh@0.14.2)
+      expo:
+        specifier: ~54.0.27
+        version: 54.0.37(@babel/core@7.29.7)(@expo/metro-runtime@6.1.2)(expo-router@6.0.24)(graphql@15.8.0)(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)(typescript@5.9.3)
+      expo-blur:
+        specifier: ~15.0.8
+        version: 15.0.8(expo@54.0.37)(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+      expo-constants:
+        specifier: ~18.0.11
+        version: 18.0.14(expo@54.0.37)(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))
+      expo-font:
+        specifier: ~14.0.10
+        version: 14.0.12(expo@54.0.37)(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+      expo-glass-effect:
+        specifier: ~0.1.4
+        version: 0.1.10(expo@54.0.37)(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+      expo-haptics:
+        specifier: ~15.0.8
+        version: 15.0.8(expo@54.0.37)
+      expo-image:
+        specifier: ~3.0.11
+        version: 3.0.11(expo@54.0.37)(react-native-web@0.21.4(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+      expo-image-picker:
+        specifier: ~17.0.9
+        version: 17.0.11(expo@54.0.37)
+      expo-linear-gradient:
+        specifier: ~15.0.8
+        version: 15.0.8(expo@54.0.37)(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+      expo-linking:
+        specifier: ~8.0.10
+        version: 8.0.12(expo@54.0.37)(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+      expo-location:
+        specifier: ~19.0.8
+        version: 19.0.8(expo@54.0.37)
+      expo-router:
+        specifier: ~6.0.17
+        version: 6.0.24(by7ddcnfa7nxwmhm6i7vjvgdby)
+      expo-splash-screen:
+        specifier: ~31.0.12
+        version: 31.0.13(expo@54.0.37)(typescript@5.9.3)
+      expo-status-bar:
+        specifier: ~3.0.9
+        version: 3.0.9(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+      expo-symbols:
+        specifier: ~1.0.8
+        version: 1.0.8(expo@54.0.37)(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))
+      expo-system-ui:
+        specifier: ~6.0.9
+        version: 6.0.9(expo@54.0.37)(react-native-web@0.21.4(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))
+      expo-web-browser:
+        specifier: ~15.0.10
+        version: 15.0.11(expo@54.0.37)(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))
+      react:
+        specifier: 19.1.0
+        version: 19.1.0
+      react-dom:
+        specifier: 19.1.0
+        version: 19.1.0(react@19.1.0)
+      react-native:
+        specifier: 0.81.5
+        version: 0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0)
+      react-native-gesture-handler:
+        specifier: ~2.28.0
+        version: 2.28.0(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+      react-native-keyboard-controller:
+        specifier: 1.18.5
+        version: 1.18.5(react-native-reanimated@4.1.7(react-native-worklets@0.5.1(@babel/core@7.29.7)(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+      react-native-reanimated:
+        specifier: ~4.1.1
+        version: 4.1.7(react-native-worklets@0.5.1(@babel/core@7.29.7)(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+      react-native-safe-area-context:
+        specifier: ~5.6.0
+        version: 5.6.2(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+      react-native-screens:
+        specifier: ~4.16.0
+        version: 4.16.0(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+      react-native-svg:
+        specifier: 15.12.1
+        version: 15.12.1(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+      react-native-web:
+        specifier: ^0.21.0
+        version: 0.21.4(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      react-native-worklets:
+        specifier: 0.5.1
+        version: 0.5.1(@babel/core@7.29.7)(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+      typescript:
+        specifier: ~5.9.2
+        version: 5.9.3
+      zod:
+        specifier: 'catalog:'
+        version: 3.25.76
+      zod-validation-error:
+        specifier: ^3.4.0
+        version: 3.5.4(zod@3.25.76)
+
+  products/zolexora-clarityfi/apps/web: {}
+
+  products/zolexora-clarityfi/packages/api-client-react:
+    dependencies:
+      '@tanstack/react-query':
+        specifier: 'catalog:'
+        version: 5.104.2(react@19.1.0)
+      react:
+        specifier: 19.1.0
+        version: 19.1.0
+
+  products/zolexora-clarityfi/packages/api-spec:
+    devDependencies:
+      orval:
+        specifier: ^8.9.1
+        version: 8.41.0(@tanstack/react-query@5.104.2(react@19.3.0))(prettier@3.9.9)(typescript@5.9.3)(zod@4.6.6)
+
+  products/zolexora-clarityfi/packages/api-zod:
+    dependencies:
+      zod:
+        specifier: 'catalog:'
+        version: 3.25.76
+
+  products/zolexora-clarityfi/packages/db:
+    dependencies:
+      drizzle-orm:
+        specifier: 'catalog:'
+        version: 0.45.4(@cloudflare/workers-types@4.20260702.1)(@opentelemetry/api@1.9.1)(@prisma/client@5.22.0(prisma@5.22.0))(@types/pg@8.23.1)(pg@8.23.1)(prisma@5.22.0)
+      drizzle-zod:
+        specifier: ^0.8.3
+        version: 0.8.3(drizzle-orm@0.45.4(@cloudflare/workers-types@4.20260702.1)(@opentelemetry/api@1.9.1)(@prisma/client@5.22.0(prisma@5.22.0))(@types/pg@8.23.1)(pg@8.23.1)(prisma@5.22.0))(zod@3.25.76)
+      pg:
+        specifier: ^8.20.0
+        version: 8.23.1
+      zod:
+        specifier: 'catalog:'
+        version: 3.25.76
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 25.9.9
+      '@types/pg':
+        specifier: ^8.20.0
+        version: 8.23.1
+      drizzle-kit:
+        specifier: ^0.31.10
+        version: 0.31.11
 
   products/zolexora-engage:
     dependencies:
@@ -2662,6 +1938,724 @@ importers:
         version: 5.9.3
 
   products/zolexora-marketplace/packages/shared-config: {}
+
+  products/zolexora-rentoeasy:
+    dependencies:
+      '@nestjs/common':
+        specifier: 11.1.24
+        version: 11.1.24(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/core':
+        specifier: 11.1.24
+        version: 11.1.24(@nestjs/common@11.1.24(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/platform-express@11.1.24)(@nestjs/websockets@11.1.24)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/platform-express':
+        specifier: 11.1.24
+        version: 11.1.24(@nestjs/common@11.1.24(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.24)
+      '@nestjs/platform-socket.io':
+        specifier: 11.1.24
+        version: 11.1.24(@nestjs/common@11.1.24(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/websockets@11.1.24)(rxjs@7.8.2)
+      '@nestjs/websockets':
+        specifier: 11.1.24
+        version: 11.1.24(@nestjs/common@11.1.24(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.24)(@nestjs/platform-socket.io@11.1.24)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      rxjs:
+        specifier: 7.8.2
+        version: 7.8.2
+    devDependencies:
+      prettier:
+        specifier: ^3.2.0
+        version: 3.9.9
+      turbo:
+        specifier: ^2.0.0
+        version: 2.11.7
+      typescript:
+        specifier: ^5.4.0
+        version: 5.9.3
+
+  products/zolexora-rentoeasy/apps/web-admin:
+    dependencies:
+      '@tanstack/react-query':
+        specifier: ^5.40.0
+        version: 5.104.2(react@19.1.0)
+      '@zolexora/rentoeasy-types':
+        specifier: workspace:*
+        version: link:../../packages/shared-types
+      '@zolexora/rentoeasy-utils':
+        specifier: workspace:*
+        version: link:../../packages/shared-utils
+      axios:
+        specifier: ^1.16.1
+        version: 1.20.0
+      lucide-react:
+        specifier: ^0.383.0
+        version: 0.383.0(react@19.1.0)
+      react:
+        specifier: 19.1.0
+        version: 19.1.0
+      react-dom:
+        specifier: 19.1.0
+        version: 19.1.0(react@19.1.0)
+      react-router-dom:
+        specifier: ^6.23.0
+        version: 6.30.6(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      zustand:
+        specifier: ^4.5.0
+        version: 4.5.7(@types/react@18.3.31)(immer@9.0.21)(react@19.1.0)
+    devDependencies:
+      '@types/node':
+        specifier: ^20.12.0
+        version: 20.19.43
+      '@types/react':
+        specifier: ^18.3.0
+        version: 18.3.31
+      '@types/react-dom':
+        specifier: ^18.3.0
+        version: 18.3.7(@types/react@18.3.31)
+      '@vitejs/plugin-react':
+        specifier: ^6.0.2
+        version: 6.1.2(babel-plugin-react-compiler@1.0.0)(vite@8.3.3(@types/node@20.19.43)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
+      tailwindcss:
+        specifier: ^3.4.0
+        version: 3.4.19(tsx@4.23.15)(yaml@2.9.1)
+      typescript:
+        specifier: ^5.4.0
+        version: 5.9.3
+      vite:
+        specifier: ^8.0.14
+        version: 8.3.3(@types/node@20.19.43)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
+
+  products/zolexora-rentoeasy/apps/web-owner:
+    dependencies:
+      '@tanstack/react-query':
+        specifier: ^5.40.0
+        version: 5.104.2(react@19.1.0)
+      '@zolexora/rentoeasy-types':
+        specifier: workspace:*
+        version: link:../../packages/shared-types
+      '@zolexora/rentoeasy-utils':
+        specifier: workspace:*
+        version: link:../../packages/shared-utils
+      axios:
+        specifier: ^1.7.0
+        version: 1.20.0
+      firebase:
+        specifier: ^12.13.0
+        version: 12.19.0(@react-native-async-storage/async-storage@2.2.0(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@18.3.31)(react@19.1.0)))
+      lucide-react:
+        specifier: ^0.383.0
+        version: 0.383.0(react@19.1.0)
+      react:
+        specifier: 19.1.0
+        version: 19.1.0
+      react-dom:
+        specifier: 19.1.0
+        version: 19.1.0(react@19.1.0)
+      react-router-dom:
+        specifier: ^6.23.0
+        version: 6.30.6(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      socket.io-client:
+        specifier: ^4.8.3
+        version: 4.8.4
+      zustand:
+        specifier: ^4.5.0
+        version: 4.5.7(@types/react@18.3.31)(immer@9.0.21)(react@19.1.0)
+    devDependencies:
+      '@types/node':
+        specifier: ^20.12.0
+        version: 20.19.43
+      '@types/react':
+        specifier: ^18.3.0
+        version: 18.3.31
+      '@types/react-dom':
+        specifier: ^18.3.0
+        version: 18.3.7(@types/react@18.3.31)
+      '@vitejs/plugin-react':
+        specifier: ^6.0.2
+        version: 6.1.2(babel-plugin-react-compiler@1.0.0)(vite@8.3.3(@types/node@20.19.43)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
+      autoprefixer:
+        specifier: ^10.4.0
+        version: 10.6.1(postcss@8.5.29)
+      postcss:
+        specifier: ^8.4.0
+        version: 8.5.29
+      tailwindcss:
+        specifier: ^3.4.0
+        version: 3.4.19(tsx@4.23.15)(yaml@2.9.1)
+      typescript:
+        specifier: ^5.4.0
+        version: 5.9.3
+      vite:
+        specifier: ^8.0.14
+        version: 8.3.3(@types/node@20.19.43)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
+
+  products/zolexora-rentoeasy/apps/web-tenant:
+    dependencies:
+      '@tanstack/react-query':
+        specifier: ^5.40.0
+        version: 5.104.2(react@19.1.0)
+      '@zolexora/rentoeasy-types':
+        specifier: workspace:*
+        version: link:../../packages/shared-types
+      '@zolexora/rentoeasy-utils':
+        specifier: workspace:*
+        version: link:../../packages/shared-utils
+      axios:
+        specifier: ^1.7.0
+        version: 1.20.0
+      firebase:
+        specifier: ^12.13.0
+        version: 12.19.0(@react-native-async-storage/async-storage@2.2.0(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@18.3.31)(react@19.1.0)))
+      lucide-react:
+        specifier: ^0.383.0
+        version: 0.383.0(react@19.1.0)
+      react:
+        specifier: 19.1.0
+        version: 19.1.0
+      react-dom:
+        specifier: 19.1.0
+        version: 19.1.0(react@19.1.0)
+      react-router-dom:
+        specifier: ^6.23.0
+        version: 6.30.6(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      socket.io-client:
+        specifier: ^4.7.0
+        version: 4.8.4
+      zustand:
+        specifier: ^4.5.0
+        version: 4.5.7(@types/react@18.3.31)(immer@9.0.21)(react@19.1.0)
+    devDependencies:
+      '@types/node':
+        specifier: ^20.12.0
+        version: 20.19.43
+      '@types/react':
+        specifier: ^18.3.0
+        version: 18.3.31
+      '@types/react-dom':
+        specifier: ^18.3.0
+        version: 18.3.7(@types/react@18.3.31)
+      '@vitejs/plugin-react':
+        specifier: ^6.0.2
+        version: 6.1.2(babel-plugin-react-compiler@1.0.0)(vite@8.3.3(@types/node@20.19.43)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
+      autoprefixer:
+        specifier: ^10.4.0
+        version: 10.6.1(postcss@8.5.29)
+      postcss:
+        specifier: ^8.4.0
+        version: 8.5.29
+      tailwindcss:
+        specifier: ^3.4.0
+        version: 3.4.19(tsx@4.23.15)(yaml@2.9.1)
+      typescript:
+        specifier: ^5.4.0
+        version: 5.9.3
+      vite:
+        specifier: ^8.0.14
+        version: 8.3.3(@types/node@20.19.43)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
+
+  products/zolexora-rentoeasy/packages/shared-types:
+    dependencies:
+      '@zolexora/api-contracts':
+        specifier: workspace:*
+        version: link:../../../../packages/api-contracts
+
+  products/zolexora-rentoeasy/packages/shared-utils:
+    devDependencies:
+      typescript:
+        specifier: ^5.5.0
+        version: 5.9.3
+
+  products/zolexora-rentoeasy/services/api:
+    dependencies:
+      '@aws-sdk/client-s3':
+        specifier: ^3.1053.0
+        version: 3.1152.0
+      '@aws-sdk/s3-request-presigner':
+        specifier: ^3.1053.0
+        version: 3.1152.0
+      '@nestjs/bull':
+        specifier: ^11.0.4
+        version: 11.0.5(@nestjs/common@11.1.24(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.24)(bull@4.16.5)
+      '@nestjs/common':
+        specifier: ^11.1.24
+        version: 11.1.24(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/config':
+        specifier: ^4.0.4
+        version: 4.0.4(@nestjs/common@11.1.24(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(rxjs@7.8.2)
+      '@nestjs/core':
+        specifier: ^11.1.24
+        version: 11.1.24(@nestjs/common@11.1.24(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/platform-express@11.1.24)(@nestjs/websockets@11.1.24)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/jwt':
+        specifier: ^11.0.0
+        version: 11.0.2(@nestjs/common@11.1.24(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))
+      '@nestjs/passport':
+        specifier: ^11.0.0
+        version: 11.0.5(@nestjs/common@11.1.24(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(passport@0.7.0)
+      '@nestjs/platform-express':
+        specifier: ^11.1.24
+        version: 11.1.24(@nestjs/common@11.1.24(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.24)
+      '@nestjs/platform-socket.io':
+        specifier: ^11.1.24
+        version: 11.1.24(@nestjs/common@11.1.24(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/websockets@11.1.24)(rxjs@7.8.2)
+      '@nestjs/swagger':
+        specifier: ^11.4.4
+        version: 11.4.7(@fastify/static@9.3.0)(@nestjs/common@11.1.24(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.24)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)
+      '@nestjs/websockets':
+        specifier: ^11.1.24
+        version: 11.1.24(@nestjs/common@11.1.24(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.24)(@nestjs/platform-socket.io@11.1.24)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@prisma/client':
+        specifier: ^5.14.0
+        version: 5.22.0(prisma@5.22.0)
+      '@sendgrid/mail':
+        specifier: ^8.1.3
+        version: 8.1.6
+      '@zolexora/rentoeasy-types':
+        specifier: workspace:*
+        version: link:../../packages/shared-types
+      '@zolexora/rentoeasy-utils':
+        specifier: workspace:*
+        version: link:../../packages/shared-utils
+      axios:
+        specifier: ^1.7.0
+        version: 1.20.0
+      bcryptjs:
+        specifier: ^3.0.3
+        version: 3.0.3
+      bull:
+        specifier: ^4.16.5
+        version: 4.16.5
+      class-transformer:
+        specifier: ^0.5.1
+        version: 0.5.1
+      class-validator:
+        specifier: ^0.14.1
+        version: 0.14.4
+      cloudinary:
+        specifier: ^2.5.1
+        version: 2.11.0
+      express:
+        specifier: ^4.19.2
+        version: 4.22.3
+      firebase-admin:
+        specifier: ^13.10.0
+        version: 13.10.0(@firebase/app-compat@0.5.18)(@firebase/app@0.16.2)
+      form-data:
+        specifier: ^4.0.0
+        version: 4.0.6
+      ioredis:
+        specifier: ^5.3.2
+        version: 5.11.1
+      multer:
+        specifier: ^2.1.1
+        version: 2.1.1
+      passport:
+        specifier: ^0.7.0
+        version: 0.7.0
+      passport-jwt:
+        specifier: ^4.0.1
+        version: 4.0.1
+      pdf-lib:
+        specifier: ^1.17.1
+        version: 1.17.1
+      razorpay:
+        specifier: ^2.9.0
+        version: 2.9.8
+      rxjs:
+        specifier: 7.8.2
+        version: 7.8.2
+      socket.io:
+        specifier: ^4.7.0
+        version: 4.8.3
+    devDependencies:
+      '@nestjs/cli':
+        specifier: ^11.0.21
+        version: 11.0.24(@swc/core@1.16.18)(@types/node@20.19.43)(esbuild@0.28.1)(prettier@3.9.9)
+      '@types/express':
+        specifier: ^4.17.21
+        version: 4.17.25
+      '@types/multer':
+        specifier: ^1.4.12
+        version: 1.4.13
+      '@types/node':
+        specifier: ^20.12.0
+        version: 20.19.43
+      '@types/passport-jwt':
+        specifier: ^4.0.1
+        version: 4.0.1
+      prisma:
+        specifier: ^5.14.0
+        version: 5.22.0
+      ts-node:
+        specifier: ^10.9.2
+        version: 10.9.2(@swc/core@1.16.18)(@types/node@20.19.43)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.4.0
+        version: 5.9.3
+
+  products/zolexora-textile-care:
+    devDependencies:
+      '@types/node':
+        specifier: ^20.14.12
+        version: 20.19.43
+      '@typescript-eslint/eslint-plugin':
+        specifier: ^7.17.0
+        version: 7.18.0(@typescript-eslint/parser@7.18.0(eslint@8.57.1)(typescript@5.9.3))(eslint@8.57.1)(typescript@5.9.3)
+      '@typescript-eslint/parser':
+        specifier: ^7.17.0
+        version: 7.18.0(eslint@8.57.1)(typescript@5.9.3)
+      '@zolexora/tsconfig':
+        specifier: workspace:*
+        version: link:../../packages/tsconfig
+      eslint:
+        specifier: ^8.57.0
+        version: 8.57.1
+      eslint-config-next:
+        specifier: ^14.2.15
+        version: 14.2.35(eslint@8.57.1)(typescript@5.9.3)
+      eslint-config-prettier:
+        specifier: ^9.1.2
+        version: 9.1.2(eslint@8.57.1)
+      prettier:
+        specifier: ^3.3.1
+        version: 3.9.9
+      rimraf:
+        specifier: ^5.0.1
+        version: 5.0.10
+      turbo:
+        specifier: ^2.0.5
+        version: 2.11.7
+      typescript:
+        specifier: ^5.5.4
+        version: 5.9.3
+
+  products/zolexora-textile-care/apps/admin-web:
+    dependencies:
+      '@zolexora/ttc-config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@zolexora/ttc-ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      next:
+        specifier: 14.2.15
+        version: 14.2.15(@opentelemetry/api@1.9.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      react:
+        specifier: 19.1.0
+        version: 19.1.0
+      react-dom:
+        specifier: 19.1.0
+        version: 19.1.0(react@19.1.0)
+    devDependencies:
+      '@types/node':
+        specifier: ^20.14.12
+        version: 20.19.43
+      '@types/react':
+        specifier: ^18.3.12
+        version: 18.3.31
+      '@types/react-dom':
+        specifier: ^18.3.1
+        version: 18.3.7(@types/react@18.3.31)
+      autoprefixer:
+        specifier: ^10.4.19
+        version: 10.6.1(postcss@8.5.29)
+      postcss:
+        specifier: ^8.4.39
+        version: 8.5.29
+      tailwindcss:
+        specifier: ^3.4.10
+        version: 3.4.19(tsx@4.23.15)(yaml@2.9.1)
+      typescript:
+        specifier: ^5.5.4
+        version: 5.9.3
+
+  products/zolexora-textile-care/apps/driver-mobile:
+    dependencies:
+      '@zolexora/ttc-api-client':
+        specifier: workspace:*
+        version: link:../../packages/api-client
+      '@zolexora/ttc-config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      expo:
+        specifier: ~51.0.28
+        version: 51.0.39(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(react-native@0.74.5(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@19.1.0))(react@19.1.0)
+      expo-status-bar:
+        specifier: ~1.2.0
+        version: 1.2.0
+      react:
+        specifier: 19.1.0
+        version: 19.1.0
+      react-native:
+        specifier: 0.74.5
+        version: 0.74.5(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@19.1.0)
+    devDependencies:
+      '@types/react':
+        specifier: ^18.2.66
+        version: 18.3.31
+      typescript:
+        specifier: ^5.5.4
+        version: 5.9.3
+
+  products/zolexora-textile-care/apps/marketplace-mobile:
+    dependencies:
+      '@zolexora/ttc-api-client':
+        specifier: workspace:*
+        version: link:../../packages/api-client
+      '@zolexora/ttc-config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      expo:
+        specifier: ~51.0.28
+        version: 51.0.39(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(react-native@0.74.5(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@19.1.0))(react@19.1.0)
+      expo-status-bar:
+        specifier: ~1.2.0
+        version: 1.2.0
+      react:
+        specifier: 19.1.0
+        version: 19.1.0
+      react-native:
+        specifier: 0.74.5
+        version: 0.74.5(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@19.1.0)
+    devDependencies:
+      '@types/react':
+        specifier: ^18.2.66
+        version: 18.3.31
+      typescript:
+        specifier: ^5.5.4
+        version: 5.9.3
+
+  products/zolexora-textile-care/apps/marketplace-web:
+    dependencies:
+      '@radix-ui/react-accordion':
+        specifier: ^1.2.20
+        version: 1.3.0(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      '@radix-ui/react-avatar':
+        specifier: ^1.2.6
+        version: 1.3.0(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      '@radix-ui/react-checkbox':
+        specifier: ^1.3.11
+        version: 1.4.0(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      '@radix-ui/react-dialog':
+        specifier: ^1.1.23
+        version: 1.3.0(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      '@radix-ui/react-dropdown-menu':
+        specifier: ^2.1.24
+        version: 2.2.0(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      '@radix-ui/react-label':
+        specifier: ^2.1.15
+        version: 2.1.17(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      '@radix-ui/react-popover':
+        specifier: ^1.1.23
+        version: 1.3.0(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      '@radix-ui/react-radio-group':
+        specifier: ^1.4.7
+        version: 1.5.0(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      '@radix-ui/react-select':
+        specifier: ^2.3.7
+        version: 2.4.0(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      '@radix-ui/react-separator':
+        specifier: ^1.1.15
+        version: 1.2.0(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      '@radix-ui/react-slot':
+        specifier: ^1.3.3
+        version: 1.5.0(@types/react@18.3.31)(react@19.1.0)
+      '@radix-ui/react-switch':
+        specifier: ^1.3.7
+        version: 1.4.0(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      '@radix-ui/react-tabs':
+        specifier: ^1.1.21
+        version: 1.2.0(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      '@radix-ui/react-toast':
+        specifier: ^1.2.23
+        version: 1.3.0(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      '@radix-ui/react-tooltip':
+        specifier: ^1.2.16
+        version: 1.4.0(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      '@tanstack/react-query':
+        specifier: '5'
+        version: 5.104.2(react@19.1.0)
+      '@zolexora/ttc-api-client':
+        specifier: workspace:*
+        version: link:../../packages/api-client
+      '@zolexora/ttc-auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
+      '@zolexora/ttc-branding':
+        specifier: workspace:*
+        version: link:../../packages/branding
+      '@zolexora/ttc-config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@zolexora/ttc-tenant':
+        specifier: workspace:*
+        version: link:../../packages/tenant
+      '@zolexora/ttc-types':
+        specifier: workspace:*
+        version: link:../../packages/types
+      '@zolexora/ttc-ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      class-variance-authority:
+        specifier: ^0.7.1
+        version: 0.7.1
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
+      lucide-react:
+        specifier: ^1.47.0
+        version: 1.55.0(@types/react@18.3.31)(react@19.1.0)
+      next:
+        specifier: 14.2.15
+        version: 14.2.15(@opentelemetry/api@1.9.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      next-intl:
+        specifier: ^4.14.5
+        version: 4.14.9(@types/react@18.3.31)(next@14.2.15(@opentelemetry/api@1.9.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0)
+      next-themes:
+        specifier: ^0.4.6
+        version: 0.4.6(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      react:
+        specifier: 19.1.0
+        version: 19.1.0
+      react-dom:
+        specifier: 19.1.0
+        version: 19.1.0(react@19.1.0)
+      sonner:
+        specifier: ^2.0.8
+        version: 2.0.8(@types/react@18.3.31)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      tailwind-merge:
+        specifier: ^3.7.0
+        version: 3.7.0
+      zod:
+        specifier: '3'
+        version: 3.25.76
+      zustand:
+        specifier: '5'
+        version: 5.0.15(@types/react@18.3.31)(immer@9.0.21)(react@19.1.0)(use-sync-external-store@1.7.0(react@19.1.0))
+    devDependencies:
+      '@types/node':
+        specifier: ^20.14.12
+        version: 20.19.43
+      '@types/react':
+        specifier: ^18.3.12
+        version: 18.3.31
+      '@types/react-dom':
+        specifier: ^18.3.1
+        version: 18.3.7(@types/react@18.3.31)
+      autoprefixer:
+        specifier: ^10.4.19
+        version: 10.6.1(postcss@8.5.29)
+      postcss:
+        specifier: ^8.4.39
+        version: 8.5.29
+      tailwindcss:
+        specifier: ^3.4.10
+        version: 3.4.19(tsx@4.23.15)(yaml@2.9.1)
+      typescript:
+        specifier: ^5.5.4
+        version: 5.9.3
+
+  products/zolexora-textile-care/apps/seller-mobile:
+    dependencies:
+      '@zolexora/ttc-api-client':
+        specifier: workspace:*
+        version: link:../../packages/api-client
+      '@zolexora/ttc-branding':
+        specifier: workspace:^
+        version: link:../../packages/branding
+      '@zolexora/ttc-config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      expo:
+        specifier: ~51.0.28
+        version: 51.0.39(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(react-native@0.74.5(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@19.1.0))(react@19.1.0)
+      expo-status-bar:
+        specifier: ~1.2.0
+        version: 1.2.0
+      react:
+        specifier: 19.1.0
+        version: 19.1.0
+      react-native:
+        specifier: 0.74.5
+        version: 0.74.5(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.31)(react@19.1.0)
+    devDependencies:
+      '@types/react':
+        specifier: ^18.2.66
+        version: 18.3.31
+      typescript:
+        specifier: ^5.5.4
+        version: 5.9.3
+
+  products/zolexora-textile-care/apps/seller-web:
+    dependencies:
+      '@zolexora/ttc-branding':
+        specifier: workspace:^
+        version: link:../../packages/branding
+      '@zolexora/ttc-config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@zolexora/ttc-ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      next:
+        specifier: 14.2.15
+        version: 14.2.15(@opentelemetry/api@1.9.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      react:
+        specifier: 19.1.0
+        version: 19.1.0
+      react-dom:
+        specifier: 19.1.0
+        version: 19.1.0(react@19.1.0)
+    devDependencies:
+      '@types/node':
+        specifier: ^20.14.12
+        version: 20.19.43
+      '@types/react':
+        specifier: ^18.3.12
+        version: 18.3.31
+      '@types/react-dom':
+        specifier: ^18.3.1
+        version: 18.3.7(@types/react@18.3.31)
+      autoprefixer:
+        specifier: ^10.4.19
+        version: 10.6.1(postcss@8.5.29)
+      postcss:
+        specifier: ^8.4.39
+        version: 8.5.29
+      tailwindcss:
+        specifier: ^3.4.10
+        version: 3.4.19(tsx@4.23.15)(yaml@2.9.1)
+      typescript:
+        specifier: ^5.5.4
+        version: 5.9.3
+
+  products/zolexora-textile-care/packages/api-client: {}
+
+  products/zolexora-textile-care/packages/auth: {}
+
+  products/zolexora-textile-care/packages/branding: {}
+
+  products/zolexora-textile-care/packages/config: {}
+
+  products/zolexora-textile-care/packages/tenant: {}
+
+  products/zolexora-textile-care/packages/types:
+    dependencies:
+      '@zolexora/api-contracts':
+        specifier: workspace:*
+        version: link:../../../../packages/api-contracts
+
+  products/zolexora-textile-care/packages/ui:
+    dependencies:
+      react:
+        specifier: 19.1.0
+        version: 19.1.0
+      react-dom:
+        specifier: 19.1.0
+        version: 19.1.0(react@19.1.0)
+    devDependencies:
+      '@types/react':
+        specifier: ^18.3.12
+        version: 18.3.31
+      '@types/react-dom':
+        specifier: ^18.3.1
+        version: 18.3.7(@types/react@18.3.31)
 
   products/zolexora-tms:
     dependencies:
@@ -4908,7 +4902,7 @@ packages:
 
   '@expo/bunyan@4.0.1':
     resolution: {integrity: sha512-+Lla7nYSiHZirgK+U/uYzsLv/X+HaJienbD5AKX1UQZHYfWaP+9uuQluRB4GrEVWF0GZ7vEVp/jzaOT9k/SQlg==}
-    engines: {'0': node >=0.10.0}
+    engines: {node: '>=0.10.0'}
 
   '@expo/cli@0.18.31':
     resolution: {integrity: sha512-v9llw9fT3Uv+TCM6Xllo54t672CuYtinEQZ2LPJ2EJsCwuTc4Cd2gXQaouuIVD21VoeGQnr5JtJuWbF97sBKzQ==}
@@ -8521,6 +8515,7 @@ packages:
   '@smithy/core@3.36.0':
     resolution: {integrity: sha512-3hJiwG1F5t1SoXqp/yOCmYXziyx7ZVqF63S5W6YU201e/qwVaHPex+E/3vvyY9a3ORq/b+BydeNZpP2saQ9X2g==}
     engines: {node: '>=18.0.0'}
+    deprecated: Deprecated due to a bug in custom logger data redaction. See https://github.com/aws/aws-sdk-js-v3/issues/8393.
 
   '@smithy/credential-provider-imds@4.5.2':
     resolution: {integrity: sha512-A9uSdn72ozbRUSit0eib0TW7nXuNPlaeM0zcGkJ+nE6tFcSDbnmtwoxbTCFBukVQcszDAyvsd7+rTduPTXpygg==}
@@ -16130,6 +16125,7 @@ packages:
     engines: {node: '>=0.6.0', teleport: '>=0.2.0'}
     deprecated: |-
       You or someone you depend on is using Q, the JavaScript Promise library that gave JavaScript developers strong feelings about promises. They can almost certainly migrate to the native JavaScript promise now. Thank you literally everyone for joining me in this bet against the odds. Be excellent to each other.
+
       (For a CapTP with native promises, see @endo/eventual-send and @endo/captp)
 
   qrcode-terminal@0.11.0:
@@ -30163,7 +30159,7 @@ snapshots:
       eslint: 8.57.1
       eslint-import-resolver-node: 0.3.10
       eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0(eslint@8.57.1))(eslint@8.57.1)
-      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(eslint@8.57.1))(eslint@8.57.1))(eslint@8.57.1)
+      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@8.57.1)
       eslint-plugin-jsx-a11y: 6.10.2(eslint@8.57.1)
       eslint-plugin-react: 7.37.5(eslint@8.57.1)
       eslint-plugin-react-hooks: 5.0.0-canary-7118f5dd7-20230705(eslint@8.57.1)
@@ -30203,7 +30199,7 @@ snapshots:
       eslint: 9.39.5(jiti@2.7.0)
       eslint-import-resolver-node: 0.3.10
       eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@7.18.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3))(eslint@9.39.5(jiti@2.7.0)))(eslint@9.39.5(jiti@2.7.0))
-      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@7.18.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@7.18.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3))(eslint@9.39.5(jiti@2.7.0)))(eslint@9.39.5(jiti@2.7.0)))(eslint@9.39.5(jiti@2.7.0))
+      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@7.18.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.5(jiti@2.7.0))
       eslint-plugin-jsx-a11y: 6.10.2(eslint@9.39.5(jiti@2.7.0))
       eslint-plugin-react: 7.37.5(eslint@9.39.5(jiti@2.7.0))
       eslint-plugin-react-hooks: 5.2.0(eslint@9.39.5(jiti@2.7.0))
@@ -30223,7 +30219,7 @@ snapshots:
       eslint: 9.39.5(jiti@2.7.0)
       eslint-import-resolver-node: 0.3.10
       eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@7.18.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3))(eslint@9.39.5(jiti@2.7.0)))(eslint@9.39.5(jiti@2.7.0))
-      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@7.18.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@7.18.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3))(eslint@9.39.5(jiti@2.7.0)))(eslint@9.39.5(jiti@2.7.0)))(eslint@9.39.5(jiti@2.7.0))
+      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@7.18.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.5(jiti@2.7.0))
       eslint-plugin-jsx-a11y: 6.10.2(eslint@9.39.5(jiti@2.7.0))
       eslint-plugin-react: 7.37.5(eslint@9.39.5(jiti@2.7.0))
       eslint-plugin-react-hooks: 5.2.0(eslint@9.39.5(jiti@2.7.0))
@@ -30284,7 +30280,7 @@ snapshots:
       tinyglobby: 0.2.17
       unrs-resolver: 1.12.2
     optionalDependencies:
-      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@7.18.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@7.18.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3))(eslint@9.39.5(jiti@2.7.0)))(eslint@9.39.5(jiti@2.7.0)))(eslint@9.39.5(jiti@2.7.0))
+      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@7.18.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.5(jiti@2.7.0))
     transitivePeerDependencies:
       - supports-color
 
@@ -30299,7 +30295,7 @@ snapshots:
       tinyglobby: 0.2.17
       unrs-resolver: 1.12.2
     optionalDependencies:
-      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(eslint@8.57.1))(eslint@8.57.1))(eslint@8.57.1)
+      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@8.57.1)
     transitivePeerDependencies:
       - supports-color
 
@@ -30359,7 +30355,7 @@ snapshots:
       lodash: 4.18.1
       string-natural-compare: 3.0.1
 
-  eslint-plugin-import@2.32.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(eslint@8.57.1))(eslint@8.57.1))(eslint@8.57.1):
+  eslint-plugin-import@2.32.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@8.57.1):
     dependencies:
       '@rtsao/scc': 1.1.0
       array-includes: 3.2.0
@@ -30446,7 +30442,7 @@ snapshots:
       - eslint-import-resolver-webpack
       - supports-color
 
-  eslint-plugin-import@2.32.0(@typescript-eslint/parser@7.18.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@7.18.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3))(eslint@9.39.5(jiti@2.7.0)))(eslint@9.39.5(jiti@2.7.0)))(eslint@9.39.5(jiti@2.7.0)):
+  eslint-plugin-import@2.32.0(@typescript-eslint/parser@7.18.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.5(jiti@2.7.0)):
     dependencies:
       '@rtsao/scc': 1.1.0
       array-includes: 3.2.0

@@ -32,7 +32,6 @@ from helpers import (
     get_nginx_conf_path,
     get_repo_root,
     get_tms_compose_path,
-    get_tms_env_example_path,
     http_get,
     is_container_running,
     is_port_open,
@@ -424,15 +423,14 @@ class TestTier1Feature8GitSecretHygiene(unittest.TestCase):
                     f"Forbidden secret file detected in git status: {filename}",
                 )
 
-    def test_f8_04_tms_env_example_has_no_secrets(self):
-        """Verify config/envs/zolexora-tms/tms.env.example contains only non-secret placeholders."""
-        example_path = get_tms_env_example_path()
-        self.assertTrue(example_path.is_file(), f"Missing example env: {example_path}")
-        content = example_path.read_text(encoding="utf-8")
-        # Ensure dummy or placeholder patterns are used
-        self.assertIn("PORT=4030", content)
-        self.assertIn("your_postgres_password_here", content)
-        self.assertNotIn("SUPER_SECRET_PROD_PASSWORD_12345", content)
+    def test_f8_04_no_env_files_or_templates(self):
+        """Infisical is the only secret source: no .env files or .env templates may exist for TMS."""
+        root = get_repo_root()
+        found = [
+            p for d in (root / "products" / "zolexora-tms", root / "config" / "envs" / "zolexora-tms") if d.exists()
+            for p in d.rglob("*") if p.is_file() and "node_modules" not in p.parts and (p.name.startswith(".env") or ".env." in p.name or p.name.endswith(".env"))
+        ]
+        self.assertEqual(found, [], f"Env files/templates found (use Infisical): {found}")
 
     def test_f8_05_no_private_keys_committed_in_tms(self):
         """Verify no RSA/PEM private keys exist committed in products/zolexora-tms/."""

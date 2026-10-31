@@ -266,13 +266,6 @@ class TestTier2Domain5GitignoreRules(unittest.TestCase):
             rc, _, _ = run_cmd(["git", "check-ignore", "-q", f"products/zolexora-tms/{env_file}"])
             self.assertEqual(rc, 0, f"File {env_file} must be ignored by git")
 
-    def test_b5_05_env_example_not_ignored(self):
-        """Verify config/envs/zolexora-tms/tms.env.example is explicitly NOT ignored."""
-        rc, _, _ = run_cmd(
-            ["git", "check-ignore", "-q", "config/envs/zolexora-tms/tms.env.example"],
-        )
-        self.assertNotEqual(rc, 0, "tms.env.example must NOT be ignored by git")
-
 
 if __name__ == "__main__":
     unittest.main()

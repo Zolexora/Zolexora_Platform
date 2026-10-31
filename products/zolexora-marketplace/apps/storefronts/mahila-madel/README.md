@@ -62,53 +62,7 @@ shopkart/
 
 ## 🚀 Quick Start
 
-### Prerequisites
-- Node.js >= 16
-- MongoDB (local or MongoDB Atlas)
-
----
-
-### 1. Setup Environment
-
-```bash
-cd server
-cp .env .env.local
-```
-
-Edit `server/.env`:
-```env
-PORT=5000
-MONGO_URI=mongodb://localhost:27017/shopkart
-JWT_SECRET=your_super_secret_key_change_this_in_production
-NODE_ENV=development
-```
-
----
-
-### 2. Install & Run Backend
-
-```bash
-cd server
-npm install
-node seed.js       # Seed database with sample data
-npm run dev        # Start server (nodemon)
-```
-
-Server runs on: http://localhost:5000
-
----
-
-### 3. Install & Run Frontend
-
-```bash
-cd client
-npm install
-npm start
-```
-
-Frontend runs on: http://localhost:3000
-
----
+This storefront has `web/` and `mobile/` apps only; the API is `services/marketplace-api`. Secrets come from Infisical (`/Zolexora_Specfic_Credentials/Zolexora_Marketplace`); see the Marketplace README for setup.
 
 ## 🔑 Demo Accounts
 

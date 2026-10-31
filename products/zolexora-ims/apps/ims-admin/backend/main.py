@@ -2,16 +2,6 @@ import os
 from datetime import datetime, timezone
 from typing import List
 
-try:
-    from dotenv import load_dotenv
-    _backend_dir = os.path.dirname(os.path.abspath(__file__))
-    for _env_file in (".env.local", "env.local", ".env"):
-        _target = os.path.join(_backend_dir, _env_file)
-        if os.path.isfile(_target):
-            load_dotenv(_target)
-except ImportError:
-    pass
-
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 

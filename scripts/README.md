@@ -45,7 +45,7 @@ Product-specific deployment, lifecycle, and testing scripts are located in their
 | **Zolexora AI** | [`products/zolexora-ai/scripts/`](../products/zolexora-ai/scripts/) | `deploy-azure.sh`, `seed-ai-memory.sh`, `setup-azure-resources.sh` |
 | **Zolexora Engage** | [`products/zolexora-engage/scripts/`](../products/zolexora-engage/scripts/) | `start-project.sh`, `start-web-dev.sh`, `run-post-merge-hooks.sh` |
 | **Zolexora ERP** | [`products/zolexora-erp/scripts/`](../products/zolexora-erp/scripts/) | `bootstrap-frappe-site.sh`, `backup-frappe-site.sh`, `restore-frappe-site.sh`, `check-frappe-stack-health.sh`, `cleanup-workspaces.py`, `tests/` |
-| **Zolexora IMS** | [`products/zolexora-ims/scripts/`](../products/zolexora-ims/scripts/) | `setup.sh`, `deploy.sh`, `check-health.sh`, `db-ops.sh`, `docker-ops.sh`, `menu.sh`, `run-all-tests.sh`, `sync-env.sh`, `mcp-payments-server.py` |
+| **Zolexora IMS** | [`products/zolexora-ims/scripts/`](../products/zolexora-ims/scripts/) | `setup.sh`, `deploy.sh`, `check-health.sh`, `db-ops.sh`, `docker-ops.sh`, `menu.sh`, `run-all-tests.sh`, `mcp-payments-server.py` |
 | **Zolexora IronClub** | [`products/zolexora-ironclub/scripts/`](../products/zolexora-ironclub/scripts/) | `dev.sh`, `test.sh` |
 | **Zolexora Marketplace** | [`products/zolexora-marketplace/scripts/`](../products/zolexora-marketplace/scripts/) | `check-openapi-drift.sh`, `generate-openapi.py`, `validate-doc-links.py`, `verify-workspace.mjs` |
 | **Zolexora TMS** | [`products/zolexora-tms/scripts/`](../products/zolexora-tms/scripts/) | `docker-start.sh`, `local-start.sh` |

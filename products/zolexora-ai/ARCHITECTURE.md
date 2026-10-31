@@ -213,7 +213,6 @@ swarm-factory/
 │   └── seed_memory.sh           Pre-seed memory store
 │
 ├── .github/workflows/           CI/CD pipelines
-├── .env.example                 Required environment variables
 ├── requirements.txt             Python dependencies
 ├── docker-compose.yml           Root dev compose
 └── README.md
@@ -306,7 +305,7 @@ class DeployOutput(BaseModel):
 ```bash
 # Prerequisites: Python 3.11+, Node 20+, Docker
 
-cp .env.example .env        # fill in Azure keys
+infisical login             # Azure keys live in Infisical
 pip install -r requirements.txt
 cd frontend && npm install && cd ..
 

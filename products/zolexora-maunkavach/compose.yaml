@@ -7,15 +7,13 @@ services:
       dockerfile: products/zolexora-maunkavach/Dockerfile.api
     container_name: maun-kavach-backend
     restart: unless-stopped
-    env_file:
-      - path: .env
-        required: false
     environment:
       - PORT=8080
       - NODE_ENV=production
       - SUPABASE_URL=${SUPABASE_URL:-}
-      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY:-}
-      - JWT_SECRET=${JWT_SECRET:-}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - SUPABASE_STORAGE_BUCKET=${SUPABASE_STORAGE_BUCKET:-}
+      - JWT_SECRET=${JWT_SECRET}
       - DATABASE_URL=${DATABASE_URL:-}
     healthcheck:
       test:

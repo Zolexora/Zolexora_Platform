@@ -9,14 +9,13 @@ log() {
   printf '%s [%s] [%s] %s\n' "$(date -Iseconds)" "$level" "$SCRIPT_NAME" "$*"
 }
 
-if [ ! -f config/envs/zolexora-erp/erp.env ]; then
-  log "ERROR" "missing .env"
-  exit 1
+SELF="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
+cd "$(git -C "$(dirname "$SELF")" rev-parse --show-toplevel)/products/zolexora-erp"
+# Secrets come only from Infisical (products/zolexora-erp/.infisical.json); no .env, no fallback.
+if [ -z "${ZX_SECRETS_LOADED:-}" ]; then
+  export ZX_SECRETS_LOADED=1
+  exec bash ../../scripts/setup/with-infisical.sh . bash "$SELF" "$@"
 fi
-
-set -a
-source config/envs/zolexora-erp/erp.env
-set +a
 
 SITE="${SITE_NAME:-site1.example.com}"
 HTTP_PORT="${HTTP_PORT:-8080}"

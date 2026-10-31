@@ -6,21 +6,9 @@ cd "$(dirname "$0")/../../.."
 REPO_ROOT="$(pwd)"
 
 COMPOSE_FILE="apps/zolexora-platform-admin/compose.yaml"
-INFISICAL_PROJECT_ID="188824cd-59ce-468f-b60f-f2da7aeefe63"
-INFISICAL_ENV="dev"
-INFISICAL_PATH="/platform-admin"
-
-# Non-blocking secret injection helper
+# Secrets come only from Infisical (apps/zolexora-platform-admin/.infisical.json); no fallback.
 run_compose() {
-  if [ -n "$INFISICAL_TOKEN" ] || [ -n "$INFISICAL_ACCESS_TOKEN" ] || { command -v infisical >/dev/null 2>&1 && infisical login status >/dev/null 2>&1; }; then
-    echo "🔐 Infisical credentials detected - executing with runtime secret injection..."
-    infisical run --projectId="$INFISICAL_PROJECT_ID" --env="$INFISICAL_ENV" --path="$INFISICAL_PATH" -- docker compose -f "$COMPOSE_FILE" "$@"
-  else
-    echo "⚠️  Infisical not authenticated or unavailable."
-    echo "ℹ️  Run 'infisical login' or export INFISICAL_TOKEN to enable automatic secret injection."
-    echo "ℹ️  Executing docker compose with existing environment..."
-    docker compose -f "$COMPOSE_FILE" "$@"
-  fi
+  bash scripts/setup/with-infisical.sh apps/zolexora-platform-admin docker compose -f "$COMPOSE_FILE" "$@"
 }
 
 ACTION="${1:-start}"

@@ -16,7 +16,7 @@ infisical login          # one-time; secrets come only from Infisical
 Every command that needs secrets runs through one wrapper:
 
 ```bash
-bash products/zolexora-tms/scripts/with-secrets.sh <command>
+bash scripts/setup/with-infisical.sh products/zolexora-tms <command>
 ```
 
 It injects every secret under one Infisical folder tree, recursively (env from `INFISICAL_ENV`, default `dev`):
@@ -25,11 +25,9 @@ It injects every secret under one Infisical folder tree, recursively (env from `
 |---|---|---|
 | Zolexora_Platform (`c4ac7d07-…`) | `/Zolexora_Specfic_Credentials/Zolexora_TMS` | `Cache_And_Async/Redis`, `Database/Postgres_Database`, `Firebase_Crediential/*`, `Object_Storage`, `Media_CDN/Cloudinary`, `Core_Application`, `Payment_Gateway`, `Cloudflare`, `Docker_Images` |
 
-The backend reads the vault's own key names (`DATABASE_ZOLEXORA_TMS_*`, `REDIS_HOST`/`REDIS_PORT`/…, `STORAGE_*`, `NEXT_PUBLIC_FIREBASE_PROJECT_ID`) as well as the canonical ones in `.env.example`.
+The backend reads the vault's own key names (`DATABASE_ZOLEXORA_TMS_*`, `REDIS_HOST`/`REDIS_PORT`/…, `STORAGE_*`, `NEXT_PUBLIC_FIREBASE_PROJECT_ID`) as well as the canonical names listed in `apps/backend/app/core/config.py`.
 
-If Infisical isn't authenticated, the wrapper warns and continues with the current shell environment (non-blocking).
-
-The keys that must exist in Infisical are listed in [`.env.example`](.env.example) (reference only — don't copy it to `.env`).
+If Infisical isn't installed or authenticated, the wrapper exits with an error. There is no fallback and no `.env` file.
 
 ### Running
 

@@ -4,7 +4,7 @@ services:
     container_name: ttc-postgres
     environment:
       POSTGRES_USER: ttc
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ttc
     volumes:
     - postgres_data:/var/lib/postgresql/data
@@ -48,7 +48,7 @@ services:
       dockerfile: Dockerfile
     container_name: ttc-backend
     environment:
-    - DATABASE_URL=postgresql+psycopg://ttc:password@postgres:5432/ttc
+    - DATABASE_URL=postgresql+psycopg://ttc:${POSTGRES_PASSWORD}@postgres:5432/ttc
     - REDIS_URL=redis://redis:6379
     depends_on:
       postgres:

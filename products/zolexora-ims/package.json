@@ -22,7 +22,6 @@
     "docker:down": "bash scripts/docker-ops.sh down",
     "db:migrate": "bash scripts/db-ops.sh migrate",
     "db:seed": "bash scripts/db-ops.sh seed",
-    "env:audit": "bash scripts/sync-env.sh audit",
     "menu": "bash scripts/menu.sh"
   },
   "devDependencies": {

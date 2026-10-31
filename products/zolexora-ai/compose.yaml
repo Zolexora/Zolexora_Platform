@@ -23,17 +23,42 @@ services:
       context: .
       dockerfile: infra/Dockerfile
       target: production
-    env_file: .env
     ports:
     - 4090:4090
     environment:
     - PYTHONUNBUFFERED=1
+    - LLM_PROVIDER
+    - AZURE_OPENAI_API_VERSION
+    - AZURE_OPENAI_DEPLOYMENT
+    - AZURE_OPENAI_DEPLOYMENT_GPT4O
+    - AZURE_OPENAI_DEPLOYMENT_PHI4
+    - AZURE_OPENAI_DEPLOYMENT_MINI
+    - FALLBACK_MODEL_PRIMARY
+    - FALLBACK_MODEL_SECONDARY
+    - FALLBACK_MODEL_TERTIARY
+    - AZURE_SEARCH_ENDPOINT
+    - AZURE_SEARCH_API_KEY
+    - AZURE_SEARCH_INDEX_NAME
+    - AZURE_SUBSCRIPTION_ID
+    - AZURE_RESOURCE_GROUP
+    - AZURE_CONTAINER_REGISTRY
+    - AZURE_CONTAINER_APP_ENV
+    - GITHUB_TOKEN
+    - GITHUB_ORG
+    - BING_SEARCH_API_KEY
+    - APP_ENV
+    - LOG_LEVEL
+    - MAX_CONCURRENT_JOBS
+    - JOB_TIMEOUT_SECONDS
+    - SESSION_STORE_PATH
+    - RATE_LIMIT_REQUESTS
+    - RATE_LIMIT_WINDOW_SECONDS
     - PYTHONPATH=/app/backend
     - REDIS_URL=redis://redis:6379/0
-    - API_KEY=swarm-factory-dev-key
+    - API_KEY=${API_KEY}
     - AZURE_OPENAI_ENDPOINT=https://dummy.openai.azure.com/
-    - AZURE_OPENAI_API_KEY=dummy
-    - SECRET_KEY=dummy_secret
+    - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
+    - SECRET_KEY=${SECRET_KEY}
     depends_on:
     - redis
     restart: unless-stopped
@@ -55,15 +80,40 @@ services:
       context: .
       dockerfile: infra/Dockerfile
       target: production
-    env_file: .env
     environment:
     - PYTHONUNBUFFERED=1
+    - LLM_PROVIDER
+    - AZURE_OPENAI_API_VERSION
+    - AZURE_OPENAI_DEPLOYMENT
+    - AZURE_OPENAI_DEPLOYMENT_GPT4O
+    - AZURE_OPENAI_DEPLOYMENT_PHI4
+    - AZURE_OPENAI_DEPLOYMENT_MINI
+    - FALLBACK_MODEL_PRIMARY
+    - FALLBACK_MODEL_SECONDARY
+    - FALLBACK_MODEL_TERTIARY
+    - AZURE_SEARCH_ENDPOINT
+    - AZURE_SEARCH_API_KEY
+    - AZURE_SEARCH_INDEX_NAME
+    - AZURE_SUBSCRIPTION_ID
+    - AZURE_RESOURCE_GROUP
+    - AZURE_CONTAINER_REGISTRY
+    - AZURE_CONTAINER_APP_ENV
+    - GITHUB_TOKEN
+    - GITHUB_ORG
+    - BING_SEARCH_API_KEY
+    - APP_ENV
+    - LOG_LEVEL
+    - MAX_CONCURRENT_JOBS
+    - JOB_TIMEOUT_SECONDS
+    - SESSION_STORE_PATH
+    - RATE_LIMIT_REQUESTS
+    - RATE_LIMIT_WINDOW_SECONDS
     - PYTHONPATH=/app/backend
     - REDIS_URL=redis://redis:6379/0
-    - API_KEY=swarm-factory-dev-key
+    - API_KEY=${API_KEY}
     - AZURE_OPENAI_ENDPOINT=https://dummy.openai.azure.com/
-    - AZURE_OPENAI_API_KEY=dummy
-    - SECRET_KEY=dummy_secret
+    - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
+    - SECRET_KEY=${SECRET_KEY}
     command: celery -A backend.celery_app worker --loglevel=info --concurrency=4
     depends_on:
     - redis
@@ -90,9 +140,9 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        VITE_API_KEY: swarm-factory-dev-key
+        VITE_API_KEY: ${VITE_API_KEY}
     environment:
-    - VITE_API_KEY=swarm-factory-dev-key
+    - VITE_API_KEY=${VITE_API_KEY}
     ports: []
     depends_on:
     - backend

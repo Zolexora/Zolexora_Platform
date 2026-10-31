@@ -70,7 +70,9 @@ cd "${REPO_DIR}"
 git pull origin dev
 
 echo -e "Starting Docker stack with compose..."
-docker compose up -d --build
+: "${INFISICAL_TOKEN:?export INFISICAL_TOKEN (machine identity) — secrets come only from Infisical}"
+docker compose pull --ignore-pull-failures
+infisical run --projectId=c4ac7d07-f26f-4fb8-bd04-6d3e037079f9 --env=prod --path=/Zolexora_Specfic_Credentials/Zolexora_IMS --recursive -- docker compose up -d
 
 echo -e "\n${GREEN}${BOLD}══════════════════════════════════════════════════════════════════════${NC}"
 echo -e "${GREEN}${BOLD}  🎉 SUCCESS! Zolexora IMS is running 24/7 on your Always-Free VPS!   ${NC}"

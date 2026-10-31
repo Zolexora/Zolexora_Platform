@@ -21,7 +21,7 @@ EnvList = Annotated[List[str], NoDecode, BeforeValidator(_split_list)]
 
 class Settings(BaseSettings):
     # Secrets come only from the process environment, injected by `infisical run`
-    # (see products/zolexora-tms/scripts/with-secrets.sh). No .env files are read.
+    # (see scripts/setup/with-infisical.sh). No .env files are read.
     model_config = SettingsConfigDict(extra="ignore")
 
     # Core Application

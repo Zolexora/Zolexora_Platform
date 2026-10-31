@@ -275,7 +275,9 @@ data = await client.schema("ims").from_("products").select("*").execute()
 
 ---
 
-## Part 3 — `config/envs/zolexora-platform-admin/.env.example`
+## Part 3 — Platform Admin secrets (Infisical `/Zolexora_Specfic_Credentials/Zolexora_Admin_Panel`)
+
+> Superseded 2026-10-31: there is no `.env.example`; these keys live in Infisical (names in `docs/secrets.md`).
 
 ### What It Is
 A single, clearly organised environment variable template that consolidates all database credentials for the entire platform into one file — replacing 10+ scattered `.env` files.
@@ -375,7 +377,7 @@ Step 2: Run migrate-schemas.sql on each project
         → Takes ~2 minutes per project
 
 Step 3: Load all keys into Infisical
-        → Follow config/envs/zolexora-platform-admin/.env.example
+        → Add the keys to Infisical (docs/secrets.md)
         → Everything in one place
 
 Step 4: Build db/ connection manager in Platform Admin
@@ -416,6 +418,6 @@ infisical login
 | `config.py` | `products/platform-admin/backend/app/db/` | ~80 lines Python |
 | `connections.py` | `products/platform-admin/backend/app/db/` | ~120 lines Python |
 | `health.py` | `products/platform-admin/backend/app/db/` | ~60 lines Python |
-| `.env.example` | `config/envs/zolexora-platform-admin/` | ~50 lines |
+| Platform Admin keys | Infisical `/Zolexora_Specfic_Credentials/Zolexora_Admin_Panel` | — |
 
 **Nothing is built yet. Read this report and confirm when ready.**

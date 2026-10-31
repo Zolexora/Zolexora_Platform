@@ -18,7 +18,9 @@ CYAN='\033[0;36m'
 BOLD='\033[1m'
 NC='\033[0m'
 
-COMPOSE_FILE="${ROOT_DIR}/docker-compose.yml"
+COMPOSE_FILE="${ROOT_DIR}/compose.yaml"
+# Secrets come only from Infisical; no .env, no fallback.
+dcs() { bash "${ROOT_DIR}/../../scripts/setup/with-infisical.sh" "${ROOT_DIR}" docker compose -f "${COMPOSE_FILE}" "$@"; }
 
 print_help() {
   echo -e "${CYAN}${BOLD}╔══════════════════════════════════════════════════════════════════════╗${NC}"
@@ -60,7 +62,8 @@ check_docker() {
 cmd_up() {
   check_docker
   echo -e "${BLUE}${BOLD}🚀 Starting Zolexora IMS Docker Stack...${NC}"
-  docker compose -f "${COMPOSE_FILE}" up -d --build
+  docker compose -f "${COMPOSE_FILE}" pull --ignore-pull-failures
+  dcs up -d
   echo -e "${GREEN}✓ Container stack initiated in background.${NC}\n"
   cmd_ps
 }
@@ -77,10 +80,10 @@ cmd_build() {
   local svc="${1:-}"
   if [[ -n "${svc}" ]]; then
     echo -e "${BLUE}${BOLD}🔨 Building container service: ${svc}...${NC}"
-    docker compose -f "${COMPOSE_FILE}" build "${svc}"
+    dcs build "${svc}"
   else
     echo -e "${BLUE}${BOLD}🔨 Building all container images in parallel...${NC}"
-    docker compose -f "${COMPOSE_FILE}" build
+    dcs build
   fi
   echo -e "${GREEN}✓ Container build completed successfully.${NC}"
 }
@@ -90,10 +93,10 @@ cmd_restart() {
   local svc="${1:-}"
   if [[ -n "${svc}" ]]; then
     echo -e "${CYAN}Restarting ${svc}...${NC}"
-    docker compose -f "${COMPOSE_FILE}" restart "${svc}"
+    dcs restart "${svc}"
   else
     echo -e "${CYAN}Restarting all services...${NC}"
-    docker compose -f "${COMPOSE_FILE}" restart
+    dcs restart
   fi
   echo -e "${GREEN}✓ Restart complete.${NC}"
 }

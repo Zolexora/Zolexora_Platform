@@ -6,16 +6,6 @@ from typing import List, Optional, Dict, Any
 from fastapi import FastAPI, Depends, HTTPException, Query, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-try:
-    from dotenv import load_dotenv
-    _backend_dir = os.path.dirname(os.path.abspath(__file__))
-    for _env_file in (".env.local", "env.local", ".env"):
-        _target = os.path.join(_backend_dir, _env_file)
-        if os.path.isfile(_target):
-            load_dotenv(_target)
-except ImportError:
-    pass
-
 # Add path for backend-shared
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../backend-shared")))
 try:

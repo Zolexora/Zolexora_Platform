@@ -11,8 +11,6 @@ env.local
 **/env.local
 *.env.local
 **/*.env.local
-!.env.example
-!**/.env.example
 
 # Credentials, Keys & Secrets
 *.pem

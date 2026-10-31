@@ -236,7 +236,8 @@ deploy_docker() {
   cd "${ROOT_DIR}"
   if command -v docker >/dev/null 2>&1; then
     echo -e "  • Building and starting container stack with Docker Compose..."
-    docker compose up -d --build
+    docker compose pull --ignore-pull-failures
+    bash "${ROOT_DIR}/../../scripts/setup/with-infisical.sh" "${ROOT_DIR}" docker compose up -d
     echo -e "  ${GREEN}✓ All container services running in background.${NC}"
     docker compose ps
   else

@@ -49,10 +49,11 @@ When creating, updating, or debugging Docker infrastructure for any product:
 
 ---
 
-## 3. Secret Management (Infisical)
+## 3. Secret Management (Infisical only)
 
-- **Non-blocking Auth**: Always check Infisical login non-blockingly before executing commands. If not authenticated, notify the developer and fall back cleanly to local `.env` files. Never halt or hang.
-- **No Plaintext Leaks**: Never commit decrypted secrets or print production credentials into chat or console logs.
+- **Infisical is the only secret source.** No `.env` files, no `.env.example` templates, no fallback to local env, no secret defaults in code or Compose. See [ADR 0003](docs/architecture/adrs/0003-secrets-management-infisical.md) and [docs/secrets.md](docs/secrets.md).
+- **One entry point:** run anything that needs secrets via `bash scripts/setup/with-infisical.sh <product-dir> <command>`. It fails fast (never hangs) if Infisical is unavailable; report that to the developer instead of working around it.
+- **No Plaintext Leaks**: Never commit decrypted secrets or print secret values into chat or console logs (key names are fine).
 
 ---
 

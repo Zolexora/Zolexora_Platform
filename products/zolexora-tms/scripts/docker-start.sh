@@ -6,11 +6,11 @@ cd "$(dirname "$0")/../../.."
 REPO_ROOT="$(pwd)"
 
 COMPOSE_FILE="products/zolexora-tms/compose.yaml"
-WITH_SECRETS="products/zolexora-tms/scripts/with-secrets.sh"
+WITH_SECRETS="scripts/setup/with-infisical.sh"
 
-# All secrets come from Infisical via the shared wrapper (non-blocking)
+# All secrets come from Infisical via the shared wrapper (no fallback)
 run_compose() {
-  bash "$WITH_SECRETS" docker compose -f "$COMPOSE_FILE" "$@"
+  bash "$WITH_SECRETS" products/zolexora-tms docker compose -f "$COMPOSE_FILE" "$@"
 }
 
 start_stack() {

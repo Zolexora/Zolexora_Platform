@@ -26,19 +26,12 @@ echo -e "  ${GREEN}✔ pnpm $(pnpm --version)${NC}"
 
 # ── 2. Infisical detection ────────────────────────────────────
 echo -e "\n${YELLOW}[2/4] Secrets Manager...${NC}"
-USE_INFISICAL=false
-if [ -n "$INFISICAL_TOKEN" ] || [ -n "$INFISICAL_ACCESS_TOKEN" ] || { command -v infisical >/dev/null 2>&1 && infisical login status >/dev/null 2>&1; }; then
-  USE_INFISICAL=true
-  echo -e "  ${GREEN}✔ Infisical CLI found & authenticated — secrets will be injected automatically.${NC}"
-elif command -v infisical >/dev/null 2>&1; then
-  echo -e "  ${YELLOW}⚠ Infisical installed but not logged in.${NC}"
-  echo -e "    Run: ${BLUE}infisical login${NC} or export INFISICAL_TOKEN to enable automatic secret injection."
-  echo -e "    Falling back to local .env files."
-else
-  echo -e "  ${YELLOW}⚠ Infisical CLI not installed.${NC}"
-  echo -e "    Install with: ${BLUE}curl -1sLf 'https://dl.cloudsmith.io/public/infisical/infisical-cli/setup.deb.sh' | sudo bash && sudo apt-get install -y infisical${NC}"
-  echo -e "    Falling back to local .env files."
+# Infisical is the only secret source — stop here if it is unavailable (no .env fallback).
+if [ -z "${INFISICAL_TOKEN:-}" ] && ! { command -v infisical >/dev/null 2>&1 && timeout 15 infisical user get token >/dev/null 2>&1; }; then
+  echo -e "  ${RED}✖ Infisical CLI missing or not logged in. Run: infisical login (or export INFISICAL_TOKEN).${NC}"
+  exit 1
 fi
+echo -e "  ${GREEN}✔ Infisical authenticated — secrets will be injected.${NC}"
 
 # ── 3. Install workspace dependencies ────────────────────────
 echo -e "\n${YELLOW}[3/4] Installing monorepo dependencies...${NC}"
@@ -131,6 +124,8 @@ fi
 NAME="${PRODUCTS[$IDX]}"
 COMPOSE_FILE="${PATHS[$IDX]}"
 DIR=$(dirname "$COMPOSE_FILE")
+SECRETS_DIR="$DIR"; [ "$DIR" = "." ] && SECRETS_DIR="products/zolexora-erp"
+with_secrets() { bash scripts/setup/with-infisical.sh "$SECRETS_DIR" "$@"; }
 ACTION="${CLI_ACTION:-up}"
 
 if [ "$ACTION" = "stop" ] || [ "$ACTION" = "down" ]; then
@@ -142,7 +137,7 @@ fi
 
 if [ "$ACTION" = "build" ]; then
   echo -e "\n${YELLOW}Building images for $NAME...${NC}"
-  docker compose -f "$COMPOSE_FILE" build
+  with_secrets docker compose -f "$COMPOSE_FILE" build
   echo -e "${GREEN}✔ Built images for $NAME.${NC}"
   exit 0
 fi
@@ -171,36 +166,9 @@ fi
 
 echo -e "\n${GREEN}Starting → $NAME${NC}"
 
-# ── .env fallback ─────────────────────────────────────────────
-if [ "$USE_INFISICAL" = false ]; then
-  if [ ! -f "$DIR/.env" ]; then
-    # Look for .env.example in config/envs/<product>/
-    PRODUCT_KEY=$(basename "$DIR")
-    EXAMPLE=$(find "config/envs/$PRODUCT_KEY" -name "*.env.example" 2>/dev/null | head -1)
-    if [ -n "$EXAMPLE" ]; then
-      cp "$EXAMPLE" "$DIR/.env"
-      echo -e "  ${YELLOW}⚠ Copied $(basename "$EXAMPLE") → $DIR/.env (fill in real values!)${NC}"
-    else
-      echo -e "  ${YELLOW}⚠ No .env found for $NAME. Add secrets to config/envs/$PRODUCT_KEY/ or use Infisical.${NC}"
-    fi
-  fi
-fi
-
-# ── Launch Docker Compose ─────────────────────────────────────
-if [ "$USE_INFISICAL" = true ] && [ -f "$DIR/.infisical.json" ]; then
-  WORKSPACE_ID=$(python3 -c "import json; d=json.load(open('$DIR/.infisical.json')); print(d.get('workspaceId',''))" 2>/dev/null || echo "")
-  SECRET_PATH=$(python3 -c "import json; d=json.load(open('$DIR/.infisical.json')); print(d.get('secretsPath','/'))" 2>/dev/null || echo "/")
-  ENV_SLUG=$(python3 -c "import json; d=json.load(open('$DIR/.infisical.json')); print(d.get('defaultEnvironment','dev'))" 2>/dev/null || echo "dev")
-  PROJECT_FLAG=""
-  if [ -n "$WORKSPACE_ID" ]; then
-    PROJECT_FLAG="--projectId=$WORKSPACE_ID"
-  fi
-  echo -e "  ${BLUE}Injecting secrets from Infisical path: $SECRET_PATH (env: $ENV_SLUG, project: ${WORKSPACE_ID:-default})${NC}"
-  infisical run $PROJECT_FLAG --path="$SECRET_PATH" --env="$ENV_SLUG" -- \
-    docker compose -f "$COMPOSE_FILE" up -d
-else
-  docker compose -f "$COMPOSE_FILE" up -d
-fi
+# ── Launch Docker Compose (secrets from Infisical only) ───────
+docker compose -f "$COMPOSE_FILE" pull --ignore-pull-failures
+with_secrets docker compose -f "$COMPOSE_FILE" up -d
 
 echo -e "\n=========================================================="
 echo -e "${GREEN}✅  $NAME is now running!${NC}"

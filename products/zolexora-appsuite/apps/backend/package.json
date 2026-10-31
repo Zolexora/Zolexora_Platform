@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "dev:infisical": "infisical run --env=dev -- tsx watch src/index.ts",
+    "dev:infisical": "bash ../../../../scripts/setup/with-infisical.sh ../.. tsx watch src/index.ts",
     "build": "tsc",
     "start": "tsx src/index.ts",
     "type-check": "tsc --noEmit"
@@ -14,7 +14,6 @@
     "@zolexora/user-auth-firebase": "workspace:*",
     "@zolexora/user-auth-zolexora": "workspace:^",
     "cors": "^2.8.5",
-    "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "pg": "^8.13.3",
     "tsx": "^4.19.3"

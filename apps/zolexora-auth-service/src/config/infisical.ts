@@ -1,6 +1,5 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import dotenv from "dotenv";
 
 const execFileAsync = promisify(execFile);
 
@@ -256,16 +255,13 @@ export async function syncSecretsFromInfisical(options: SyncOptions = {}): Promi
   const siteUrl = (options.siteUrl || process.env.INFISICAL_SITE_URL || "https://app.infisical.com").replace(/\/$/, "");
   const timeoutMs = options.timeoutMs ?? 3000;
 
-  dotenv.config();
-
   // Fast path for test runs unless explicitly forced
   if (
     (process.env.NODE_ENV === "test" && process.env.INFISICAL_FORCE_SYNC !== "true") ||
-    process.env.INFISICAL_DISABLE === "true" ||
     options.forceFallback
   ) {
     resolveAliases();
-    diagnostics.push("[INFO] Test or local-fallback mode: skipping external Infisical sync.");
+    diagnostics.push("[INFO] Test mode: skipping external Infisical sync.");
     _lastDiagnostics = {
       status: "environment_fallback",
       provider: "process_environment",
@@ -292,16 +288,21 @@ export async function syncSecretsFromInfisical(options: SyncOptions = {}): Promi
     provider = "infisical_cloud_api";
   }
 
-  // 3. Fallback to process.env and defaults
+  // 3. Secrets already injected by `infisical run` (scripts/setup/with-infisical.sh) are accepted;
+  //    anything else is an error. There is no .env or default fallback.
   if (syncedCount === null) {
-    status = "environment_fallback";
-    provider = "process_environment";
-    diagnostics.push("[NOTICE] Vault unreachable or unauthenticated; engaging structured environment fallback.");
-    let envCount = 0;
-    for (const key of Object.keys(process.env)) {
-      if (process.env[key]) envCount++;
+    resolveAliases();
+    const missing = CRITICAL_KEYS.filter((k) => !process.env[k]?.trim());
+    if (missing.length > 0) {
+      throw new Error(
+        `[SECRETS] Infisical secrets unavailable (project ${workspaceId}, env ${environment}, path ${secretsPath}); ` +
+          `missing: ${missing.join(", ")}. Start via scripts/setup/with-infisical.sh or set INFISICAL_TOKEN.\n` +
+          diagnostics.join("\n"),
+      );
     }
-    syncedCount = envCount;
+    provider = "process_environment";
+    syncedCount = CRITICAL_KEYS.length;
+    diagnostics.push("[INFO] Using secrets injected into the process by `infisical run`.");
   }
 
   resolveAliases();

@@ -12,7 +12,7 @@ services:
     container_name: marketplace-postgres
     environment:
       POSTGRES_USER: zolexora
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: marketplace
     volumes:
     - postgres_data:/var/lib/postgresql/data
@@ -37,9 +37,9 @@ services:
       dockerfile: ../../../../infrastructure/containers/docker/Dockerfile.api-python
     container_name: marketplace-backend
     environment:
-    - DATABASE_URL=postgresql://zolexora:password@postgres:5432/marketplace
+    - DATABASE_URL=postgresql://zolexora:${POSTGRES_PASSWORD}@postgres:5432/marketplace
     - MONGO_URL=mongodb://mongo:27017/marketplace
-    - AUTH_OTP_PEPPER=dummy_pepper
+    - AUTH_OTP_PEPPER=${AUTH_OTP_PEPPER}
     depends_on:
       mongo:
         condition: service_healthy

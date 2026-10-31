@@ -11,7 +11,6 @@ One pnpm workspace (root `pnpm-workspace.yaml`) orchestrated by Turborepo. Produ
 | `platform/` | Cross-product runtime modules: `api-shield` (Cloudflare Worker), `auth/user-auth-core`, `auth/user-auth-firebase`, `functions`. |
 | `packages/` | Shared libraries/configs: `api-contracts`, `auth-client`, `utils`, `tsconfig`, `eslint-config`. |
 | `infrastructure/` | Shared Dockerfiles (`containers/docker`), the shared nginx gateway image (`containers/compose`), database schemas/migrations (`database`, used by `supabase/`), cloud specs (`cloud`). |
-| `config/envs/<product>/` | `*.env.example` templates; real values come from Infisical. |
 | `scripts/` | Repo-wide dev/setup/docker scripts (see `scripts/README.md`). |
 | `tests/e2e/` | Cross-product E2E suites (`auth-service`, `tms`). |
 
@@ -48,3 +47,4 @@ Three auth tracks (public user, org employee, platform admin) are served by `app
 - Decisions: [architecture/adrs/](architecture/adrs/)
 - Infrastructure strategy (databases, deployment, API security, sharding): [architecture/infrastructure/](architecture/infrastructure/)
 - Ports: [ports.md](ports.md)
+- Secrets: [secrets.md](secrets.md)

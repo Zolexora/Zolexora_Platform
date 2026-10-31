@@ -26,11 +26,6 @@ def get_infisical_config_path() -> Path:
     return get_repo_root() / "products" / "zolexora-tms" / ".infisical.json"
 
 
-def get_tms_env_example_path() -> Path:
-    """Return the path to TMS example environment config."""
-    return get_repo_root() / "config" / "envs" / "zolexora-tms" / "tms.env.example"
-
-
 def get_nginx_conf_path() -> Path:
     """Return the path to TMS Nginx default.conf."""
     return get_repo_root() / "products" / "zolexora-tms" / "nginx-conf.d" / "default.conf"

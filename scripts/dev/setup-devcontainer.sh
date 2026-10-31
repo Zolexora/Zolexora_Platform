@@ -213,20 +213,10 @@ else
 fi
 
 # =============================================================================
-# 12. Environment files — copy .env.example → .env where missing
+# 12. Secrets — Infisical only (no .env files). Just report login state.
 # =============================================================================
-log "[12/12] Environment files"
-ENV_SOURCES=(
-    "config/envs/zolexora-erp/erp.env"
-)
-for env_file in "${ENV_SOURCES[@]}"; do
-    example="${WORKSPACE_DIR}/${env_file}.example"
-    target="${WORKSPACE_DIR}/${env_file}"
-    if [ -f "${example}" ] && [ ! -f "${target}" ]; then
-        cp "${example}" "${target}"
-        ok "Created ${env_file} from example"
-    fi
-done
+log "[12/12] Secrets (Infisical)"
+if timeout 15 infisical user get token >/dev/null 2>&1; then ok "Infisical logged in"; else echo "    ⚠ Run 'infisical login' before starting any product"; fi
 
 # Fix permissions for non-root user
 CURRENT_USER="$(whoami)"

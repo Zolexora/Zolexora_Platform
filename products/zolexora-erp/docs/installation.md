@@ -9,7 +9,7 @@
 
 ## Local Setup
 
-1. Copy `.env.example` to `.env`.
+1. Add the ERP keys from `docs/secrets.md` to Infisical (`/Zolexora_Specfic_Credentials/Zolexora_ERP`) and run `infisical login`.
 2. Update environment values for your database, Redis, email, and site settings.
 3. Start the containers:
 

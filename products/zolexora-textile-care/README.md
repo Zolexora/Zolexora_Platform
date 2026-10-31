@@ -28,7 +28,7 @@ pnpm dev
 
 ## Environment setup
 
-Copy `.env.example` to `.env` and adjust values for your local environment.
+Secrets come only from Infisical (`/Zolexora_Specfic_Credentials/The_Textile_Care`); `scripts/start-docker.sh` injects them. Required keys: [docs/secrets.md](../../docs/secrets.md).
 
 ## Testing
 

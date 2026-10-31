@@ -14,7 +14,7 @@ products/<product-name>/
 ├── Dockerfile.<service> (or in apps/) # Multi-stage container definitions
 ├── scripts/
 │   └── docker-start.sh               # Product Docker management script
-└── .infisical.json                   # Infisical secret linkage (if applicable)
+└── .infisical.json                   # Infisical folder for this product (required)
 ```
 
 ---
@@ -89,8 +89,9 @@ Every product's `docker-start.sh` MUST:
    ```bash
    cd "$(dirname "$0")/../../.."
    ```
-2. **Non-blocking Infisical Secret Injection**:
-   Check credentials or CLI status first. Fall back cleanly to local environment if Infisical is not logged in. Never hang or block.
+2. **Infisical-only Secret Injection**:
+   `run_compose() { bash scripts/setup/with-infisical.sh products/<product> docker compose -f "$COMPOSE_FILE" "$@"; }`.
+   The wrapper fails fast if Infisical is unavailable. Never fall back to `.env` files, never hang.
 3. **NEVER hardcode `--build` or forced pulls in default start**:
    - `start_stack()` must run:
      ```bash

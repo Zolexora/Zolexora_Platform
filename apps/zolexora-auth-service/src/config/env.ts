@@ -1,8 +1,11 @@
 import { z } from "zod";
-import dotenv from "dotenv";
 import { resolveAliases } from "./infisical.js";
 
-dotenv.config();
+// Secrets have no defaults: they must come from Infisical. Fixed dev values exist only for NODE_ENV=test.
+const IS_TEST = process.env.NODE_ENV === "test";
+const secret = (testValue: string, min = 1) =>
+  IS_TEST ? z.string().min(min).default(testValue) : z.string().min(min);
+
 
 const envSchema = z.object({
   PORT: z.coerce.number().default(3081),
@@ -12,22 +15,16 @@ const envSchema = z.object({
   CORS_ORIGIN: z.string().default("*"),
 
   // Databases
-  AUTH_DATABASE_URL: z
-    .string()
-    .default("postgresql://postgres:postgres@localhost:5432/zolexora_auth"),
-  ADMIN_DATABASE_URL: z
-    .string()
-    .default("postgresql://postgres:postgres@localhost:5440/platform_admin"),
+  AUTH_DATABASE_URL: secret("postgresql://postgres:postgres@localhost:5432/zolexora_auth"),
+  ADMIN_DATABASE_URL: secret("postgresql://postgres:postgres@localhost:5440/platform_admin"),
   DATABASE_URL: z.string().optional(),
 
   // Session & Cryptography
-  SESSION_SECRET: z
-    .string()
-    .min(16)
-    .default("zolexora-platform-auth-secret-key-32bytes-min"),
+  SESSION_SECRET: secret("zolexora-platform-auth-secret-key-32bytes-min", 16),
 
   // Cloudflare Turnstile
-  TURNSTILE_SECRET_KEY: z.string().default("1x0000000000000000000000000000000AA"),
+  // Cloudflare's always-pass test key, allowed only under NODE_ENV=test.
+  TURNSTILE_SECRET_KEY: secret("1x0000000000000000000000000000000AA"),
   TURNSTILE_VERIFY_URL: z
     .string()
     .url()
@@ -70,7 +67,17 @@ export function loadEnv(): EnvConfig {
   return result.data;
 }
 
-export let env: EnvConfig = loadEnv();
+// At import time secrets may not be synced yet (main() syncs, then calls refreshEnv(), which validates strictly).
+function initialEnv(): EnvConfig {
+  try {
+    return loadEnv();
+  } catch (err) {
+    if (IS_TEST) throw err;
+    return envSchema.partial().parse(process.env) as EnvConfig;
+  }
+}
+
+export let env: EnvConfig = initialEnv();
 
 export function refreshEnv(): EnvConfig {
   env = loadEnv();

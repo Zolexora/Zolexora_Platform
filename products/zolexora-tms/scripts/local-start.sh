@@ -11,7 +11,7 @@ echo "======================================"
 # Re-run this script once under Infisical so every service inherits the secrets
 if [ -z "$TMS_SECRETS_LOADED" ]; then
     export TMS_SECRETS_LOADED=1
-    exec bash products/zolexora-tms/scripts/with-secrets.sh bash products/zolexora-tms/scripts/local-start.sh "$@"
+    exec bash scripts/setup/with-infisical.sh products/zolexora-tms bash products/zolexora-tms/scripts/local-start.sh "$@"
 fi
 
 # Local dev defaults (non-secret); override via Infisical or the shell

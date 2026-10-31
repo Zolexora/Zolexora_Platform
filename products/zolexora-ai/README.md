@@ -70,8 +70,8 @@ Ensure you have the following installed:
 git clone https://github.com/your-org/swarm-factory
 cd swarm-factory
 
-# Copy the environment file template
-cp .env.example .env
+# Secrets come only from Infisical (/Zolexora_Specfic_Credentials/Zolexora_AI)
+infisical login
 
 # Install Backend dependencies
 pip install -r requirements.txt
@@ -119,11 +119,7 @@ Open [http://localhost:3000](http://localhost:3000) to view the Swarm Factory Da
 
 ## 🐳 Running with Docker
 
-Ensure .env is configured:
-
-```bash
-cp .env.example .env
-```
+Secrets are injected from Infisical; prefix Docker commands with `bash ../../scripts/setup/with-infisical.sh .`:
 
 Start required services and the backend:
 

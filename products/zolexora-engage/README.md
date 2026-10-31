@@ -66,16 +66,14 @@ https://<your-render-api>.onrender.com/api/whatsapp/webhook
 ## Run with Docker
 
 ```bash
-export BW_SESSION="$(bw unlock --raw)"   # encrypted .env key is loaded from Bitwarden
-./scripts/start-project.sh
+./scripts/start-project.sh   # secrets from Infisical: /Zolexora_Specfic_Credentials/Zolexora_Engage
 ```
 
 The stack is served through nginx at <http://localhost:3077>. Stop with `Ctrl+C`; remove containers with `docker compose -f products/zolexora-engage/compose.yaml down`.
 
-For local Vite development with Supabase variables loaded from Bitwarden:
+For local Vite development:
 
 ```bash
-export BW_SESSION="$(bw unlock --raw)"
 ./scripts/start-web-dev.sh
 ```
 
@@ -93,8 +91,7 @@ Column names are matched case-insensitively and spaces/punctuation are ignored.
 Rows missing any required value are rejected so only complete rows can be sent
 through WhatsApp.
 
-WhatsApp server credentials are loaded only by the API from the encrypted
-`.env` file:
+WhatsApp server credentials are injected only into the API, from Infisical:
 
 - `WHATSAPP_PHONE_NUMBER_ID`
 - `WHATSAPP_ACCESS_TOKEN`

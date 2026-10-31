@@ -2,17 +2,8 @@ import os
 import ipaddress
 from pathlib import Path
 from pydantic import SecretStr
-from dotenv import load_dotenv # Trigger reload
-
 BACKEND_DIR = Path(__file__).parent.parent
-# Local development should use the repository's `.env.local` values even when
-# a stale secret was exported in the terminal. Deployed environments keep
-# their injected secrets authoritative and never allow dotenv files to replace
-# them.
-_development_env = os.environ.get("APP_ENV", os.environ.get("ENV", "development")).lower() not in {"prod", "production", "staging"}
-load_dotenv(BACKEND_DIR / ".env", override=_development_env)
-load_dotenv(BACKEND_DIR / ".env.local", override=_development_env)
-load_dotenv(BACKEND_DIR / ".env.smsprovider", override=_development_env)
+# Secrets are injected by Infisical (scripts/setup/with-infisical.sh); no .env files are read.
 
 
 def _parse_trusted_proxies() -> list[ipaddress.IPv4Network | ipaddress.IPv6Network]:

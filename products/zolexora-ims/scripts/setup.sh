@@ -297,81 +297,7 @@ if command -v render &>/dev/null; then
   fi
 fi
 
-# 4. Supabase Credentials Configuration
-echo ""
-echo -e "${BOLD}[4/4] Supabase Authentication & Database Keys${RESET}"
-
-USER_BACKEND_ENV="$ROOT_DIR/apps/ims-user/backend/.env.local"
-USER_FRONTEND_ENV="$ROOT_DIR/apps/ims-user/frontend/.env.local"
-ADMIN_BACKEND_ENV="$ROOT_DIR/apps/ims-admin/backend/.env.local"
-ADMIN_FRONTEND_ENV="$ROOT_DIR/apps/ims-admin/frontend/.env.local"
-
-# Check if environment already exists
-EXISTING_SUPA_URL=""
-if [ -f "$USER_FRONTEND_ENV" ]; then
-  EXISTING_SUPA_URL=$(grep -o 'VITE_SUPABASE_URL=[^ ]*' "$USER_FRONTEND_ENV" | cut -d '=' -f2 || true)
-fi
-
-if [ -n "$EXISTING_SUPA_URL" ] && [[ "$EXISTING_SUPA_URL" != *"YOUR_SUPABASE_PROJECT_URL"* ]]; then
-  log_success "Supabase configuration already detected: ${BOLD}${EXISTING_SUPA_URL}${RESET}"
-  read -p "  Keep existing Supabase configuration? (Y/n): " keep_supa
-else
-  keep_supa="n"
-fi
-
-if [[ "$keep_supa" =~ ^[Nn]$ ]]; then
-  echo -e "  ${CYAN}Enter your Supabase Project details (or press ENTER to use pre-configured defaults):${RESET}"
-  read -p "  Supabase URL [https://qv9rw6x44xp6369r.supabase.co]: " input_supa_url
-  input_supa_url=${input_supa_url:-"https://qv9rw6x44xp6369r.supabase.co"}
-
-  read -p "  Supabase Anon Public Key: " input_anon_key
-  input_anon_key=${input_anon_key:-"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.demo_anon_key"}
-
-  read -p "  Supabase Service Role Key: " input_service_key
-  input_service_key=${input_service_key:-"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.demo_service_key"}
-
-  # Write .env.local files
-  cat << ENV_USER_BACKEND > "$USER_BACKEND_ENV"
-PORT=8000
-ENVIRONMENT=development
-JWT_SECRET=zolexora_jwt_secret_dev_key_only
-CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000,http://127.0.0.1:3001
-SUPABASE_URL=${input_supa_url}
-SUPABASE_ANON_KEY=${input_anon_key}
-SUPABASE_SERVICE_KEY=${input_service_key}
-CLOUDFLARE_ACCOUNT_ID=demo_account_id
-CLOUDFLARE_D1_DATABASE_ID=demo_database_id
-CLOUDFLARE_API_TOKEN=demo_api_token
-ENV_USER_BACKEND
-
-  cat << ENV_USER_FRONTEND > "$USER_FRONTEND_ENV"
-VITE_SUPABASE_URL=${input_supa_url}
-VITE_SUPABASE_ANON_KEY=${input_anon_key}
-VITE_API_URL=http://localhost:8000
-ENV_USER_FRONTEND
-
-  cat << ENV_ADMIN_BACKEND > "$ADMIN_BACKEND_ENV"
-PORT=8001
-ENVIRONMENT=development
-JWT_SECRET=zolexora_jwt_secret_dev_key_only
-CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000,http://127.0.0.1:3001
-SUPERADMIN_EMAIL=admin@zolexora.internal
-SUPABASE_URL=${input_supa_url}
-SUPABASE_ANON_KEY=${input_anon_key}
-SUPABASE_SERVICE_KEY=${input_service_key}
-CLOUDFLARE_ACCOUNT_ID=demo_account_id
-CLOUDFLARE_D1_DATABASE_ID=demo_database_id
-CLOUDFLARE_API_TOKEN=demo_api_token
-ENV_ADMIN_BACKEND
-
-  cat << ENV_ADMIN_FRONTEND > "$ADMIN_FRONTEND_ENV"
-VITE_SUPABASE_URL=${input_supa_url}
-VITE_SUPABASE_ANON_KEY=${input_anon_key}
-VITE_ADMIN_API_URL=http://localhost:8001
-ENV_ADMIN_FRONTEND
-
-  log_success "Environment files (.env.local) generated for all 4 microservices."
-fi
+# 4. Secrets: injected at runtime from Infisical (/Zolexora_Specfic_Credentials/Zolexora_IMS). No .env files.
 
 # ------------------------------------------------------------------------------
 # STEP 9: Self-Test & Quality Verification
@@ -409,7 +335,8 @@ launch_choice=${launch_choice:-2}
 case "$launch_choice" in
   1)
     log_info "Building and launching Docker containers in background..."
-    docker compose up -d --build
+    docker compose pull --ignore-pull-failures
+    bash "${ROOT_DIR}/../../scripts/setup/with-infisical.sh" "${ROOT_DIR}" docker compose up -d
     echo ""
     log_success "All 4 containers are live and running!"
     docker compose ps

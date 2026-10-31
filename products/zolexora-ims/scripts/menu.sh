@@ -72,7 +72,7 @@ run_action() {
       ;;
     6)
       echo ""
-      "${SCRIPT_DIR}/sync-env.sh" audit
+      bash "${ROOT_DIR}/../../scripts/setup/with-infisical.sh" "${ROOT_DIR}" bash -c 'for v in SUPABASE_URL SUPABASE_SERVICE_KEY CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_API_TOKEN CLOUDFLARE_D1_DATABASE_ID VITE_SUPABASE_URL VITE_SUPABASE_ANON_KEY; do [ -n "${!v:-}" ] && echo "ok  $v" || echo "MISSING $v"; done'
       ;;
     7)
       echo ""

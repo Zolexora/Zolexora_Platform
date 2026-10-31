@@ -25,14 +25,13 @@ step() {
   log "INFO" "$CURRENT_STEP"
 }
 
-if [ ! -f config/envs/zolexora-erp/erp.env ]; then
-  log "ERROR" "missing .env; copy config/envs/zolexora-erp/erp.env.example to config/envs/zolexora-erp/erp.env and update values"
-  exit 1
+SELF="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
+cd "$(git -C "$(dirname "$SELF")" rev-parse --show-toplevel)/products/zolexora-erp"
+# Secrets come only from Infisical (products/zolexora-erp/.infisical.json); no .env, no fallback.
+if [ -z "${ZX_SECRETS_LOADED:-}" ]; then
+  export ZX_SECRETS_LOADED=1
+  exec bash ../../scripts/setup/with-infisical.sh . bash "$SELF" "$@"
 fi
-
-set -a
-source config/envs/zolexora-erp/erp.env
-set +a
 
 if [ "${1:-}" = "" ]; then
   log "ERROR" "usage: ./products/zolexora-erp/scripts/restore-frappe-site.sh storage/backups/<timestamp>"

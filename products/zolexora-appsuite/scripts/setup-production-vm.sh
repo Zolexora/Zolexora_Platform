@@ -38,26 +38,11 @@ if ! command -v docker >/dev/null 2>&1; then
   echo "✅ Docker installed successfully."
 fi
 
-# 2. Configure Production .env
-ENV_FILE="$APPSUITE_DIR/.env"
-if [ ! -f "$ENV_FILE" ]; then
-  echo "📝 Generating production .env file..."
-  cp "$APPSUITE_DIR/.env.example" "$ENV_FILE"
+# 2. Secrets come only from Infisical (machine identity); no .env file is written.
+: "${INFISICAL_TOKEN:?export INFISICAL_TOKEN (Infisical machine identity) before running}"
+export APPSUITE_PORT=80 APPSUITE_SSL_PORT=443 INFISICAL_ENV="${INFISICAL_ENV:-prod}"
 
-  # Generate secure random password
-  SECURE_PASS=$(openssl rand -hex 16)
-  sed -i "s/replace_with_strong_random_db_password/$SECURE_PASS/g" "$ENV_FILE"
-  sed -i "s/APPSUITE_PORT=3070/APPSUITE_PORT=80/g" "$ENV_FILE"
-  sed -i "s/APPSUITE_SSL_PORT=3443/APPSUITE_SSL_PORT=443/g" "$ENV_FILE"
-
-  echo "🔐 Generated strong PostgreSQL password and bound Nginx to 80/443."
-else
-  echo "ℹ️  Existing .env found at $ENV_FILE, skipping overwrite."
-fi
-
-# 3. Pull Prebuilt Production Images from GHCR
-echo "📥 Pulling latest prebuilt images from GHCR..."
-docker compose -f "$APPSUITE_DIR/compose.yaml" --env-file "$ENV_FILE" pull --ignore-pull-failures || true
+docker compose -f "$APPSUITE_DIR/compose.yaml" pull --ignore-pull-failures || true
 
 # 4. Create Systemd Service for Auto-Restart on Boot
 SERVICE_FILE="/etc/systemd/system/zolexora-appsuite.service"
@@ -73,13 +58,19 @@ After=docker.service
 Type=oneshot
 RemainAfterExit=yes
 WorkingDirectory=$APPSUITE_DIR
-ExecStart=/usr/bin/docker compose -f $APPSUITE_DIR/compose.yaml --env-file $ENV_FILE up -d
-ExecStop=/usr/bin/docker compose -f $APPSUITE_DIR/compose.yaml --env-file $ENV_FILE down
+Environment=APPSUITE_PORT=80 APPSUITE_SSL_PORT=443 INFISICAL_ENV=$INFISICAL_ENV
+ExecStart=/bin/bash $REPO_ROOT/scripts/setup/with-infisical.sh $APPSUITE_DIR /usr/bin/docker compose -f $APPSUITE_DIR/compose.yaml up -d
+ExecStop=/usr/bin/docker compose -f $APPSUITE_DIR/compose.yaml down
 TimeoutStartSec=0
 
 [Install]
 WantedBy=multi-user.target
 EOF
+
+# Only the Infisical machine-identity token is stored on disk (root-only); app secrets are fetched at start.
+mkdir -p "$SERVICE_FILE.d"
+printf '[Service]\nEnvironment=INFISICAL_TOKEN=%s\n' "$INFISICAL_TOKEN" > "$SERVICE_FILE.d/infisical.conf"
+chmod 600 "$SERVICE_FILE.d/infisical.conf"
 
 systemctl daemon-reload
 systemctl enable zolexora-appsuite.service

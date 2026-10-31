@@ -129,14 +129,14 @@ Pre-configured in [`lib/legal-clauses.ts`](file:///workspaces/Zolexora_Platform/
 # 1. Navigate to the AppSuite web application
 cd /workspaces/Zolexora_Platform/products/zolexora-appsuite/apps/web
 
-# 2. Configure environment variables
-cp .env.example .env.local
+# 2. Secrets come from Infisical (/Firebase_Credentials/Zolexora_AppSuite); no .env files
+infisical login
 
 # 3. Install workspace dependencies
 pnpm install
 
-# 4. Start the development server (runs on port 3070)
-pnpm dev
+# 4. Start the development server with secrets injected
+pnpm dev:infisical
 ```
 
 ### Type Checking & Build Verification

@@ -6,10 +6,38 @@ services:
       dockerfile: infra/Dockerfile
     image: swarm-factory-api:local
     container_name: swarm-factory-api
-    env_file:
-    - ../.env
     environment:
     - PYTHONPATH=/app/backend
+    - LLM_PROVIDER
+    - AZURE_OPENAI_ENDPOINT
+    - AZURE_OPENAI_API_KEY
+    - AZURE_OPENAI_API_VERSION
+    - AZURE_OPENAI_DEPLOYMENT
+    - AZURE_OPENAI_DEPLOYMENT_GPT4O
+    - AZURE_OPENAI_DEPLOYMENT_PHI4
+    - AZURE_OPENAI_DEPLOYMENT_MINI
+    - FALLBACK_MODEL_PRIMARY
+    - FALLBACK_MODEL_SECONDARY
+    - FALLBACK_MODEL_TERTIARY
+    - API_KEY
+    - SECRET_KEY
+    - AZURE_SEARCH_ENDPOINT
+    - AZURE_SEARCH_API_KEY
+    - AZURE_SEARCH_INDEX_NAME
+    - AZURE_SUBSCRIPTION_ID
+    - AZURE_RESOURCE_GROUP
+    - AZURE_CONTAINER_REGISTRY
+    - AZURE_CONTAINER_APP_ENV
+    - GITHUB_TOKEN
+    - GITHUB_ORG
+    - BING_SEARCH_API_KEY
+    - APP_ENV
+    - LOG_LEVEL
+    - MAX_CONCURRENT_JOBS
+    - JOB_TIMEOUT_SECONDS
+    - SESSION_STORE_PATH
+    - RATE_LIMIT_REQUESTS
+    - RATE_LIMIT_WINDOW_SECONDS
     - REDIS_URL=redis://redis:6379/0
     volumes:
     - ../backend:/app/backend
@@ -69,10 +97,38 @@ services:
       dockerfile: infra/Dockerfile
     image: swarm-factory-api:local
     container_name: swarm-factory-worker
-    env_file:
-    - ../.env
     environment:
     - PYTHONPATH=/app/backend
+    - LLM_PROVIDER
+    - AZURE_OPENAI_ENDPOINT
+    - AZURE_OPENAI_API_KEY
+    - AZURE_OPENAI_API_VERSION
+    - AZURE_OPENAI_DEPLOYMENT
+    - AZURE_OPENAI_DEPLOYMENT_GPT4O
+    - AZURE_OPENAI_DEPLOYMENT_PHI4
+    - AZURE_OPENAI_DEPLOYMENT_MINI
+    - FALLBACK_MODEL_PRIMARY
+    - FALLBACK_MODEL_SECONDARY
+    - FALLBACK_MODEL_TERTIARY
+    - API_KEY
+    - SECRET_KEY
+    - AZURE_SEARCH_ENDPOINT
+    - AZURE_SEARCH_API_KEY
+    - AZURE_SEARCH_INDEX_NAME
+    - AZURE_SUBSCRIPTION_ID
+    - AZURE_RESOURCE_GROUP
+    - AZURE_CONTAINER_REGISTRY
+    - AZURE_CONTAINER_APP_ENV
+    - GITHUB_TOKEN
+    - GITHUB_ORG
+    - BING_SEARCH_API_KEY
+    - APP_ENV
+    - LOG_LEVEL
+    - MAX_CONCURRENT_JOBS
+    - JOB_TIMEOUT_SECONDS
+    - SESSION_STORE_PATH
+    - RATE_LIMIT_REQUESTS
+    - RATE_LIMIT_WINDOW_SECONDS
     - REDIS_URL=redis://redis:6379/0
     volumes:
     - ../backend:/app/backend

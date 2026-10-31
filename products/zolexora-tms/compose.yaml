@@ -17,7 +17,7 @@ services:
       - DATABASE_ZOLEXORA_TMS_EXTERNAL_DATABASE_URL
       - DATABASE_ZOLEXORA_TMS_INTERNAL_DATABASE_URL
       - DATABASE_URL
-      # All values below are injected by Infisical (scripts/with-secrets.sh); nothing is hardcoded.
+      # All values below are injected by Infisical (scripts/setup/with-infisical.sh); nothing is hardcoded.
       # NODE_ENV unset => backend runs in production mode (strict auth, no /docs).
       - NODE_ENV
       - FIREBASE_PROJECT_ID

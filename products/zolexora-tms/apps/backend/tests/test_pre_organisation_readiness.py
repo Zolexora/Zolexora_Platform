@@ -1,5 +1,3 @@
-from dotenv import load_dotenv
-load_dotenv()
 import pytest
 import os
 import uuid

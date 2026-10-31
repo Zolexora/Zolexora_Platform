@@ -119,14 +119,7 @@ Do not run `npm install` or commit `package-lock.json`.
 
 ## Environment Setup
 
-Copy the example files before running the apps:
-
-```bash
-cp services/api/.env.example services/api/.env
-cp apps/web-tenant/.env.example apps/web-tenant/.env
-cp apps/web-owner/.env.example apps/web-owner/.env
-cp apps/web-admin/.env.example apps/web-admin/.env
-```
+Secrets come only from Infisical (`/Zolexora_Specfic_Credentials/RentoEasy`); there are no `.env` files. Run commands through `bash scripts/setup/with-infisical.sh products/zolexora-rentoeasy <command>`.
 
 ### API Environment
 
@@ -155,7 +148,7 @@ OWNER_WEB_URL=http://localhost:3002,http://127.0.0.1:3002
 ADMIN_WEB_URL=http://localhost:3003,http://127.0.0.1:3003
 ```
 
-Service-specific variables are documented in `services/api/.env.example` and include MSG91, Razorpay, AWS S3, Cloudinary, Firebase Admin, SendGrid, and admin seed credentials.
+Service variables (key list in [docs/secrets.md](../../docs/secrets.md)) include MSG91, Razorpay, AWS S3, Cloudinary, Firebase Admin, SendGrid, and admin seed credentials.
 
 ### Web Environment
 

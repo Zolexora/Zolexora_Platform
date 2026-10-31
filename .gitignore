@@ -35,7 +35,6 @@ dist/
 .env.production
 .env.test
 *.env
-!*.env.example
 
 # --- Docker ---
 .docker/
@@ -69,3 +68,8 @@ storage/
 .pnpm-store/
 .agents/teamwork/
 hellomr
+
+# Infisical is the only secret source: no env files or templates (docs/secrets.md)
+*.env.example
+.env.example
+.env.*.example

@@ -5,9 +5,7 @@ Creates all MongoDB Atlas indexes + TTL auto-purge to stay inside 500 MB.
 import asyncio
 import os
 from motor.motor_asyncio import AsyncIOMotorClient
-from dotenv import load_dotenv, find_dotenv
 
-load_dotenv(find_dotenv())
 
 async def main():
     client = AsyncIOMotorClient(os.environ["MONGO_URL"])

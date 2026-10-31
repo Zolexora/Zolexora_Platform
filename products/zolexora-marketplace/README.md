@@ -159,27 +159,10 @@ Make sure you have the following installed on your machine:
 Zolexora uses a multi-layered environment setup across its backend, web frontends, and mobile apps.
 
 ### 1. Quick Local Setup
-For local development, copy the `.env.example` files to their active counterparts:
-```bash
-# Root environment (shared/Docker Compose development)
-cp .env.example .env
-
-# Backend configuration
-cp services/marketplace-api/.env.example services/marketplace-api/.env
-
-# Web Apps (Next.js local files)
-cp apps/storefronts/zolexora-shop/web/.env.example apps/storefronts/zolexora-shop/web/.env.local
-cp apps/portals/seller/web/.env.example apps/portals/seller/web/.env.local
-cp apps/portals/marketplace-admin/web/.env.example apps/portals/marketplace-admin/web/.env.local
-
-# Mobile Apps (Expo local files)
-cp apps/storefronts/zolexora-shop/mobile/.env.example apps/storefronts/zolexora-shop/mobile/.env
-cp apps/storefronts/mahila-madel/mobile/.env.example apps/storefronts/mahila-madel/mobile/.env
-cp apps/portals/seller/mobile/.env.example apps/portals/seller/mobile/.env
-```
+Secrets come only from Infisical (`/Zolexora_Specfic_Credentials/Zolexora_Marketplace`); there are no `.env` files. Log in with `infisical login` and run commands through `bash scripts/setup/with-infisical.sh products/zolexora-marketplace <command>`. Required keys per app: [docs/secrets.md](../../docs/secrets.md).
 
 ### 2. Backend & Core Configuration
-Inside `services/marketplace-api/.env`, configure the following key subsystems:
+Configure these key subsystems in Infisical:
 
 * **Startup Database Validation (Required)**:
   * `MONGO_URL`: Connection string for MongoDB (e.g. `mongodb://localhost:27017` or Atlas URL).

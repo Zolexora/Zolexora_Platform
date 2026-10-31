@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --port 3071",
-    "dev:infisical": "infisical run --env=dev -- next dev --port 3071",
+    "dev:infisical": "bash ../../../../scripts/setup/with-infisical.sh ../.. next dev --port 3071",
     "build": "next build",
     "start": "next start --port 3071",
     "lint": "next lint",

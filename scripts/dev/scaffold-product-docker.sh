@@ -127,6 +127,12 @@ else
   echo -e "  ${GREEN}✔ $COMPOSE_FILE already exists.${NC}"
 fi
 
+# 1b. Infisical link (the only secret source)
+if [ ! -f "products/${PRODUCT}/.infisical.json" ]; then
+  printf '{\n  "workspaceId": "c4ac7d07-f26f-4fb8-bd04-6d3e037079f9",\n  "defaultEnvironment": "dev",\n  "secretsPath": "/Zolexora_Specfic_Credentials/%s"\n}\n' "$PRODUCT" > "products/${PRODUCT}/.infisical.json"
+  echo -e "  ${GREEN}✔ Created products/${PRODUCT}/.infisical.json — create that folder in Infisical.${NC}"
+fi
+
 # 2. docker-start.sh
 if [ ! -f "$START_SCRIPT" ]; then
   echo -e "${YELLOW}[2/3] Generating $START_SCRIPT...${NC}"
@@ -140,21 +146,10 @@ REPO_ROOT="$(pwd)"
 
 PRODUCT="$(basename "$(dirname "$(dirname "$0")")")"
 COMPOSE_FILE="products/${PRODUCT}/compose.yaml"
-[ ! -f "$COMPOSE_FILE" ] && COMPOSE_FILE="products/${PRODUCT}/docker-compose.yml"
 
-# Non-blocking secret injection helper
+# Secrets come only from Infisical (products/<product>/.infisical.json); no .env, no fallback.
 run_compose() {
-  if [ -f "products/${PRODUCT}/.infisical.json" ] && { [ -n "$INFISICAL_TOKEN" ] || [ -n "$INFISICAL_ACCESS_TOKEN" ] || { command -v infisical >/dev/null 2>&1 && infisical login status >/dev/null 2>&1; }; }; then
-    WORKSPACE_ID=$(python3 -c "import json; d=json.load(open('products/${PRODUCT}/.infisical.json')); print(d.get('workspaceId',''))" 2>/dev/null || echo "")
-    SECRET_PATH=$(python3 -c "import json; d=json.load(open('products/${PRODUCT}/.infisical.json')); print(d.get('secretsPath','/'))" 2>/dev/null || echo "/")
-    ENV_SLUG=$(python3 -c "import json; d=json.load(open('products/${PRODUCT}/.infisical.json')); print(d.get('defaultEnvironment','dev'))" 2>/dev/null || echo "dev")
-    PROJECT_FLAG=""
-    [ -n "$WORKSPACE_ID" ] && PROJECT_FLAG="--projectId=$WORKSPACE_ID"
-    echo "🔐 Infisical credentials detected - executing with runtime secrets ($SECRET_PATH)..."
-    infisical run $PROJECT_FLAG --path="$SECRET_PATH" --env="$ENV_SLUG" -- docker compose -f "$COMPOSE_FILE" "$@"
-  else
-    docker compose -f "$COMPOSE_FILE" "$@"
-  fi
+  bash scripts/setup/with-infisical.sh "products/${PRODUCT}" docker compose -f "$COMPOSE_FILE" "$@"
 }
 
 start_stack() {
