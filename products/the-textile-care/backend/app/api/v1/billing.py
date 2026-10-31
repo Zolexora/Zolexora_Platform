@@ -9,6 +9,7 @@ import uuid
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
+from app.core.exceptions.base import ApiError
 from app.core.permissions.constants import PermissionName
 from app.dependencies import get_db, require_permission
 from app.core.tenant.context import TenantContext

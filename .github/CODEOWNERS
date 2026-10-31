@@ -1,0 +1,16 @@
+# Global owners
+* @Zolexora/core-team
+
+# Zolexora Marketplace
+/products/zolexora-marketplace/services/ @Zolexora/backend-team
+/products/zolexora-marketplace/contracts/ @Zolexora/backend-team
+/products/zolexora-marketplace/apps/ @Zolexora/frontend-team
+/products/zolexora-marketplace/packages/ @Zolexora/frontend-team
+
+# The Textile Care
+/products/the-textile-care/ @TheTextileCare
+
+# Infrastructure & CI/CD
+/infrastructure/ @Zolexora/devops-team
+/.github/ @Zolexora/devops-team
+/compose.yaml @Zolexora/devops-team

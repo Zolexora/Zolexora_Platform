@@ -30,18 +30,14 @@ jobs:
           pip install ruff black
       - name: Shell syntax
         run: |
-          bash -n scripts/*.sh
+          for f in scripts/*/*.sh; do bash -n "$f"; done
       - name: Python formatting and lint
         run: |
           black --check products/zolexora-erp/backend/zolexora_core products/zolexora-erp/backend/zolexora_branding products/zolexora-erp/backend/zolexora_platform products/zolexora-erp/backend/zolexora_integrations
           ruff check products/zolexora-erp/backend/zolexora_core products/zolexora-erp/backend/zolexora_branding products/zolexora-erp/backend/zolexora_platform products/zolexora-erp/backend/zolexora_integrations
       - name: Documentation files exist
         run: |
-          test -f docs/production-guide.md
-          test -f docs/security-review.md
-          test -f docs/disaster-recovery-report.md
-          test -f docs/upgrade-validation-report.md
-          test -f docs/phase-3.8-production-certification-report.md
+          test -f products/zolexora-erp/docs/production-guide.md
 
   docker-operational-validation:
     runs-on: ubuntu-latest

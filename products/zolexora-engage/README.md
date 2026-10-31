@@ -1,42 +1,42 @@
-# FleetRelay
+# Zolexora Engage
+
+WhatsApp dispatch tool (formerly "FleetRelay"): import a driver duty sheet, personalise a message per driver, send it via the WhatsApp Cloud API, and track delivery status.
 
 ## Code layout
 
-The repository is organized by deployable application and feature ownership:
-
 ```text
-artifacts/
-  api-server/
-    src/App.ts              # Express middleware and API assembly
-    src/routes/             # HTTP route modules
-  client/
-    src/app/App.tsx         # React providers and routing
-    src/features/auth/      # Supabase auth gate and login UI
-    src/features/dispatch/  # Duty-sheet import, queue, and WhatsApp dispatch
-    src/components/ui/      # Shared UI primitives for the frontend
-lib/
+apps/web/                   # Vite + React dispatcher UI (@zolexora/engage-web)
+  src/app/                  # Providers and routing
+  src/features/auth/        # Supabase auth gate and login UI
+  src/features/dispatch/    # Duty-sheet import, queue, and WhatsApp dispatch
+  src/components/ui/        # Shared UI primitives
+services/api/               # Express API (@zolexora/engage-api-server)
+  src/App.ts                # Middleware and API assembly
+  src/routes/               # Health.ts, WhatsApp.ts
+packages/
   api-spec/                 # OpenAPI source
   api-zod/                  # Generated request/response schemas
   api-client-react/         # Generated frontend API client
-  db/                       # Database schema and Drizzle setup
+  db/                       # Drizzle setup
 ```
+
+Local Docker stack: `compose.yaml` (nginx gateway on http://localhost:3077), built from `Dockerfile.api`, `Dockerfile.web`, `Dockerfile.nginx`.
 
 ## Deployment
 
 The recommended free deployment separates the public frontend from the API:
 
-- **Frontend:** Cloudflare Pages, built from `artifacts/client/web`
-- **API:** Render Web Service, configured by `render.yaml`
+- **Frontend:** Cloudflare Pages, built from `products/zolexora-engage/apps/web`
+- **API:** Render Web Service built from `Dockerfile.api`
 - **Database and authentication:** Supabase
 - **WhatsApp webhook:** the public Render API URL at
   `/api/whatsapp/webhook`
 
 ### Render API
 
-Create a Render Blueprint from this repository. The Blueprint creates
-`fleetrelay-api` from `docker/api.Dockerfile` and uses `/api/healthz` for
-health checks. Add the values marked `sync: false` in the Render dashboard;
-never commit them to the repository.
+Create a Render Web Service from `products/zolexora-engage/Dockerfile.api`
+(build context: repo root) with `/api/healthz` as the health check. Set secrets
+in the Render dashboard; never commit them to the repository.
 
 ### Cloudflare Pages frontend
 
@@ -44,8 +44,8 @@ Use these build settings:
 
 ```text
 Root directory: /
-Build command: pnpm install --frozen-lockfile && pnpm --filter @workspace/client-web build
-Build output directory: artifacts/client/web/dist
+Build command: pnpm install --frozen-lockfile && pnpm --filter @zolexora/engage-web build
+Build output directory: products/zolexora-engage/apps/web/dist
 ```
 
 Set these Pages environment variables for the production environment:
@@ -65,32 +65,18 @@ https://<your-render-api>.onrender.com/api/whatsapp/webhook
 
 ## Run with Docker
 
-The project runs as two containers:
-
-- API: <http://localhost:3000>
-- Web App: <http://localhost:5174>
-
-Docker names: `fleetrelay-api` and `fleetrelay-web`.
-
-The encrypted `.env` key is loaded from Bitwarden at runtime. No `.env.keys`
-file is required.
-
 ```bash
-export BW_SESSION="$(bw unlock --raw)"
-./scripts/RunProject.sh
+export BW_SESSION="$(bw unlock --raw)"   # encrypted .env key is loaded from Bitwarden
+./scripts/start-project.sh
 ```
 
-Stop the stack with `Ctrl+C`. To remove the containers and network:
-
-```bash
-docker compose down
-```
+The stack is served through nginx at <http://localhost:3077>. Stop with `Ctrl+C`; remove containers with `docker compose -f products/zolexora-engage/compose.yaml down`.
 
 For local Vite development with Supabase variables loaded from Bitwarden:
 
 ```bash
 export BW_SESSION="$(bw unlock --raw)"
-./scripts/RunWebDev.sh
+./scripts/start-web-dev.sh
 ```
 
 ## Duty sheet format

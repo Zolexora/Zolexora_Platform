@@ -1,1 +1,0 @@
-products/zolexora-appsuite/scripts/z-appsuite-docker-start.sh

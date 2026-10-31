@@ -12,12 +12,14 @@ scripts/
 ├── auth/                                  # Platform authentication setup utilities
 ├── db/                                    # Database management & seed scripts
 ├── dev/                                   # Developer environment setup & utilities
+│   ├── scaffold-product-docker.sh         # Generates standard docker-start.sh + root package.json docker:* scripts
 │   ├── setup-cli-ecosystem.sh
-│   ├── setup-devcontainer.sh              # Provisions .venv, Frappe symlinks (postCreateCommand)
+│   ├── setup-devcontainer.sh              # Provisions .venv, Frappe symlinks (run manually)
 │   └── start-all-products-dev.sh          # Starts all product dev servers in background
 │
 ├── docker/                                # Container shims (used by Dockerfile / compose.yaml)
 │   ├── configure-frappe-common-site.sh    # Injects DB/Redis URLs into bench config at container start
+│   ├── prune-except-devcontainer.sh       # `pnpm docker:prune`: deep prune that keeps devcontainer images/volumes
 │   └── yarn-wrapper.sh                    # Thin yarn shim bind-mounted into the frontend container
 │
 ├── ports/                                 # Monorepo port allocation utilities
@@ -73,7 +75,7 @@ RUN_UPGRADE_BUILD=1 ./products/zolexora-erp/scripts/tests/test-upgrade-validatio
 ### Developer Environment
 
 ```bash
-./scripts/dev/setup-devcontainer.sh       # Run manually or via postCreateCommand
+./scripts/dev/setup-devcontainer.sh       # Run manually after the container is created
 ./scripts/dev/start-all-products-dev.sh   # Start all product dev servers
 ./scripts/setup/start.sh                  # Universal stack orchestrator
 ```

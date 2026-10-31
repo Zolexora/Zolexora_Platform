@@ -7,7 +7,7 @@ import { createHmac } from "node:crypto";
 import fs from "node:fs";
 
 const BASE_URL = "http://localhost:3081";
-const LOG_FILE = "/home/chickenman/Documents/projects/Zolexora/Zolexora_Platform/.agents/teamwork/challenger_m4_2_it2/raw_probe_logs.json";
+const LOG_FILE = new URL("../../../.agents/teamwork/challenger_m4_2_it2/raw_probe_logs.json", import.meta.url);
 
 async function runAdversarialChallengerSuite() {
   console.log("================================================================================");
@@ -317,6 +317,7 @@ async function runAdversarialChallengerSuite() {
   console.log(`OVERALL EMPIRICAL VERDICT: ${allPassed ? "APPROVE" : "REJECT"}`);
   console.log("================================================================================\n");
 
+  fs.mkdirSync(new URL(".", LOG_FILE), { recursive: true });
   fs.writeFileSync(
     LOG_FILE,
     JSON.stringify({ allPassed, summary: { total: results.length, passed: results.filter((r) => r.passed).length, failed: results.filter((r) => !r.passed).length }, results, probeLogs }, null, 2),

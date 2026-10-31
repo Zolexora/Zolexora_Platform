@@ -13,7 +13,7 @@ import { getRuntimeEnv, resolveAuthUrl } from "../src/env.js";
 import { DEFAULT_AUTH_SERVICE_URL, TURNSTILE_SCRIPT_URL } from "../src/constants.js";
 
 const PROBE_LOG_PATH =
-  "/home/chickenman/Documents/projects/Zolexora/Zolexora_Platform/.agents/teamwork/challenger_m5_2_gen9/raw_probe_logs.json";
+  new URL("../../../.agents/teamwork/challenger_m5_2_gen9/raw_probe_logs.json", import.meta.url);
 
 describe("Milestone 5 Empirical Challenger M5.2: Turnstile & Environment Resolver Stress", () => {
   let mockTurnstile: any;
@@ -44,6 +44,7 @@ describe("Milestone 5 Empirical Challenger M5.2: Turnstile & Environment Resolve
 
   afterAll(() => {
     try {
+      fs.mkdirSync(new URL(".", PROBE_LOG_PATH), { recursive: true });
       fs.writeFileSync(
         PROBE_LOG_PATH,
         JSON.stringify(

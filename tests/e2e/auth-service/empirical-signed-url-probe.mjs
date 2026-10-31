@@ -549,8 +549,10 @@ async function runEmpiricalAttackSuite() {
 
   // Output raw logs as JSON string for report generation
   import("node:fs").then((fs) => {
+    const logFile = new URL("../../../.agents/teamwork/challenger_m4_2/raw_probe_logs.json", import.meta.url);
+    fs.mkdirSync(new URL(".", logFile), { recursive: true });
     fs.writeFileSync(
-      "/home/chickenman/Documents/projects/Zolexora/Zolexora_Platform/.agents/teamwork/challenger_m4_2/raw_probe_logs.json",
+      logFile,
       JSON.stringify({ allPassed, results, rawLogs }, null, 2),
       "utf8"
     );
