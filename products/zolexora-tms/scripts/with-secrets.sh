@@ -8,20 +8,15 @@
 
 INFISICAL_ENV="${INFISICAL_ENV:-dev}"
 
-# App secrets (Firebase, storage, payments, ...)
-INFISICAL_PROJECT_ID="188824cd-59ce-468f-b60f-f2da7aeefe63"
-INFISICAL_PATH="/Firebase_Credentials/Zolexora_TMS"
-
-# Database credentials (Render Postgres)
-INFISICAL_DB_PROJECT_ID="c4ac7d07-f26f-4fb8-bd04-6d3e037079f9"
-INFISICAL_DB_PATH="/Render_Postgraes"
+# All TMS secrets live under one folder tree (Redis, Database, Firebase, Object_Storage, ...)
+# in the Zolexora_Platform project; --recursive pulls every sub-folder.
+INFISICAL_PROJECT_ID="c4ac7d07-f26f-4fb8-bd04-6d3e037079f9"
+INFISICAL_PATH="/Zolexora_Specfic_Credentials/Zolexora_TMS"
 
 if [ -n "$INFISICAL_TOKEN" ] || [ -n "$INFISICAL_ACCESS_TOKEN" ] || \
    { command -v infisical >/dev/null 2>&1 && infisical login status >/dev/null 2>&1; }; then
   echo "🔐 Injecting secrets from Infisical (env: $INFISICAL_ENV)..." >&2
-  exec infisical run --projectId="$INFISICAL_DB_PROJECT_ID" --env="$INFISICAL_ENV" --path="$INFISICAL_DB_PATH" -- \
-    infisical run --projectId="$INFISICAL_PROJECT_ID" --env="$INFISICAL_ENV" --path="$INFISICAL_PATH" -- \
-    "$@"
+  exec infisical run --projectId="$INFISICAL_PROJECT_ID" --env="$INFISICAL_ENV" --path="$INFISICAL_PATH" --recursive -- "$@"
 fi
 
 echo "⚠️  Infisical is not authenticated - secrets will NOT be injected." >&2

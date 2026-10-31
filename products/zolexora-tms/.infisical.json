@@ -1,5 +1,5 @@
 {
-  "workspaceId": "188824cd-59ce-468f-b60f-f2da7aeefe63",
+  "workspaceId": "c4ac7d07-f26f-4fb8-bd04-6d3e037079f9",
   "defaultEnvironment": "dev",
-  "secretsPath": "/Firebase_Credentials/Zolexora_TMS"
+  "secretsPath": "/Zolexora_Specfic_Credentials/Zolexora_TMS"
 }

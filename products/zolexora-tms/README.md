@@ -19,12 +19,13 @@ Every command that needs secrets runs through one wrapper:
 bash products/zolexora-tms/scripts/with-secrets.sh <command>
 ```
 
-It injects two Infisical scopes (env from `INFISICAL_ENV`, default `dev`):
+It injects every secret under one Infisical folder tree, recursively (env from `INFISICAL_ENV`, default `dev`):
 
-| Scope | Project | Path |
+| Project | Path | Sub-folders |
 |---|---|---|
-| App secrets | `188824cd-…` | `/Firebase_Credentials/Zolexora_TMS` |
-| Database | `c4ac7d07-…` | `/Render_Postgraes` |
+| Zolexora_Platform (`c4ac7d07-…`) | `/Zolexora_Specfic_Credentials/Zolexora_TMS` | `Cache_And_Async/Redis`, `Database/Postgres_Database`, `Firebase_Crediential/*`, `Object_Storage`, `Media_CDN/Cloudinary`, `Core_Application`, `Payment_Gateway`, `Cloudflare`, `Docker_Images` |
+
+The backend reads the vault's own key names (`DATABASE_ZOLEXORA_TMS_*`, `REDIS_HOST`/`REDIS_PORT`/…, `STORAGE_*`, `NEXT_PUBLIC_FIREBASE_PROJECT_ID`) as well as the canonical ones in `.env.example`.
 
 If Infisical isn't authenticated, the wrapper warns and continues with the current shell environment (non-blocking).
 

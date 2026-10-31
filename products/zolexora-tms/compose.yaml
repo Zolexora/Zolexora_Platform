@@ -21,11 +21,17 @@ services:
       # NODE_ENV unset => backend runs in production mode (strict auth, no /docs).
       - NODE_ENV
       - FIREBASE_PROJECT_ID
+      - NEXT_PUBLIC_FIREBASE_PROJECT_ID
       - FIREBASE_ALLOWED_PROJECTS
       - PLATFORM_ADMIN_EMAILS
       - CORS_ORIGINS
       - OPERATIONS_TIMEZONE
       - REDIS_URL
+      - REDIS_HOST
+      - REDIS_PORT
+      - REDIS_PASSWORD
+      - REDIS_DB
+      - REDIS_USE_SSL
       - SENTRY_DSN
       - RESEND_API_KEY
       - CASHFREE_APP_ID
@@ -38,6 +44,11 @@ services:
       - CLOUDFLARE_R2_BUCKET
       - R2_ENDPOINT_URL
       - R2_PUBLIC_BASE_URL
+      - STORAGE_ACCESS_KEY_ID
+      - STORAGE_SECRET_ACCESS_KEY
+      - STORAGE_BUCKET
+      - STORAGE_ENDPOINT_URL
+      - STORAGE_PUBLIC_URL_PREFIX
       - CLOUDINARY_URL
       - CLOUDINARY_CLOUD_NAME
     healthcheck:

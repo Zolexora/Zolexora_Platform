@@ -63,9 +63,9 @@ class TestTier3CrossFeatureCombinations(unittest.TestCase):
             "--",
             "docker", "compose", "-f", str(compose_path),
         ]
-        self.assertIn("188824cd-59ce-468f-b60f-f2da7aeefe63", expected_cmd_tokens[2])
+        self.assertIn("c4ac7d07-f26f-4fb8-bd04-6d3e037079f9", expected_cmd_tokens[2])
         self.assertIn("dev", expected_cmd_tokens[3])
-        self.assertIn("/Zolexora_TMS", expected_cmd_tokens[4])
+        self.assertIn("/Zolexora_Specfic_Credentials/Zolexora_TMS", expected_cmd_tokens[4])
 
         # Test CLI accepts the flag structure non-destructively
         rc, stdout, stderr = run_cmd(
