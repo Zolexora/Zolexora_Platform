@@ -4,7 +4,7 @@
   "packageManager": "pnpm@9.12.3",
   "scripts": {
     "build": "turbo run build --filter='!./products/*'",
-    "test": "vitest run platform/",
+    "test": "vitest run packages/api-shield packages/auth-functions packages/user-auth-firebase packages/user-auth-zolexora",
     "lint": "turbo run lint --filter='!./products/*'",
     "typecheck": "turbo run typecheck type-check --filter='!./products/*'",
     "clean": "turbo run clean && pnpm -r exec rm -rf node_modules dist .turbo",
@@ -148,6 +148,7 @@
   },
   "devDependencies": {
     "turbo": "^2.11.7",
+    "typescript": "^5.9.3",
     "vitest": "^5.0.3"
   },
   "pnpm": {

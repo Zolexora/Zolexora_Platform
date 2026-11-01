@@ -7,7 +7,6 @@ on:
     paths:
       - 'products/zolexora-textile-care/**'
       - 'packages/**'
-      - 'platform/**'
       - 'infrastructure/containers/**'
       - 'pnpm-lock.yaml'
       - '.github/workflows/zolexora-textile-care-docker.yml'

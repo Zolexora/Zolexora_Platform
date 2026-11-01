@@ -7,7 +7,6 @@ on:
     paths:
       - 'products/zolexora-ai/**'
       - 'packages/**'
-      - 'platform/**'
       - 'infrastructure/containers/**'
       - 'pnpm-lock.yaml'
       - '.github/workflows/zolexora-ai-docker.yml'

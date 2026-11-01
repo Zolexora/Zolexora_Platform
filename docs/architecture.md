@@ -8,8 +8,7 @@ One pnpm workspace (root `pnpm-workspace.yaml`) orchestrated by Turborepo. Produ
 | --- | --- |
 | `products/<name>/` | One deployable product each: its apps, services, product-local packages, `compose.yaml`, Dockerfiles, scripts, docs. |
 | `apps/` | Cross-product apps: `zolexora-auth-service` (central identity, Node, port 3081) and `zolexora-platform-admin` (FastAPI `backend/` + `frontend/`). |
-| `platform/` | Cross-product runtime modules: `api-shield` (Cloudflare Worker), `auth/user-auth-core`, `auth/user-auth-firebase`, `functions`. |
-| `packages/` | Shared libraries/configs: `api-contracts`, `auth-client`, `utils`, `tsconfig`, `eslint-config`. |
+| `packages/` | All shared code, one folder per npm package (`@zolexora/<folder>`): `api-contracts`, `auth-client`, `utils`, `tsconfig`, `eslint-config`, `api-shield` (Cloudflare Worker), `user-auth-firebase` (Firebase login SDK), `user-auth-zolexora` (Postgres + Resend email/password auth, used by AppSuite), `auth-functions` (Firebase Cloud Functions). |
 | `infrastructure/` | Shared Dockerfiles (`containers/docker`), the shared nginx gateway image (`containers/compose`), database schemas/migrations (`database`, used by `supabase/`), cloud specs (`cloud`). |
 | `scripts/` | Repo-wide dev/setup/docker scripts (see `scripts/README.md`). |
 | `tests/e2e/` | Cross-product E2E suites (`auth-service`, `tms`). |
@@ -40,8 +39,8 @@ All Docker builds use the repo root as context (`context: ../../`, `dockerfile: 
 
 ## Dependency rules
 
-1. Products may depend on `packages/*` and `platform/*`.
-2. `packages/*` and `platform/*` never depend on a product.
+1. Products may depend on `packages/*`.
+2. `packages/*` never depend on a product.
 3. A product never imports another product's internals; cross-product calls go through API contracts (`@zolexora/api-contracts`) or events.
 4. A new shared package must replace code already duplicated in at least two products. After migrating, delete the local copy.
 5. Breaking changes to a shared package must be validated against every consumer.

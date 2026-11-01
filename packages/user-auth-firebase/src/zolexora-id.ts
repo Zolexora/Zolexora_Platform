@@ -10,4 +10,4 @@ export {
   isValidZolexoraOrgId,
   CROCKFORD_BASE32_ALPHABET,
   getRandomBytes,
-} from "@zolexora/utils";
+} from "@zolexora/utils/zolexora-id"; // browser-safe subpath (the index also exports node:crypto helpers)

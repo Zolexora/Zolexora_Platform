@@ -47,7 +47,6 @@ area:platform-admin:
 area:platform:
   - changed-files:
       - any-glob-to-any-file:
-          - 'platform/**'
           - 'packages/**'
 ci:
   - changed-files:

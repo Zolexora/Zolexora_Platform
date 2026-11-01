@@ -7,7 +7,6 @@ RUN corepack enable && corepack prepare pnpm@9 --activate
 
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 COPY packages ./packages
-COPY platform ./platform
 COPY products/zolexora-tms ./products/zolexora-tms
 
 RUN pnpm config set ignore-scripts true && pnpm install --no-frozen-lockfile

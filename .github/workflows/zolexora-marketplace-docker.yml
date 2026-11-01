@@ -7,7 +7,6 @@ on:
     paths:
       - 'products/zolexora-marketplace/**'
       - 'packages/**'
-      - 'platform/**'
       - 'infrastructure/containers/**'
       - 'pnpm-lock.yaml'
       - '.github/workflows/zolexora-marketplace-docker.yml'

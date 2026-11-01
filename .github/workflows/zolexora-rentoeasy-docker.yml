@@ -7,7 +7,6 @@ on:
     paths:
       - 'products/zolexora-rentoeasy/**'
       - 'packages/**'
-      - 'platform/**'
       - 'infrastructure/containers/**'
       - 'pnpm-lock.yaml'
       - '.github/workflows/zolexora-rentoeasy-docker.yml'

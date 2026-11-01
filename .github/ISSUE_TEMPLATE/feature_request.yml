@@ -48,6 +48,6 @@ body:
     attributes:
       label: Touches
       options:
-        - label: Shared code (packages/, platform/, auth-service) — needs validation against every consumer
+        - label: Shared code (packages/, auth-service) — needs validation against every consumer
         - label: Database schema / migrations
         - label: Secrets (new Infisical keys)

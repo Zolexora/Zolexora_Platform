@@ -61,7 +61,7 @@
   description: "apps/zolexora-platform-admin"
 - name: "area:platform"
   color: "bfd4f2"
-  description: "platform/ and packages/"
+  description: "packages/ (shared libraries)"
 - name: "product:ai"
   color: "fbca04"
   description: "products/zolexora-ai"

@@ -7,7 +7,6 @@ on:
     paths:
       - 'products/zolexora-engage/**'
       - 'packages/**'
-      - 'platform/**'
       - 'infrastructure/containers/**'
       - 'pnpm-lock.yaml'
       - '.github/workflows/zolexora-engage-docker.yml'

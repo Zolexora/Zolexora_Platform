@@ -24,7 +24,7 @@
   },
   "functions": [
     {
-      "source": "platform/functions",
+      "source": "packages/auth-functions",
       "codebase": "default",
       "ignore": [
         "node_modules",

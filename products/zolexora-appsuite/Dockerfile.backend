@@ -6,7 +6,6 @@ WORKDIR /app
 # Copy monorepo workspace files
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json tsconfig.json ./
 COPY packages ./packages
-COPY platform ./platform
 COPY products/zolexora-appsuite ./products/zolexora-appsuite
 
 # Install dependencies and build backend
@@ -22,7 +21,6 @@ ENV NODE_ENV=production \
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/packages ./packages
-COPY --from=builder /app/platform ./platform
 COPY --from=builder /app/products/zolexora-appsuite ./products/zolexora-appsuite
 
 WORKDIR /app/products/zolexora-appsuite/services/backend

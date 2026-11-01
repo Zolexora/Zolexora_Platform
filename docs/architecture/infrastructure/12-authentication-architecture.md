@@ -127,7 +127,7 @@ console.log(user.zolexoraId); // "ZX-9B1D-4F82-C0E1"
 
 ## 6. Organization Multi-Tenancy (`@zolexora/organization-auth`)
 
-Built into [`platform/Authentication/Organization Auth`](file:///workspaces/Zolexora_Platform/platform/Authentication/Organization%20Auth) to provide reusable RBAC and tenancy models across products:
+Planned (not yet in the repo) to provide reusable RBAC and tenancy models across products:
 * **Unique Organization ID:** Generates `ZX-ORG-XXXX-XXXX-XXXX` for every organization/workspace.
 * **Role Hierarchy:** `owner` > `admin` > `manager` > `member` > `viewer`.
 * **PostgreSQL Schema:** Ready-to-apply `zolexora_organizations` and `zolexora_organization_memberships` tables.

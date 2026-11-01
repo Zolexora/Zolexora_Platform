@@ -7,7 +7,6 @@ on:
     paths:
       - 'products/zolexora-maunkavach/**'
       - 'packages/**'
-      - 'platform/**'
       - 'infrastructure/containers/**'
       - 'pnpm-lock.yaml'
       - '.github/workflows/zolexora-maunkavach-docker.yml'

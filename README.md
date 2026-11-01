@@ -19,7 +19,7 @@ Monorepo for every Zolexora product plus the shared identity, admin and library 
 | ClarityFi | `products/zolexora-clarityfi` | Privacy-first personal finance + lifestyle tracker | Expo, Express | :3110 |
 | Maun Kavach | `products/zolexora-maunkavach` | Encrypted messenger (Android client + Node backend + web) | Kotlin, Node, Vite | :3071 |
 
-Shared: `apps/zolexora-auth-service` (central identity, :3081), `apps/zolexora-platform-admin` (:3095), `platform/*` and `packages/*`. Every product uses `apps/` (frontends, mobile) + `services/` (backends) + `packages/`. Full layout, naming and dependency rules: [docs/architecture.md](docs/architecture.md). All host ports: [docs/ports.md](docs/ports.md).
+Shared: `apps/zolexora-auth-service` (central identity, :3081), `apps/zolexora-platform-admin` (:3095), `packages/*` (shared libraries). Every product uses `apps/` (frontends, mobile) + `services/` (backends) + `packages/`. Full layout, naming and dependency rules: [docs/architecture.md](docs/architecture.md). All host ports: [docs/ports.md](docs/ports.md).
 
 ## Getting started
 
@@ -51,7 +51,7 @@ Infisical is the only secret source: no `.env` files, no templates, no fallback 
 ## Tests
 
 ```bash
-pnpm test                     # vitest for platform/
+pnpm test                     # vitest for the shared runtime packages (api-shield, auth-functions, user-auth-*)
 pnpm test:auth:service        # auth-service E2E (tests/e2e/auth-service/README.md)
 bash tests/e2e/tms/run_all.sh # TMS E2E
 ```

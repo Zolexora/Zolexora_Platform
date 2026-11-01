@@ -7,7 +7,6 @@ on:
     paths:
       - 'products/zolexora-ims/**'
       - 'packages/**'
-      - 'platform/**'
       - 'infrastructure/containers/**'
       - 'pnpm-lock.yaml'
       - '.github/workflows/zolexora-ims-docker.yml'

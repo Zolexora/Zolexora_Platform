@@ -10,7 +10,7 @@
     "dev:api": "pnpm --filter @zolexora/clarityfi-api run dev",
     "build": "pnpm run typecheck && pnpm -r --if-present run build",
     "typecheck:libs": "tsc --build",
-    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./apps/**\" --filter \"./tools\" --if-present run typecheck",
+    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./apps/**\" --filter \"./services/**\" --if-present run typecheck",
     "verify:tunnel": "node scripts/verify-tunnel.js"
   },
   "private": true,

@@ -1,5 +1,5 @@
 {
-  "name": "@clarityfi/api-server",
+  "name": "@zolexora/clarityfi-api",
   "version": "0.0.0",
   "private": true,
   "type": "module",

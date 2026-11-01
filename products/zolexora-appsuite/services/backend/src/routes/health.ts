@@ -11,7 +11,7 @@ healthRouter.get('/', async (_req: Request, res: Response) => {
 
     res.json({
       status: 'healthy',
-      service: '@zas/backend',
+      service: '@zolexora/appsuite-backend',
       timestamp: new Date().toISOString(),
       database: {
         connected: true,
@@ -22,7 +22,7 @@ healthRouter.get('/', async (_req: Request, res: Response) => {
   } catch (error: unknown) {
     res.status(503).json({
       status: 'unhealthy',
-      service: '@zas/backend',
+      service: '@zolexora/appsuite-backend',
       error: error instanceof Error ? error.message : 'Database error',
     })
   }

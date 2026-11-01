@@ -7,7 +7,7 @@ See the [root README](../README.md#getting-started): Docker, Node 20 + pnpm 9 (`
 ## Workflow
 
 1. Branch from `main`: `feat/<product>-<topic>`, `fix/...`, `chore/...`.
-2. Keep each PR to one product or one shared change. A change to `packages/*`, `platform/*` or `apps/zolexora-auth-service` must keep every consumer building.
+2. Keep each PR to one product or one shared change. A change to `packages/*` or `apps/zolexora-auth-service` must keep every consumer building.
 3. Use [Conventional Commits](https://www.conventionalcommits.org/) for commits and PR titles, with the product as scope: `feat(tms): ...`, `fix(marketplace)!: ...`. CI checks the PR title.
 4. Fill in the PR template; specialised ones exist for backend, frontend, infrastructure and releases.
 5. Squash-merge after one approving review from the code owners.

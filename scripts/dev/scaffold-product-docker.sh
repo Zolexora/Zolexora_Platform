@@ -255,7 +255,6 @@ on:
     paths:
       - 'products/${PRODUCT}/**'
       - 'packages/**'
-      - 'platform/**'
       - 'pnpm-lock.yaml'
       - '${WORKFLOW_FILE}'
   workflow_dispatch:
