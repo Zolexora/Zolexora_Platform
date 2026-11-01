@@ -1,7 +1,7 @@
 # Shared FastAPI image. Build context: repo root; APP_DIR = service dir holding main.py + requirements.txt
 # docker build -f infrastructure/containers/docker/Dockerfile.api-python --build-arg APP_DIR=products/<p>/services/<svc> .
 ARG APP_DIR
-FROM python:3.12-slim AS builder
+FROM python:3.15-slim AS builder
 ARG APP_DIR
 
 WORKDIR /build
@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends build-essential
 COPY ${APP_DIR}/requirements.txt .
 RUN pip wheel --no-cache-dir --no-deps --wheel-dir /build/wheels -r requirements.txt
 
-FROM python:3.12-slim
+FROM python:3.15-slim
 ARG APP_DIR
 
 WORKDIR /app
