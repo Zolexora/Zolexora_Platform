@@ -45,7 +45,7 @@
 
 ## 3. Backend & IoT Gateway
 
-- **FastAPI Core** (`apps/backend`): High-throughput async REST API running on port `4060`.
+- **FastAPI Core** (`services/backend`): High-throughput async REST API running on port `4060`.
 - **Sub-50ms Turnstile Engine** (`TurnstileEngine`):
   - Validates RFID tags, optical rolling tokens, and biometric hashes.
   - Verifies membership expiration, allowed branch access, and tier zone permissions.

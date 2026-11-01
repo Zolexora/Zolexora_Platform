@@ -1,0 +1,49 @@
+name: Zolexora IMS — Docker images
+
+# Builds every image in products/zolexora-ims/compose.yaml and pushes ghcr.io/zolexora/zolexora-ims-<service>:{latest,<sha>}.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'products/zolexora-ims/**'
+      - 'packages/**'
+      - 'platform/**'
+      - 'infrastructure/containers/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/zolexora-ims-docker.yml'
+      - '.github/workflows/reusable-docker-ghcr.yml'
+      - '.github/actions/docker-login/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  images:
+    uses: ./.github/workflows/reusable-docker-ghcr.yml
+    with:
+      product: ims
+      services: |
+        [
+          {
+            "service": "admin-backend",
+            "file": "products/zolexora-ims/services/admin-api/Dockerfile"
+          },
+          {
+            "service": "admin-frontend",
+            "file": "products/zolexora-ims/apps/ims-admin/frontend/Dockerfile"
+          },
+          {
+            "service": "user-backend",
+            "file": "products/zolexora-ims/services/user-api/Dockerfile"
+          },
+          {
+            "service": "user-frontend",
+            "file": "products/zolexora-ims/apps/ims-user/frontend/Dockerfile"
+          },
+          {
+            "service": "nginx",
+            "file": "products/zolexora-ims/Dockerfile.nginx"
+          }
+        ]

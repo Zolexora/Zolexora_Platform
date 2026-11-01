@@ -16,13 +16,13 @@ forward-secret keys, HMAC tamper/replay protection, and a locked "Vault Key" set
 
 ```
 MaunKavach/
-  app/         Android app (Kotlin, Jetpack Compose)
-  backend/     Node.js + Postgres(Supabase) + Supabase Storage backend
-  web/         Marketing site (Vite/React, deploy to Vercel)
+  apps/android/ Android app (Kotlin, Jetpack Compose)
+  services/backend/ Node.js + Postgres(Supabase) + Supabase Storage backend
+  apps/web/     Marketing site (Vite/React, deploy to Vercel)
   README.md, DEPLOY.md
 ```
 
-## Crypto core (`app/src/main/java/com/maunkavach/crypto/`)
+## Crypto core (`apps/android/src/main/java/com/maunkavach/crypto/`)
 
 | File | What it does |
 |---|---|
@@ -38,7 +38,7 @@ MaunKavach/
 | `FileCrypto.kt` | Full file flow: substitution → rotation → random per-file AES key → envelope-wrap → encrypted metadata → HMAC |
 | `CryptoManager.kt` | Low-level AES-256-GCM + Android Keystore master key primitives |
 
-## Security layer (`app/src/main/java/com/maunkavach/security/`)
+## Security layer (`apps/android/src/main/java/com/maunkavach/security/`)
 
 - `BiometricHelper.kt` — Vault Key unlock gating, every time, no caching
 - `DeviceIntegrity.kt` — root/TracerPid/Frida-port/Frida-library heuristics, emulator detection,
@@ -55,13 +55,13 @@ I can't run Kotlin/Android in the sandbox that built this, so verification happe
    ephemeral key derivation (forward-secrecy property: different counter → different key),
    HMAC tamper detection, and message_id/counter replay rejection — all independently verified
    in a Node.js test harness before being written as Kotlin.
-2. **The actual Kotlin files**, via `app/src/test/java/com/maunkavach/crypto/CryptoCoreTest.kt`
+2. **The actual Kotlin files**, via `apps/android/src/test/java/com/maunkavach/crypto/CryptoCoreTest.kt`
    — a real JUnit suite covering every item above directly against the shipped Kotlin code
    (not a reimplementation). Run it with Android Studio's test runner or `./gradlew test`.
-3. **The actual backend `server.js`**, via `backend/test/backend.test.js` — mocks Postgres and
+3. **The actual backend `server.js`**, via `services/backend/test/backend.test.js` — mocks Postgres and
    Supabase Storage, but exercises the real server code: registration, login, auth gating,
    exact-replay rejection (409), replayed-counter-under-new-id rejection (409), expired-message
-   disappearance, and ciphertext-only storage. Run with `npm test` inside `backend/`.
+   disappearance, and ciphertext-only storage. Run with `npm test` inside `services/backend/`.
 
 What is NOT covered by an automated test (needs a real device/emulator or manual QA):
 screenshot blocking, backup-disabled behavior, Vault locking on background, session-key RAM

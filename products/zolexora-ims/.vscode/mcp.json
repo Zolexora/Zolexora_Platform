@@ -92,7 +92,7 @@
       "command": "python3",
       "args": ["scripts/mcp_payments_server.py"],
       "env": {
-        "PYTHONPATH": "apps/ims-user/backend"
+        "PYTHONPATH": "services/user-api"
       }
     }
   },
@@ -168,7 +168,7 @@
       "command": "python3",
       "args": ["scripts/mcp_payments_server.py"],
       "env": {
-        "PYTHONPATH": "apps/ims-user/backend"
+        "PYTHONPATH": "services/user-api"
       }
     }
   }

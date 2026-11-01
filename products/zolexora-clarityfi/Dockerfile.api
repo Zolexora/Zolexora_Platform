@@ -10,14 +10,14 @@ COPY products/zolexora-clarityfi ./products/zolexora-clarityfi
 
 # Install dependencies and build
 RUN pnpm config set ignore-scripts true && pnpm install --no-frozen-lockfile
-RUN pnpm --filter @clarityfi/api-server build
+RUN pnpm --filter @zolexora/clarityfi-api build
 
 FROM node:22-alpine
-WORKDIR /app/products/zolexora-clarityfi/apps/api-server
-COPY --from=builder /app/products/zolexora-clarityfi/apps/api-server/dist ./dist
+WORKDIR /app/products/zolexora-clarityfi/services/api
+COPY --from=builder /app/products/zolexora-clarityfi/services/api/dist ./dist
 
 # Create alias link so worker threads resolve accurately from either path
-RUN mkdir -p /app && ln -sf /app/products/zolexora-clarityfi/apps/api-server/dist /app/dist
+RUN mkdir -p /app && ln -sf /app/products/zolexora-clarityfi/services/api/dist /app/dist
 
 ENV PORT=8080 \
     NODE_ENV=production

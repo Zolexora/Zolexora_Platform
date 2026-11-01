@@ -1,2 +1,3 @@
+# Build context: repo root (docker build -f products/zolexora-rentoeasy/Dockerfile.nginx .)
 FROM nginx:alpine
-COPY nginx-conf.d /etc/nginx/conf.d
+COPY products/zolexora-rentoeasy/nginx-conf.d /etc/nginx/conf.d

@@ -7,12 +7,30 @@ One pnpm workspace (root `pnpm-workspace.yaml`) orchestrated by Turborepo. Produ
 | Path | Holds |
 | --- | --- |
 | `products/<name>/` | One deployable product each: its apps, services, product-local packages, `compose.yaml`, Dockerfiles, scripts, docs. |
-| `apps/` | Cross-product apps: `auth-service` (central identity, Node, port 3081) and `platform-admin` (FastAPI + frontend). |
+| `apps/` | Cross-product apps: `zolexora-auth-service` (central identity, Node, port 3081) and `zolexora-platform-admin` (FastAPI `backend/` + `frontend/`). |
 | `platform/` | Cross-product runtime modules: `api-shield` (Cloudflare Worker), `auth/user-auth-core`, `auth/user-auth-firebase`, `functions`. |
 | `packages/` | Shared libraries/configs: `api-contracts`, `auth-client`, `utils`, `tsconfig`, `eslint-config`. |
 | `infrastructure/` | Shared Dockerfiles (`containers/docker`), the shared nginx gateway image (`containers/compose`), database schemas/migrations (`database`, used by `supabase/`), cloud specs (`cloud`). |
 | `scripts/` | Repo-wide dev/setup/docker scripts (see `scripts/README.md`). |
 | `tests/e2e/` | Cross-product E2E suites (`auth-service`, `tms`). |
+
+### Product layout
+
+Every product uses the same top-level folders:
+
+```
+products/zolexora-<product>/
+  apps/        frontends and mobile/desktop clients (web, admin, android, expo apps, edge workers)
+  services/    backends and APIs (FastAPI, Express, NestJS, Frappe apps)
+  packages/    product-local shared code (types, API clients, UI)
+  scripts/     docker-start.sh (start|stop|restart|build|pull|status|logs) + product scripts
+  docs/        product docs
+  compose.yaml, Dockerfile.*, .infisical.json, README.md
+```
+
+Product notes: ERP's Frappe apps (including the `frappe`/`erpnext`/`payments` submodules) live in `services/frappe/`; IMS shares Python helpers via `services/shared/`; Zolexora AI's Python package is `services/api/backend/`; Maun Kavach's Android app is `apps/android/` (Gradle wrapper stays at the product root).
+
+npm packages are named `@zolexora/<product>-<app>` (e.g. `@zolexora/tms-web`, `@zolexora/textile-care-admin-web`); product root packages are `@zolexora/<product>`. GHCR images are `ghcr.io/zolexora/zolexora-<product>-<service>`, built by `.github/workflows/zolexora-<product>-docker.yml`.
 
 All Docker builds use the repo root as context (`context: ../../`, `dockerfile: products/<p>/Dockerfile.<svc>`); see `.agents/rules/docker-product-standards.md`.
 
@@ -32,7 +50,7 @@ Stays inside a product (never extracted):
 
 - ERP business domains: accounting/GL, B2B/B2C invoicing, inventory, logistics, selling/CRM, manufacturing, and their data (orders, customers, items, invoices, payroll).
 - Fine-grained business permissions (the platform only answers "may this org use product X?").
-- Integrations that serve a single product (e.g. ERP bank reconciliation lives in `products/zolexora-erp/backend/zolexora_integrations/`).
+- Integrations that serve a single product (e.g. ERP bank reconciliation lives in `products/zolexora-erp/services/frappe/zolexora_integrations/`).
 
 ## Tenant naming
 

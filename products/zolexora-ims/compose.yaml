@@ -24,9 +24,11 @@ services:
           cpus: '0.1'
           memory: 128M
   ims-admin-backend:
+    image: ${IMS_ADMIN_BACKEND_IMAGE:-ghcr.io/zolexora/zolexora-ims-admin-backend:latest}
+    pull_policy: missing
     build:
-      context: ./apps/ims-admin/backend
-      dockerfile: Dockerfile
+      context: ../../
+      dockerfile: products/zolexora-ims/services/admin-api/Dockerfile
     container_name: ims-admin-backend
     environment:
     - DATABASE_URL=postgresql://ims:${POSTGRES_PASSWORD}@postgres:5432/ims
@@ -47,9 +49,11 @@ services:
       timeout: 10s
       retries: 3
   ims-user-backend:
+    image: ${IMS_USER_BACKEND_IMAGE:-ghcr.io/zolexora/zolexora-ims-user-backend:latest}
+    pull_policy: missing
     build:
-      context: ./apps/ims-user/backend
-      dockerfile: Dockerfile
+      context: ../../
+      dockerfile: products/zolexora-ims/services/user-api/Dockerfile
     container_name: ims-user-backend
     environment:
     - DATABASE_URL=postgresql://ims:${POSTGRES_PASSWORD}@postgres:5432/ims
@@ -70,9 +74,11 @@ services:
       timeout: 10s
       retries: 3
   ims-admin-frontend:
+    image: ${IMS_ADMIN_FRONTEND_IMAGE:-ghcr.io/zolexora/zolexora-ims-admin-frontend:latest}
+    pull_policy: missing
     build:
-      context: ./apps/ims-admin/frontend
-      dockerfile: Dockerfile
+      context: ../../
+      dockerfile: products/zolexora-ims/apps/ims-admin/frontend/Dockerfile
     container_name: ims-admin-frontend
     deploy:
       resources:
@@ -89,9 +95,11 @@ services:
       retries: 3
       start_period: 5s
   ims-user-frontend:
+    image: ${IMS_USER_FRONTEND_IMAGE:-ghcr.io/zolexora/zolexora-ims-user-frontend:latest}
+    pull_policy: missing
     build:
-      context: ./apps/ims-user/frontend
-      dockerfile: Dockerfile
+      context: ../../
+      dockerfile: products/zolexora-ims/apps/ims-user/frontend/Dockerfile
     container_name: ims-user-frontend
     deploy:
       resources:
@@ -108,9 +116,11 @@ services:
       retries: 3
       start_period: 5s
   nginx:
+    image: ${IMS_NGINX_IMAGE:-ghcr.io/zolexora/zolexora-ims-nginx:latest}
+    pull_policy: missing
     build:
-      context: .
-      dockerfile: Dockerfile.nginx
+      context: ../../
+      dockerfile: products/zolexora-ims/Dockerfile.nginx
     container_name: ims-nginx
     ports:
     - "3072:80"

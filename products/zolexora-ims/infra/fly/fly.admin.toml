@@ -1,13 +1,13 @@
 # ==============================================================================
 # Zolexora IMS — Fly.io Configuration for Admin API (MicroVM Container)
-# Deploy with: fly launch --config infra/fly/fly.admin.toml
+# Deploy from the repo root: fly deploy --config products/zolexora-ims/infra/fly/fly.admin.toml .
 # ==============================================================================
 
 app = "zolexora-admin-api"
 primary_region = "ord"
 
 [build]
-  dockerfile = "../../apps/ims-admin/backend/Dockerfile"
+  dockerfile = "../../services/admin-api/Dockerfile"
 
 [http_service]
   internal_port = 8001

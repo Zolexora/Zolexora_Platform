@@ -8,7 +8,7 @@ import {
   orders,
   admin,
   coins
-} from "@zolexora/shared-api";
+} from "@zolexora/marketplace-shared-api";
 
 // Keep local session cookies on the same host as the seller browser tab.
 // `localhost` and `127.0.0.1` are different cookie domains.

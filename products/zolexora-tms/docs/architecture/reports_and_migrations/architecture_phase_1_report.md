@@ -66,7 +66,7 @@ The dependency enforcement rule is now strictly applied:
 
 ## D. Capability Registry
 
-The canonical definition of application capabilities is now strictly owned by the backend in `apps/backend/app/modules/core/platform/capabilities.py`.
+The canonical definition of application capabilities is now strictly owned by the backend in `services/backend/app/modules/core/platform/capabilities.py`.
 
 It defines a static, immutable tree of `Module ➔ Page ➔ Action`.
 For example:

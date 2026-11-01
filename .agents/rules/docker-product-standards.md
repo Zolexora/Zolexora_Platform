@@ -44,11 +44,11 @@ Every service in `compose.yaml` that builds locally MUST adhere to:
 ```yaml
 services:
   backend:
-    image: ${TMS_BACKEND_IMAGE:-ghcr.io/zolexora/tms-backend:latest}
+    image: ${TMS_BACKEND_IMAGE:-ghcr.io/zolexora/zolexora-tms-backend:latest}
     pull_policy: missing
     build:
       context: ../../
-      dockerfile: products/zolexora-tms/apps/backend/Dockerfile
+      dockerfile: products/zolexora-tms/services/backend/Dockerfile
     container_name: tms-backend
     ports:
       - "${TMS_BACKEND_PORT:-4031}:4030"
@@ -156,17 +156,18 @@ When a product is dockerized, register these scripts in root `package.json`:
 
 ---
 
-## 8. GitHub Actions Workflow (`.github/workflows/docker-ghcr-<product>.yml`)
+## 8. GitHub Actions Workflow (`.github/workflows/zolexora-<product>-docker.yml`)
 
-Automate image building and publishing to GHCR with layer caching:
+Every product's image workflow is a thin caller of `.github/workflows/reusable-docker-ghcr.yml`:
 
-- **Trigger**: Push to `main` with `paths: ['products/<product>/**', 'packages/**']` + `workflow_dispatch`.
+- **Trigger**: push to `main` with `paths: ['products/zolexora-<product>/**', 'packages/**', ...]` + `workflow_dispatch`.
 - **Permissions**: `packages: write`, `contents: read`.
-- **Registry**: `ghcr.io` with `${{ secrets.GITHUB_TOKEN }}`.
-- **Lowercase Owner**: Convert `github.repository_owner` to lowercase (`tr '[:upper:]' '[:lower:]'`).
-- **Tags**: Push `:latest` and `:${{ github.sha }}`.
-- **Cache**: Use Buildx GHA cache: `cache-from: type=gha,scope=<service>` and `cache-to: type=gha,mode=max,scope=<service>`.
-- **Source Label**: Add `org.opencontainers.image.source=https://github.com/${{ github.repository }}` so the package links to the repository's Packages tab.
+- **Input `services`**: a JSON list mirroring the product's `compose.yaml` builds:
+  `[{"service":"backend","file":"products/zolexora-<product>/services/backend/Dockerfile","build-args":"K=V","target":""}]`.
+- The reusable workflow builds from the repo root, logs in via `.github/actions/docker-login`, and pushes
+  `ghcr.io/zolexora/zolexora-<product>-<service>:{latest,<sha>}` with Buildx GHA cache and OCI source/revision labels.
+- The image name must equal the compose `image:` default so `pull_policy: missing` finds it.
+- Builds that need build-time secrets (e.g. AppSuite `NEXT_PUBLIC_*`) load them with `.github/actions/infisical`.
 
 ---
 

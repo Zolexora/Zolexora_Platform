@@ -1,0 +1,76 @@
+# Auto-labels PRs by changed paths. Used by .github/workflows/labeler.yml (actions/labeler v5).
+product:ai:
+  - changed-files:
+      - any-glob-to-any-file: 'products/zolexora-ai/**'
+product:appsuite:
+  - changed-files:
+      - any-glob-to-any-file: 'products/zolexora-appsuite/**'
+product:clarityfi:
+  - changed-files:
+      - any-glob-to-any-file: 'products/zolexora-clarityfi/**'
+product:engage:
+  - changed-files:
+      - any-glob-to-any-file: 'products/zolexora-engage/**'
+product:erp:
+  - changed-files:
+      - any-glob-to-any-file: 'products/zolexora-erp/**'
+product:ims:
+  - changed-files:
+      - any-glob-to-any-file: 'products/zolexora-ims/**'
+product:ironclub:
+  - changed-files:
+      - any-glob-to-any-file: 'products/zolexora-ironclub/**'
+product:marketplace:
+  - changed-files:
+      - any-glob-to-any-file: 'products/zolexora-marketplace/**'
+product:maunkavach:
+  - changed-files:
+      - any-glob-to-any-file: 'products/zolexora-maunkavach/**'
+product:rentoeasy:
+  - changed-files:
+      - any-glob-to-any-file: 'products/zolexora-rentoeasy/**'
+product:textile-care:
+  - changed-files:
+      - any-glob-to-any-file: 'products/zolexora-textile-care/**'
+product:tms:
+  - changed-files:
+      - any-glob-to-any-file: 'products/zolexora-tms/**'
+area:auth-service:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'apps/zolexora-auth-service/**'
+          - 'packages/auth-client/**'
+area:platform-admin:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'apps/zolexora-platform-admin/**'
+area:platform:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'platform/**'
+          - 'packages/**'
+ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/**'
+docker:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/Dockerfile*'
+          - '**/compose.yaml'
+          - 'infrastructure/containers/**'
+infrastructure:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'infrastructure/**'
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'docs/**'
+          - '**/*.md'
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'pnpm-lock.yaml'
+          - '**/requirements*.txt'
+          - '**/pyproject.toml'

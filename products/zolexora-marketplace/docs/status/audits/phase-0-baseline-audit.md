@@ -23,7 +23,7 @@ Current domain references use `zolexora.com` and `admin.zolexora.com` rather tha
 
 `pnpm-workspace.yaml:1-3` includes only `apps/*` and `packages/*`; nested app manifests are invisible. Lock importers still name nonexistent flat paths (`pnpm-lock.yaml:31,125,216,280,374`). `Dockerfile.frontend:13-17`, Compose (`docker-compose.yml:45-100`), CI (`.github/workflows/ci.yml:69-70`), and README (`README.md:157-163,329-331`) use old paths. Root type/lint/build exit 0 with zero Turbo tasks.
 
-`@zolexora/shared-api` exports client/auth/services/types but no app imports it (`packages/shared-api/package.json:5-14`, `src/index.ts:1-4`). Every app duplicates API clients. `@zolexora/shared-config` is also unused and has no scripts; its Tailwind config references undeclared `tailwindcss-animate` (`packages/shared-config/tailwind.config.js:60`).
+`@zolexora/marketplace-shared-api` exports client/auth/services/types but no app imports it (`packages/shared-api/package.json:5-14`, `src/index.ts:1-4`). Every app duplicates API clients. `@zolexora/marketplace-shared-config` is also unused and has no scripts; its Tailwind config references undeclared `tailwindcss-animate` (`packages/shared-config/tailwind.config.js:60`).
 
 ## Backend routes and lifecycle
 

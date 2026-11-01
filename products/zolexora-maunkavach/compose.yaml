@@ -1,6 +1,6 @@
 services:
   backend:
-    image: ${MAUN_KAVACH_BACKEND_IMAGE:-ghcr.io/zolexora/maun-kavach-backend:latest}
+    image: ${MAUN_KAVACH_BACKEND_IMAGE:-ghcr.io/zolexora/zolexora-maunkavach-backend:latest}
     pull_policy: missing
     build:
       context: ../../
@@ -34,7 +34,7 @@ services:
           memory: 128M
 
   frontend:
-    image: ${MAUN_KAVACH_WEB_IMAGE:-ghcr.io/zolexora/maun-kavach-web:latest}
+    image: ${MAUN_KAVACH_WEB_IMAGE:-ghcr.io/zolexora/zolexora-maunkavach-frontend:latest}
     pull_policy: missing
     build:
       context: ../../
@@ -60,7 +60,7 @@ services:
           memory: 128M
 
   nginx:
-    image: ${MAUN_KAVACH_NGINX_IMAGE:-ghcr.io/zolexora/maun-kavach-nginx:latest}
+    image: ${MAUN_KAVACH_NGINX_IMAGE:-ghcr.io/zolexora/zolexora-maunkavach-nginx:latest}
     pull_policy: missing
     build:
       context: ../../

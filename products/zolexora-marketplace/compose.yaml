@@ -32,9 +32,13 @@ services:
           cpus: '0.1'
           memory: 128M
   backend:
+    image: ${MARKETPLACE_BACKEND_IMAGE:-ghcr.io/zolexora/zolexora-marketplace-backend:latest}
+    pull_policy: missing
     build:
-      context: ./services/marketplace-api
-      dockerfile: ../../../../infrastructure/containers/docker/Dockerfile.api-python
+      context: ../../
+      dockerfile: infrastructure/containers/docker/Dockerfile.api-python
+      args:
+        APP_DIR: products/zolexora-marketplace/services/marketplace-api
     container_name: marketplace-backend
     environment:
     - DATABASE_URL=postgresql://zolexora:${POSTGRES_PASSWORD}@postgres:5432/marketplace
@@ -55,6 +59,8 @@ services:
           memory: 128M
 
   admin-web:
+    image: ${MARKETPLACE_ADMIN_WEB_IMAGE:-ghcr.io/zolexora/zolexora-marketplace-admin-web:latest}
+    pull_policy: missing
     build:
       context: ../../
       dockerfile: infrastructure/containers/docker/Dockerfile.nextjs
@@ -72,11 +78,13 @@ services:
           memory: 128M
 
   seller-web:
+    image: ${MARKETPLACE_SELLER_WEB_IMAGE:-ghcr.io/zolexora/zolexora-marketplace-seller-web:latest}
+    pull_policy: missing
     build:
       context: ../../
       dockerfile: infrastructure/containers/docker/Dockerfile.nextjs
       args:
-        APP_NAME: "@zolexora/seller-portal"
+        APP_NAME: "@zolexora/marketplace-seller-web"
         APP_DIR: products/zolexora-marketplace/apps/portals/seller/web
     container_name: marketplace-seller-web
     deploy:
@@ -89,11 +97,13 @@ services:
           memory: 128M
 
   shop-web:
+    image: ${MARKETPLACE_SHOP_WEB_IMAGE:-ghcr.io/zolexora/zolexora-marketplace-shop-web:latest}
+    pull_policy: missing
     build:
       context: ../../
       dockerfile: infrastructure/containers/docker/Dockerfile.nextjs
       args:
-        APP_NAME: "@zolexora/storefront-zolexora-shop"
+        APP_NAME: "@zolexora/marketplace-shop-web"
         APP_DIR: products/zolexora-marketplace/apps/storefronts/zolexora-shop/web
     container_name: marketplace-shop-web
     deploy:
@@ -106,11 +116,13 @@ services:
           memory: 128M
 
   mahila-web:
+    image: ${MARKETPLACE_MAHILA_WEB_IMAGE:-ghcr.io/zolexora/zolexora-marketplace-mahila-web:latest}
+    pull_policy: missing
     build:
       context: ../../
       dockerfile: infrastructure/containers/docker/Dockerfile.cra
       args:
-        APP_NAME: "@zolexora/storefront-mahila-madel"
+        APP_NAME: "@zolexora/marketplace-mahila-madel-web"
         APP_DIR: products/zolexora-marketplace/apps/storefronts/mahila-madel/web
     container_name: marketplace-mahila-web
     deploy:
@@ -123,9 +135,11 @@ services:
           memory: 128M
 
   nginx:
+    image: ${MARKETPLACE_NGINX_IMAGE:-ghcr.io/zolexora/zolexora-marketplace-nginx:latest}
+    pull_policy: missing
     build:
-      context: .
-      dockerfile: Dockerfile.nginx
+      context: ../../
+      dockerfile: products/zolexora-marketplace/Dockerfile.nginx
     container_name: marketplace-nginx
     ports:
     - "3079:80"

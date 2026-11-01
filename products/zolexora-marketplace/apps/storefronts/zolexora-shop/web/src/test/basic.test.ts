@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { STOREFRONT_HEADER, STOREFRONT_KEYS, isStorefrontKey, parsePublicStorefront } from "@zolexora/shared-api/storefront";
+import { STOREFRONT_HEADER, STOREFRONT_KEYS, isStorefrontKey, parsePublicStorefront } from "@zolexora/marketplace-shared-api/storefront";
 import { applyStorefrontHeader } from "@/lib/api";
 
 describe("Simple Test", () => {

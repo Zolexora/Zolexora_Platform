@@ -54,7 +54,7 @@ Likely fix:
 
 Move QR payload generation and QR encoding work off the main thread in:
 
-- `app/src/main/java/com/maunkavach/ui/screens/GenerateContactQrScreen.kt`
+- `apps/android/src/main/java/com/maunkavach/ui/screens/GenerateContactQrScreen.kt`
 
 Recommended approach:
 
@@ -82,7 +82,7 @@ Likely fix:
 
 Update:
 
-- `app/src/main/java/com/maunkavach/network/ApiClient.kt`
+- `apps/android/src/main/java/com/maunkavach/network/ApiClient.kt`
 
 Recommended approach:
 
@@ -123,7 +123,7 @@ Fix:
 
 Update:
 
-- `app/src/main/AndroidManifest.xml`
+- `apps/android/src/main/AndroidManifest.xml`
 
 Add to the `<application>` tag:
 

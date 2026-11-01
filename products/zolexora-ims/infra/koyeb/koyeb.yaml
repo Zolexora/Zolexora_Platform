@@ -16,7 +16,7 @@ services:
     regions:
       - fra # Frankfurt or was (Washington DC)
     docker:
-      dockerfile: apps/ims-user/backend/Dockerfile
+      dockerfile: products/zolexora-ims/services/user-api/Dockerfile
     ports:
       - port: 8000
         path: /
@@ -52,7 +52,7 @@ services:
     regions:
       - fra
     docker:
-      dockerfile: apps/ims-admin/backend/Dockerfile
+      dockerfile: products/zolexora-ims/services/admin-api/Dockerfile
     ports:
       - port: 8001
         path: /

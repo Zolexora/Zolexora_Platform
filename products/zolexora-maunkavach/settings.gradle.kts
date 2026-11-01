@@ -14,3 +14,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "MaunKavach"
 include(":app")
+project(":app").projectDir = file("apps/android")

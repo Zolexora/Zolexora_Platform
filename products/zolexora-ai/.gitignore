@@ -41,8 +41,8 @@ htmlcov/
 
 # ── Node / Frontend ───────────────────────────────────────────
 node_modules/
-frontend/dist/
-frontend/.vite/
+apps/web/dist/
+apps/web/.vite/
 *.tsbuildinfo
 
 # ── Generated workspaces ──────────────────────────────────────

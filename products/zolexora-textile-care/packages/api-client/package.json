@@ -1,5 +1,5 @@
 {
-  "name": "@zolexora/ttc-api-client",
+  "name": "@zolexora/textile-care-api-client",
   "version": "0.1.0",
   "private": true,
   "main": "./src/index.ts",

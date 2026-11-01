@@ -6,7 +6,7 @@
  *  - Theme-aware (light/dark via CSS variables)
  *  - Responsive
  *
- * We reuse @zolexora/ttc-ui for Logo/Card/Button basics and extend here.
+ * We reuse @zolexora/textile-care-ui for Logo/Card/Button basics and extend here.
  */
 
 'use client';

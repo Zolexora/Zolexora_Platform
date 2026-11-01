@@ -1,5 +1,5 @@
 {
-  "name": "rent-and-stay",
+  "name": "@zolexora/rentoeasy",
   "version": "1.0.0",
   "private": true,
   "workspaces": [

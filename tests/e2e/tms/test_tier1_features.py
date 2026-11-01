@@ -239,7 +239,7 @@ class TestTier1Feature5DatabaseConfig(unittest.TestCase):
     def test_f5_04_backend_settings_support_remote_db(self):
         """Verify backend settings compute database URL from Infisical keys."""
         config_path = (
-            get_repo_root() / "products" / "zolexora-tms" / "apps" / "backend" / "app" / "core" / "config.py"
+            get_repo_root() / "products" / "zolexora-tms" / "services" / "backend" / "app" / "core" / "config.py"
         )
         content = config_path.read_text(encoding="utf-8")
         self.assertIn("DATABASE_ZOLEXORA_TMS_HOST", content)
@@ -274,7 +274,7 @@ class TestTier1Feature6BackendHealth(unittest.TestCase):
             get_repo_root()
             / "products"
             / "zolexora-tms"
-            / "apps"
+            / "services"
             / "backend"
             / "app"
             / "modules"
@@ -294,7 +294,7 @@ class TestTier1Feature6BackendHealth(unittest.TestCase):
             get_repo_root()
             / "products"
             / "zolexora-tms"
-            / "apps"
+            / "services"
             / "backend"
             / "app"
             / "modules"
@@ -309,7 +309,7 @@ class TestTier1Feature6BackendHealth(unittest.TestCase):
     def test_f6_04_backend_port_exposure_in_dockerfile(self):
         """Verify backend Dockerfile declares EXPOSE 4030."""
         dockerfile = (
-            get_repo_root() / "products" / "zolexora-tms" / "apps" / "backend" / "Dockerfile"
+            get_repo_root() / "products" / "zolexora-tms" / "services" / "backend" / "Dockerfile"
         )
         self.assertTrue(dockerfile.is_file())
         content = dockerfile.read_text(encoding="utf-8")
@@ -327,7 +327,7 @@ class TestTier1Feature6BackendHealth(unittest.TestCase):
         else:
             # Verify route registration in FastAPI app/main.py
             main_py = (
-                get_repo_root() / "products" / "zolexora-tms" / "apps" / "backend" / "app" / "main.py"
+                get_repo_root() / "products" / "zolexora-tms" / "services" / "backend" / "app" / "main.py"
             )
             content = main_py.read_text(encoding="utf-8")
             self.assertIn("app.include_router(health_router)", content)

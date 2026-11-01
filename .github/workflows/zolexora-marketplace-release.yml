@@ -1,4 +1,4 @@
-name: ZolexoraMarketplace — Release
+name: Zolexora Marketplace — Release
 
 on:
   push:
@@ -22,15 +22,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Build Release Artifacts
-        run: |
-          echo "Building marketplace package release artifacts..."
-
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
-          name: Release ${{ github.ref_name }}
+          tag_name: ${{ inputs.tag_name || github.ref_name }}
+          name: Marketplace ${{ inputs.tag_name || github.ref_name }}
           draft: false
           prerelease: false
           generate_release_notes: true

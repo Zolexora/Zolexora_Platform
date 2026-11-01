@@ -1,0 +1,44 @@
+name: Zolexora ERP — Docker images
+
+# Builds every image in compose.yaml, products/zolexora-erp/compose.yaml and pushes ghcr.io/zolexora/zolexora-erp-<service>:{latest,<sha>}.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'products/zolexora-erp/**'
+      - 'compose.yaml'
+      - 'scripts/docker/**'
+      - 'packages/**'
+      - 'platform/**'
+      - 'infrastructure/containers/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/zolexora-erp-docker.yml'
+      - '.github/workflows/reusable-docker-ghcr.yml'
+      - '.github/actions/docker-login/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  images:
+    uses: ./.github/workflows/reusable-docker-ghcr.yml
+    with:
+      product: erp
+      services: |
+        [
+          {
+            "service": "backend",
+            "file": "infrastructure/containers/docker/Dockerfile",
+            "build-args": "INSTALL_PAYMENTS=0"
+          },
+          {
+            "service": "nginx",
+            "file": "infrastructure/containers/compose/Dockerfile.nginx"
+          },
+          {
+            "service": "web",
+            "file": "products/zolexora-erp/Dockerfile"
+          }
+        ]

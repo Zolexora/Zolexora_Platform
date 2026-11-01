@@ -1,0 +1,47 @@
+name: The Textile Care — CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'products/zolexora-textile-care/**'
+      - 'packages/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/zolexora-textile-care-ci.yml'
+      - '.github/actions/**'
+  pull_request:
+    paths:
+      - 'products/zolexora-textile-care/**'
+      - 'packages/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/zolexora-textile-care-ci.yml'
+      - '.github/actions/**'
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: products/zolexora-textile-care/services/backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-python
+        with:
+          packages: -e products/zolexora-textile-care/services/backend[dev]
+      - run: pytest tests -q
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: products/zolexora-textile-care
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm --filter @zolexora/textile-care-marketplace-web --filter @zolexora/textile-care-seller-web --filter @zolexora/textile-care-admin-web build

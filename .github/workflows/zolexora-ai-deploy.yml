@@ -1,9 +1,13 @@
-name: ZolexoraAI — Deploy
+name: Zolexora AI — Deploy to Azure
 
 on:
   push:
     branches: [main]
+    paths: ['products/zolexora-ai/**', '.github/workflows/zolexora-ai-deploy.yml']
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 env:
   PYTHON_VERSION: "3.11"
@@ -18,30 +22,15 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: ./.github/actions/setup-python
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-      - name: Install & test
-        run: |
-          pip install -r requirements.txt
-          pip install pytest pytest-asyncio
-          pytest tests/ -v --ignore=tests/integration || echo "No tests found, skipping"
-        env:
-          AZURE_OPENAI_ENDPOINT: "https://stub.openai.azure.com/"
-          AZURE_OPENAI_API_KEY: "stub-key"
-          AZURE_OPENAI_DEPLOYMENT_GPT4O: "gpt-4o"
-          AZURE_OPENAI_DEPLOYMENT_PHI4: "phi-4"
-          AZURE_OPENAI_DEPLOYMENT_MINI: "gpt-4o-mini"
-          AZURE_OPENAI_API_VERSION: "2024-02-01"
-          GITHUB_TOKEN: "stub-token"
-          GITHUB_ORG: "stub-org"
-          AZURE_SUBSCRIPTION_ID: "00000000-0000-0000-0000-000000000000"
-          AZURE_RESOURCE_GROUP: "stub-rg"
-          AZURE_CONTAINER_REGISTRY: "stub.azurecr.io"
-          AZURE_CONTAINER_APP_ENV: "stub-env"
-          REDIS_URL: "redis://localhost:6379/0"
-          API_KEY: "stub-api-key"
-          SECRET_KEY: "stub-secret-key-32-chars-minimum-xx"
+          requirements: products/zolexora-ai/services/api/requirements.txt
+          packages: pytest pytest-asyncio
+      - name: Test
+        # backend/tests/conftest.py provides test-only stub settings
+        working-directory: products/zolexora-ai/services/api
+        run: pytest backend/tests tests
 
   build:
     name: Build & Push Docker Image
@@ -102,7 +91,7 @@ jobs:
         run: |
           API_KEY="$(printf '%s' "$API_KEY" | sed 's/[[:space:]]*$//')"
           docker build \
-            --file infra/Dockerfile \
+            --file products/zolexora-ai/services/api/Dockerfile \
             --build-arg VITE_API_KEY="$API_KEY" \
             --tag "${{ steps.image.outputs.uri }}" \
             --tag "${{ env.ACR_NAME }}.azurecr.io/${{ env.APP_NAME }}:latest" \

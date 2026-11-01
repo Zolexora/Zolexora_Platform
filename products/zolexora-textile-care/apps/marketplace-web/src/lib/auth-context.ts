@@ -1,6 +1,6 @@
 /**
  * Authentication helpers for marketplace-web.
- * Thin wrappers over @zolexora/ttc-auth that work with Next.js cookies/server components.
+ * Thin wrappers over @zolexora/textile-care-auth that work with Next.js cookies/server components.
  *
  * Auth is intentionally not a prerequisite for browsing — guests can view
  * sellers, services, and prices without logging in.
@@ -9,7 +9,7 @@
 'use client';
 
 import { createContext, useContext } from 'react';
-import type { AuthUser, AuthSession } from '@zolexora/ttc-auth';
+import type { AuthUser, AuthSession } from '@zolexora/textile-care-auth';
 
 export type { AuthUser, AuthSession };
 

@@ -7,8 +7,8 @@ services:
     runtime: docker
     region: oregon
     plan: free
-    dockerfilePath: apps/ims-user/backend/Dockerfile
-    dockerContext: apps/ims-user/backend
+    dockerfilePath: products/zolexora-ims/services/user-api/Dockerfile
+    dockerContext: .
     healthCheckPath: /health
     envVars:
       - key: PORT
@@ -40,8 +40,8 @@ services:
     runtime: docker
     region: oregon
     plan: free
-    dockerfilePath: apps/ims-admin/backend/Dockerfile
-    dockerContext: apps/ims-admin/backend
+    dockerfilePath: products/zolexora-ims/services/admin-api/Dockerfile
+    dockerContext: .
     healthCheckPath: /health
     envVars:
       - key: PORT

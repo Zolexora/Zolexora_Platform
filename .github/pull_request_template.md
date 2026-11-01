@@ -1,42 +1,23 @@
-## Description
+## What and why
 
-Brief description of the changes introduced by this pull request.
+<!-- What changes, and the problem it solves. Title must be a Conventional Commit: feat(tms): ..., fix!: ... -->
 
-## Related Issues / Architecture Decision Records
+Closes #
 
-- Fixes #(issue)
-- Supersedes / Implements ADR #(ADR number if applicable)
+## Products / areas touched
 
-## Type of Change
+<!-- e.g. products/zolexora-tms, apps/zolexora-auth-service, packages/auth-client, .github -->
 
-- [ ] Bug fix (non-breaking change which fixes an issue)
-- [ ] New feature (non-breaking change which adds functionality)
-- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
-- [ ] Documentation / Refactoring update
+## How it was verified
 
-## Scope & Applications Changed
-
-- [ ] `services/marketplace-api` (FastAPI Shared API)
-- [ ] `apps/storefronts/zolexora-shop` (Zolexora Shop)
-- [ ] `apps/storefronts/mahila-madel` (Mahila Madel)
-- [ ] `apps/portals/seller` (Seller Portal)
-- [ ] `apps/portals/marketplace-admin` (Marketplace Admin)
-- [ ] `packages/*` (Shared TypeScript packages)
-- [ ] `infrastructure` (Oracle / Cloud infrastructure)
-
-## Verification & Testing
-
-Commands executed and test outputs:
-
-- [ ] `pnpm verify:workspace`
-- [ ] `pnpm build`
-- [ ] `pnpm type-check`
-- [ ] `pnpm test`
-- [ ] Backend pytest / compilation (`ruff check .` & `pytest`)
+<!-- Commands run and their result: pnpm --filter <pkg> test, pytest, docker compose config, manual steps -->
 
 ## Checklist
 
-- [ ] Code complies with repository architecture rules (`AGENTS.md`)
-- [ ] Storefront isolation and server-side payment routing respected
-- [ ] No hardcoded secrets or environment variables committed
-- [ ] Documentation updated under `docs/` / `docs/status/` if applicable
+- [ ] Follows [AGENTS.md](../AGENTS.md) (root Docker build context, no forced `--build`, GHCR `image:` + `pull_policy: missing`)
+- [ ] No secrets, `.env` files or secret defaults; new keys added to Infisical and listed in `docs/secrets.md`
+- [ ] Ports changed? `docs/ports.md` updated
+- [ ] Shared code changed? Every consumer still builds
+- [ ] Docs updated (product README / `docs/`)
+
+<!-- Specialised templates: append ?template=backend.md | frontend.md | infrastructure.md | release.md to the PR URL. -->

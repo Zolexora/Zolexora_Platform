@@ -8,7 +8,7 @@
 
 - Branch `main`; commit `87d751c455c6bd3dfd75d154389fb64745839e12`.
 - Pre-existing untracked paths: `AGENTS.md`, `project/`.
-- Workspace discovered only root, `@zolexora/shared-api`, and `@zolexora/shared-config`.
+- Workspace discovered only root, `@zolexora/marketplace-shared-api`, and `@zolexora/marketplace-shared-config`.
 - Lockfile/Docker/Compose/CI used obsolete flat `apps/*` paths.
 - Three nested Mahila npm lockfiles created ambiguous ownership.
 
@@ -23,8 +23,8 @@
 | not discovered | `apps/ZolexoraShop/mobile-app/seller` — `mobile-seller` |
 | independent npm client | `apps/MahilaMadel/web-app/client` — `web-mahila-madel` |
 | independent npm server | `apps/MahilaMadel/web-app/server` — `legacy-mahila-server` |
-| discovered | `packages/shared-api` — `@zolexora/shared-api` |
-| discovered | `packages/shared-config` — `@zolexora/shared-config` |
+| discovered | `packages/shared-api` — `@zolexora/marketplace-shared-api` |
+| discovered | `packages/shared-config` — `@zolexora/marketplace-shared-config` |
 
 The `apps/MahilaMadel/web-app/package.json` wrapper is intentionally not a workspace package or third application. Root scripts own useful client/server orchestration.
 
@@ -37,8 +37,8 @@ The `apps/MahilaMadel/web-app/package.json` wrapper is intentionally not a works
 | `mobile-seller` | Expo 54 / Node | Android export / yes / no / no | 8082 | discovered / real tasks / root checks | service |
 | `web-mahila-madel` | CRA React 18 / Node | yes / n/a JS / build-integrated / zero-test command | 3000 | discovered / real tasks / root checks | not configured |
 | `legacy-mahila-server` | Express 4 / Node | n/a / n/a JS / syntax / no | 5000 | discovered / syntax task / root checks | not configured; transitional |
-| `@zolexora/shared-api` | TypeScript library | validation / yes / no / no | n/a | discovered / real tasks / root checks | copied into frontend image |
-| `@zolexora/shared-config` | shared configuration | n/a | n/a | discovered / no fabricated tasks / inventory guard | copied into frontend image |
+| `@zolexora/marketplace-shared-api` | TypeScript library | validation / yes / no / no | n/a | discovered / real tasks / root checks | copied into frontend image |
+| `@zolexora/marketplace-shared-config` | shared configuration | n/a | n/a | discovered / no fabricated tasks / inventory guard | copied into frontend image |
 
 All nine use pnpm 9 and the root lockfile. CI invokes root checks rather than duplicating package paths. Docker Compose intentionally contains only the existing Zolexora services plus FastAPI/data dependencies; absence of Mahila services does not present Express as the final backend.
 

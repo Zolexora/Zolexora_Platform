@@ -1,39 +1,35 @@
-name: Reusable CI Workflow
+name: Reusable — Node CI
 
+# Lint, type-check, test and build one pnpm workspace package (and its dependencies).
 on:
   workflow_call:
     inputs:
-      node_version:
-        description: 'Node.js version to use'
-        required: false
-        type: string
-        default: '20'
-      product_name:
-        description: 'Name of the product/app to build'
+      filter:
+        description: pnpm filter, e.g. "@zolexora/tms-web..." (trailing ... includes dependencies)
         required: true
         type: string
-      build_command:
-        description: 'Command to run for build'
-        required: false
+      node-version:
         type: string
-        default: 'pnpm build'
+        default: '20'
+      scripts:
+        description: Space-separated package scripts to run if present
+        type: string
+        default: lint typecheck test build
+
+permissions:
+  contents: read
 
 jobs:
   ci:
-    name: Build, Lint & Test
+    name: ${{ inputs.filter }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v3
+      - uses: ./.github/actions/setup-node
         with:
-          version: 9.0.0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ inputs.node_version }}
-          cache: 'pnpm'
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-      - name: Build
-        run: ${{ inputs.build_command }}
-      - name: Test
-        run: pnpm test
+          node-version: ${{ inputs.node-version }}
+      - name: Run scripts
+        env:
+          FILTER: ${{ inputs.filter }}
+          SCRIPTS: ${{ inputs.scripts }}
+        run: for s in $SCRIPTS; do pnpm --filter "$FILTER" --if-present run "$s"; done

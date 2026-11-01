@@ -1,0 +1,19 @@
+title: "[Idea] "
+labels: [feature]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: The idea
+      description: What should exist, and who benefits?
+    validations:
+      required: true
+  - type: input
+    id: product
+    attributes:
+      label: Product(s)
+      placeholder: TMS, Marketplace, all products, ...
+  - type: textarea
+    id: context
+    attributes:
+      label: Context / prior art

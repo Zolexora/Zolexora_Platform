@@ -76,15 +76,15 @@ It is deleted only after Mahila reaches feature parity on `services/marketplace-
 
 | Target package root | Recommended package name | Lifecycle |
 | --- | --- | --- |
-| `apps/storefronts/zolexora-shop/web` | `@zolexora/storefront-zolexora-shop` | Permanent |
-| `apps/storefronts/mahila-madel/web` | `@zolexora/storefront-mahila-madel` | Permanent |
+| `apps/storefronts/zolexora-shop/web` | `@zolexora/marketplace-shop-web` | Permanent |
+| `apps/storefronts/mahila-madel/web` | `@zolexora/marketplace-mahila-madel-web` | Permanent |
 | `apps/storefronts/mahila-madel/legacy-server` | `@zolexora/mahila-legacy-server` | Temporary |
-| `apps/portals/seller/web` | `@zolexora/seller-portal` | Permanent |
+| `apps/portals/seller/web` | `@zolexora/marketplace-seller-web` | Permanent |
 | `apps/portals/marketplace-admin/web` | `@zolexora/marketplace-admin` | Permanent |
 | `apps/mobile/buyer` | `@zolexora/buyer-mobile` | Permanent |
 | `apps/mobile/seller` | `@zolexora/seller-mobile` | Permanent |
-| `packages/shared-api` | `@zolexora/shared-api` | Permanent |
-| `packages/shared-config` | `@zolexora/shared-config` | Permanent |
+| `packages/shared-api` | `@zolexora/marketplace-shared-api` | Permanent |
+| `packages/shared-config` | `@zolexora/marketplace-shared-config` | Permanent |
 
 This preserves exactly nine workspace packages.
 

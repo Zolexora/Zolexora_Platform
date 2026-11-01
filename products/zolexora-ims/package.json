@@ -1,5 +1,5 @@
 {
-  "name": "zolexora-ims-monorepo",
+  "name": "@zolexora/ims",
   "version": "2.0.0",
   "private": true,
   "description": "Zolexora IMS — Enterprise Multi-Tenant Inventory Management Monorepo",
@@ -7,12 +7,12 @@
   "scripts": {
     "dev:user:frontend": "pnpm --filter @zolexora/ims-user-frontend dev",
     "dev:admin:frontend": "pnpm --filter @zolexora/ims-admin-frontend dev",
-    "dev:user:backend": "cd apps/ims-user/backend && uvicorn main:app --reload --port 4050",
-    "dev:admin:backend": "cd apps/ims-admin/backend && uvicorn main:app --reload --port 4051",
+    "dev:user:backend": "cd services/user-api && uvicorn main:app --reload --port 4050",
+    "dev:admin:backend": "cd services/admin-api && uvicorn main:app --reload --port 4051",
     "build": "pnpm --filter \"@zolexora/*\" build",
     "build:user": "pnpm --filter @zolexora/ims-user-frontend build",
     "build:admin": "pnpm --filter @zolexora/ims-admin-frontend build",
-    "test:backend": "pytest apps/ims-user/backend/tests apps/ims-admin/backend/tests",
+    "test:backend": "pytest services/user-api/tests services/admin-api/tests",
     "test:all": "bash scripts/test-all.sh",
     "deploy": "bash scripts/deploy.sh",
     "deploy:frontends": "bash scripts/deploy-frontends-cloudflare.sh",

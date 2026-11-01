@@ -1,9 +1,12 @@
-name: ZolexoraAI — Nightly Tests
+name: Zolexora AI — Nightly tests
 
 on:
   schedule:
     - cron: "0 2 * * *"   # 2 AM UTC every night
   workflow_dispatch:        # also allow manual trigger
+
+permissions:
+  contents: read
 
 jobs:
   test-backend:
@@ -24,27 +27,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - uses: ./.github/actions/setup-python
         with:
-          python-version: "3.11"
-          cache: pip
-
-      - name: Install dependencies
-        run: pip install -r requirements.txt
+          python-version: '3.11'
+          requirements: products/zolexora-ai/services/api/requirements.txt
+          packages: pytest pytest-cov pytest-asyncio
 
       - name: Run unit tests with coverage
         env:
-          AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
-          AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
-          AZURE_OPENAI_DEPLOYMENT_GPT4O: gpt-4o
           REDIS_URL: redis://localhost:6379/0
-          API_KEY: test-key
-          SECRET_KEY: test-secret
-          APP_ENV: development
+        working-directory: products/zolexora-ai/services/api
         run: |
-          cd backend
-          pytest tests/ \
-            --cov=. \
+          pytest backend/tests tests \
+            --cov=backend \
             --cov-report=xml \
             --cov-report=term-missing \
             --cov-fail-under=70 \
@@ -53,7 +48,7 @@ jobs:
       - name: Upload coverage
         uses: codecov/codecov-action@v4
         with:
-          file: backend/coverage.xml
+          files: products/zolexora-ai/services/api/coverage.xml
           fail_ci_if_error: false
 
   test-frontend:
@@ -63,21 +58,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
+      - uses: ./.github/actions/setup-node
         with:
-          version: 9
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-
-      - name: Install dependencies
-        run: pnpm install --ignore-scripts
+          install: --frozen-lockfile --ignore-scripts
 
       - name: Type check
-        run: pnpm --filter @zolexora/ai-frontend run typecheck
+        run: pnpm --filter @zolexora/ai-web run typecheck
 
       - name: Lint
-        run: pnpm --filter @zolexora/ai-frontend run lint
+        run: pnpm --filter @zolexora/ai-web run lint

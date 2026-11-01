@@ -43,9 +43,11 @@ services:
           cpus: '0.1'
           memory: 128M
   backend:
+    image: ${TEXTILE_CARE_BACKEND_IMAGE:-ghcr.io/zolexora/zolexora-textile-care-backend:latest}
+    pull_policy: missing
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: ../../
+      dockerfile: products/zolexora-textile-care/services/backend/Dockerfile
     container_name: ttc-backend
     environment:
     - DATABASE_URL=postgresql+psycopg://ttc:${POSTGRES_PASSWORD}@postgres:5432/ttc
@@ -73,9 +75,11 @@ services:
           cpus: '0.1'
           memory: 128M
   admin-web:
+    image: ${TEXTILE_CARE_ADMIN_WEB_IMAGE:-ghcr.io/zolexora/zolexora-textile-care-admin-web:latest}
+    pull_policy: missing
     build:
       context: ../../
-      dockerfile: products/zolexora-textile-care/infrastructure/Dockerfile.nextjs
+      dockerfile: products/zolexora-textile-care/Dockerfile.web
       args:
         APP_PATH: apps/admin-web
     container_name: ttc-admin-web
@@ -97,9 +101,11 @@ services:
       timeout: 10s
       retries: 3
   seller-web:
+    image: ${TEXTILE_CARE_SELLER_WEB_IMAGE:-ghcr.io/zolexora/zolexora-textile-care-seller-web:latest}
+    pull_policy: missing
     build:
       context: ../../
-      dockerfile: products/zolexora-textile-care/infrastructure/Dockerfile.nextjs
+      dockerfile: products/zolexora-textile-care/Dockerfile.web
       args:
         APP_PATH: apps/seller-web
     container_name: ttc-seller-web
@@ -121,9 +127,11 @@ services:
       timeout: 10s
       retries: 3
   marketplace-web:
+    image: ${TEXTILE_CARE_MARKETPLACE_WEB_IMAGE:-ghcr.io/zolexora/zolexora-textile-care-marketplace-web:latest}
+    pull_policy: missing
     build:
       context: ../../
-      dockerfile: products/zolexora-textile-care/infrastructure/Dockerfile.nextjs
+      dockerfile: products/zolexora-textile-care/Dockerfile.web
       args:
         APP_PATH: apps/marketplace-web
     container_name: ttc-marketplace-web
@@ -145,9 +153,11 @@ services:
       timeout: 10s
       retries: 3
   nginx:
+    image: ${TEXTILE_CARE_NGINX_IMAGE:-ghcr.io/zolexora/zolexora-textile-care-nginx:latest}
+    pull_policy: missing
     build:
-      context: .
-      dockerfile: Dockerfile.nginx
+      context: ../../
+      dockerfile: products/zolexora-textile-care/Dockerfile.nginx
     container_name: ttc-nginx
     ports:
     - "3080:80"

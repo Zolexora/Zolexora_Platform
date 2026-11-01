@@ -109,7 +109,7 @@ services:
       - zolexora
 
   backend:
-    image: ${ERP_BACKEND_IMAGE:-ghcr.io/zolexora/erp-backend:latest}
+    image: ${ERP_BACKEND_IMAGE:-ghcr.io/zolexora/zolexora-erp-backend:latest}
     pull_policy: missing
     build:
       context: .
@@ -143,7 +143,7 @@ services:
       retries: 5
 
   scheduler:
-    image: ${ERP_BACKEND_IMAGE:-ghcr.io/zolexora/erp-backend:latest}
+    image: ${ERP_BACKEND_IMAGE:-ghcr.io/zolexora/zolexora-erp-backend:latest}
     pull_policy: missing
     build:
       context: .
@@ -163,7 +163,7 @@ services:
       retries: 5
 
   worker-short:
-    image: ${ERP_BACKEND_IMAGE:-ghcr.io/zolexora/erp-backend:latest}
+    image: ${ERP_BACKEND_IMAGE:-ghcr.io/zolexora/zolexora-erp-backend:latest}
     pull_policy: missing
     build:
       context: .
@@ -183,7 +183,7 @@ services:
       retries: 5
 
   worker-long:
-    image: ${ERP_BACKEND_IMAGE:-ghcr.io/zolexora/erp-backend:latest}
+    image: ${ERP_BACKEND_IMAGE:-ghcr.io/zolexora/zolexora-erp-backend:latest}
     pull_policy: missing
     build:
       context: .
@@ -203,7 +203,7 @@ services:
       retries: 5
 
   socketio:
-    image: ${ERP_BACKEND_IMAGE:-ghcr.io/zolexora/erp-backend:latest}
+    image: ${ERP_BACKEND_IMAGE:-ghcr.io/zolexora/zolexora-erp-backend:latest}
     pull_policy: missing
     build:
       context: .
@@ -225,11 +225,11 @@ services:
       retries: 5
 
   nginx:
-    image: ${ERP_NGINX_IMAGE:-ghcr.io/zolexora/erp-nginx:latest}
+    image: ${ERP_NGINX_IMAGE:-ghcr.io/zolexora/zolexora-erp-nginx:latest}
     pull_policy: missing
     build:
-      context: ./infrastructure/containers/compose
-      dockerfile: Dockerfile.nginx
+      context: ./
+      dockerfile: infrastructure/containers/compose/Dockerfile.nginx
     container_name: zolexora-nginx
     ports:
       - "${HTTP_PORT:-8080}:80"

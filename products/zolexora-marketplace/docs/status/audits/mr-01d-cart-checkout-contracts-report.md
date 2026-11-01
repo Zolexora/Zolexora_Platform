@@ -108,7 +108,7 @@ Exact Pytest Node IDs for MR-01D Cart and Checkout Security Verification:
 | 9 | Full pytest suite execution (176/176 passed) verified | `[x]` | **PASS** |
 | 10 | OpenAPI schema generator script executed successfully | `[x]` | **PASS** |
 | 11 | OpenAPI schema drift check (`./scripts/check-openapi-drift.sh`) passed | `[x]` | **PASS** |
-| 12 | Shared API TypeScript package compilation (`@zolexora/shared-api`) passed | `[x]` | **PASS** |
+| 12 | Shared API TypeScript package compilation (`@zolexora/marketplace-shared-api`) passed | `[x]` | **PASS** |
 | 13 | Monorepo workspace check (`pnpm verify`) passed across all 10 packages | `[x]` | **PASS** |
 | 14 | Whitespace and line ending check (`git diff --check`) verified clean | `[x]` | **PASS** |
 | 15 | Short git status (`git status --short`) verified clean | `[x]` | **PASS** |
@@ -137,7 +137,7 @@ Exact Pytest Node IDs for MR-01D Cart and Checkout Security Verification:
 | 1. Pytest Suite | `.venv/bin/python3 -m pytest services/marketplace-api/tests/` | `176 passed, 398 warnings in 5.84s` | **PASS** |
 | 2. OpenAPI Generation | `.venv/bin/python3 scripts/generate_openapi.py` | `✅ OpenAPI schema successfully exported to contracts/marketplace/openapi.json` | **PASS** |
 | 3. OpenAPI Drift Check | `./scripts/check-openapi-drift.sh` | `OpenAPI drift check passed.` | **PASS** |
-| 4. Shared API Build | `pnpm --filter @zolexora/shared-api build` | `Tasks: 1 successful, 1 total` | **PASS** |
+| 4. Shared API Build | `pnpm --filter @zolexora/marketplace-shared-api build` | `Tasks: 1 successful, 1 total` | **PASS** |
 | 5. Workspace Verify | `pnpm verify` | `Tasks: 8 successful, 8 total. All checks passed!` | **PASS** |
 | 6. Git Diff Check | `git diff --check` | `(clean, zero output)` | **PASS** |
 | 7. Git Short Status | `git status --short` | `(only untracked agent/audit artifacts)` | **PASS** |

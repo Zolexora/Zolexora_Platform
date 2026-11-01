@@ -1,0 +1,130 @@
+name: Zolexora ERP — CI
+
+# Lint the first-party Frappe apps, then bring up the root ERP stack (compose.yaml) and run
+# bootstrap, health, backup/restore and upgrade checks. Secrets come from Infisical (Zolexora_ERP).
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'products/zolexora-erp/**'
+      - 'compose.yaml'
+      - 'infrastructure/containers/**'
+      - 'scripts/docker/**'
+      - '.github/workflows/zolexora-erp-ci.yml'
+  pull_request:
+    paths:
+      - 'products/zolexora-erp/**'
+      - 'compose.yaml'
+      - 'infrastructure/containers/**'
+      - 'scripts/docker/**'
+      - '.github/workflows/zolexora-erp-ci.yml'
+
+permissions:
+  contents: read
+
+env:
+  APPS: >-
+    products/zolexora-erp/services/frappe/zolexora_core
+    products/zolexora-erp/services/frappe/zolexora_branding
+    products/zolexora-erp/services/frappe/zolexora_platform
+    products/zolexora-erp/services/frappe/zolexora_integrations
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-python
+        with:
+          python-version: '3.11'
+          packages: ruff black
+      - run: black --check $APPS
+      - run: ruff check $APPS
+
+  docker-operational-validation:
+    runs-on: ubuntu-latest
+    needs: lint
+    timeout-minutes: 60
+    name: docker-operational-validation (INSTALL_PAYMENTS=${{ matrix.install_payments }})
+    strategy:
+      fail-fast: false
+      matrix:
+        install_payments: ["0", "1"]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Authenticate with Infisical (only secret source)
+        run: |
+          curl -1sLf 'https://dl.cloudsmith.io/public/infisical/infisical-cli/setup.deb.sh' | sudo -E bash
+          sudo apt-get install -y infisical
+          TOKEN=$(infisical login --method=universal-auth --client-id="${{ secrets.INFISICAL_CLIENT_ID }}" --client-secret="${{ secrets.INFISICAL_CLIENT_SECRET }}" --silent --plain)
+          echo "::add-mask::$TOKEN"
+          echo "INFISICAL_TOKEN=$TOKEN" >> "$GITHUB_ENV"
+      - name: Build Docker images
+        env:
+          INSTALL_PAYMENTS: ${{ matrix.install_payments }}
+        run: bash scripts/setup/with-infisical.sh products/zolexora-erp docker compose -f compose.yaml build --pull
+      - name: Start Compose stack
+        env:
+          INSTALL_PAYMENTS: ${{ matrix.install_payments }}
+        run: bash scripts/setup/with-infisical.sh products/zolexora-erp docker compose -f compose.yaml up -d
+      - name: Run clean bootstrap
+        run: ./products/zolexora-erp/scripts/bootstrap-frappe-site.sh
+      - name: Run idempotent bootstrap
+        run: ./products/zolexora-erp/scripts/bootstrap-frappe-site.sh
+      - name: Run healthcheck
+        run: ./products/zolexora-erp/scripts/check-frappe-stack-health.sh
+      - name: Verify Payments matrix path
+        run: |
+          docker compose -f compose.yaml exec -T backend bench --site site1.example.com list-apps
+          if [ "${{ matrix.install_payments }}" = "1" ]; then
+            docker compose -f compose.yaml exec -T backend bench --site site1.example.com list-apps | awk '{print $1}' | grep -qx "payments"
+            docker compose -f compose.yaml exec -T backend bench --site site1.example.com console <<'PY'
+          import frappe
+          assert "payments" in frappe.get_installed_apps(), "payments app not installed"
+          assert frappe.db.exists("DocType", "Payment Gateway"), "Payment Gateway DocType missing"
+          print("PAYMENTS_CI_OK")
+          PY
+          else
+            echo "INSTALL_PAYMENTS=0 path validated"
+          fi
+      - name: Generate verified backup
+        run: ./products/zolexora-erp/scripts/backup-frappe-site.sh
+      - name: Restore latest backup
+        run: |
+          latest_backup="$(find storage/backups -mindepth 1 -maxdepth 1 -type d | sort | tail -n 1)"
+          (cd "$latest_backup" && sha256sum -c SHA256SUMS)
+          ./products/zolexora-erp/scripts/restore-frappe-site.sh "$latest_backup"
+      - name: Run post-restore healthcheck
+        run: ./products/zolexora-erp/scripts/check-frappe-stack-health.sh
+      - name: Verify post-restore Payments state
+        run: |
+          if [ "${{ matrix.install_payments }}" = "1" ]; then
+            docker compose -f compose.yaml exec -T backend bench --site site1.example.com list-apps | awk '{print $1}' | grep -qx "payments"
+            docker compose -f compose.yaml exec -T backend bench --site site1.example.com console <<'PY'
+          import frappe
+          assert "payments" in frappe.get_installed_apps(), "payments app not installed after restore"
+          assert frappe.db.exists("DocType", "Payment Gateway"), "Payment Gateway DocType missing after restore"
+          print("PAYMENTS_RESTORE_CI_OK")
+          PY
+          else
+            echo "INSTALL_PAYMENTS=0 post-restore path validated"
+          fi
+      - name: Custom app import checks
+        run: |
+          docker compose -f compose.yaml exec -T backend bench --site site1.example.com execute zolexora_core.site_setup.validate_custom_app_imports
+      - name: Upgrade compatibility validation
+        run: RUN_UPGRADE_BUILD=1 ./products/zolexora-erp/scripts/tests/test-upgrade-validation.sh
+      - name: Cleanup
+        if: always()
+        run: docker compose -f compose.yaml down -v
+
+  destructive-disaster-recovery:
+    runs-on: ubuntu-latest
+    needs: docker-operational-validation
+    if: false
+    steps:
+      - run: |
+          echo "Full destructive DR is intentionally disabled in lightweight CI."
+          echo "Run locally or in staging with ZOLEXORA_ALLOW_DESTRUCTIVE_DR=1 ./products/zolexora-erp/scripts/tests/test-disaster-recovery.sh"

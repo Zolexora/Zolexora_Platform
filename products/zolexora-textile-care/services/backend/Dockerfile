@@ -1,0 +1,34 @@
+# Build context: repo root (docker build -f products/zolexora-textile-care/services/backend/Dockerfile .)
+FROM python:3.12-slim AS base
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# ── deps ──────────────────────────────────────────────────────────────────────
+FROM base AS builder
+WORKDIR /app
+COPY products/zolexora-textile-care/services/backend/pyproject.toml ./
+COPY products/zolexora-textile-care/services/backend/app ./app
+RUN pip install --upgrade pip && pip install .
+
+# ── runner ────────────────────────────────────────────────────────────────────
+FROM base AS runner
+WORKDIR /app
+
+RUN addgroup --system --gid 1001 appgroup && \
+    adduser  --system --uid 1001 --ingroup appgroup appuser
+
+COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+COPY --from=builder /usr/local/bin/uvicorn                  /usr/local/bin/uvicorn
+COPY products/zolexora-textile-care/services/backend/app ./app
+COPY products/zolexora-textile-care/services/backend/migrations ./migrations
+COPY products/zolexora-textile-care/services/backend/alembic.ini ./
+
+RUN chown -R appuser:appgroup /app
+USER appuser
+
+EXPOSE 4010
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "4010", "--workers", "2"]

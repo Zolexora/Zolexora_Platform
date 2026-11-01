@@ -1,5 +1,5 @@
 {
-  "name": "@zolexora/ttc-config",
+  "name": "@zolexora/textile-care-config",
   "version": "0.1.0",
   "private": true,
   "main": "./src/index.ts",

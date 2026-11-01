@@ -12,7 +12,7 @@ FROM deps AS builder
 WORKDIR /app
 ARG NEXT_PUBLIC_API_BASE_URL=http://localhost:4010
 ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
-RUN pnpm --filter @zolexora/ttc-admin-web build
+RUN pnpm --filter @zolexora/textile-care-admin-web build
 
 FROM base AS runner
 WORKDIR /app

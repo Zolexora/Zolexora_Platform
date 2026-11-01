@@ -1,0 +1,22 @@
+name: Docker login (GHCR)
+description: Sets up Buildx, logs in to ghcr.io and outputs the lowercase image prefix (ghcr.io/<owner>).
+inputs:
+  token:
+    description: Token with packages:write (pass secrets.GITHUB_TOKEN)
+    required: true
+outputs:
+  prefix:
+    description: Lowercase registry prefix, e.g. ghcr.io/zolexora
+    value: ${{ steps.prefix.outputs.prefix }}
+runs:
+  using: composite
+  steps:
+    - uses: docker/setup-buildx-action@v3
+    - uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ inputs.token }}
+    - id: prefix
+      shell: bash
+      run: echo "prefix=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"

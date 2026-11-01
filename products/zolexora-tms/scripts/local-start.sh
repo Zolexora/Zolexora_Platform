@@ -59,16 +59,16 @@ esac
             sudo apt-get install -y python3.12 python3.12-venv
         fi
 
-        if [ ! -x products/zolexora-tms/apps/backend/.venv/bin/python ]; then
+        if [ ! -x products/zolexora-tms/services/backend/.venv/bin/python ]; then
             echo "Creating backend Python 3.12 virtual environment..."
-            python3.12 -m venv products/zolexora-tms/apps/backend/.venv
+            python3.12 -m venv products/zolexora-tms/services/backend/.venv
         fi
 
-        if ! products/zolexora-tms/apps/backend/.venv/bin/python -c "import uvicorn" >/dev/null 2>&1; then
+        if ! products/zolexora-tms/services/backend/.venv/bin/python -c "import uvicorn" >/dev/null 2>&1; then
             echo "Installing backend Python dependencies..."
-            products/zolexora-tms/apps/backend/.venv/bin/python -m pip install --upgrade pip
-            products/zolexora-tms/apps/backend/.venv/bin/python -m pip install -e products/zolexora-tms/apps/backend
-            products/zolexora-tms/apps/backend/.venv/bin/python -m pip install greenlet
+            products/zolexora-tms/services/backend/.venv/bin/python -m pip install --upgrade pip
+            products/zolexora-tms/services/backend/.venv/bin/python -m pip install -e products/zolexora-tms/services/backend
+            products/zolexora-tms/services/backend/.venv/bin/python -m pip install greenlet
         fi
     }
 
@@ -92,7 +92,7 @@ trap cleanup SIGINT SIGTERM
 if [[ "$SERVICES" == *"backend"* ]]; then
     ensure_backend_environment
     echo "Starting Backend API (port $TMS_BACKEND_PORT)..."
-    PYTHONPATH=products/zolexora-tms/apps/backend products/zolexora-tms/apps/backend/.venv/bin/python -m uvicorn app.main:app --reload --host 127.0.0.1 --port "$TMS_BACKEND_PORT" --app-dir products/zolexora-tms/apps/backend &
+    PYTHONPATH=products/zolexora-tms/services/backend products/zolexora-tms/services/backend/.venv/bin/python -m uvicorn app.main:app --reload --host 127.0.0.1 --port "$TMS_BACKEND_PORT" --app-dir products/zolexora-tms/services/backend &
     PIDS="$PIDS $!"
 fi
 

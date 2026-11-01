@@ -20,6 +20,8 @@ services:
       timeout: 5s
       retries: 5
   api:
+    image: ${RENTOEASY_API_IMAGE:-ghcr.io/zolexora/zolexora-rentoeasy-api:latest}
+    pull_policy: missing
     depends_on:
       postgres:
         condition: service_healthy
@@ -74,6 +76,8 @@ services:
           cpus: '0.1'
           memory: 128M
   web-admin:
+    image: ${RENTOEASY_WEB_ADMIN_IMAGE:-ghcr.io/zolexora/zolexora-rentoeasy-web-admin:latest}
+    pull_policy: missing
     build:
       context: ../../
       dockerfile: products/zolexora-rentoeasy/Dockerfile.web
@@ -98,6 +102,8 @@ services:
       timeout: 10s
       retries: 3
   web-owner:
+    image: ${RENTOEASY_WEB_OWNER_IMAGE:-ghcr.io/zolexora/zolexora-rentoeasy-web-owner:latest}
+    pull_policy: missing
     build:
       context: ../../
       dockerfile: products/zolexora-rentoeasy/Dockerfile.web
@@ -122,6 +128,8 @@ services:
       timeout: 10s
       retries: 3
   web-tenant:
+    image: ${RENTOEASY_WEB_TENANT_IMAGE:-ghcr.io/zolexora/zolexora-rentoeasy-web-tenant:latest}
+    pull_policy: missing
     build:
       context: ../../
       dockerfile: products/zolexora-rentoeasy/Dockerfile.web
@@ -146,9 +154,11 @@ services:
       timeout: 10s
       retries: 3
   nginx:
+    image: ${RENTOEASY_NGINX_IMAGE:-ghcr.io/zolexora/zolexora-rentoeasy-nginx:latest}
+    pull_policy: missing
     build:
-      context: .
-      dockerfile: Dockerfile.nginx
+      context: ../../
+      dockerfile: products/zolexora-rentoeasy/Dockerfile.nginx
     container_name: rento-easy-nginx
     ports:
     - "3076:80"

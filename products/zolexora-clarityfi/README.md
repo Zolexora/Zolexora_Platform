@@ -21,8 +21,8 @@ ClarityFi is more than a money manager — it tracks your **finances, fitness, a
 ```
 clarityfi/
 ├── apps/
-│   ├── mobile/          ← Expo React Native app  (@clarityfi/mobile)
-│   └── api-server/      ← Node.js/TypeScript API  (@clarityfi/api-server)
+│   ├── mobile/          ← Expo React Native app  (@zolexora/clarityfi-mobile)
+│   └── api-server/      ← Node.js/TypeScript API  (@zolexora/clarityfi-api)
 ├── packages/
 │   ├── api-client-react/ ← React query hooks for the API
 │   ├── api-spec/         ← Shared API type definitions
@@ -87,7 +87,7 @@ Then scan the QR code with **Expo Go** (Android/iOS) or press `a` for Android em
 pnpm dev:api
 
 # Option B — from api-server directory
-cd apps/api-server
+cd services/api
 node dist/index.mjs
 ```
 

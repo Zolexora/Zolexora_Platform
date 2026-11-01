@@ -59,12 +59,12 @@ main() {
   # 1. Python Code Syntax & Integrity
   run_step "Checking Python Syntax across User & Admin Backends" \
     "python3 -m py_compile \
-      ${ROOT_DIR}/apps/ims-user/backend/*.py \
-      ${ROOT_DIR}/apps/ims-admin/backend/*.py"
+      ${ROOT_DIR}/services/user-api/*.py \
+      ${ROOT_DIR}/services/admin-api/*.py"
 
   # 2. Pytest Suite
   run_step "Running FastAPI Backend Pytest Suites" \
-    "pytest ${ROOT_DIR}/apps/ims-user/backend/tests ${ROOT_DIR}/apps/ims-admin/backend/tests -v"
+    "pytest ${ROOT_DIR}/services/user-api/tests ${ROOT_DIR}/services/admin-api/tests -v"
 
   # 3. TypeScript Typecheck
   run_step "Running TypeScript Verification (User Frontend)" \

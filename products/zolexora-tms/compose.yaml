@@ -1,10 +1,10 @@
 services:
   backend:
-    image: ${TMS_BACKEND_IMAGE:-ghcr.io/zolexora/tms-backend:latest}
+    image: ${TMS_BACKEND_IMAGE:-ghcr.io/zolexora/zolexora-tms-backend:latest}
     pull_policy: missing
     build:
       context: ../../
-      dockerfile: products/zolexora-tms/apps/backend/Dockerfile
+      dockerfile: products/zolexora-tms/services/backend/Dockerfile
     container_name: tms-backend
     ports:
     - "${TMS_BACKEND_PORT:-4031}:4030"
@@ -69,7 +69,7 @@ services:
           cpus: '0.1'
           memory: 128M
   tms-web:
-    image: ${TMS_WEB_IMAGE:-ghcr.io/zolexora/tms-web:latest}
+    image: ${TMS_WEB_IMAGE:-ghcr.io/zolexora/zolexora-tms-web:latest}
     pull_policy: missing
     build:
       context: ../../
@@ -106,7 +106,7 @@ services:
       timeout: 10s
       retries: 3
   tms-admin:
-    image: ${TMS_ADMIN_IMAGE:-ghcr.io/zolexora/tms-admin:latest}
+    image: ${TMS_ADMIN_IMAGE:-ghcr.io/zolexora/zolexora-tms-admin:latest}
     pull_policy: missing
     build:
       context: ../../
@@ -143,7 +143,7 @@ services:
       timeout: 10s
       retries: 3
   nginx:
-    image: ${TMS_NGINX_IMAGE:-ghcr.io/zolexora/tms-nginx:latest}
+    image: ${TMS_NGINX_IMAGE:-ghcr.io/zolexora/zolexora-tms-nginx:latest}
     pull_policy: missing
     build:
       context: ../../

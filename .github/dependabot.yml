@@ -1,24 +1,46 @@
+# Weekly dependency updates. One npm entry covers the whole pnpm workspace (root lockfile).
 version: 2
 updates:
-  - package-ecosystem: "npm"
-    directory: "/"
+  - package-ecosystem: npm
+    directory: /
     schedule:
-      interval: "weekly"
+      interval: weekly
+    open-pull-requests-limit: 10
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: pip
+    directories:
+      - /apps/zolexora-platform-admin/backend
+      - /products/zolexora-ai/services/api
+      - /products/zolexora-ai/services/api/backend
+      - /products/zolexora-ims/services/admin-api
+      - /products/zolexora-ims/services/user-api
+      - /products/zolexora-ironclub/services/backend
+      - /products/zolexora-marketplace/services/marketplace-api
+      - /products/zolexora-textile-care/services/backend
+      - /products/zolexora-tms/services/backend
+    schedule:
+      interval: weekly
     open-pull-requests-limit: 10
 
-  - package-ecosystem: "pip"
-    directory: "/services/marketplace-api"
+  - package-ecosystem: gradle
+    directory: /products/zolexora-maunkavach
     schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 10
+      interval: weekly
 
-  - package-ecosystem: "pip"
-    directory: "/apps/ims-user/backend"
+  - package-ecosystem: docker
+    directories:
+      - /infrastructure/containers/docker
+      - /products/*
     schedule:
-      interval: "weekly"
+      interval: monthly
 
-  - package-ecosystem: "github-actions"
-    directory: "/"
+  - package-ecosystem: github-actions
+    directories:
+      - /
+      - /.github/actions/*
     schedule:
-      interval: "weekly"
+      interval: weekly
     open-pull-requests-limit: 5

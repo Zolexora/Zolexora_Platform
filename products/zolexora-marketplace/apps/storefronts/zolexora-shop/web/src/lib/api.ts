@@ -1,5 +1,5 @@
 import axios from "axios";
-import { STOREFRONT_HEADER, type StorefrontKey } from "@zolexora/shared-api/storefront";
+import { STOREFRONT_HEADER, type StorefrontKey } from "@zolexora/marketplace-shared-api/storefront";
 
 export const STOREFRONT_KEY = "zolexora-shop" satisfies StorefrontKey;
 

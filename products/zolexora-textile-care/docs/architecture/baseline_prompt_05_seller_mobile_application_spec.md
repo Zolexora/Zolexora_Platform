@@ -65,11 +65,11 @@ It consumes:
 
 ```text
 TTC Backend APIs
-@zolexora/ttc-types
-@zolexora/ttc-api-client
-@zolexora/ttc-auth
-@zolexora/ttc-tenant
-@zolexora/ttc-ui
+@zolexora/textile-care-types
+@zolexora/textile-care-api-client
+@zolexora/textile-care-auth
+@zolexora/textile-care-tenant
+@zolexora/textile-care-ui
 ```
 
 where supported.
@@ -1428,7 +1428,7 @@ Screen
  ↓
 Query/Mutation Hook
  ↓
-@zolexora/ttc-api-client
+@zolexora/textile-care-api-client
  ↓
 Backend
 ```

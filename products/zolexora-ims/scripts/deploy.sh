@@ -131,7 +131,7 @@ run_tests() {
   echo -e "\n${BLUE}${BOLD}[2/5] Running Quality Gate Tests...${NC}"
   if command -v pytest >/dev/null 2>&1; then
     echo -e "  • Executing Python Backend Pytest Suite..."
-    if pytest "${ROOT_DIR}/apps/ims-user/backend/tests" "${ROOT_DIR}/apps/ims-admin/backend/tests" -q; then
+    if pytest "${ROOT_DIR}/services/user-api/tests" "${ROOT_DIR}/services/admin-api/tests" -q; then
       echo -e "  ${GREEN}✓ Backend pytest suites passed (100% clean).${NC}"
     else
       echo -e "  ${RED}❌ Error: Pytest tests failed. Fix errors or pass --skip-tests to bypass.${NC}"
@@ -229,13 +229,13 @@ deploy_docker() {
   echo -e "\n${MAGENTA}${BOLD}🐳 Deploying via Docker Containers...${NC}"
 
   if [[ "${DRY_RUN}" == "true" ]]; then
-    echo -e "  ${YELLOW}[DRY RUN] Would run 'docker compose up -d --build'.${NC}"
+    echo -e "  ${YELLOW}[DRY RUN] Would run 'docker compose pull --ignore-pull-failures' then 'up -d'.${NC}"
     return
   fi
 
   cd "${ROOT_DIR}"
   if command -v docker >/dev/null 2>&1; then
-    echo -e "  • Building and starting container stack with Docker Compose..."
+    echo -e "  • Pulling images and starting the stack with Docker Compose..."
     docker compose pull --ignore-pull-failures
     bash "${ROOT_DIR}/../../scripts/setup/with-infisical.sh" "${ROOT_DIR}" docker compose up -d
     echo -e "  ${GREEN}✓ All container services running in background.${NC}"

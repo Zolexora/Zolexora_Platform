@@ -123,7 +123,7 @@ on:
 
 #### Key Findings:
 - **Branch Trigger Mismatch:** The CI workflow triggers on `main` and `upgrade/*`, but active development occurred directly on `dev`. Pushes to `dev` do not trigger this workflow automatically unless configured.
-- **Dependency Isolation:** Backend tests run against `apps/ims-user/backend/requirements.txt`.
+- **Dependency Isolation:** Backend tests run against `services/user-api/requirements.txt`.
 - **Secrets in CI:** The workflow does not inject hardcoded secret tokens in environment steps, utilizing runner defaults.
 
 ---

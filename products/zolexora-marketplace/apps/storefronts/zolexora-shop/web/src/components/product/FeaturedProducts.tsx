@@ -2,7 +2,7 @@ import ProductCard from "./ProductCard";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import type { Product } from "@/lib/api";
-import { STOREFRONT_HEADER } from "@zolexora/shared-api/storefront";
+import { STOREFRONT_HEADER } from "@zolexora/marketplace-shared-api/storefront";
 import { STOREFRONT_KEY } from "@/lib/api";
 
 async function getProducts(): Promise<Product[]> {

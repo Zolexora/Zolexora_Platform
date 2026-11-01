@@ -11,7 +11,7 @@
       "@/*": [
         "./src/*"
       ],
-      "@zolexora/ttc-*": [
+      "@zolexora/textile-care-*": [
         "../../packages/*/src/index.ts"
       ]
     },

@@ -1,0 +1,31 @@
+# Repository settings as code, applied by the Probot Settings app (https://github.com/apps/settings)
+# once it is installed on Zolexora/Zolexora_Platform. Labels live in .github/labels.yml.
+repository:
+  name: Zolexora_Platform
+  description: Zolexora monorepo — every Zolexora product plus shared identity, admin and libraries
+  has_issues: true
+  has_projects: true
+  has_wiki: false
+  has_discussions: true
+  default_branch: main
+  allow_squash_merge: true
+  allow_merge_commit: false
+  allow_rebase_merge: true
+  allow_auto_merge: true
+  delete_branch_on_merge: true
+  enable_vulnerability_alerts: true
+  enable_automated_security_fixes: true
+
+branches:
+  - name: main
+    protection:
+      required_pull_request_reviews:
+        required_approving_review_count: 1
+        dismiss_stale_reviews: true
+        require_code_owner_reviews: true
+      required_status_checks:
+        strict: true
+        contexts: [pr-title]
+      enforce_admins: false
+      required_linear_history: true
+      restrictions: null

@@ -1,3 +1,4 @@
+# Build context: repo root (docker build -f products/zolexora-ims/apps/ims-admin/frontend/Dockerfile .)
 # ------------------------------------------------------------------------------
 # Stage 1: Build React/Vite SPA for SuperAdmin Portal
 # ------------------------------------------------------------------------------
@@ -6,13 +7,13 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 
 # Copy package manifests
-COPY package.json ./
+COPY products/zolexora-ims/apps/ims-admin/frontend/package.json ./
 
 # Install dependencies
 RUN npm install
 
 # Copy application source
-COPY . .
+COPY products/zolexora-ims/apps/ims-admin/frontend/ .
 
 # Build production bundle
 RUN npm run build
@@ -29,7 +30,7 @@ RUN rm -rf /usr/share/nginx/html/*
 COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Copy custom nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY products/zolexora-ims/apps/ims-admin/frontend/nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 3001
 

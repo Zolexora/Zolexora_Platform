@@ -1,5 +1,5 @@
 {
-  "name": "@zolexora/ttc-auth",
+  "name": "@zolexora/textile-care-auth",
   "version": "0.1.0",
   "private": true,
   "main": "./src/index.ts",

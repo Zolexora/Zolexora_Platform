@@ -10,7 +10,7 @@
 
 import { create } from 'zustand';
 import { persist, subscribeWithSelector } from 'zustand/middleware';
-import type { CustomerAddress } from '@zolexora/ttc-types';
+import type { CustomerAddress } from '@zolexora/textile-care-types';
 
 // ---------------------------------------------------------------------------
 // Location store

@@ -1,5 +1,5 @@
 {
-  "name": "@zolexora/shared-api",
+  "name": "@zolexora/marketplace-shared-api",
   "version": "0.1.0",
   "private": true,
   "main": "./src/index.ts",
@@ -21,6 +21,6 @@
   "devDependencies": {
     "@types/node": "^26.2.0",
     "typescript": "^5.4.5",
-    "@zolexora/shared-config": "workspace:*"
+    "@zolexora/marketplace-shared-config": "workspace:*"
   }
 }

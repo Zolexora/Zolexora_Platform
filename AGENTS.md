@@ -6,10 +6,12 @@ This repository is a Turborepo/pnpm monorepo housing the Zolexora ecosystem prod
 
 ## 1. Monorepo Organization
 
-- **`products/`**: Independent vertical products (e.g., `zolexora-tms`, `zolexora-marketplace`, `the-textile-care`, `rentoeasy`, `clarityfi`, etc.).
+- **`products/`**: Independent vertical products, all named `zolexora-<product>` (e.g. `zolexora-tms`, `zolexora-marketplace`, `zolexora-textile-care`). Each uses the same layout: `apps/` (frontends, mobile), `services/` (backends), `packages/` (product-local libs), `scripts/`, `docs/` — see [docs/architecture.md](docs/architecture.md#product-layout).
 - **`packages/`**: Shared TypeScript/Node libraries and configs (`packages/ui`, `packages/api-client`, etc.).
 - **`platform/`**: Central platform foundation and core utilities.
-- **`apps/`**: Shared platform administration dashboards.
+- **`apps/`**: Cross-product apps: `zolexora-auth-service`, `zolexora-platform-admin`.
+- **`.github/`**: Workflows are named `zolexora-<product>-<purpose>.yml`; image builds call `reusable-docker-ghcr.yml`; shared steps live in `.github/actions/` (`setup-node`, `setup-python`, `docker-login`, `infisical`, `notify`).
+- **Naming**: npm packages `@zolexora/<product>-<app>`; GHCR images `ghcr.io/zolexora/zolexora-<product>-<service>`.
 - **`scripts/`**: Monorepo orchestration scripts (`scripts/dev/`, `scripts/setup/`, `scripts/docker/`).
 - **`.agents/`**: Customization system containing rules (`.agents/rules/`), skills (`.agents/skills/`), and MCP server configs.
 
@@ -27,11 +29,11 @@ When creating, updating, or debugging Docker infrastructure for any product:
 4. **Always Add GHCR Tags & Pull Policy**:
    In every `compose.yaml`:
    ```yaml
-   image: ${PRODUCT_SERVICE_IMAGE:-ghcr.io/zolexora/<product>-<service>:latest}
+   image: ${PRODUCT_SERVICE_IMAGE:-ghcr.io/zolexora/zolexora-<product>-<service>:latest}
    pull_policy: missing
    build:
      context: ../../
-     dockerfile: products/<product>/Dockerfile.<service>
+     dockerfile: products/zolexora-<product>/Dockerfile.<service>
    ```
 5. **Standard Subcommands**:
    Every `products/<product>/scripts/docker-start.sh` must support:

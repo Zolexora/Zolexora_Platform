@@ -72,7 +72,7 @@ function cleanup(exitCode, message) {
 });
 
 // Spawn dev server in tunnel mode
-devProcess = spawn("pnpm", ["--filter", "@clarityfi/mobile", "run", "dev:tunnel"], {
+devProcess = spawn("pnpm", ["--filter", "@zolexora/clarityfi-mobile", "run", "dev:tunnel"], {
   cwd: projectRoot,
   env: { ...process.env, FORCE_COLOR: "0" },
   detached: process.platform !== "win32",

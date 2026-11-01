@@ -7,7 +7,7 @@ import {
   reels,
   orders,
   coins
-} from "@zolexora/shared-api";
+} from "@zolexora/marketplace-shared-api";
 
 export const api = getApiClient();
 

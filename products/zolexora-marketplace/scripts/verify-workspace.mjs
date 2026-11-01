@@ -6,16 +6,16 @@ import { fileURLToPath } from "node:url";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const required = new Map([
-  ["@zolexora/storefront-zolexora-shop", "apps/storefronts/zolexora-shop/web"],
-  ["@zolexora/storefront-zolexora-shop-mobile", "apps/storefronts/zolexora-shop/mobile"],
-  ["@zolexora/storefront-mahila-madel", "apps/storefronts/mahila-madel/web"],
-  ["@zolexora/storefront-mahila-madel-mobile", "apps/storefronts/mahila-madel/mobile"],
+  ["@zolexora/marketplace-shop-web", "apps/storefronts/zolexora-shop/web"],
+  ["@zolexora/marketplace-shop-mobile", "apps/storefronts/zolexora-shop/mobile"],
+  ["@zolexora/marketplace-mahila-madel-web", "apps/storefronts/mahila-madel/web"],
+  ["@zolexora/marketplace-mahila-madel-mobile", "apps/storefronts/mahila-madel/mobile"],
   ["@zolexora/mahila-legacy-server", "apps/storefronts/mahila-madel/legacy-server"],
-  ["@zolexora/seller-portal", "apps/portals/seller/web"],
-  ["@zolexora/seller-portal-mobile", "apps/portals/seller/mobile"],
+  ["@zolexora/marketplace-seller-web", "apps/portals/seller/web"],
+  ["@zolexora/marketplace-seller-mobile", "apps/portals/seller/mobile"],
   ["@zolexora/marketplace-admin", "apps/portals/marketplace-admin/web"],
-  ["@zolexora/shared-api", "packages/shared-api"],
-  ["@zolexora/shared-config", "packages/shared-config"],
+  ["@zolexora/marketplace-shared-api", "packages/shared-api"],
+  ["@zolexora/marketplace-shared-config", "packages/shared-config"],
 ]);
 const stale = ["apps/ZolexoraShop", "apps/MahilaMadel", "apps/web-buyer", "apps/web-seller", "apps/web-admin", "apps/mobile", "backend"];
 
@@ -44,11 +44,11 @@ for (const [name, path] of required) {
     failures.push(`${name}: expected ${path}, found ${relative(root, matches[0].path)}`);
   }
   const { scripts = {} } = JSON.parse(readFileSync(manifestPath, "utf8"));
-  if (["@zolexora/storefront-zolexora-shop", "@zolexora/storefront-zolexora-shop-mobile", "@zolexora/storefront-mahila-madel-mobile", "@zolexora/seller-portal", "@zolexora/seller-portal-mobile", "@zolexora/marketplace-admin"].includes(name)) {
+  if (["@zolexora/marketplace-shop-web", "@zolexora/marketplace-shop-mobile", "@zolexora/marketplace-mahila-madel-mobile", "@zolexora/marketplace-seller-web", "@zolexora/marketplace-seller-mobile", "@zolexora/marketplace-admin"].includes(name)) {
     for (const task of ["build", "type-check"]) if (!scripts[task]) failures.push(`${name}: missing ${task} script`);
   }
-  if (name === "@zolexora/storefront-mahila-madel" && (!scripts.build || !scripts.test)) failures.push(`${name}: missing build or test script`);
-  if (name === "@zolexora/shared-api" && (!scripts.build || !scripts["type-check"])) {
+  if (name === "@zolexora/marketplace-mahila-madel-web" && (!scripts.build || !scripts.test)) failures.push(`${name}: missing build or test script`);
+  if (name === "@zolexora/marketplace-shared-api" && (!scripts.build || !scripts["type-check"])) {
     failures.push(`${name}: missing build or type-check validation`);
   }
 }
@@ -61,7 +61,7 @@ for (const { name, path } of packages) {
   if (!required.has(name)) failures.push(`unexpected workspace package: ${name} (${relative(root, path)})`);
 }
 
-const mahilaRoot = join(root, required.get("@zolexora/storefront-mahila-madel"));
+const mahilaRoot = join(root, required.get("@zolexora/marketplace-mahila-madel-web"));
 try {
   const mahilaRequire = createRequire(join(mahilaRoot, "package.json"));
   const { version } = mahilaRequire("eslint/package.json");

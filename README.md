@@ -19,7 +19,7 @@ Monorepo for every Zolexora product plus the shared identity, admin and library 
 | ClarityFi | `products/zolexora-clarityfi` | Privacy-first personal finance + lifestyle tracker | Expo, Express | :3110 |
 | Maun Kavach | `products/zolexora-maunkavach` | Encrypted messenger (Android client + Node backend + web) | Kotlin, Node, Vite | :3071 |
 
-Shared: `apps/zolexora-auth-service` (central identity, :3081), `apps/zolexora-platform-admin` (:3095), `platform/*` and `packages/*`. Full layout and dependency rules: [docs/architecture.md](docs/architecture.md). All host ports: [docs/ports.md](docs/ports.md).
+Shared: `apps/zolexora-auth-service` (central identity, :3081), `apps/zolexora-platform-admin` (:3095), `platform/*` and `packages/*`. Every product uses `apps/` (frontends, mobile) + `services/` (backends) + `packages/`. Full layout, naming and dependency rules: [docs/architecture.md](docs/architecture.md). All host ports: [docs/ports.md](docs/ports.md).
 
 ## Getting started
 
@@ -36,13 +36,13 @@ Per-product commands are in root `package.json`, e.g.:
 
 ```bash
 pnpm docker:tms:start      # start|stop|restart|build|pull|logs|status
-pnpm docker:suite:start    # AppSuite
-pnpm docker:admin:start    # Platform Admin
+# same for: suite (AppSuite), admin (Platform Admin), ai, clarityfi, engage, erp, ims,
+#           ironclub, marketplace, maunkavach, rentoeasy, ttc (The Textile Care)
 pnpm dev:tms               # dev server without Docker
 pnpm docker:clean          # safe cleanup; pnpm docker:prune for deep cleanup (keeps devcontainer)
 ```
 
-Stacks pull prebuilt images from `ghcr.io/zolexora/*` and only build when the image is missing. Add Docker scripts for a new product with `bash scripts/dev/scaffold-product-docker.sh <product>`.
+Stacks pull prebuilt images from `ghcr.io/zolexora/zolexora-<product>-<service>` (published by `.github/workflows/zolexora-<product>-docker.yml`) and only build when the image is missing. Add Docker scripts for a new product with `bash scripts/dev/scaffold-product-docker.sh <product>`.
 
 ## Secrets
 

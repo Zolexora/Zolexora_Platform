@@ -143,10 +143,10 @@ pnpm dev:infisical
 
 ```bash
 # Run strict TypeScript compiler verification
-pnpm --filter @zas/web type-check
+pnpm --filter @zolexora/appsuite-client type-check
 
 # Production build
-pnpm --filter @zas/web build
+pnpm --filter @zolexora/appsuite-client build
 ```
 
 ---

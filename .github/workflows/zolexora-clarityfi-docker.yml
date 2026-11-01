@@ -1,0 +1,41 @@
+name: ClarityFi — Docker images
+
+# Builds every image in products/zolexora-clarityfi/compose.yaml and pushes ghcr.io/zolexora/zolexora-clarityfi-<service>:{latest,<sha>}.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'products/zolexora-clarityfi/**'
+      - 'packages/**'
+      - 'platform/**'
+      - 'infrastructure/containers/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/zolexora-clarityfi-docker.yml'
+      - '.github/workflows/reusable-docker-ghcr.yml'
+      - '.github/actions/docker-login/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  images:
+    uses: ./.github/workflows/reusable-docker-ghcr.yml
+    with:
+      product: clarityfi
+      services: |
+        [
+          {
+            "service": "backend",
+            "file": "products/zolexora-clarityfi/Dockerfile.api"
+          },
+          {
+            "service": "frontend",
+            "file": "products/zolexora-clarityfi/Dockerfile.web"
+          },
+          {
+            "service": "nginx",
+            "file": "products/zolexora-clarityfi/Dockerfile.nginx"
+          }
+        ]

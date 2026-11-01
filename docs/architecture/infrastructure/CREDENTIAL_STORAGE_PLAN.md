@@ -115,4 +115,4 @@ If a product backend or the Platform Admin boots up and a required secret is abs
   command: ["infisical", "run", "--env=prod", "--", "uvicorn", "app.main:app"]
   ```
 * **GitHub Actions CI/CD:**
-  Automated via `.github/workflows/reusable-infisical-secrets.yml` using `INFISICAL_CLIENT_ID` and `INFISICAL_CLIENT_SECRET`.
+  Automated via the `.github/actions/infisical` composite action using `INFISICAL_CLIENT_ID` and `INFISICAL_CLIENT_SECRET`.

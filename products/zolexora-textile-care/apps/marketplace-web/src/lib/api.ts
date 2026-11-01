@@ -1,15 +1,15 @@
 /**
- * Marketplace API client — wraps @zolexora/ttc-api-client with auth token injection
+ * Marketplace API client — wraps @zolexora/textile-care-api-client with auth token injection
  * and provides typed endpoint methods consumed by TanStack Query hooks.
  *
  * All business logic stays server-authoritative. The client only handles:
  *  - HTTP transport with auth headers
  *  - Request cancellation via AbortSignal
- *  - Typed request/response shapes from @zolexora/ttc-types
+ *  - Typed request/response shapes from @zolexora/textile-care-types
  */
 
-import { ApiClient, ApiClientError } from '@zolexora/ttc-api-client';
-import { getRuntimeConfig } from '@zolexora/ttc-config';
+import { ApiClient, ApiClientError } from '@zolexora/textile-care-api-client';
+import { getRuntimeConfig } from '@zolexora/textile-care-config';
 import type {
   CustomerProfile,
   CustomerProfileUpdate,
@@ -24,7 +24,7 @@ import type {
   OrderCreateRequest,
   OrderResponse,
   OrderListResponse,
-} from '@zolexora/ttc-types';
+} from '@zolexora/textile-care-types';
 
 export type { ApiClientError };
 

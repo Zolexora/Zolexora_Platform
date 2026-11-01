@@ -3,7 +3,7 @@
 Based on an immediate audit of the existing `Zolexora_TMS` codebase, here is the state of the project mapped against the locked Q1–Q50 architectural decisions.
 
 ### 1. Existing Architecture Summary
-The system is structured as a monorepo containing a unified FastAPI backend (`apps/backend`) and two React/Vite frontends: `zolexora-tms` and `zolexora-tms-admin`. Docker and Compose orchestrate local multi-container development.
+The system is structured as a monorepo containing a unified FastAPI backend (`services/backend`) and two React/Vite frontends: `zolexora-tms` and `zolexora-tms-admin`. Docker and Compose orchestrate local multi-container development.
 
 ### 2. Existing Frontend Structure
 * **Tech Stack**: React 19, Vite, Tailwind CSS v4, Zustand, React Router, Supabase JS.
@@ -19,7 +19,7 @@ The system is structured as a monorepo containing a unified FastAPI backend (`ap
 * **Missing**: `OperatingUnit`, `Client`, `ClientLocation`, `Vendor`, and Data Scope tables.
 
 ### 5. Existing Authentication
-* Supabase Auth is implemented via `@supabase/supabase-js` on the client and validated in the backend (with OTP/Resend handling in `apps/backend/app/modules/identity/auth/routes.py`).
+* Supabase Auth is implemented via `@supabase/supabase-js` on the client and validated in the backend (with OTP/Resend handling in `services/backend/app/modules/identity/auth/routes.py`).
 
 ### 6. Existing Authorization
 * There is a basic `Role` & `Permission` schema, but it does NOT yet account for the layered Authorization Architecture (Q15: Organization Availability → Module Availability → Page Availability → Action Availability → Role Permissions → User Overrides → Data Scope).
@@ -58,16 +58,16 @@ The system is structured as a monorepo containing a unified FastAPI backend (`ap
 5. **Frontend Runtime:** Update `zolexora-tms` to resolve organization context via subdomain and dynamically render the canonical sidebar based on the API's availability response.
 
 ### 16. Files/Modules That Will Need Modification
-* `apps/backend/app/db/models.py`
-* `apps/backend/app/modules/identity/organisations/membership_models.py`
+* `services/backend/app/db/models.py`
+* `services/backend/app/modules/identity/organisations/membership_models.py`
 * All frontend routing (`apps/frontend/zolexora-tms/src/routes/`)
 * FastAPI dependency injections for Tenant/Auth contexts.
 
 ### 17. New Files/Modules That Are Genuinely Necessary
-* `apps/backend/app/modules/identity/scopes/` (for structured data scoping)
-* `apps/backend/app/modules/crm/clients/models.py`
-* `apps/backend/app/modules/crm/vendors/models.py`
-* `apps/backend/app/modules/operations/operating_units/models.py`
+* `services/backend/app/modules/identity/scopes/` (for structured data scoping)
+* `services/backend/app/modules/crm/clients/models.py`
+* `services/backend/app/modules/crm/vendors/models.py`
+* `services/backend/app/modules/operations/operating_units/models.py`
 
 ### 18. Migration Requirements
 * Initial Alembic migrations must be generated for all the new structural tables (`OperatingUnit`, `Client`, `DataScope`, etc.). Existing test data in `organisations` will remain intact.

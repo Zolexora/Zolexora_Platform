@@ -155,25 +155,25 @@ RESOLVED_APPS=()
 resolve_token() {
   local token="$1"
   case "$token" in
-    1|admin|admin-web|@zolexora/ttc-admin-web)
+    1|admin|admin-web|@zolexora/textile-care-admin-web)
       RESOLVED_APPS+=("admin-web")
       ;;
-    2|marketplace|marketplace-web|market-web|@zolexora/ttc-marketplace-web)
+    2|marketplace|marketplace-web|market-web|@zolexora/textile-care-marketplace-web)
       RESOLVED_APPS+=("marketplace-web")
       ;;
-    3|seller|seller-web|@zolexora/ttc-seller-web)
+    3|seller|seller-web|@zolexora/textile-care-seller-web)
       RESOLVED_APPS+=("seller-web")
       ;;
     4|backend|api|server)
       RESOLVED_APPS+=("backend")
       ;;
-    5|driver|driver-mobile|@zolexora/ttc-driver-mobile)
+    5|driver|driver-mobile|@zolexora/textile-care-driver-mobile)
       RESOLVED_APPS+=("driver-mobile")
       ;;
-    6|marketplace-mobile|market-mobile|@zolexora/ttc-marketplace-mobile)
+    6|marketplace-mobile|market-mobile|@zolexora/textile-care-marketplace-mobile)
       RESOLVED_APPS+=("marketplace-mobile")
       ;;
-    7|seller-mobile|@zolexora/ttc-seller-mobile)
+    7|seller-mobile|@zolexora/textile-care-seller-mobile)
       RESOLVED_APPS+=("seller-mobile")
       ;;
     8|web|all-web)
@@ -375,8 +375,8 @@ echo "==> Preparing to start: ${RESOLVED_APPS[*]}"
 # Find uvicorn command for backend if selected
 UVICORN_BIN=""
 if [ "$BACKEND_SELECTED" = true ]; then
-  if [ -x "$REPO_ROOT/backend/.venv/bin/uvicorn" ]; then
-    UVICORN_BIN="$REPO_ROOT/backend/.venv/bin/uvicorn"
+  if [ -x "$REPO_ROOT/services/backend/.venv/bin/uvicorn" ]; then
+    UVICORN_BIN="$REPO_ROOT/services/backend/.venv/bin/uvicorn"
   elif [ -x "$REPO_ROOT/.venv/bin/uvicorn" ]; then
     UVICORN_BIN="$REPO_ROOT/.venv/bin/uvicorn"
   elif command -v uvicorn >/dev/null 2>&1; then
@@ -395,23 +395,23 @@ if [ "$DRY_RUN" = true ]; then
   if [ ${#SELECTED_WEB[@]} -gt 0 ]; then
     if [ "$USE_PNPM_DIRECT" = true ]; then
       for web_app in "${SELECTED_WEB[@]}"; do
-        echo "  - pnpm --filter @zolexora/ttc-$web_app dev"
+        echo "  - pnpm --filter @zolexora/textile-care-$web_app dev"
       done
     else
       turbo_filters=()
       for web_app in "${SELECTED_WEB[@]}"; do
-        turbo_filters+=("--filter=@zolexora/ttc-$web_app")
+        turbo_filters+=("--filter=@zolexora/textile-care-$web_app")
       done
       echo "  - pnpm turbo run dev ${turbo_filters[*]}"
     fi
   fi
 
   if [ "$BACKEND_SELECTED" = true ]; then
-    echo "  - (cd backend && $UVICORN_BIN app.main:app --reload --host 0.0.0.0 --port ${BACKEND_PORT:-4010})"
+    echo "  - (cd services/backend && $UVICORN_BIN app.main:app --reload --host 0.0.0.0 --port ${BACKEND_PORT:-4010})"
   fi
 
   for mobile_app in "${SELECTED_MOBILE[@]}"; do
-    echo "  - pnpm --filter @zolexora/ttc-$mobile_app start"
+    echo "  - pnpm --filter @zolexora/textile-care-$mobile_app start"
   done
   exit 0
 fi
@@ -421,13 +421,13 @@ if [ ${#SELECTED_WEB[@]} -gt 0 ]; then
   if [ "$USE_PNPM_DIRECT" = true ]; then
     for web_app in "${SELECTED_WEB[@]}"; do
       echo "==> Starting web application: $web_app via pnpm..."
-      pnpm --filter "@zolexora/ttc-$web_app" dev &
+      pnpm --filter "@zolexora/textile-care-$web_app" dev &
       PIDS+=("$!")
     done
   else
     turbo_filters=()
     for web_app in "${SELECTED_WEB[@]}"; do
-      turbo_filters+=("--filter=@zolexora/ttc-$web_app")
+      turbo_filters+=("--filter=@zolexora/textile-care-$web_app")
     done
     echo "==> Starting web application(s): ${SELECTED_WEB[*]} via turbo..."
     pnpm turbo run dev "${turbo_filters[@]}" &
@@ -440,7 +440,7 @@ if [ "$BACKEND_SELECTED" = true ]; then
   echo "==> Starting backend application on port ${BACKEND_PORT:-4010}..."
   (
     export PYTHONUNBUFFERED=1
-    cd "$REPO_ROOT/backend"
+    cd "$REPO_ROOT/services/backend"
     exec $UVICORN_BIN app.main:app --reload --host 0.0.0.0 --port "${BACKEND_PORT:-4010}" 2>&1 | while IFS= read -r line; do
       printf "[backend] %s\n" "$line"
     done

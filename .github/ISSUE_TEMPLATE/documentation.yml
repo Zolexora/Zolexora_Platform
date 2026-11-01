@@ -1,0 +1,22 @@
+name: Documentation
+description: Missing, wrong or outdated docs
+title: "docs: "
+labels: [documentation]
+body:
+  - type: input
+    id: where
+    attributes:
+      label: Page or file
+      placeholder: docs/ports.md, products/zolexora-tms/README.md, ...
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is wrong or missing
+    validations:
+      required: true
+  - type: textarea
+    id: fix
+    attributes:
+      label: Suggested correction

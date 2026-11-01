@@ -1,0 +1,30 @@
+name: Notify
+description: Posts a deployment status message to the NOTIFY_WEBHOOK_URL Slack-compatible webhook (no-op if unset).
+inputs:
+  webhook-url:
+    description: Webhook URL (pass secrets.NOTIFY_WEBHOOK_URL)
+    default: ''
+  status:
+    description: success | failure | cancelled (usually job.status)
+    required: true
+  product:
+    required: true
+  environment:
+    description: dev | staging | prod
+    required: true
+  version:
+    default: ${{ github.sha }}
+  url:
+    description: Deployed URL
+    default: ''
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        NOTIFY_WEBHOOK_URL: ${{ inputs.webhook-url }}
+      run: >
+        python3 "$GITHUB_ACTION_PATH/../../scripts/notify.py"
+        --status "${{ inputs.status }}" --product "${{ inputs.product }}"
+        --environment "${{ inputs.environment }}" --version "${{ inputs.version }}"
+        --url "${{ inputs.url }}"

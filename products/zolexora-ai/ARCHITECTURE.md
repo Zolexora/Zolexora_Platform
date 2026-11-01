@@ -140,15 +140,16 @@ Event shapes emitted:
 ## Folder Structure
 
 ```
-swarm-factory/
-├── frontend/                    React + TypeScript + Tailwind
+products/zolexora-ai/
+├── apps/web/                    React + TypeScript + Tailwind
 │   └── src/
 │       ├── pages/               Home, Dashboard, Output
 │       ├── components/          AgentCard, PipelineBar, FileTree, LiveLog...
 │       ├── hooks/               useSwarm, useJob, useStream
 │       └── lib/                 api.ts, websocket.ts
 │
-├── backend/
+├── services/api/                FastAPI service (main.py, requirements.txt, tests/, Dockerfile)
+│   backend/                     Python package
 │   ├── api/                     FastAPI server + routes + WebSocket
 │   │   ├── routes/              generate, status, output, health
 │   │   ├── middleware/          auth, rate_limit, error_handler
@@ -202,19 +203,16 @@ swarm-factory/
 │   └── celery_app.py            Celery app definition
 │
 ├── infra/
-│   ├── Dockerfile               Production container
-│   ├── docker-compose.yml       Local dev stack
+│   ├── docker-compose.yml       Alternate stack (api + worker)
 │   ├── nginx.conf               Reverse proxy
 │   └── azure/                   Bicep IaC templates
 │
 ├── scripts/
-│   ├── setup_azure.sh           One-time Azure provisioning
-│   ├── deploy.sh                Production deploy
-│   └── seed_memory.sh           Pre-seed memory store
+│   ├── setup-azure-resources.sh One-time Azure provisioning
+│   ├── deploy-azure.sh          Production deploy
+│   └── seed-ai-memory.sh        Pre-seed memory store
 │
-├── .github/workflows/           CI/CD pipelines
-├── requirements.txt             Python dependencies
-├── docker-compose.yml           Root dev compose
+├── compose.yaml                 Local Docker stack
 └── README.md
 ```
 
@@ -306,17 +304,13 @@ class DeployOutput(BaseModel):
 # Prerequisites: Python 3.11+, Node 20+, Docker
 
 infisical login             # Azure keys live in Infisical
-pip install -r requirements.txt
-cd frontend && npm install && cd ..
+pip install -r services/api/requirements.txt
+(cd apps/web && npm install)
 
-# Start all services
-docker-compose up
+# Start all services (secrets injected from Infisical)
+bash ../../scripts/setup/with-infisical.sh . docker compose up -d
 
-# Or run manually:
-docker run -d -p 6379:6379 redis:alpine
-cd backend && celery -A celery_app worker --loglevel=info &
-cd backend && uvicorn api.server:app --reload &
-cd frontend && npm run dev
+# Or run manually: see README.md "Run without Docker"
 ```
 
 ---
@@ -325,10 +319,10 @@ cd frontend && npm run dev
 
 ```bash
 # One-time Azure setup
-bash scripts/setup_azure.sh
+bash scripts/setup-azure-resources.sh
 
 # Deploy to production
-bash scripts/deploy.sh
+bash scripts/deploy-azure.sh
 ```
 
 ---

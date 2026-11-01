@@ -1,5 +1,7 @@
 services:
   backend:
+    image: ${CLARITYFI_BACKEND_IMAGE:-ghcr.io/zolexora/zolexora-clarityfi-backend:latest}
+    pull_policy: missing
     build:
       context: ../../
       dockerfile: products/zolexora-clarityfi/Dockerfile.api
@@ -27,6 +29,8 @@ services:
           memory: 128M
 
   frontend:
+    image: ${CLARITYFI_FRONTEND_IMAGE:-ghcr.io/zolexora/zolexora-clarityfi-frontend:latest}
+    pull_policy: missing
     build:
       context: ../../
       dockerfile: products/zolexora-clarityfi/Dockerfile.web
@@ -51,6 +55,8 @@ services:
           memory: 128M
 
   nginx:
+    image: ${CLARITYFI_NGINX_IMAGE:-ghcr.io/zolexora/zolexora-clarityfi-nginx:latest}
+    pull_policy: missing
     build:
       context: ../../
       dockerfile: products/zolexora-clarityfi/Dockerfile.nginx

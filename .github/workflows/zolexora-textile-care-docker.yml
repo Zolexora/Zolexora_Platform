@@ -1,0 +1,52 @@
+name: The Textile Care — Docker images
+
+# Builds every image in products/zolexora-textile-care/compose.yaml and pushes ghcr.io/zolexora/zolexora-textile-care-<service>:{latest,<sha>}.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'products/zolexora-textile-care/**'
+      - 'packages/**'
+      - 'platform/**'
+      - 'infrastructure/containers/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/zolexora-textile-care-docker.yml'
+      - '.github/workflows/reusable-docker-ghcr.yml'
+      - '.github/actions/docker-login/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  images:
+    uses: ./.github/workflows/reusable-docker-ghcr.yml
+    with:
+      product: textile-care
+      services: |
+        [
+          {
+            "service": "admin-web",
+            "file": "products/zolexora-textile-care/Dockerfile.web",
+            "build-args": "APP_PATH=apps/admin-web"
+          },
+          {
+            "service": "backend",
+            "file": "products/zolexora-textile-care/services/backend/Dockerfile"
+          },
+          {
+            "service": "marketplace-web",
+            "file": "products/zolexora-textile-care/Dockerfile.web",
+            "build-args": "APP_PATH=apps/marketplace-web"
+          },
+          {
+            "service": "nginx",
+            "file": "products/zolexora-textile-care/Dockerfile.nginx"
+          },
+          {
+            "service": "seller-web",
+            "file": "products/zolexora-textile-care/Dockerfile.web",
+            "build-args": "APP_PATH=apps/seller-web"
+          }
+        ]

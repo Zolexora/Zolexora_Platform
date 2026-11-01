@@ -1,68 +1,57 @@
-name: ZolexoraAI — CI
+name: Zolexora AI — CI
 
 on:
   push:
     branches: [main]
+    paths:
+      - 'products/zolexora-ai/**'
+      - '.github/workflows/zolexora-ai-ci.yml'
+      - '.github/actions/**'
   pull_request:
-    branches: [main]
+    paths:
+      - 'products/zolexora-ai/**'
+      - '.github/workflows/zolexora-ai-ci.yml'
+      - '.github/actions/**'
 
-env:
-  PYTHON_VERSION: "3.11"
+permissions:
+  contents: read
 
 jobs:
-  test:
-    name: Lint & Test
+  backend:
+    name: Backend — lint & test
     runs-on: ubuntu-latest
     timeout-minutes: 20
-
+    defaults:
+      run:
+        working-directory: products/zolexora-ai/services/api
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python ${{ env.PYTHON_VERSION }}
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-python
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Cache pip packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: pip-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('requirements.txt') }}
-          restore-keys: |
-            pip-${{ runner.os }}-${{ env.PYTHON_VERSION }}-
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install ruff pytest pytest-cov pytest-asyncio
-
-      - name: Lint with ruff
+          python-version: '3.11'
+          requirements: products/zolexora-ai/services/api/requirements.txt
+          packages: ruff pytest pytest-cov pytest-asyncio
+      - name: Lint (advisory)
         run: ruff check backend/
         continue-on-error: true
-
-      - name: Run tests with coverage
-        run: pytest tests/ --cov=backend --cov-report=xml --cov-report=term-missing -v
-        env:
-          # Provide stub values so imports don't fail; real calls are mocked in tests
-          AZURE_OPENAI_ENDPOINT: "https://stub.openai.azure.com/"
-          AZURE_OPENAI_API_KEY: "stub-key"
-          AZURE_OPENAI_DEPLOYMENT_GPT4O: "gpt-4o"
-          AZURE_OPENAI_DEPLOYMENT_PHI4: "phi-4"
-          AZURE_OPENAI_DEPLOYMENT_MINI: "gpt-4o-mini"
-          AZURE_OPENAI_API_VERSION: "2024-02-01"
-          GITHUB_TOKEN: "stub-token"
-          GITHUB_ORG: "stub-org"
-          AZURE_SUBSCRIPTION_ID: "00000000-0000-0000-0000-000000000000"
-          AZURE_RESOURCE_GROUP: "stub-rg"
-          AZURE_CONTAINER_REGISTRY: "stub.azurecr.io"
-          AZURE_CONTAINER_APP_ENV: "stub-env"
-
-      - name: Upload coverage report
+      - name: Test
+        # backend/tests/conftest.py sets test-only stub settings; no real secrets are used.
+        run: pytest backend/tests tests --cov=backend --cov-report=xml --cov-report=term-missing
+      - uses: actions/upload-artifact@v4
         if: always()
-        uses: actions/upload-artifact@v4
         with:
-          name: coverage-report
-          path: coverage.xml
+          name: zolexora-ai-coverage
+          path: products/zolexora-ai/services/api/coverage.xml
           retention-days: 14
+
+  frontend:
+    name: Frontend — typecheck, lint, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node
+        with:
+          install: --frozen-lockfile --ignore-scripts
+      - run: pnpm --filter @zolexora/ai-web run typecheck
+      - run: pnpm --filter @zolexora/ai-web run lint
+      - run: pnpm --filter @zolexora/ai-web run build

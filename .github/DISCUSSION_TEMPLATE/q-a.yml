@@ -1,0 +1,18 @@
+title: "[Q] "
+labels: [question]
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+    validations:
+      required: true
+  - type: textarea
+    id: tried
+    attributes:
+      label: What you already tried
+      description: Commands, docs read, error output (redact secret values).
+  - type: input
+    id: product
+    attributes:
+      label: Product

@@ -1,0 +1,21 @@
+name: Setup Node + pnpm
+description: Installs pnpm (version from root package.json "packageManager"), Node with the pnpm store cache, and workspace dependencies.
+inputs:
+  node-version:
+    description: Node.js version
+    default: '20'
+  install:
+    description: Arguments for `pnpm install`; set to "false" to skip installing
+    default: '--frozen-lockfile'
+runs:
+  using: composite
+  steps:
+    - uses: pnpm/action-setup@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: pnpm
+        cache-dependency-path: pnpm-lock.yaml
+    - if: inputs.install != 'false'
+      shell: bash
+      run: pnpm install ${{ inputs.install }}

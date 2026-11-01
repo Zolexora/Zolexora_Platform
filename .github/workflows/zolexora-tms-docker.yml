@@ -1,0 +1,47 @@
+name: Zolexora TMS — Docker images
+
+# Builds every image in products/zolexora-tms/compose.yaml and pushes ghcr.io/zolexora/zolexora-tms-<service>:{latest,<sha>}.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'products/zolexora-tms/**'
+      - 'packages/**'
+      - 'platform/**'
+      - 'infrastructure/containers/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/zolexora-tms-docker.yml'
+      - '.github/workflows/reusable-docker-ghcr.yml'
+      - '.github/actions/docker-login/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  images:
+    uses: ./.github/workflows/reusable-docker-ghcr.yml
+    with:
+      product: tms
+      services: |
+        [
+          {
+            "service": "backend",
+            "file": "products/zolexora-tms/services/backend/Dockerfile"
+          },
+          {
+            "service": "nginx",
+            "file": "products/zolexora-tms/Dockerfile.nginx"
+          },
+          {
+            "service": "admin",
+            "file": "products/zolexora-tms/Dockerfile.web",
+            "build-args": "APP_PATH=apps/tms-admin"
+          },
+          {
+            "service": "web",
+            "file": "products/zolexora-tms/Dockerfile.web",
+            "build-args": "APP_PATH=apps/tms-web"
+          }
+        ]

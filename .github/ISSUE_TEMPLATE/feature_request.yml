@@ -1,0 +1,53 @@
+name: Feature request
+description: Suggest new functionality or an improvement
+title: "feat: "
+labels: [feature]
+body:
+  - type: dropdown
+    id: product
+    attributes:
+      label: Product
+      options:
+        - Zolexora Marketplace
+        - The Textile Care
+        - Zolexora TMS
+        - Zolexora IMS
+        - Zolexora ERP
+        - Zolexora IronClub
+        - Rento Easy
+        - Zolexora AppSuite
+        - Zolexora AI
+        - Zolexora Engage
+        - ClarityFi
+        - Maun Kavach
+        - Auth Service
+        - Platform Admin
+        - Shared packages / platform
+        - CI / Docker / infrastructure
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What is hard or impossible today, and for whom?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Touches
+      options:
+        - label: Shared code (packages/, platform/, auth-service) — needs validation against every consumer
+        - label: Database schema / migrations
+        - label: Secrets (new Infisical keys)

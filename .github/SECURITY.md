@@ -2,7 +2,7 @@
 
 ## Scope
 
-Every first-party product, app and package in this monorepo (`products/*`, `apps/*`, `packages/*`, `platform/*`). Upstream Frappe/ERPNext submodules under `products/zolexora-erp/backend/` should be reported upstream unless the issue is in our integration code.
+Every first-party product, app and package in this monorepo (`products/*`, `apps/*`, `packages/*`, `platform/*`). Upstream Frappe/ERPNext submodules under `products/zolexora-erp/services/frappe/` should be reported upstream unless the issue is in our integration code.
 
 ## Reporting a Vulnerability
 

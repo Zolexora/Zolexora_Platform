@@ -1,0 +1,81 @@
+name: Zolexora AppSuite — Docker images
+
+# Next.js images bake NEXT_PUBLIC_* Firebase config at build time, so this workflow loads it from
+# Infisical (project in products/zolexora-appsuite/.infisical.json) before building.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'products/zolexora-appsuite/**'
+      - 'platform/auth/user-auth-core/**'
+      - 'packages/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/zolexora-appsuite-docker.yml'
+      - '.github/actions/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  image:
+    name: appsuite-${{ matrix.service }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: backend
+            file: products/zolexora-appsuite/Dockerfile.backend
+          - service: client
+            file: products/zolexora-appsuite/Dockerfile.client
+          - service: devteam
+            file: products/zolexora-appsuite/Dockerfile.devteam
+          - service: nginx
+            file: products/zolexora-appsuite/Dockerfile.nginx
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: ./.github/actions/infisical
+        with:
+          client-id: ${{ secrets.INFISICAL_CLIENT_ID }}
+          client-secret: ${{ secrets.INFISICAL_CLIENT_SECRET }}
+          project-id: 188824cd-59ce-468f-b60f-f2da7aeefe63
+          path: /Firebase_Credentials/Zolexora_AppSuite
+      - id: ghcr
+        uses: ./.github/actions/docker-login
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.file }}
+          push: true
+          tags: |
+            ${{ steps.ghcr.outputs.prefix }}/zolexora-appsuite-${{ matrix.service }}:latest
+            ${{ steps.ghcr.outputs.prefix }}/zolexora-appsuite-${{ matrix.service }}:${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          build-args: |
+            NEXT_PUBLIC_API_URL=https://appsuite-api.onrender.com
+            NEXT_PUBLIC_CLIENT_URL=https://appsuite-client.onrender.com
+            NEXT_PUBLIC_DEV_TEAM_URL=https://appsuite-team.onrender.com
+            NEXT_PUBLIC_FIREBASE_API_KEY=${{ matrix.service == 'devteam' && env.NEXT_PUBLIC_APPSUITE_DEVTEAM_FIREBASE_API_KEY || env.NEXT_PUBLIC_APPSUITE_CLIENT_FIREBASE_API_KEY }}
+            NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${{ matrix.service == 'devteam' && env.NEXT_PUBLIC_APPSUITE_DEVTEAM_FIREBASE_AUTH_DOMAIN || env.NEXT_PUBLIC_APPSUITE_CLIENT_FIREBASE_AUTH_DOMAIN }}
+            NEXT_PUBLIC_FIREBASE_PROJECT_ID=${{ matrix.service == 'devteam' && env.NEXT_PUBLIC_APPSUITE_DEVTEAM_FIREBASE_PROJECT_ID || env.NEXT_PUBLIC_APPSUITE_CLIENT_FIREBASE_PROJECT_ID }}
+            NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${{ matrix.service == 'devteam' && env.NEXT_PUBLIC_APPSUITE_DEVTEAM_FIREBASE_STORAGE_BUCKET || env.NEXT_PUBLIC_APPSUITE_CLIENT_FIREBASE_STORAGE_BUCKET }}
+            NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${{ matrix.service == 'devteam' && env.NEXT_PUBLIC_APPSUITE_DEVTEAM_FIREBASE_MESSAGING_SENDER_ID || env.NEXT_PUBLIC_APPSUITE_CLIENT_FIREBASE_MESSAGING_SENDER_ID }}
+            NEXT_PUBLIC_FIREBASE_APP_ID=${{ matrix.service == 'devteam' && env.NEXT_PUBLIC_APPSUITE_DEVTEAM_FIREBASE_APP_ID || env.NEXT_PUBLIC_APPSUITE_CLIENT_FIREBASE_APP_ID }}
+            NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=${{ matrix.service == 'devteam' && env.NEXT_PUBLIC_APPSUITE_DEVTEAM_FIREBASE_MEASUREMENT_ID || env.NEXT_PUBLIC_APPSUITE_CLIENT_FIREBASE_MEASUREMENT_ID }}
+            NEXT_PUBLIC_FIREBASE_DEVTEAM_API_KEY=${{ env.NEXT_PUBLIC_APPSUITE_DEVTEAM_FIREBASE_API_KEY }}
+            NEXT_PUBLIC_FIREBASE_DEVTEAM_AUTH_DOMAIN=${{ env.NEXT_PUBLIC_APPSUITE_DEVTEAM_FIREBASE_AUTH_DOMAIN }}
+            NEXT_PUBLIC_FIREBASE_DEVTEAM_PROJECT_ID=${{ env.NEXT_PUBLIC_APPSUITE_DEVTEAM_FIREBASE_PROJECT_ID }}
+            NEXT_PUBLIC_FIREBASE_DEVTEAM_STORAGE_BUCKET=${{ env.NEXT_PUBLIC_APPSUITE_DEVTEAM_FIREBASE_STORAGE_BUCKET }}
+            NEXT_PUBLIC_FIREBASE_DEVTEAM_MESSAGING_SENDER_ID=${{ env.NEXT_PUBLIC_APPSUITE_DEVTEAM_FIREBASE_MESSAGING_SENDER_ID }}
+            NEXT_PUBLIC_FIREBASE_DEVTEAM_APP_ID=${{ env.NEXT_PUBLIC_APPSUITE_DEVTEAM_FIREBASE_APP_ID }}
+            NEXT_PUBLIC_FIREBASE_DEVTEAM_MEASUREMENT_ID=${{ env.NEXT_PUBLIC_APPSUITE_DEVTEAM_FIREBASE_MEASUREMENT_ID }}
+          cache-from: type=gha,scope=appsuite-${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=appsuite-${{ matrix.service }}

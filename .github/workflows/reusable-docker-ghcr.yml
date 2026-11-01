@@ -1,0 +1,52 @@
+name: Reusable — Build & push GHCR images
+
+# Builds each service from the repo root (AGENTS.md root-context rule) and pushes
+# ghcr.io/<owner>/zolexora-<product>-<service>:{latest,<sha>}.
+on:
+  workflow_call:
+    inputs:
+      product:
+        description: Product slug without the zolexora- prefix, e.g. tms
+        required: true
+        type: string
+      services:
+        description: 'JSON array: [{"service":"backend","file":"products/zolexora-tms/services/backend/Dockerfile","build-args":"A=1","target":"","context":"."}]'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  image:
+    name: ${{ inputs.product }}-${{ matrix.service }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(inputs.services) }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: ghcr
+        uses: ./.github/actions/docker-login
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - id: img
+        run: echo "name=${{ steps.ghcr.outputs.prefix }}/zolexora-${{ inputs.product }}-${{ matrix.service }}" >> "$GITHUB_OUTPUT"
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context || '.' }}
+          file: ${{ matrix.file }}
+          target: ${{ matrix.target }}
+          build-args: ${{ matrix.build-args }}
+          push: true
+          tags: |
+            ${{ steps.img.outputs.name }}:latest
+            ${{ steps.img.outputs.name }}:${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.description=Zolexora ${{ inputs.product }} ${{ matrix.service }}
+          cache-from: type=gha,scope=${{ inputs.product }}-${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ inputs.product }}-${{ matrix.service }}

@@ -11,7 +11,7 @@ import { useCartStore } from '@/lib/stores';
 import { Breadcrumb } from '@/components/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
-import type {} from '@zolexora/ttc-types';
+import type {} from '@zolexora/textile-care-types';
 
 export default function ServiceDetailPage() {
   const { id: sellerId, serviceId } = useParams<{ id: string; serviceId: string }>();

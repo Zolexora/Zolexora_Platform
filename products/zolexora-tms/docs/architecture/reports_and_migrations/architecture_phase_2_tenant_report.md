@@ -33,7 +33,7 @@ flowchart TD
 
 ## C. Tenant Context Implementation
 
-*   **File**: `apps/backend/app/auth/dependencies.py`
+*   **File**: `services/backend/app/auth/dependencies.py`
 *   **Implementation**: 
     1.  `get_current_identity()` resolves the global user from the JWT `sub`.
     2.  `get_current_active_organisation()` requires `X-Organization-Id` and runs a strict SQL validation against `organisation_members` to ensure the user is actively authorized in that specific tenant.
@@ -51,7 +51,7 @@ flowchart TD
 ## E. API Changes
 
 *   All organization-scoped endpoints will now consume `Depends(get_current_active_organisation)` which explicitly requires and validates the `X-Organization-Id` header (with a fallback for legacy single-tenant users).
-*   Introduced `apps/backend/app/core/repository.py` (`BaseTenantRepository`), which intercepts `create`, `update`, `delete`, and `list` operations to automatically inject or enforce `organisation_id`.
+*   Introduced `services/backend/app/core/repository.py` (`BaseTenantRepository`), which intercepts `create`, `update`, `delete`, and `list` operations to automatically inject or enforce `organisation_id`.
 
 ## F. Frontend Changes
 

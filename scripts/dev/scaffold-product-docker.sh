@@ -89,7 +89,9 @@ fi
 mkdir -p "$PRODUCT_DIR/scripts"
 COMPOSE_FILE="$PRODUCT_DIR/compose.yaml"
 START_SCRIPT="$PRODUCT_DIR/scripts/docker-start.sh"
-WORKFLOW_FILE=".github/workflows/docker-ghcr-${PRODUCT}.yml"
+WORKFLOW_FILE=".github/workflows/${PRODUCT}-docker.yml"
+SLUG="${PRODUCT#zolexora-}"
+VAR="$(echo "${SLUG^^}" | tr '-' '_')"
 
 echo -e "\n${BLUE}================================================================${NC}"
 echo -e "${BLUE}  🚀 Scaffolding Docker & GHCR Setup for: ${GREEN}${PRODUCT}${NC}"
@@ -101,25 +103,25 @@ if [ ! -f "$COMPOSE_FILE" ]; then
   cat <<EOF > "$COMPOSE_FILE"
 services:
   backend:
-    image: \${${PRODUCT^^}_BACKEND_IMAGE:-ghcr.io/zolexora/${PRODUCT}-backend:latest}
+    image: \${${VAR}_BACKEND_IMAGE:-ghcr.io/zolexora/zolexora-${SLUG}-backend:latest}
     pull_policy: missing
     build:
-      context: .
-      dockerfile: Dockerfile.api
+      context: ../../
+      dockerfile: products/${PRODUCT}/Dockerfile.api
     container_name: ${PRODUCT}-backend
     ports:
-      - "\${${PRODUCT^^}_BACKEND_PORT:-4040}:4030"
+      - "\${${VAR}_BACKEND_PORT:-4040}:4030"
     restart: unless-stopped
 
   web:
-    image: \${${PRODUCT^^}_WEB_IMAGE:-ghcr.io/zolexora/${PRODUCT}-web:latest}
+    image: \${${VAR}_WEB_IMAGE:-ghcr.io/zolexora/zolexora-${SLUG}-web:latest}
     pull_policy: missing
     build:
-      context: .
-      dockerfile: Dockerfile.web
+      context: ../../
+      dockerfile: products/${PRODUCT}/Dockerfile.web
     container_name: ${PRODUCT}-web
     ports:
-      - "\${${PRODUCT^^}_PORT:-3095}:80"
+      - "\${${VAR}_PORT:-3095}:80"
     restart: unless-stopped
 EOF
   echo -e "  ${GREEN}✔ Created $COMPOSE_FILE with GHCR tags and pull_policy: missing${NC}"
@@ -156,6 +158,7 @@ start_stack() {
   echo "======================================"
   echo "🚀 Starting ${PRODUCT} Stack"
   echo "======================================"
+  run_compose pull --ignore-pull-failures "$@"
   run_compose up -d "$@"
   echo ""
   echo "✅ ${PRODUCT} Stack status:"
@@ -244,18 +247,16 @@ fi
 if [ ! -f "$WORKFLOW_FILE" ]; then
   echo -e "${YELLOW}[3/3] Generating $WORKFLOW_FILE...${NC}"
   cat <<EOF > "$WORKFLOW_FILE"
-name: Build & Publish ${PRODUCT} Containers to GHCR
+name: ${PRODUCT} — Docker images
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
     paths:
       - 'products/${PRODUCT}/**'
       - 'packages/**'
       - 'platform/**'
       - 'pnpm-lock.yaml'
-      - 'package.json'
       - '${WORKFLOW_FILE}'
   workflow_dispatch:
 
@@ -264,60 +265,17 @@ permissions:
   packages: write
 
 jobs:
-  publish-${PRODUCT}-images:
-    name: Build & Push \${{ matrix.service }}
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - service: ${PRODUCT}-backend
-            context: ./products/${PRODUCT}
-            file: ./products/${PRODUCT}/Dockerfile.api
-            build-args: ""
-          - service: ${PRODUCT}-web
-            context: .
-            file: ./products/${PRODUCT}/Dockerfile.web
-            build-args: ""
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: \${{ github.actor }}
-          password: \${{ secrets.GITHUB_TOKEN }}
-
-      - name: Compute lowercase repository and image tag
-        id: meta
-        run: |
-          REPO_OWNER=\$(echo "\${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-          IMAGE="ghcr.io/\${REPO_OWNER}/\${{ matrix.service }}"
-          echo "image=\${IMAGE}" >> "\$GITHUB_OUTPUT"
-
-      - name: Build and push container image
-        uses: docker/build-push-action@v6
-        with:
-          context: \${{ matrix.context }}
-          file: \${{ matrix.file }}
-          build-args: \${{ matrix.build-args }}
-          push: true
-          tags: |
-            \${{ steps.meta.outputs.image }}:latest
-            \${{ steps.meta.outputs.image }}:\${{ github.sha }}
-          labels: |
-            org.opencontainers.image.source=https://github.com/\${{ github.repository }}
-            org.opencontainers.image.description=Pre-built container for \${{ matrix.service }} in Zolexora Platform
-          cache-from: type=gha,scope=\${{ matrix.service }}
-          cache-to: type=gha,mode=max,scope=\${{ matrix.service }}
+  images:
+    uses: ./.github/workflows/reusable-docker-ghcr.yml
+    with:
+      product: ${SLUG}
+      services: |
+        [
+          {"service": "backend", "file": "products/${PRODUCT}/Dockerfile.api"},
+          {"service": "web", "file": "products/${PRODUCT}/Dockerfile.web"}
+        ]
 EOF
-  echo -e "  ${GREEN}✔ Created $WORKFLOW_FILE with GHA caching and Buildx matrix${NC}"
+  echo -e "  ${GREEN}✔ Created $WORKFLOW_FILE using reusable-docker-ghcr.yml${NC}"
 else
   echo -e "  ${GREEN}✔ $WORKFLOW_FILE already exists.${NC}"
 fi

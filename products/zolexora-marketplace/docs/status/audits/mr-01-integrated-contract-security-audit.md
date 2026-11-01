@@ -409,15 +409,15 @@ The storefront resolution system (`services/marketplace-api/storefronts/resolver
    - Running `./scripts/check-openapi-drift.sh` passed cleanly with exit code 0.
 4. **Monorepo Workspace Type-Checking**:
    - Running `pnpm type-check` verified all 10 packages in the workspace with 0 TypeScript compilation errors:
-     - `@zolexora/shared-api`
-     - `@zolexora/shared-config`
-     - `@zolexora/storefront-zolexora-shop` (Web)
-     - `@zolexora/storefront-zolexora-shop-mobile` (Mobile)
-     - `@zolexora/storefront-mahila-madel` (Web)
-     - `@zolexora/storefront-mahila-madel-mobile` (Mobile)
+     - `@zolexora/marketplace-shared-api`
+     - `@zolexora/marketplace-shared-config`
+     - `@zolexora/marketplace-shop-web` (Web)
+     - `@zolexora/marketplace-shop-mobile` (Mobile)
+     - `@zolexora/marketplace-mahila-madel-web` (Web)
+     - `@zolexora/marketplace-mahila-madel-mobile` (Mobile)
      - `@zolexora/mahila-legacy-server`
-     - `@zolexora/seller-portal` (Web)
-     - `@zolexora/seller-portal-mobile` (Mobile)
+     - `@zolexora/marketplace-seller-web` (Web)
+     - `@zolexora/marketplace-seller-mobile` (Mobile)
      - `@zolexora/marketplace-admin`
 
 ---

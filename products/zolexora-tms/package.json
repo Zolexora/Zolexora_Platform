@@ -1,5 +1,5 @@
 {
-  "name": "@zolexora/tms-product",
+  "name": "@zolexora/tms",
   "private": true,
   "version": "0.1.0",
   "packageManager": "pnpm@11.24.0",
@@ -14,7 +14,7 @@
     "dev:tms:infisical": "bash ../../scripts/setup/with-infisical.sh . pnpm --filter @zolexora/tms-web run dev",
     "dev:admin": "pnpm --filter @zolexora/tms-admin run dev",
     "dev:admin:infisical": "bash ../../scripts/setup/with-infisical.sh . pnpm --filter @zolexora/tms-admin run dev",
-    "test:backend": "bash ../../scripts/setup/with-infisical.sh . apps/backend/.venv/bin/pytest apps/backend/tests/",
+    "test:backend": "bash ../../scripts/setup/with-infisical.sh . services/backend/.venv/bin/pytest services/backend/tests/",
     "cli:check": "bash ../../scripts/dev/setup-cli-ecosystem.sh --check",
     "cli:setup": "bash ../../scripts/dev/setup-cli-ecosystem.sh",
     "cli:docs": "bash ../../scripts/dev/setup-cli-ecosystem.sh --docs",

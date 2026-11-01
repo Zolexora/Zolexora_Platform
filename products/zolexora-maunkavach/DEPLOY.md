@@ -1,6 +1,6 @@
 # Going live on free tiers — Supabase + Render
 
-This walks through getting `backend/` actually running on the public internet, talking to a
+This walks through getting `services/backend/` actually running on the public internet, talking to a
 real Postgres database and real encrypted-blob storage, for $0.
 
 ## 1. Create the Supabase project
@@ -8,7 +8,7 @@ real Postgres database and real encrypted-blob storage, for $0.
 1. Go to supabase.com → New Project. Pick any region close to where Render will run (matching
    regions cuts latency a bit, not required).
 2. Wait for provisioning (~2 min).
-3. **Database → SQL Editor** → paste the contents of `backend/sql/schema.sql` → Run.
+3. **Database → SQL Editor** → paste the contents of `services/backend/sql/schema.sql` → Run.
    This creates `users`, `sessions`, `messages`.
 4. **Project Settings → Database** → copy the **Connection string (URI)**, "Transaction"
    pooler mode, port `6543`. This is your `DATABASE_URL`.
@@ -30,14 +30,14 @@ Save this — it's `JWT_SECRET`.
 ## 3. Deploy to Render
 
 **Option A — render.yaml (recommended):**
-1. Push this repo (or just the `backend/` folder) to a GitHub repo.
-2. Render dashboard → New → Blueprint → point at the repo. Render reads `backend/render.yaml`
+1. Push this repo (or just the `services/backend/` folder) to a GitHub repo.
+2. Render dashboard → New → Blueprint → point at the repo. Render reads `services/backend/render.yaml`
    and creates the service.
 3. Fill in the env vars it asks for (`DATABASE_URL`, `SUPABASE_URL`,
    `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_STORAGE_BUCKET`) — `JWT_SECRET` auto-generates.
 
 **Option B — manual:**
-1. Render dashboard → New → Web Service → connect your repo → set root directory to `backend`.
+1. Render dashboard → New → Web Service → connect your repo → set root directory to `services/backend`.
 2. Build command: `npm install`. Start command: `npm start`.
 3. Add the same env vars manually under the Environment tab.
 

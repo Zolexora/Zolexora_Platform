@@ -18,13 +18,13 @@
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
     "paths": {
-      "@zolexora/ttc-types": ["./packages/types/src/index.ts"],
-      "@zolexora/ttc-config": ["./packages/config/src/index.ts"],
-      "@zolexora/ttc-auth": ["./packages/auth/src/index.ts"],
-      "@zolexora/ttc-tenant": ["./packages/tenant/src/index.ts"],
-      "@zolexora/ttc-api-client": ["./packages/api-client/src/index.ts"],
-      "@zolexora/ttc-branding": ["./packages/branding/src/index.ts"],
-      "@zolexora/ttc-ui": ["./packages/ui/src/index.ts"]
+      "@zolexora/textile-care-types": ["./packages/types/src/index.ts"],
+      "@zolexora/textile-care-config": ["./packages/config/src/index.ts"],
+      "@zolexora/textile-care-auth": ["./packages/auth/src/index.ts"],
+      "@zolexora/textile-care-tenant": ["./packages/tenant/src/index.ts"],
+      "@zolexora/textile-care-api-client": ["./packages/api-client/src/index.ts"],
+      "@zolexora/textile-care-branding": ["./packages/branding/src/index.ts"],
+      "@zolexora/textile-care-ui": ["./packages/ui/src/index.ts"]
     }
   }
 }

@@ -1,0 +1,31 @@
+name: Infisical secrets
+description: >
+  Logs in to Infisical with a universal-auth machine identity and exports the secrets of one
+  folder into the job environment (masked). Infisical is the only secret source — no fallback.
+inputs:
+  client-id:
+    required: true
+  client-secret:
+    required: true
+  project-id:
+    description: Infisical project ID (from the product's .infisical.json)
+    required: true
+  path:
+    description: Secret folder, e.g. /Zolexora_Specfic_Credentials/Zolexora_TMS
+    required: true
+  environment:
+    description: Environment slug (dev | staging | prod)
+    default: dev
+runs:
+  using: composite
+  steps:
+    - uses: Infisical/secrets-action@v1.0.18
+      with:
+        method: universal
+        client-id: ${{ inputs.client-id }}
+        client-secret: ${{ inputs.client-secret }}
+        project-id: ${{ inputs.project-id }}
+        env-slug: ${{ inputs.environment }}
+        secret-path: ${{ inputs.path }}
+        recursive: true
+        export-type: env

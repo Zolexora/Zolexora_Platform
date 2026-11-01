@@ -7,7 +7,7 @@ ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 echo "🏋️ Running Zolexora IronClub Test Suite..."
 
 echo "[1/3] Backend Unit Tests (Pytest)..."
-"$ROOT_DIR/apps/backend/.venv/bin/pytest" "$ROOT_DIR/apps/backend/tests/"
+"$ROOT_DIR/services/backend/.venv/bin/pytest" "$ROOT_DIR/services/backend/tests/"
 
 echo "[2/3] Shared Types Check..."
 pnpm --filter @zolexora/ironclub-types typecheck

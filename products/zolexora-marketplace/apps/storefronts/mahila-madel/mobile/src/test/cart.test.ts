@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { useCartStore, useAuthStore } from "../store";
 import * as SecureStore from "expo-secure-store";
 import { STOREFRONT_KEY, validateStorefrontKey } from "../config/storefront";
-import { STOREFRONT_HEADER } from "@zolexora/shared-api/storefront";
+import { STOREFRONT_HEADER } from "@zolexora/marketplace-shared-api/storefront";
 import { applyStorefrontHeader } from "../lib/api";
 
 describe("Storefront identity", () => {

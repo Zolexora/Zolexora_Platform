@@ -13,7 +13,7 @@ Date: 2026-07-14. Baseline commit: `87d751c455c6bd3dfd75d154389fb64745839e12`. P
 | `pnpm type-check` | root | 0 | 6/6 TypeScript package tasks | Pass | GAP-TEST-001 resolved |
 | `pnpm lint` | root | 0 | buyer Next lint + legacy server syntax + backend Ruff; two buyer warnings | Pass | GAP-TEST-001 resolved |
 | `pnpm test` | root | 1 | continues through all suites: buyer mobile 5/5 pass; Mahila has zero tests and fails | Code failure | GAP-TEST-002 |
-| `pnpm --filter @zolexora/storefront-zolexora-shop-mobile test` | root | 0 | 1 file, 6 tests pass after Phase 1.6 | Pass | GAP-TEST-002 |
+| `pnpm --filter @zolexora/marketplace-shop-mobile test` | root | 0 | 1 file, 6 tests pass after Phase 1.6 | Pass | GAP-TEST-002 |
 | `PATH="$PWD/.venv/bin:$PATH" pnpm verify` | root | 1 | guard/type/lint pass; stops at honest Mahila zero-test failure | Code failure | GAP-TEST-002 |
 | direct build for buyer/seller/admin web | root | 0 each | production builds pass | Pass with existing warnings | — |
 | direct build for buyer/seller mobile | root | 0 each | Android Expo exports pass after correcting missing asset paths | Pass | — |

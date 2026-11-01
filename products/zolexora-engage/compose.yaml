@@ -1,5 +1,7 @@
 services:
   api:
+    image: ${ENGAGE_API_IMAGE:-ghcr.io/zolexora/zolexora-engage-api:latest}
+    pull_policy: missing
     build:
       context: ../../
       dockerfile: products/zolexora-engage/Dockerfile.api
@@ -21,6 +23,8 @@ services:
       timeout: 10s
       retries: 3
   web:
+    image: ${ENGAGE_WEB_IMAGE:-ghcr.io/zolexora/zolexora-engage-web:latest}
+    pull_policy: missing
     build:
       context: ../../
       dockerfile: products/zolexora-engage/Dockerfile.web
@@ -39,9 +43,11 @@ services:
       timeout: 10s
       retries: 3
   nginx:
+    image: ${ENGAGE_NGINX_IMAGE:-ghcr.io/zolexora/zolexora-engage-nginx:latest}
+    pull_policy: missing
     build:
-      context: .
-      dockerfile: Dockerfile.nginx
+      context: ../../
+      dockerfile: products/zolexora-engage/Dockerfile.nginx
     container_name: zolexora-engage-nginx
     ports:
     - "3077:80"

@@ -1,19 +1,19 @@
 {
-  "name": "zolexora-app-suite",
+  "name": "@zolexora/appsuite",
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "pnpm --filter @zas/client dev",
-    "dev:infisical": "pnpm --filter @zas/client dev:infisical",
-    "dev:client": "pnpm --filter @zas/client dev",
-    "dev:client:infisical": "pnpm --filter @zas/client dev:infisical",
-    "dev:team": "pnpm --filter @zas/dev-team dev",
-    "dev:team:infisical": "pnpm --filter @zas/dev-team dev:infisical",
-    "dev:api": "pnpm --filter @zas/backend dev",
-    "dev:api:infisical": "pnpm --filter @zas/backend dev:infisical",
-    "build": "pnpm --filter @zas/client build && pnpm --filter @zas/dev-team build && pnpm --filter @zas/backend build",
-    "start": "pnpm --filter @zas/client start",
-    "lint": "pnpm --filter @zas/client lint && pnpm --filter @zas/dev-team lint",
-    "type-check": "pnpm --filter @zas/client type-check && pnpm --filter @zas/dev-team type-check && pnpm --filter @zas/backend type-check"
+    "dev": "pnpm --filter @zolexora/appsuite-client dev",
+    "dev:infisical": "pnpm --filter @zolexora/appsuite-client dev:infisical",
+    "dev:client": "pnpm --filter @zolexora/appsuite-client dev",
+    "dev:client:infisical": "pnpm --filter @zolexora/appsuite-client dev:infisical",
+    "dev:team": "pnpm --filter @zolexora/appsuite-dev-team dev",
+    "dev:team:infisical": "pnpm --filter @zolexora/appsuite-dev-team dev:infisical",
+    "dev:api": "pnpm --filter @zolexora/appsuite-backend dev",
+    "dev:api:infisical": "pnpm --filter @zolexora/appsuite-backend dev:infisical",
+    "build": "pnpm --filter @zolexora/appsuite-client build && pnpm --filter @zolexora/appsuite-dev-team build && pnpm --filter @zolexora/appsuite-backend build",
+    "start": "pnpm --filter @zolexora/appsuite-client start",
+    "lint": "pnpm --filter @zolexora/appsuite-client lint && pnpm --filter @zolexora/appsuite-dev-team lint",
+    "type-check": "pnpm --filter @zolexora/appsuite-client type-check && pnpm --filter @zolexora/appsuite-dev-team type-check && pnpm --filter @zolexora/appsuite-backend type-check"
   }
 }

@@ -1,6 +1,6 @@
 {
   "framework": "nextjs",
-  "installCommand": "corepack enable && corepack prepare pnpm@9.0.0 --activate && pnpm install --filter @zolexora/storefront-zolexora-shop...",
-  "buildCommand": "pnpm --filter @zolexora/storefront-zolexora-shop build",
+  "installCommand": "corepack enable && corepack prepare pnpm@9.0.0 --activate && pnpm install --filter @zolexora/marketplace-shop-web...",
+  "buildCommand": "pnpm --filter @zolexora/marketplace-shop-web build",
   "outputDirectory": ".next"
 }

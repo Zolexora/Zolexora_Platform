@@ -232,11 +232,11 @@ fi
 log_step "Step 7: Installing Monorepo Dependencies (Python & Node.js)"
 
 log_info "Installing Python dependencies for User API (FastAPI)..."
-python3 -m pip install -q --no-cache-dir -r "$ROOT_DIR/apps/ims-user/backend/requirements.txt"
+python3 -m pip install -q --no-cache-dir -r "$ROOT_DIR/services/user-api/requirements.txt"
 log_success "User API dependencies installed."
 
 log_info "Installing Python dependencies for Admin API (FastAPI)..."
-python3 -m pip install -q --no-cache-dir -r "$ROOT_DIR/apps/ims-admin/backend/requirements.txt"
+python3 -m pip install -q --no-cache-dir -r "$ROOT_DIR/services/admin-api/requirements.txt"
 log_success "Admin API dependencies installed."
 
 log_info "Installing Frontend monorepo packages via pnpm..."
@@ -305,7 +305,7 @@ fi
 log_step "Step 9: Running Automated Health & Test Suite"
 
 log_info "Running backend pytest suite..."
-python3 -m pytest -q "$ROOT_DIR/apps/ims-user/backend/tests" "$ROOT_DIR/apps/ims-admin/backend/tests"
+python3 -m pytest -q "$ROOT_DIR/services/user-api/tests" "$ROOT_DIR/services/admin-api/tests"
 log_success "Backend pytest tests: ALL PASSED (11/11)."
 
 # ------------------------------------------------------------------------------
@@ -345,8 +345,8 @@ case "$launch_choice" in
     log_info "Launching development servers..."
     pnpm dev:user:frontend &
     pnpm dev:admin:frontend &
-    cd "$ROOT_DIR/apps/ims-user/backend" && uvicorn main:app --port 8000 &
-    cd "$ROOT_DIR/apps/ims-admin/backend" && uvicorn main:app --port 8001 &
+    cd "$ROOT_DIR/services/user-api" && uvicorn main:app --port 8000 &
+    cd "$ROOT_DIR/services/admin-api" && uvicorn main:app --port 8001 &
     wait
     ;;
   *)

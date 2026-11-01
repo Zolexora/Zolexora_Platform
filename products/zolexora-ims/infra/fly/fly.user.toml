@@ -1,13 +1,13 @@
 # ==============================================================================
 # Zolexora IMS — Fly.io Configuration for User API (MicroVM Container)
-# Deploy with: fly launch --config infra/fly/fly.user.toml
+# Deploy from the repo root: fly deploy --config products/zolexora-ims/infra/fly/fly.user.toml .
 # ==============================================================================
 
 app = "zolexora-user-api"
 primary_region = "ord"
 
 [build]
-  dockerfile = "../../apps/ims-user/backend/Dockerfile"
+  dockerfile = "../../services/user-api/Dockerfile"
 
 [http_service]
   internal_port = 8000

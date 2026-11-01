@@ -52,11 +52,13 @@ class TestTier2Domain1InfisicalFallback(unittest.TestCase):
         self.assertEqual(rc, 0, f"Status command failed: {stderr}")
 
     def test_b1_02_fallback_warning_message_emitted(self):
-        """Verify script contains user warning guidance when Infisical is unauthenticated."""
+        """Verify the start script goes through the Infisical wrapper, which tells the user how to log in."""
         canonical_script = get_repo_root() / "products" / "zolexora-tms" / "scripts" / "docker-start.sh"
-        content = canonical_script.read_text(encoding="utf-8")
-        self.assertIn("infisical login", content)
-        self.assertIn("INFISICAL_TOKEN", content)
+        wrapper = get_repo_root() / "scripts" / "setup" / "with-infisical.sh"
+        self.assertIn("scripts/setup/with-infisical.sh", canonical_script.read_text(encoding="utf-8"))
+        guidance = wrapper.read_text(encoding="utf-8")
+        self.assertIn("infisical login", guidance)
+        self.assertIn("INFISICAL_TOKEN", guidance)
 
     def test_b1_03_fallback_preserves_clean_disk(self):
         """Verify unauthenticated fallback execution does not create .env.docker on disk."""
@@ -119,7 +121,7 @@ class TestTier2Domain2MissingEnvVariables(unittest.TestCase):
     def test_b2_03_missing_sentry_dsn_safe(self):
         """Verify backend app/main.py safely guards Sentry initialization if SENTRY_DSN is None."""
         main_py = (
-            get_repo_root() / "products" / "zolexora-tms" / "apps" / "backend" / "app" / "main.py"
+            get_repo_root() / "products" / "zolexora-tms" / "services" / "backend" / "app" / "main.py"
         )
         content = main_py.read_text(encoding="utf-8")
         self.assertIn("if settings.SENTRY_DSN:", content)
@@ -250,8 +252,8 @@ class TestTier2Domain5GitignoreRules(unittest.TestCase):
         self.assertEqual(rc, 0, "Root .env must be ignored by git")
 
     def test_b5_02_nested_env_ignored(self):
-        """Verify deeply nested .env inside apps/backend is ignored by git."""
-        rc, _, _ = run_cmd(["git", "check-ignore", "-q", "products/zolexora-tms/apps/backend/.env"])
+        """Verify deeply nested .env inside services/backend is ignored by git."""
+        rc, _, _ = run_cmd(["git", "check-ignore", "-q", "products/zolexora-tms/services/backend/.env"])
         self.assertEqual(rc, 0, "Nested .env must be ignored by git")
 
     def test_b5_03_arbitrary_wildcard_env_ignored(self):

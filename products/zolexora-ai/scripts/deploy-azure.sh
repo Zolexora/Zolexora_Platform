@@ -17,7 +17,7 @@ success() { echo -e "${GREEN}[OK]${NC}    $*"; }
 warn()    { echo -e "${YELLOW}[WARN]${NC}  $*"; }
 error()   { echo -e "${RED}[ERROR]${NC} $*"; exit 1; }
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"  # repo root = Docker build context
 cd "$ROOT_DIR"
 
 load_env() {
@@ -55,7 +55,7 @@ require_cmd curl
 : "${AZURE_CONTAINER_APP_ENV:=swarm-factory-env}"
 : "${AZURE_CONTAINER_REGISTRY:=swarmfactoryacr.azurecr.io}"
 : "${IMAGE_REPOSITORY:=swarm-factory-api}"
-: "${DOCKERFILE:=infra/Dockerfile}"
+: "${DOCKERFILE:=products/zolexora-ai/services/api/Dockerfile}"
 : "${SKIP_BUILD:=0}"
 : "${DEPLOY_WORKER:=1}"
 : "${CELERY_CONCURRENCY:=2}"

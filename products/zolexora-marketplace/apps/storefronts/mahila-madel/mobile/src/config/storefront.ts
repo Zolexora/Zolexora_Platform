@@ -1,4 +1,4 @@
-import type { StorefrontKey } from "@zolexora/shared-api/storefront";
+import type { StorefrontKey } from "@zolexora/marketplace-shared-api/storefront";
 
 export const STOREFRONT_KEY = "mahila-madel" satisfies StorefrontKey;
 

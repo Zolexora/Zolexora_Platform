@@ -26,7 +26,7 @@ services:
           memory: 128M
 
   platform-admin-backend:
-    image: ${PLATFORM_ADMIN_BACKEND_IMAGE:-ghcr.io/zolexora/platform-admin-backend:latest}
+    image: ${PLATFORM_ADMIN_BACKEND_IMAGE:-ghcr.io/zolexora/zolexora-platform-admin-backend:latest}
     pull_policy: missing
     build:
       context: ../../
@@ -98,7 +98,7 @@ services:
       retries: 5
 
   platform-admin-frontend:
-    image: ${PLATFORM_ADMIN_FRONTEND_IMAGE:-ghcr.io/zolexora/platform-admin-frontend:latest}
+    image: ${PLATFORM_ADMIN_FRONTEND_IMAGE:-ghcr.io/zolexora/zolexora-platform-admin-frontend:latest}
     pull_policy: missing
     build:
       context: ../../
@@ -130,7 +130,7 @@ services:
       retries: 3
 
   platform-admin-nginx:
-    image: ${PLATFORM_ADMIN_NGINX_IMAGE:-ghcr.io/zolexora/platform-admin-nginx:latest}
+    image: ${PLATFORM_ADMIN_NGINX_IMAGE:-ghcr.io/zolexora/zolexora-platform-admin-nginx:latest}
     pull_policy: missing
     build:
       context: ../../

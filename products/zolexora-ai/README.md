@@ -56,152 +56,62 @@ graph TD
 
 ## 🚀 Quick Start (Local Development)
 
-You can run Swarm Factory locally using **Azure OpenAI**.
+### Layout
+
+```
+products/zolexora-ai/
+  apps/web/            React + Vite dashboard (also bundled into the API image)
+  services/api/        FastAPI + Celery service
+    backend/           Python package (api, agents, orchestrator, memory, tools, models, core, job_queue)
+    main.py            uvicorn entry point
+    requirements.txt
+    tests/
+    Dockerfile         API image (repo root build context)
+  infra/               Azure Bicep, alternate compose, nginx config
+  scripts/             Azure provisioning / deploy / memory seeding
+  compose.yaml         Local Docker stack (redis, backend, celery, frontend, nginx)
+```
 
 ### 1. Prerequisites
-Ensure you have the following installed:
-*   Python 3.11+
-*   Node.js 20+
-*   Docker & Docker Compose
 
-### 2. Clone and Setup Dependencies
+Python 3.11+, Node 20+, Docker, the Infisical CLI. Secrets come only from Infisical
+(`/Zolexora_Specfic_Credentials/Zolexora_AI`, see `.infisical.json`); there is no `.env` file.
+
 ```bash
-# Clone the repository
-git clone https://github.com/your-org/swarm-factory
-cd swarm-factory
-
-# Secrets come only from Infisical (/Zolexora_Specfic_Credentials/Zolexora_AI)
 infisical login
-
-# Install Backend dependencies
-pip install -r requirements.txt
-
-# Install Frontend dependencies
-cd frontend && npm install && cd ..
+pip install -r services/api/requirements.txt
+(cd apps/web && npm install)
 ```
 
-### 3. Configure the Environment (`.env`)
-Open the newly created `.env` file and fill in your Azure credentials.
-The stack runs exclusively on Azure OpenAI — no other providers are used.
+### 2. Run without Docker
 
-```env
-AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
-AZURE_OPENAI_API_KEY=your-azure-openai-key-here
-AZURE_OPENAI_API_VERSION=2024-02-01
-AZURE_OPENAI_DEPLOYMENT_GPT4O=gpt-4o
-AZURE_OPENAI_DEPLOYMENT_PHI4=phi-4
-AZURE_OPENAI_DEPLOYMENT_MINI=gpt-4o-mini
-```
+Run from `products/zolexora-ai`:
 
-### 4. Start Local Services
-Launch the stack in three simple steps (use separate terminals or run in background):
-
-#### Step A: Spin up Redis
 ```bash
+W="bash ../../scripts/setup/with-infisical.sh ."
 docker run -d -p 6379:6379 --name redis redis:alpine
+(cd services/api && $W celery -A backend.celery_app worker --loglevel=info)   # terminal 1
+(cd services/api && $W uvicorn main:app --reload --port 4090)               # terminal 2
+(cd apps/web && npm run dev)                                                 # terminal 3
 ```
-
-#### Step B: Start Celery Worker & Backend API
-```bash
-# Start Celery worker
-cd backend && celery -A celery_app worker --loglevel=info
-
-# In another terminal, start the FastAPI server
-cd backend && uvicorn api.server:app --reload
-```
-
-#### Step C: Start Frontend React App
-```bash
-cd frontend && npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) to view the Swarm Factory Dashboard.
 
 ## 🐳 Running with Docker
 
-Secrets are injected from Infisical; prefix Docker commands with `bash ../../scripts/setup/with-infisical.sh .`:
-
-Start required services and the backend:
-
 ```bash
-# create network and start Redis
-docker network create swarm-net || true
-docker run -d --name redis --network swarm-net -p 6379:6379 redis:alpine
-
-# build and run backend
-docker build -f infra/Dockerfile -t swarm-factory-backend:latest .
-docker run -d --name swarm-backend --network swarm-net --env-file .env -p 4090:4090 swarm-factory-backend:latest
+# from products/zolexora-ai
+bash ../../scripts/setup/with-infisical.sh . docker compose up -d
+docker compose logs -f backend      # or celery, frontend, redis
 ```
 
-(Optional) Frontend (if frontend/Dockerfile exists):
+Images build from the repo root (`docker build -f products/zolexora-ai/services/api/Dockerfile .`).
+Backend: http://localhost:4090 · Gateway: http://localhost:3091 (see `docs/ports.md`).
 
-```bash
-docker build -f frontend/Dockerfile -t swarm-factory-frontend:latest ./frontend
-docker run -d --name swarm-frontend --network swarm-net -p 8080:80 swarm-factory-frontend:latest
-```
+### Frontend Vite dev proxy
 
-Recommended (run both services together):
-
-```bash
-docker compose -f docker.yaml up --build -d
-```
-
-Frontend: http://localhost:8080
-Backend: http://localhost:4090
-
-Notes:
-- If any Dockerfile paths differ, update the -f / build.context paths accordingly.
-- This runs the app locally for development/testing. For production, use the existing infra/deploy scripts to push to ACR and deploy to Azure Container Apps.
-
-› how to get live logs from docker
-
-
-• Use Docker Compose logs:
-
-  docker compose -f docker.yaml logs -f
-
-  For one service:
-
-  docker compose -f docker.yaml logs -f backend
-  docker compose -f docker.yaml logs -f frontend
-  docker compose -f docker.yaml logs -f redis
-
-  Show only recent logs, then follow live:
-
-  docker compose -f docker.yaml logs --tail 100 -f backend
-
-  If you run the root compose file instead of docker.yaml, drop -f docker.yaml:
-
-  docker compose logs -f
-  docker compose logs -f api
-  docker compose logs -f celery
-  docker compose logs -f frontend
-
-  For a specific container:
-
-  docker logs -f 01_swarmfactory-backend-1
-
-### Frontend Vite dev proxy (local development)
-
-The frontend uses Vite's dev proxy to forward /api and /ws to the backend on the same origin. For local/Codespace development leave the following variables empty so the frontend automatically proxies requests to the running backend (localhost:4090).
-
-```env
-VITE_API_BASE_URL=
-VITE_API_URL=
-VITE_WS_BASE_URL=
-VITE_WS_URL=
-VITE_API_KEY=swarm-factory-dev-key
-```
-
-The empty values tell Vite to proxy /api and /ws requests to the same origin — meaning the frontend automatically hits localhost:4090 without hardcoding any host. This is the correct setup for local/Codespace dev.
-
-What each variable means — fill only if deploying to production:
-
-- VITE_API_BASE_URL: Base URL for REST calls (/api/generate etc.) — Fill when deploying frontend separately from backend
-- VITE_API_URL: Alias for the above — Same as above
-- VITE_WS_BASE_URL: Base URL for WebSocket (/ws/job_id) — Fill when deploying to Azure; use wss://your-app.azurecontainerapps.io
-- VITE_WS_URL: Alias for the above — Same as above
-- VITE_API_KEY: Sent as X-API-Key header on every request — Always; must match backend API_KEY in root .env
+Leave `VITE_API_BASE_URL`, `VITE_API_URL`, `VITE_WS_BASE_URL` and `VITE_WS_URL` empty in local dev:
+Vite proxies `/api` and `/ws` to the backend on `localhost:4090`. Set them only when the frontend is
+deployed separately (use `wss://...` for the WebSocket URLs). `VITE_API_KEY` is sent as `X-API-Key`
+and must match the backend `API_KEY` stored in Infisical.
 
 ---
 
@@ -210,11 +120,11 @@ What each variable means — fill only if deploying to production:
 Swarm Factory requires a few Azure resources to deploy generated applications to the cloud. You can set them up using either the automated script or the legacy manual CLI commands.
 
 ### Method 1: Automated Script (Recommended)
-This script registers all required resource providers, provisions Azure resources, and automatically configures your local `.env` file with the endpoints and keys.
+This script registers all required resource providers, provisions Azure resources, and prints the endpoints and keys to store in Infisical.
 
 ```bash
 # Run the automated setup script
-bash scripts/setup_azure.sh
+bash scripts/setup-azure-resources.sh
 ```
 
 **What the script provisions:**
@@ -255,25 +165,24 @@ az containerapp env create \
 ```
 
 > [!NOTE]
-> If you deploy manually, make sure to manually update your `.env` file with the resource endpoints, keys, and IDs.
+> If you deploy manually, store the resource endpoints, keys and IDs in Infisical (`Zolexora_AI` folder).
 
 ---
 
 ## 🚢 Deploying to Azure
 
-Once your Azure resources are provisioned and your `.env` is configured, you can build and deploy the Swarm Factory application to production:
+Once your Azure resources are provisioned and their keys are in Infisical, you can build and deploy the Swarm Factory application to production:
 
 ```bash
 # Run the deployment script
-bash scripts/deploy.sh
+bash scripts/deploy-azure.sh
 ```
 
 This script:
-1.  Builds the production assets for the React frontend (`frontend/dist/`).
-2.  Builds the Docker container image utilizing the `infra/Dockerfile`.
-3.  Pushes the container image to your Azure Container Registry (ACR).
-4.  Deploys or updates the Azure Container App hosting the backend API.
-5.  Outputs the live URL of your deployment (e.g. `https://swarm-factory-api.azurecontainerapps.io`).
+1.  Builds the API image (which bundles the React frontend from `apps/web`) using `services/api/Dockerfile` with the repo root as context.
+2.  Pushes the container image to your Azure Container Registry (ACR).
+3.  Deploys or updates the Azure Container App hosting the backend API.
+4.  Outputs the live URL of your deployment (e.g. `https://swarm-factory-api.azurecontainerapps.io`).
 
 ---
 

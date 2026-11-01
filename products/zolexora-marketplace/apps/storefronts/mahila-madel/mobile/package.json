@@ -1,5 +1,5 @@
 {
-  "name": "@zolexora/storefront-mahila-madel-mobile",
+  "name": "@zolexora/marketplace-mahila-madel-mobile",
   "version": "1.0.0",
   "main": "expo-router/entry",
   "scripts": {
@@ -13,7 +13,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@zolexora/shared-api": "workspace:*",
+    "@zolexora/marketplace-shared-api": "workspace:*",
     "@babel/runtime": "^7.25.0",
     "@expo/metro-runtime": "~6.1.2",
     "axios": "^1.7.0",

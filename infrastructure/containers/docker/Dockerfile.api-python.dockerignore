@@ -1,11 +1,13 @@
-.env
-.env.*
-.venv
-__pycache__
+# Applies to builds of Dockerfile.api-python (context: repo root)
+.git
+**/node_modules
+**/.env
+**/.env.*
+**/.venv
 **/__pycache__
 **/*.pyc
-uploads
-.pytest_cache
-.ruff_cache
-tests
-*.log
+**/uploads
+**/.pytest_cache
+**/.ruff_cache
+**/tests
+**/*.log

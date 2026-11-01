@@ -34,5 +34,5 @@ pnpm dev:team:infisical      # starts DevTeam Console on http://localhost:3071
 
 - `apps/client/` — Client Portal (port 3070)
 - `apps/dev-team/` — Internal Engineering & Legal Console (port 3071)
-- `apps/backend/` — Express / Node REST API service
+- `services/backend/` — Express / Node REST API service
 - `assets/branding/` — Master normalized brand assets (`appsuite-logo-master.png`, `appsuite-favicon-master.png`)

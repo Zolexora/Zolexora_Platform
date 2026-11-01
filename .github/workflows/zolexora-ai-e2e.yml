@@ -1,10 +1,14 @@
-name: ZolexoraAI — E2E (Playwright)
+name: Zolexora AI — E2E (Playwright)
 
 on:
   push:
     branches: [main]
+    paths: ['products/zolexora-ai/apps/web/**', '.github/workflows/zolexora-ai-e2e.yml']
   pull_request:
-    branches: [main]
+    paths: ['products/zolexora-ai/apps/web/**', '.github/workflows/zolexora-ai-e2e.yml']
+
+permissions:
+  contents: read
 
 jobs:
   e2e:
@@ -15,38 +19,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
+      - uses: ./.github/actions/setup-node
         with:
-          version: 9
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-          cache-dependency-path: pnpm-lock.yaml
-
-      - name: Install dependencies
-        run: pnpm install --ignore-scripts
+          install: --frozen-lockfile --ignore-scripts
 
       - name: Build frontend
-        run: pnpm --filter @zolexora/ai-frontend build
+        run: pnpm --filter @zolexora/ai-web build
 
       - name: Serve built frontend
         run: |
-          npx http-server products/zolexora-ai/frontend/dist -p 8080 &
+          npx http-server products/zolexora-ai/apps/web/dist -p 8080 &
           sleep 2
 
       - name: Install Playwright browsers
         run: |
-          cd products/zolexora-ai/frontend/e2e
+          cd products/zolexora-ai/apps/web/e2e
           npx playwright install --with-deps chromium
 
       - name: Run E2E tests
         env:
           E2E_BASE_URL: http://localhost:8080
         run: |
-          cd products/zolexora-ai/frontend/e2e
+          cd products/zolexora-ai/apps/web/e2e
           npx playwright test
 
       - name: Upload Playwright report
@@ -54,5 +48,5 @@ jobs:
         if: always()
         with:
           name: playwright-report
-          path: products/zolexora-ai/frontend/e2e/playwright-report/
+          path: products/zolexora-ai/apps/web/e2e/playwright-report/
           retention-days: 14

@@ -15,7 +15,7 @@ This document provides a security audit of the current token storage architectur
 - **Storage Location**: `expo-secure-store` (e.g., `SecureStore.getItemAsync("z_token")`, `SecureStore.getItemAsync("z_seller_token")`).
 - **Authorization Flow**: Custom API clients extract tokens from `SecureStore` asynchronously on request interception and send them via `Authorization: Bearer <token>`.
 
-### Shared API Library (`@zolexora/shared-api`)
+### Shared API Library (`@zolexora/marketplace-shared-api`)
 - **Storage Location**: `localStorage` with a fallback key constant `zolexora_token`.
 
 ---

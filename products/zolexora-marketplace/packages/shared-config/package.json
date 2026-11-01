@@ -1,5 +1,5 @@
 {
-  "name": "@zolexora/shared-config",
+  "name": "@zolexora/marketplace-shared-config",
   "version": "0.1.0",
   "private": true,
   "exports": {

@@ -79,6 +79,8 @@ services:
           cpus: '0.1'
           memory: 128M
   erp-web:
+    image: ${ERP_WEB_IMAGE:-ghcr.io/zolexora/zolexora-erp-web:latest}
+    pull_policy: missing
     build:
       context: ../..
       dockerfile: products/zolexora-erp/Dockerfile
@@ -113,6 +115,8 @@ services:
           cpus: '0.1'
           memory: 128M
   erp-worker:
+    image: ${ERP_WEB_IMAGE:-ghcr.io/zolexora/zolexora-erp-web:latest}
+    pull_policy: missing
     build:
       context: ../..
       dockerfile: products/zolexora-erp/Dockerfile
@@ -144,6 +148,8 @@ services:
       timeout: 10s
       retries: 3
   erp-scheduler:
+    image: ${ERP_WEB_IMAGE:-ghcr.io/zolexora/zolexora-erp-web:latest}
+    pull_policy: missing
     build:
       context: ../..
       dockerfile: products/zolexora-erp/Dockerfile
@@ -175,6 +181,8 @@ services:
       timeout: 10s
       retries: 3
   erp-socketio:
+    image: ${ERP_WEB_IMAGE:-ghcr.io/zolexora/zolexora-erp-web:latest}
+    pull_policy: missing
     build:
       context: ../..
       dockerfile: products/zolexora-erp/Dockerfile

@@ -1,3 +1,4 @@
+# Build context: repo root (products/zolexora-erp/compose.yaml uses context ../..)
 FROM python:3.14-slim-bookworm
 
 # Install system dependencies
@@ -42,8 +43,8 @@ RUN python -m venv env \
     && ./env/bin/pip install --upgrade pip setuptools wheel
 
 # Copy all local apps into the apps directory
-COPY --chown=frappe:frappe backend/ apps/
-COPY --chown=frappe:frappe sites/apps.txt sites/apps.txt
+COPY --chown=frappe:frappe products/zolexora-erp/services/frappe/ apps/
+RUN printf "frappe\nerpnext\npayments\nzolexora_core\nzolexora_branding\nzolexora_platform\nzolexora_integrations\n" > sites/apps.txt
 
 # Install all apps in order
 RUN ./env/bin/pip install -e apps/frappe \

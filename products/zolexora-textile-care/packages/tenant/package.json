@@ -1,5 +1,5 @@
 {
-  "name": "@zolexora/ttc-tenant",
+  "name": "@zolexora/textile-care-tenant",
   "version": "0.1.0",
   "private": true,
   "main": "./src/index.ts",

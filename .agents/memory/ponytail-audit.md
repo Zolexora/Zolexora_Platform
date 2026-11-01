@@ -10,7 +10,7 @@ Shared resume point for any agent performing a repository-wide over-engineering 
 ## Scope and method
 
 - Repository: `/workspaces/Zolexora_Platform`.
-- Initial inventory: 3,268 Git-tracked files; 1,557 tracked code files by source extension; three Git submodules under `products/zolexora-erp/backend/`.
+- Initial inventory: 3,268 Git-tracked files; 1,557 tracked code files by source extension; three Git submodules under `products/zolexora-erp/services/frappe/`.
 - Review first-party code/configuration in bounded product and infrastructure sections. Inspect full files for concrete candidates; use search/checksums only to locate likely duplication, not as proof of code quality.
 - Treat vendored/generated/build/cache/dependency output as out of scope unless the repository authors maintain it or it creates a clear first-party maintenance burden. Review the ERP submodule integration and local custom code; upstream submodule internals are not first-party code.
 - Audit over-engineering only: dead code, duplicate logic/config, unnecessary abstractions/dependencies, wrappers, excess configuration, and straightforward shrink opportunities. Correctness, security, and performance issues are separate review topics.
@@ -62,7 +62,7 @@ These candidates are not yet final findings; validate file ownership, consumers,
 - `delete:` Trim the Maun Kavach marketing site's generated `components/ui` catalog and its Radix/form/chart/carousel dependencies to the components actually used. The live app imports only Card, while its Toaster and TooltipProvider have no feature consumers; `@tanstack/react-query` is only mounted in an app with no query hooks.
 - `delete:` Remove `createSignedDownloadUrl` from Maun Kavach storage until a caller needs direct streaming; the Android client currently proxies downloads through the API and the exported function has no callers.
 
-- `delete:` `products/zolexora-ai/backend/requirements.txt` repeats the root requirements list with only two additional Azure packages; repository setup and the production Dockerfile use the root file, and no local installer references the backend copy. Remove the duplicate file or have the root manifest include those Azure packages. Verify any external backend-only workflow before finalizing.
+- `delete:` `products/zolexora-ai/services/api/backend/requirements.txt` repeats the root requirements list with only two additional Azure packages; repository setup and the production Dockerfile use the root file, and no local installer references the backend copy. Remove the duplicate file or have the root manifest include those Azure packages. Verify any external backend-only workflow before finalizing.
 
 ## Progress updates
 

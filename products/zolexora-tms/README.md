@@ -25,7 +25,7 @@ It injects every secret under one Infisical folder tree, recursively (env from `
 |---|---|---|
 | Zolexora_Platform (`c4ac7d07-…`) | `/Zolexora_Specfic_Credentials/Zolexora_TMS` | `Cache_And_Async/Redis`, `Database/Postgres_Database`, `Firebase_Crediential/*`, `Object_Storage`, `Media_CDN/Cloudinary`, `Core_Application`, `Payment_Gateway`, `Cloudflare`, `Docker_Images` |
 
-The backend reads the vault's own key names (`DATABASE_ZOLEXORA_TMS_*`, `REDIS_HOST`/`REDIS_PORT`/…, `STORAGE_*`, `NEXT_PUBLIC_FIREBASE_PROJECT_ID`) as well as the canonical names listed in `apps/backend/app/core/config.py`.
+The backend reads the vault's own key names (`DATABASE_ZOLEXORA_TMS_*`, `REDIS_HOST`/`REDIS_PORT`/…, `STORAGE_*`, `NEXT_PUBLIC_FIREBASE_PROJECT_ID`) as well as the canonical names listed in `services/backend/app/core/config.py`.
 
 If Infisical isn't installed or authenticated, the wrapper exits with an error. There is no fallback and no `.env` file.
 

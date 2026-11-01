@@ -10,9 +10,9 @@ Date: 2026-07-14. Starting branch/commit: `main` at `87d751c455c6bd3dfd75d154389
 
 | Application | Package | Expo name / slug / scheme | Android / iOS |
 | --- | --- | --- | --- |
-| Zolexora buyer | `@zolexora/storefront-zolexora-shop-mobile` | Zolexora Shop / `zolexora-buyer` / `zolexora` | `com.zolexora.buyer` |
-| Mahila buyer | `@zolexora/storefront-mahila-madel-mobile` | Mahila Madel / `mahila-madel` / `mahilamadel` | `store.mahilamadel.mobile` |
-| Shared seller | `@zolexora/seller-portal-mobile` | Zolexora Seller / `zolexora-seller` / `zolexoraseller` | `com.zolexora.seller` |
+| Zolexora buyer | `@zolexora/marketplace-shop-mobile` | Zolexora Shop / `zolexora-buyer` / `zolexora` | `com.zolexora.buyer` |
+| Mahila buyer | `@zolexora/marketplace-mahila-madel-mobile` | Mahila Madel / `mahila-madel` / `mahilamadel` | `store.mahilamadel.mobile` |
+| Shared seller | `@zolexora/marketplace-seller-mobile` | Zolexora Seller / `zolexora-seller` / `zolexoraseller` | `com.zolexora.seller` |
 
 The buyer and seller directories moved from the retired `apps/mobile/` root into their owning storefront/portal. Mahila mobile is a new text-branded shell pointing to the shared FastAPI development URL. No Mahila brand artwork existed, so no Zolexora asset was reused and final icon/splash artwork is a P1 design blocker.
 

@@ -11,7 +11,7 @@ COPY products/zolexora-appsuite ./products/zolexora-appsuite
 
 # Install dependencies and build backend
 RUN pnpm config set ignore-scripts true && pnpm install --no-frozen-lockfile
-RUN pnpm --filter @zas/backend build
+RUN pnpm --filter @zolexora/appsuite-backend build
 
 FROM node:22-alpine AS runner
 WORKDIR /app
@@ -25,7 +25,7 @@ COPY --from=builder /app/packages ./packages
 COPY --from=builder /app/platform ./platform
 COPY --from=builder /app/products/zolexora-appsuite ./products/zolexora-appsuite
 
-WORKDIR /app/products/zolexora-appsuite/apps/backend
+WORKDIR /app/products/zolexora-appsuite/services/backend
 
 EXPOSE 8080
 

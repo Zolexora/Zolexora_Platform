@@ -1,0 +1,61 @@
+name: Bug report
+description: Something in a Zolexora product is broken
+title: "fix: "
+labels: [bug]
+body:
+  - type: dropdown
+    id: product
+    attributes:
+      label: Product
+      options:
+        - Zolexora Marketplace
+        - The Textile Care
+        - Zolexora TMS
+        - Zolexora IMS
+        - Zolexora ERP
+        - Zolexora IronClub
+        - Rento Easy
+        - Zolexora AppSuite
+        - Zolexora AI
+        - Zolexora Engage
+        - ClarityFi
+        - Maun Kavach
+        - Auth Service
+        - Platform Admin
+        - Shared packages / platform
+        - CI / Docker / infrastructure
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: Actual behaviour, including error messages.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Go to ...
+        2. Click ...
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / screenshots
+      description: Redact tokens and secret values; key names are fine.
+      render: shell
+  - type: input
+    id: env
+    attributes:
+      label: Environment
+      placeholder: local Docker / staging / prod; browser or app version; OS
