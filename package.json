@@ -140,11 +140,18 @@
     "docker:admin:build": "bash apps/zolexora-platform-admin/scripts/docker-start.sh build",
     "docker:admin:logs": "bash apps/zolexora-platform-admin/scripts/docker-start.sh logs",
     "docker:admin:status": "bash apps/zolexora-platform-admin/scripts/docker-start.sh status",
+    "docker:admin:pull": "bash apps/zolexora-platform-admin/scripts/docker-start.sh pull",
+    "docker:auth:start": "bash apps/zolexora-auth-service/scripts/docker-start.sh start",
+    "docker:auth:stop": "bash apps/zolexora-auth-service/scripts/docker-start.sh stop",
+    "docker:auth:restart": "bash apps/zolexora-auth-service/scripts/docker-start.sh restart",
+    "docker:auth:build": "bash apps/zolexora-auth-service/scripts/docker-start.sh build",
+    "docker:auth:pull": "bash apps/zolexora-auth-service/scripts/docker-start.sh pull",
+    "docker:auth:logs": "bash apps/zolexora-auth-service/scripts/docker-start.sh logs",
+    "docker:auth:status": "bash apps/zolexora-auth-service/scripts/docker-start.sh status",
     "ecosystem:check": "bash scripts/dev/setup-cli-ecosystem.sh --check",
     "ecosystem:setup": "bash scripts/dev/setup-cli-ecosystem.sh",
     "cli:check": "bash scripts/dev/setup-cli-ecosystem.sh --check",
-    "cli:setup": "bash scripts/dev/setup-cli-ecosystem.sh",
-    "docker:admin:pull": "bash apps/zolexora-platform-admin/scripts/docker-start.sh pull"
+    "cli:setup": "bash scripts/dev/setup-cli-ecosystem.sh"
   },
   "devDependencies": {
     "turbo": "^2.11.7",

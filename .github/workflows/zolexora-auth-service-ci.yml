@@ -1,0 +1,44 @@
+name: Auth Service — CI
+
+# Automated linting, typechecks, and test suites for @zolexora/auth-service & @zolexora/auth-client.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/zolexora-auth-service/**'
+      - 'packages/auth-client/**'
+      - 'packages/utils/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/zolexora-auth-service-ci.yml'
+      - '.github/actions/**'
+  pull_request:
+    paths:
+      - 'apps/zolexora-auth-service/**'
+      - 'packages/auth-client/**'
+      - 'packages/utils/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/zolexora-auth-service-ci.yml'
+      - '.github/actions/**'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Typecheck & Test Auth Stack
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node
+        with:
+          node-version: '22'
+      - name: Build dependencies
+        run: |
+          pnpm --filter @zolexora/utils build
+          pnpm --filter @zolexora/auth-client build
+      - name: Typecheck Auth Service
+        run: pnpm --filter @zolexora/auth-service typecheck
+      - name: Run Auth Service Tests
+        run: pnpm --filter @zolexora/auth-service test
+      - name: Run Auth Client Tests
+        run: pnpm --filter @zolexora/auth-client test
