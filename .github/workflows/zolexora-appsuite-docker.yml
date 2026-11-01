@@ -47,7 +47,7 @@ jobs:
         uses: ./.github/actions/docker-login
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v7
         with:
           context: .
           file: ${{ matrix.file }}
