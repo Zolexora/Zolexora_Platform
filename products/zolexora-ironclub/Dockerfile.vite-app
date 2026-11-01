@@ -1,7 +1,7 @@
 # Multi-stage Vite SPA build for IronClub web apps
 # Usage: docker build --build-arg APP_DIR=apps/admin-web -f Dockerfile.vite-app .
 
-FROM node:22-alpine AS builder
+FROM node:26-alpine AS builder
 
 ARG APP_DIR
 ARG VITE_API_URL=https://ironclub-api.onrender.com/api/v1
