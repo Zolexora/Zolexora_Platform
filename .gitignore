@@ -63,7 +63,7 @@ scratch/
 config/envs/**/*.env
 # Trivy Cache
 .trivy-cache/
-storage/
+/storage/
 
 .pnpm-store/
 .agents/teamwork/
