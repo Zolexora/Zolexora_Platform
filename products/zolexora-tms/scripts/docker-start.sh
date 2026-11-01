@@ -20,7 +20,7 @@ start_stack() {
   run_compose up -d "$@"
   echo ""
   echo "✅ Zolexora TMS Stack status:"
-  docker compose -f "$COMPOSE_FILE" ps
+  run_compose ps
 }
 
 # Subcommand parsing
@@ -66,12 +66,12 @@ case "$ACTION" in
     ;;
   stop|down)
     echo "🛑 Stopping Zolexora TMS Stack..."
-    docker compose -f "$COMPOSE_FILE" down "$@"
+    run_compose down "$@"
     echo "All services stopped."
     ;;
   restart)
     echo "🔄 Restarting Zolexora TMS Stack..."
-    docker compose -f "$COMPOSE_FILE" down
+    run_compose down
     start_stack "$@"
     ;;
   build)
@@ -83,13 +83,13 @@ case "$ACTION" in
     run_compose pull "$@"
     ;;
   status|ps)
-    docker compose -f "$COMPOSE_FILE" ps "$@"
+    run_compose ps "$@"
     ;;
   logs)
     if [ $# -eq 0 ]; then
-      docker compose -f "$COMPOSE_FILE" logs -f
+      run_compose logs -f
     else
-      docker compose -f "$COMPOSE_FILE" logs "$@"
+      run_compose logs "$@"
     fi
     ;;
   *)
