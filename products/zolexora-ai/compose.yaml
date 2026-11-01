@@ -58,11 +58,12 @@ services:
     - PYTHONPATH=/app/backend
     - REDIS_URL=redis://redis:6379/0
     - API_KEY=${API_KEY}
-    - AZURE_OPENAI_ENDPOINT=https://dummy.openai.azure.com/
+    - AZURE_OPENAI_ENDPOINT
     - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
     - SECRET_KEY=${SECRET_KEY}
     depends_on:
-    - redis
+      redis:
+        condition: service_healthy
     restart: unless-stopped
     deploy:
       resources:
@@ -115,13 +116,15 @@ services:
     - PYTHONPATH=/app/backend
     - REDIS_URL=redis://redis:6379/0
     - API_KEY=${API_KEY}
-    - AZURE_OPENAI_ENDPOINT=https://dummy.openai.azure.com/
+    - AZURE_OPENAI_ENDPOINT
     - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
     - SECRET_KEY=${SECRET_KEY}
     command: celery -A backend.celery_app worker --loglevel=info --concurrency=4
     depends_on:
-    - redis
-    - backend
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_started
     healthcheck:
       test:
       - CMD-SHELL

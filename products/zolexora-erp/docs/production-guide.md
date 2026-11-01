@@ -26,7 +26,7 @@ The current repository includes vendored `frappe`, `erpnext`, and `payments` dir
 ```bash
 infisical login   # secrets: /Zolexora_Specfic_Credentials/Zolexora_ERP (key list: docs/secrets.md)
 export INSTALL_PAYMENTS=1   # optional: enable Payments app
-bash scripts/setup/with-infisical.sh products/zolexora-erp docker compose -f compose.yaml up -d
+bash scripts/setup/with-infisical.sh products/zolexora-erp docker compose -f products/zolexora-erp/compose.yaml up -d
 ./scripts/bootstrap-frappe-site.sh
 ./scripts/bootstrap-frappe-site.sh  # Re-run for idempotency check
 ./scripts/check-frappe-stack-health.sh
@@ -154,7 +154,7 @@ http://<host>/assets/zolexora_branding/css/zolexora_dark.css
 After changing branding assets, rebuild and clear caches:
 
 ```bash
-docker compose -f compose.yaml exec -T backend bash -lc '
+docker compose -f products/zolexora-erp/compose.yaml exec -T backend bash -lc '
 cd /home/frappe/frappe-bench
 bench build
 bench --site site1.example.com clear-cache
@@ -199,7 +199,7 @@ The login page uses the Zolexora wordmark and favicon. Desk receives the favicon
 After changing brand assets, rebuild and clear caches:
 
 ```bash
-docker compose -f compose.yaml exec -T backend bash -lc '
+docker compose -f products/zolexora-erp/compose.yaml exec -T backend bash -lc '
 cd /home/frappe/frappe-bench
 bench build
 bench --site site1.example.com clear-cache
@@ -211,7 +211,7 @@ bench --site site1.example.com clear-website-cache
 ## Release & Production Certification Checklist
 
 - [x] `INSTALL_PAYMENTS=1` set and verified in `.env` and Docker build.
-- [x] Docker build passes (`docker compose -f compose.yaml build`).
+- [x] Docker build passes (`docker compose -f products/zolexora-erp/compose.yaml build`).
 - [x] Compose startup passes (`docker compose up -d`).
 - [x] Site bootstrap passes idempotency check (`./scripts/bootstrap-frappe-site.sh`).
 - [x] Payments app installed and Payment Gateway DocType available.

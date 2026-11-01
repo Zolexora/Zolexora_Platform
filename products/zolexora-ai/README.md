@@ -67,7 +67,7 @@ products/zolexora-ai/
     requirements.txt
     tests/
     Dockerfile         API image (repo root build context)
-  infra/               Azure Bicep, alternate compose, nginx config
+  infra/azure/         Azure Bicep templates
   scripts/             Azure provisioning / deploy / memory seeding
   compose.yaml         Local Docker stack (redis, backend, celery, frontend, nginx)
 ```

@@ -10,7 +10,7 @@ Monorepo for every Zolexora product plus the shared identity, admin and library 
 | The Textile Care | `products/zolexora-textile-care` | Multi-tenant white-label laundry platform (customer, seller, driver, admin apps) | FastAPI, Next.js, Expo | :3080 |
 | Zolexora TMS | `products/zolexora-tms` | Transport management (web, admin, mobile) | FastAPI, Vite, Expo | :3090 |
 | Zolexora IMS | `products/zolexora-ims` | Multi-tenant inventory management | Cloudflare Workers + D1, FastAPI, Vite | :3072 |
-| Zolexora ERP | `products/zolexora-erp` | ERP on Frappe/ERPNext (submodules) + Zolexora Frappe apps | Frappe, MariaDB | :8080 (root `compose.yaml`) |
+| Zolexora ERP | `products/zolexora-erp` | ERP on Frappe/ERPNext (submodules) + Zolexora Frappe apps | Frappe, MariaDB | :8080 |
 | Zolexora IronClub | `products/zolexora-ironclub` | Gym & health-club management (admin, manager, marketing, member apps) | FastAPI, Vite, Expo | :8085 |
 | Rento Easy | `products/zolexora-rentoeasy` | Property rental (tenant, owner, admin portals) | NestJS, Prisma, Vite | :3076 |
 | Zolexora AppSuite | `products/zolexora-appsuite` | Client intake + dev-team console for commissioned apps | Next.js, Express | :3070 |

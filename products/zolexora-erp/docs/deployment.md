@@ -13,7 +13,7 @@ Detailed steps to deploy Zolexora ERP to production.
 
 ### Start Services
 ```bash
-docker compose -f compose.yaml up -d --build
+pnpm docker:erp:start   # pulls images, then up -d; Infisical injects secrets
 ```
 
 ### Initialize Setup

@@ -1,20 +1,18 @@
 name: Zolexora ERP — CI
 
-# Lint the first-party Frappe apps, then bring up the root ERP stack (compose.yaml) and run
+# Lint the first-party Frappe apps, then bring up the ERP stack (products/zolexora-erp/compose.yaml) and run
 # bootstrap, health, backup/restore and upgrade checks. Secrets come from Infisical (Zolexora_ERP).
 on:
   push:
     branches: [main]
     paths:
       - 'products/zolexora-erp/**'
-      - 'compose.yaml'
       - 'infrastructure/containers/**'
       - 'scripts/docker/**'
       - '.github/workflows/zolexora-erp-ci.yml'
   pull_request:
     paths:
       - 'products/zolexora-erp/**'
-      - 'compose.yaml'
       - 'infrastructure/containers/**'
       - 'scripts/docker/**'
       - '.github/workflows/zolexora-erp-ci.yml'
@@ -64,11 +62,11 @@ jobs:
       - name: Build Docker images
         env:
           INSTALL_PAYMENTS: ${{ matrix.install_payments }}
-        run: bash scripts/setup/with-infisical.sh products/zolexora-erp docker compose -f compose.yaml build --pull
+        run: bash scripts/setup/with-infisical.sh products/zolexora-erp docker compose -f products/zolexora-erp/compose.yaml build --pull
       - name: Start Compose stack
         env:
           INSTALL_PAYMENTS: ${{ matrix.install_payments }}
-        run: bash scripts/setup/with-infisical.sh products/zolexora-erp docker compose -f compose.yaml up -d
+        run: bash scripts/setup/with-infisical.sh products/zolexora-erp docker compose -f products/zolexora-erp/compose.yaml up -d
       - name: Run clean bootstrap
         run: ./products/zolexora-erp/scripts/bootstrap-frappe-site.sh
       - name: Run idempotent bootstrap
@@ -77,10 +75,10 @@ jobs:
         run: ./products/zolexora-erp/scripts/check-frappe-stack-health.sh
       - name: Verify Payments matrix path
         run: |
-          docker compose -f compose.yaml exec -T backend bench --site site1.example.com list-apps
+          docker compose -f products/zolexora-erp/compose.yaml exec -T backend bench --site site1.example.com list-apps
           if [ "${{ matrix.install_payments }}" = "1" ]; then
-            docker compose -f compose.yaml exec -T backend bench --site site1.example.com list-apps | awk '{print $1}' | grep -qx "payments"
-            docker compose -f compose.yaml exec -T backend bench --site site1.example.com console <<'PY'
+            docker compose -f products/zolexora-erp/compose.yaml exec -T backend bench --site site1.example.com list-apps | awk '{print $1}' | grep -qx "payments"
+            docker compose -f products/zolexora-erp/compose.yaml exec -T backend bench --site site1.example.com console <<'PY'
           import frappe
           assert "payments" in frappe.get_installed_apps(), "payments app not installed"
           assert frappe.db.exists("DocType", "Payment Gateway"), "Payment Gateway DocType missing"
@@ -101,8 +99,8 @@ jobs:
       - name: Verify post-restore Payments state
         run: |
           if [ "${{ matrix.install_payments }}" = "1" ]; then
-            docker compose -f compose.yaml exec -T backend bench --site site1.example.com list-apps | awk '{print $1}' | grep -qx "payments"
-            docker compose -f compose.yaml exec -T backend bench --site site1.example.com console <<'PY'
+            docker compose -f products/zolexora-erp/compose.yaml exec -T backend bench --site site1.example.com list-apps | awk '{print $1}' | grep -qx "payments"
+            docker compose -f products/zolexora-erp/compose.yaml exec -T backend bench --site site1.example.com console <<'PY'
           import frappe
           assert "payments" in frappe.get_installed_apps(), "payments app not installed after restore"
           assert frappe.db.exists("DocType", "Payment Gateway"), "Payment Gateway DocType missing after restore"
@@ -113,12 +111,12 @@ jobs:
           fi
       - name: Custom app import checks
         run: |
-          docker compose -f compose.yaml exec -T backend bench --site site1.example.com execute zolexora_core.site_setup.validate_custom_app_imports
+          docker compose -f products/zolexora-erp/compose.yaml exec -T backend bench --site site1.example.com execute zolexora_core.site_setup.validate_custom_app_imports
       - name: Upgrade compatibility validation
         run: RUN_UPGRADE_BUILD=1 ./products/zolexora-erp/scripts/tests/test-upgrade-validation.sh
       - name: Cleanup
         if: always()
-        run: docker compose -f compose.yaml down -v
+        run: docker compose -f products/zolexora-erp/compose.yaml down -v
 
   destructive-disaster-recovery:
     runs-on: ubuntu-latest

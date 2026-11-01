@@ -1,12 +1,11 @@
 name: Zolexora ERP — Docker images
 
-# Builds every image in compose.yaml, products/zolexora-erp/compose.yaml and pushes ghcr.io/zolexora/zolexora-erp-<service>:{latest,<sha>}.
+# Builds every image in products/zolexora-erp/compose.yaml and pushes ghcr.io/zolexora/zolexora-erp-<service>:{latest,<sha>}.
 on:
   push:
     branches: [main]
     paths:
       - 'products/zolexora-erp/**'
-      - 'compose.yaml'
       - 'scripts/docker/**'
       - 'packages/**'
       - 'platform/**'
@@ -36,9 +35,5 @@ jobs:
           {
             "service": "nginx",
             "file": "infrastructure/containers/compose/Dockerfile.nginx"
-          },
-          {
-            "service": "web",
-            "file": "products/zolexora-erp/Dockerfile"
           }
         ]

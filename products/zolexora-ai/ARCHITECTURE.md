@@ -203,8 +203,6 @@ products/zolexora-ai/
 │   └── celery_app.py            Celery app definition
 │
 ├── infra/
-│   ├── docker-compose.yml       Alternate stack (api + worker)
-│   ├── nginx.conf               Reverse proxy
 │   └── azure/                   Bicep IaC templates
 │
 ├── scripts/

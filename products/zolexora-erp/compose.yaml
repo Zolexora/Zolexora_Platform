@@ -1,3 +1,6 @@
+# Project name pinned: this stack used to live at the repo root, so its volumes are zolexora_platform_*.
+name: zolexora_platform
+
 x-defaults: &defaults
   restart: unless-stopped
   environment:   # values injected by Infisical (scripts/setup/with-infisical.sh)
@@ -43,7 +46,7 @@ x-defaults: &defaults
     - assets:/home/frappe/frappe-bench/assets
     - apps:/home/frappe/frappe-bench/apps
     - logs:/home/frappe/frappe-bench/logs
-    - ./storage/backups:/home/frappe/frappe-bench/backups
+    - ../../storage/backups:/home/frappe/frappe-bench/backups
   networks:
     - zolexora
 
@@ -112,7 +115,7 @@ services:
     image: ${ERP_BACKEND_IMAGE:-ghcr.io/zolexora/zolexora-erp-backend:latest}
     pull_policy: missing
     build:
-      context: .
+      context: ../../
       dockerfile: infrastructure/containers/docker/Dockerfile
       args:
         INSTALL_PAYMENTS: ${INSTALL_PAYMENTS:-0}
@@ -126,7 +129,7 @@ services:
       - assets:/home/frappe/frappe-bench/assets
       - apps:/home/frappe/frappe-bench/apps
       - logs:/home/frappe/frappe-bench/logs
-      - ./storage/backups:/home/frappe/frappe-bench/backups
+      - ../../storage/backups:/home/frappe/frappe-bench/backups
     depends_on:
       mariadb:
         condition: service_healthy
@@ -146,7 +149,7 @@ services:
     image: ${ERP_BACKEND_IMAGE:-ghcr.io/zolexora/zolexora-erp-backend:latest}
     pull_policy: missing
     build:
-      context: .
+      context: ../../
       dockerfile: infrastructure/containers/docker/Dockerfile
       args:
         INSTALL_PAYMENTS: ${INSTALL_PAYMENTS:-0}
@@ -166,7 +169,7 @@ services:
     image: ${ERP_BACKEND_IMAGE:-ghcr.io/zolexora/zolexora-erp-backend:latest}
     pull_policy: missing
     build:
-      context: .
+      context: ../../
       dockerfile: infrastructure/containers/docker/Dockerfile
       args:
         INSTALL_PAYMENTS: ${INSTALL_PAYMENTS:-0}
@@ -186,7 +189,7 @@ services:
     image: ${ERP_BACKEND_IMAGE:-ghcr.io/zolexora/zolexora-erp-backend:latest}
     pull_policy: missing
     build:
-      context: .
+      context: ../../
       dockerfile: infrastructure/containers/docker/Dockerfile
       args:
         INSTALL_PAYMENTS: ${INSTALL_PAYMENTS:-0}
@@ -206,7 +209,7 @@ services:
     image: ${ERP_BACKEND_IMAGE:-ghcr.io/zolexora/zolexora-erp-backend:latest}
     pull_policy: missing
     build:
-      context: .
+      context: ../../
       dockerfile: infrastructure/containers/docker/Dockerfile
       args:
         INSTALL_PAYMENTS: ${INSTALL_PAYMENTS:-0}
@@ -228,7 +231,7 @@ services:
     image: ${ERP_NGINX_IMAGE:-ghcr.io/zolexora/zolexora-erp-nginx:latest}
     pull_policy: missing
     build:
-      context: ./
+      context: ../../
       dockerfile: infrastructure/containers/compose/Dockerfile.nginx
     container_name: zolexora-nginx
     ports:

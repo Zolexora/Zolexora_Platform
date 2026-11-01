@@ -25,14 +25,12 @@ Source of truth: the `ports:` entries in each `compose.yaml` (verified 2026-10-3
 | Platform Admin | `3095` (`PLATFORM_ADMIN_GATEWAY_PORT`), frontend `3092` | `4041` | `5450` | — | `apps/zolexora-platform-admin/compose.yaml` |
 | ClarityFi | `3110` (`CLARITYFI_PORT`) | — | — | — | `products/zolexora-clarityfi/compose.yaml` |
 | Zolexora IronClub | `8085` | `4060` | `5452` (`IRONCLUB_POSTGRES_PORT`) | Redis `6382` | `products/zolexora-ironclub/compose.yaml` |
-| Zolexora ERP (root stack) | `8080` / `8443` (`HTTP_PORT`/`HTTPS_PORT`) | Frappe `8000` (`FRAPPE_PORT`) | — | — | root `compose.yaml` (secrets from Infisical `Zolexora_ERP`) |
-| Zolexora ERP (product stack) | `80` | — | — | — | `products/zolexora-erp/compose.yaml` |
+| Zolexora ERP | `8080` / `8443` (`HTTP_PORT`/`HTTPS_PORT`) | Frappe `8000` (`FRAPPE_PORT`) | — | — | `products/zolexora-erp/compose.yaml` (secrets from Infisical `Zolexora_ERP`) |
 
 Gateways not listed expose no other host ports; their APIs and databases are reachable only inside the Docker network.
 
 ## Known problems
 
-- ERP has two diverging stacks (root `compose.yaml` vs `products/zolexora-erp/compose.yaml`); the product stack binds privileged host port `80`.
 - IronClub hardcodes `4060` and `8085` instead of env-overridable offsets.
 - `.devcontainer/devcontainer.json` `forwardPorts` is out of date with this table.
 

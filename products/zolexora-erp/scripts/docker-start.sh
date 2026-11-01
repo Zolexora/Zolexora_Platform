@@ -6,7 +6,7 @@ cd "$(dirname "$0")/../../.."
 REPO_ROOT="$(pwd)"
 
 PRODUCT="$(basename "$(dirname "$(dirname "$0")")")"
-COMPOSE_FILE="compose.yaml"  # ERP runs from the root stack (see docs/ports.md)
+COMPOSE_FILE="products/${PRODUCT}/compose.yaml"
 
 # Secrets come only from Infisical (products/<product>/.infisical.json); no .env, no fallback.
 run_compose() {

@@ -14,7 +14,7 @@
 3. Start the containers:
 
 ```bash
-docker compose -f compose.yaml up -d
+pnpm docker:erp:start   # pulls images, then up -d; Infisical injects secrets
 ```
 
 4. Initialize the site:
