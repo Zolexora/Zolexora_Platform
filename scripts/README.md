@@ -8,27 +8,31 @@ Global automation scripts for the Zolexora Platform monorepo, organised by conce
 
 ```
 scripts/
-├── audits/                                # Repository health & compliance audit tools
-├── auth/                                  # Platform authentication setup utilities
-├── db/                                    # Database management & seed scripts
-├── dev/                                   # Developer environment setup & utilities
-│   ├── scaffold-product-docker.sh         # Generates standard docker-start.sh + root package.json docker:* scripts
-│   ├── setup-cli-ecosystem.sh
+├── audits/
+│   └── codebase-audit.sh                  # Repository health & compliance audit
+├── auth/
+│   └── assign-admin.py                    # Grant platform-admin role to a user
+├── db/
+│   ├── auth-service-schema.sql            # Central auth-service schema
+│   ├── migrate-schemas.sql
+│   └── stress_test_render_postgres.py
+├── dev/
+│   ├── project-tree.py                    # Regenerates docs/project-tree.md
+│   ├── scaffold-product-docker.sh         # docker-start.sh + root docker:<product>:* scripts (--check to audit)
+│   ├── setup-cli-ecosystem.sh             # `pnpm cli:setup` / `ecosystem:setup`
 │   ├── setup-devcontainer.sh              # Provisions .venv, Frappe symlinks (run manually)
 │   └── start-all-products-dev.sh          # Starts all product dev servers in background
-│
 ├── docker/                                # Container shims (used by Dockerfile / compose.yaml)
 │   ├── configure-frappe-common-site.sh    # Injects DB/Redis URLs into bench config at container start
 │   ├── prune-except-devcontainer.sh       # `pnpm docker:prune`: deep prune that keeps devcontainer images/volumes
 │   └── yarn-wrapper.sh                    # Thin yarn shim bind-mounted into the frontend container
-│
-├── ports/                                 # Monorepo port allocation utilities
+├── ports/
 │   ├── patch-frontend-dev-ports.js        # Patches Vite/Next.js dev ports in package.json
 │   └── patch-backend-service-ports.py     # Patches backend service ports across products
-│
-└── setup/                                 # Monorepo bootstrapping & orchestration
-    ├── infisical-init.sh
-    └── start.sh                           # Universal interactive / CLI startup orchestrator
+└── setup/
+    ├── infisical-init.sh                  # One-time Infisical CLI login/setup
+    ├── start.sh                           # Universal interactive / CLI startup orchestrator
+    └── with-infisical.sh                  # Only secret entry point: with-infisical.sh <product-dir> <command>
 ```
 
 ---
@@ -44,10 +48,11 @@ Product-specific deployment, lifecycle, and testing scripts are located in their
 | **The Textile Care** | [`products/zolexora-textile-care/scripts/`](../products/zolexora-textile-care/scripts/) | `start-docker.sh`, `start-local.sh` |
 | **Zolexora AI** | [`products/zolexora-ai/scripts/`](../products/zolexora-ai/scripts/) | `deploy-azure.sh`, `seed-ai-memory.sh`, `setup-azure-resources.sh` |
 | **Zolexora Engage** | [`products/zolexora-engage/scripts/`](../products/zolexora-engage/scripts/) | `start-project.sh`, `start-web-dev.sh`, `run-post-merge-hooks.sh` |
-| **Zolexora ERP** | [`products/zolexora-erp/scripts/`](../products/zolexora-erp/scripts/) | `bootstrap-frappe-site.sh`, `backup-frappe-site.sh`, `restore-frappe-site.sh`, `check-frappe-stack-health.sh`, `cleanup-workspaces.py`, `tests/` |
+| **Zolexora ERP** | [`products/zolexora-erp/scripts/`](../products/zolexora-erp/scripts/) | `bootstrap-frappe-site.sh`, `backup-frappe-site.sh`, `restore-frappe-site.sh`, `schedule-daily-backup.sh`, `check-frappe-stack-health.sh`, `report-frappe-stack-status.sh`, `cleanup-workspaces.py`, `tests/` |
 | **Zolexora IMS** | [`products/zolexora-ims/scripts/`](../products/zolexora-ims/scripts/) | `setup.sh`, `deploy.sh`, `check-health.sh`, `db-ops.sh`, `docker-ops.sh`, `menu.sh`, `run-all-tests.sh`, `mcp-payments-server.py` |
 | **Zolexora IronClub** | [`products/zolexora-ironclub/scripts/`](../products/zolexora-ironclub/scripts/) | `dev.sh`, `test.sh` |
 | **Zolexora Marketplace** | [`products/zolexora-marketplace/scripts/`](../products/zolexora-marketplace/scripts/) | `check-openapi-drift.sh`, `generate-openapi.py`, `validate-doc-links.py`, `verify-workspace.mjs` |
+| **Every product** | `products/<product>/scripts/` | `docker-start.sh` (start, stop, restart, build, pull, status, logs) |
 | **Zolexora TMS** | [`products/zolexora-tms/scripts/`](../products/zolexora-tms/scripts/) | `docker-start.sh`, `local-start.sh` |
 
 ---

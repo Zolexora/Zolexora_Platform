@@ -383,7 +383,7 @@ agy mcp remove <name>                       # Unregister an MCP server
 
 ## 11. Model Context Protocol (MCP) Directory
 
-The canonical configuration is located at [mcp.json](file:///workspaces/Zolexora_TMS/mcp.json), with symlinks at `.agents/mcp_config.json` and `.vscode/mcp.json`.
+The canonical configuration is located at [.agents/mcp.json](../../../../.agents/mcp.json), with symlinks at `.agents/mcp_config.json` and `.vscode/mcp.json`.
 
 | Server Name | Transport | Endpoint / Binary | Credentials Source |
 | :--- | :--- | :--- | :--- |
@@ -399,7 +399,7 @@ The canonical configuration is located at [mcp.json](file:///workspaces/Zolexora
 | **`cloudinary`** | stdio | `npx -y @cloudinary/asset-management mcp start` | `$CLOUDINARY_*` or `.env` |
 | **`github`** | stdio | `npx -y @modelcontextprotocol/server-github` | `$GITHUB_TOKEN` |
 | **`ponytail`** | stdio | `node ~/.gemini/config/plugins/ponytail/ponytail-mcp/index.js` | Local filesystem |
-| **`filesystem`** | stdio | `npx -y @modelcontextprotocol/server-filesystem /workspaces/Zolexora_TMS` | Local filesystem |
+| **`filesystem`** | stdio | `npx -y @modelcontextprotocol/server-filesystem /workspaces/Zolexora_Platform` | Local filesystem |
 | **`postgres`** | stdio | `npx -y @modelcontextprotocol/server-postgres <database_url>` | Local Postgres (5432) |
 | **`sequential-thinking`**| stdio | `npx -y @modelcontextprotocol/server-sequential-thinking` | Built-in |
 | **`memory`** | stdio | `npx -y @modelcontextprotocol/server-memory` | Built-in |
@@ -411,7 +411,7 @@ The canonical configuration is located at [mcp.json](file:///workspaces/Zolexora
 ## 12. Agent Skills Catalog & Locations
 
 Skills are mirrored across three standard discovery directories:
-1. Workspace: [`.agents/skills/`](file:///workspaces/Zolexora_TMS/.agents/skills)
+1. Workspace: [`.agents/skills/`](../../../../.agents/skills/)
 2. Antigravity Global: `~/.gemini/config/skills/`
 3. Multi-Agent Global (Codex/Claude/Amp): `~/.agents/skills/`
 
@@ -429,7 +429,7 @@ Skills are mirrored across three standard discovery directories:
 
 ## 13. Environment Variables Reference
 
-Values stored in [`.env`](file:///workspaces/Zolexora_TMS/.env):
+Key names only — values live in Infisical (`/Zolexora_Specfic_Credentials/Zolexora_TMS`), injected via `bash scripts/setup/with-infisical.sh products/zolexora-tms <cmd>`; there is no `.env` file ([docs/secrets.md](../../../../docs/secrets.md)):
 
 ```env
 # Application

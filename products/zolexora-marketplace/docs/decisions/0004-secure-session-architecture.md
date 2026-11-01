@@ -81,6 +81,6 @@ Rejected because URLs leak through logs, history, screenshots, referrers, and mo
 
 ## Related documents
 
-- [Auth token storage risk](../auth-token-storage-risk.md)
-- [Domains and routing](../domains-and-routing.md)
-- [Architecture](../architecture.md)
+- [Auth token storage risk](../legacy/auth-token-storage-risk.md)
+- [Domains and routing](../architecture/domains-and-routing.md)
+- [Architecture](../architecture/architecture.md)

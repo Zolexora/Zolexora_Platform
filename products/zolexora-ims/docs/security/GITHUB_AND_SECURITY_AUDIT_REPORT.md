@@ -70,13 +70,13 @@ The following table catalogs every sensitive token, secret, credential, and inte
 | :--- | :--- | :--- | :--- |
 | **Supabase Project URL** | `https://mssyyuipnswzuwhwbudm.supabase.co` | Commit [`c87297d`](https://github.com/Zolexora/Zolexora_IMS/commit/c87297d)<br>`apps/ims-user/frontend/src/lib/supabase.ts` | **Active in git history**<br>Allows public enumeration of Supabase project. |
 | **Supabase Anon API Key** | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1zc3l5dWlwbnN3enV3aHdidWRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2NTIzNzUsImV4cCI6MjA5NjIyODM3NX0.3zQUIAn-FCCPp50nFe8eP0qaaTZ7V5zHcUHO-9GEiEw` | Commit [`c87297d`](https://github.com/Zolexora/Zolexora_IMS/commit/c87297d)<br>`apps/ims-user/frontend/src/lib/supabase.ts` | **Active in git history**<br>Permits unauthenticated requests to Supabase PostgREST endpoints. |
-| **Cloudflare D1 Database ID** | `63b1b80b-ee96-4948-acce-c96d6ac65f61`<br>(Database: `zolexora-ims-1-db`) | Committed in [`wrangler.toml`](file:///workspaces/Zolexora_IMS/apps/ims-user/wrangler.toml) across `main` & `dev` | Publicly exposes internal database UUID. |
-| **Cloudflare KV Namespace ID** | `96c2aa5eace04fe0aa2bbafd29de9f76`<br>(Binding: `SESSION_KV`) | Committed in [`wrangler.toml`](file:///workspaces/Zolexora_IMS/apps/ims-user/wrangler.toml) across `main` & `dev` | Exposes session storage namespace ID. |
-| **Google Apps Script Exec URL** | `https://script.google.com/macros/s/AKfycbyQpkaxpQrmcDyFtROLp4PNRGVxTFpBzg7KkNBiqPOxSOtxijB8VUarYIpTuprSB7f3/exec` | Committed in [`apps/ims-user/wrangler.toml:L25`](file:///workspaces/Zolexora_IMS/apps/ims-user/wrangler.toml#L25) | Legacy webhook endpoint executable as `USER_DEPLOYING`. |
+| **Cloudflare D1 Database ID** | `63b1b80b-ee96-4948-acce-c96d6ac65f61`<br>(Database: `zolexora-ims-1-db`) | Committed in [`wrangler.toml`](../../apps/ims-user/wrangler.toml) across `main` & `dev` | Publicly exposes internal database UUID. |
+| **Cloudflare KV Namespace ID** | `96c2aa5eace04fe0aa2bbafd29de9f76`<br>(Binding: `SESSION_KV`) | Committed in [`wrangler.toml`](../../apps/ims-user/wrangler.toml) across `main` & `dev` | Exposes session storage namespace ID. |
+| **Google Apps Script Exec URL** | `https://script.google.com/macros/s/AKfycbyQpkaxpQrmcDyFtROLp4PNRGVxTFpBzg7KkNBiqPOxSOtxijB8VUarYIpTuprSB7f3/exec` | Committed in [`apps/ims-user/wrangler.toml:L25`](../../apps/ims-user/wrangler.toml#L25) | Legacy webhook endpoint executable as `USER_DEPLOYING`. |
 | **Google Script ID** | `1h2e7sUD_v-BbhxLJJM1A8eKH8y7k5Pe8ew_al_N0vJyZ-A7DId2af2Bt` | Deleted in commit `d6990ad`<br>`legacy/google-apps-script/.clasp.json` | Exposes Apps Script deployment identity. |
 | **Google Drive Database Folders** | Root: `1lkSx36mqaqnF8gfqNswdSPb0zqY4lvOx`<br>Hotel: `1rI5Oj3ZoxqRYdw_eX7pkVrMf-Rlw_BpL` | Deleted in commit `d6990ad`<br>`legacy/google-apps-script/server/Setup.js` | Discloses Drive database folder structure. |
 | **Universal Hardcoded Passwords** | `Admin@123`, `Zolexora@2026`, `admin123`, `Password@123` | Multiple commits (`4f2ad46`, `70d366e`, `7c5e77f`) | Allows universal unauthorized login to any account. |
-| **Static Cryptographic Salt** | `_zolexora_salt_2026` | Committed in [`apps/ims-admin/worker.js:L840`](file:///workspaces/Zolexora_IMS/apps/ims-admin/worker.js#L840) | Weakens SHA-256 hashes against rainbow tables. |
+| **Static Cryptographic Salt** | `_zolexora_salt_2026` | Committed in [`apps/ims-admin/worker.js:L840`](../../apps/ims-admin/worker.js#L840) | Weakens SHA-256 hashes against rainbow tables. |
 | **Developer PII & Emails** | `abhishekofficial4577@gmail.com`<br>`aeroma7701@gmail.com`<br>Abhishek Sharma | Committed across git author logs and source files | Publicly associates personal identities with codebase. |
 
 ---
@@ -86,17 +86,17 @@ The following table catalogs every sensitive token, secret, credential, and inte
 ### 4.1 Vulnerabilities Active on `origin/main` (Production Codebase)
 
 1. **Hardcoded Master Backdoors:**
-   - [`apps/ims-admin/worker.js:L100`](file:///workspaces/Zolexora_IMS/apps/ims-admin/worker.js#L100): `if (!session && !url.searchParams.has('devBypass'))` — appending `?devBypass` completely skips SuperAdmin session validation.
-   - [`apps/ims-admin/worker.js:L286-296`](file:///workspaces/Zolexora_IMS/apps/ims-admin/worker.js#L286-L296): Setting header `X-Dev-Bypass: true` automatically creates a root SuperAdmin identity (`DEV_SUPERADMIN`).
-   - [`apps/ims-admin/worker.js:L308-318`](file:///workspaces/Zolexora_IMS/apps/ims-admin/worker.js#L308-L318): Any token starting with `adm_` is blindly accepted as `SUPERADMIN_ROOT`.
+   - [`apps/ims-admin/worker.js:L100`](../../apps/ims-admin/worker.js#L100): `if (!session && !url.searchParams.has('devBypass'))` — appending `?devBypass` completely skips SuperAdmin session validation.
+   - [`apps/ims-admin/worker.js:L286-296`](../../apps/ims-admin/worker.js#L286-L296): Setting header `X-Dev-Bypass: true` automatically creates a root SuperAdmin identity (`DEV_SUPERADMIN`).
+   - [`apps/ims-admin/worker.js:L308-318`](../../apps/ims-admin/worker.js#L308-L318): Any token starting with `adm_` is blindly accepted as `SUPERADMIN_ROOT`.
 2. **Unrestricted Remote SQL Execution:**
-   - [`apps/ims-admin/worker.js:L144-147`](file:///workspaces/Zolexora_IMS/apps/ims-admin/worker.js#L144-L147): Endpoint `POST /api/platform/database/query` runs raw SQL queries against Cloudflare D1. The security filter only checks for `DROP DATABASE` (a syntax error in SQLite anyway), leaving `DROP TABLE`, `DELETE FROM`, and data exfiltration wide open.
+   - [`apps/ims-admin/worker.js:L144-147`](../../apps/ims-admin/worker.js#L144-L147): Endpoint `POST /api/platform/database/query` runs raw SQL queries against Cloudflare D1. The security filter only checks for `DROP DATABASE` (a syntax error in SQLite anyway), leaving `DROP TABLE`, `DELETE FROM`, and data exfiltration wide open.
 3. **Unauthenticated Universal RPC Bridge:**
-   - [`apps/ims-user/worker.js:L115-308`](file:///workspaces/Zolexora_IMS/apps/ims-user/worker.js#L115-L308): All `/api/rpc/*` actions (`saveProduct`, `deleteProduct`, `saveUser`, `deleteUser`, `createOrganization`, `processSupplierPurchase`, `recordSellingPointSale`) are exposed without session validation.
+   - [`apps/ims-user/worker.js:L115-308`](../../apps/ims-user/worker.js#L115-L308): All `/api/rpc/*` actions (`saveProduct`, `deleteProduct`, `saveUser`, `deleteUser`, `createOrganization`, `processSupplierPurchase`, `recordSellingPointSale`) are exposed without session validation.
 4. **Arbitrary Session Forgery:**
-   - [`apps/ims-user/worker.js:L1628-1645`](file:///workspaces/Zolexora_IMS/apps/ims-user/worker.js#L1628-L1645): Public `POST /api/session` allows unauthenticated clients to inject any user payload into `SESSION_KV` and receive a valid session cookie.
+   - [`apps/ims-user/worker.js:L1628-1645`](../../apps/ims-user/worker.js#L1628-L1645): Public `POST /api/session` allows unauthenticated clients to inject any user payload into `SESSION_KV` and receive a valid session cookie.
 5. **Multi-Tenancy Isolation Failure:**
-   - [`apps/ims-user/worker.js:L397-409`](file:///workspaces/Zolexora_IMS/apps/ims-user/worker.js#L397-L409) and [`L980-1180`](file:///workspaces/Zolexora_IMS/apps/ims-user/worker.js#L980-L1180): Queries lack `WHERE org_id = ?` filtering, and mutation queries hardcode `org_id = 'ORG_ZOLEXORA_001'`.
+   - [`apps/ims-user/worker.js:L397-409`](../../apps/ims-user/worker.js#L397-L409) and [`L980-1180`](../../apps/ims-user/worker.js#L980-L1180): Queries lack `WHERE org_id = ?` filtering, and mutation queries hardcode `org_id = 'ORG_ZOLEXORA_001'`.
 
 ### 4.2 Vulnerabilities on `origin/dev`
 
@@ -178,7 +178,7 @@ git-filter-repo --replace-text expressions.txt --force
    ```
 
 ### Step 4: Lock Down Edge API Endpoints
-- In [`apps/ims-user/worker.js`](file:///workspaces/Zolexora_IMS/apps/ims-user/worker.js), insert authentication middleware before `handleD1Rpc` and `handleRestApi`:
+- In [`apps/ims-user/worker.js`](../../apps/ims-user/worker.js), insert authentication middleware before `handleD1Rpc` and `handleRestApi`:
   ```javascript
   const session = await getSession(request, env);
   if (!session) {

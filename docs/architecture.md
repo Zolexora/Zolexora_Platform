@@ -67,5 +67,6 @@ Three auth tracks (public user, org employee, platform admin) are served by `app
 
 - Decisions: [architecture/adrs/](architecture/adrs/)
 - Infrastructure strategy (databases, deployment, API security, sharding): [architecture/infrastructure/](architecture/infrastructure/)
+- Project tree: [project-tree.md](project-tree.md)
 - Ports: [ports.md](ports.md)
 - Secrets: [secrets.md](secrets.md)

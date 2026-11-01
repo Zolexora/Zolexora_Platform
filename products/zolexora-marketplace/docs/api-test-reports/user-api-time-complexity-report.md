@@ -1,6 +1,6 @@
 # User Category APIs — Optimization, Time Complexity & Security Report
 
-**Document Location**: `/workspaces/ZolexoraMarketplace/docs/Api_Test_Report/user-api-time-complexity-report.md`  
+**Document Location**: `products/zolexora-marketplace/docs/api-test-reports/user-api-time-complexity-report.md`  
 **Category**: User Identity, Buyer Addresses & Profiles (`/api/users/*`)  
 **Date**: August 18, 2026  
 **Stack**: FastAPI (Python 3.12), PostgreSQL 16 (asyncpg), Redis (Sessions & CSRF)  

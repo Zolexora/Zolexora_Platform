@@ -9,13 +9,19 @@ This rule governs how all products in the Zolexora Platform monorepo must config
 Each product resides under `products/<product-name>/` and follows this layout:
 
 ```text
-products/<product-name>/
+products/zolexora-<product>/
+├── apps/                             # Frontends, mobile, edge workers
+├── services/                         # Backends (FastAPI, Express, NestJS, Frappe)
+├── packages/                         # Product-local shared code
 ├── compose.yaml                      # Canonical product compose definition
-├── Dockerfile.<service> (or in apps/) # Multi-stage container definitions
+├── Dockerfile.<service>              # Or services/<svc>/Dockerfile — always root-relative
+├── nginx.conf, nginx-conf.d/         # Product gateway
 ├── scripts/
 │   └── docker-start.sh               # Product Docker management script
 └── .infisical.json                   # Infisical folder for this product (required)
 ```
+
+Full layout: [docs/architecture.md](../../docs/architecture.md#product-layout).
 
 ---
 
@@ -112,16 +118,11 @@ Every product's `docker-start.sh` MUST:
 
 ## 5. Port Allocation & Conflict Prevention
 
-VS Code DevContainer aggressively auto-forwards specific port ranges. To prevent `address already in use` failures, products MUST avoid these host ports:
+[docs/ports.md](../../docs/ports.md) is the host port registry and source of truth: pick a free port from it and update it in the same PR.
 
-| Purpose | Forbidden Host Ports (Held by DevContainer) | Recommended Product Ports |
-|:---|:---|:---|
-| **Web / Gateway** | `3000-3003`, `3070-3089` | `3090`, `3091`, `3092`, `3095+` |
-| **Backend APIs** | `4010`, `4030`, `4090`, `4100`, `4110`, `4120` | `4031`, `4032`, `4040+` |
-| **PostgreSQL** | `5432-5445`, `5448` | `5449`, `5450`, `5451+` |
-
-Always expose ports via configurable variables with default fallbacks:
-`${<PRODUCT>_<SERVICE>_PORT:-<PORT>}`.
+- Gateway: `${<PRODUCT>_PORT:-30XX}:80`. Backend APIs: `40XX`. Postgres: `${<PRODUCT>_POSTGRES_PORT:-54XX}:5432` — never bind host `5432`.
+- Inside Docker, services use default ports (`postgres:5432`, `redis:6379`); only host bindings are offset.
+- Never hardcode a host port; always `${<PRODUCT>_<SERVICE>_PORT:-<PORT>}`.
 
 ---
 

@@ -64,7 +64,7 @@ Rejected because it duplicates security-critical lifecycle, webhook, refund, ide
 
 ## Related documents
 
-- [Payment architecture](../payment-architecture.md)
-- [Data model](../data-model.md)
-- [Domains and routing](../domains-and-routing.md)
+- [Payment architecture](../architecture/payment-architecture.md)
+- [Data model](../architecture/data-model.md)
+- [Domains and routing](../architecture/domains-and-routing.md)
 

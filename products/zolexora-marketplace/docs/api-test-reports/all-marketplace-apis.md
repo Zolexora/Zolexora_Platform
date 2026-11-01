@@ -1,6 +1,6 @@
 # Complete Zolexora Marketplace API Directory
 
-**Location**: `/workspaces/ZolexoraMarketplace/docs/Api_Test_Report/all-marketplace-apis.md`  
+**Location**: `products/zolexora-marketplace/docs/api-test-reports/all-marketplace-apis.md`  
 **Total Registered Endpoints**: 146  
 **Date Generated**: August 18, 2026  
 

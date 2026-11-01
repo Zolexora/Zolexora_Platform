@@ -1,6 +1,6 @@
 # Products & Catalog API — Time Complexity, Space Complexity & Empirical Performance Report
 
-**Report Location**: `/workspaces/ZolexoraMarketplace/docs/Api_Test_Report/products-api-time-complexity-report.md`  
+**Report Location**: `products/zolexora-marketplace/docs/api-test-reports/products-api-time-complexity-report.md`  
 **API Scope**: Catalog, Listings, Inventory & Media Management (`/api/products/*`)  
 **Date**: August 18, 2026  
 **Stack**: Python 3.12, FastAPI, Motor 3.7.0 (MongoDB Atlas), asyncpg (PostgreSQL 16), Redis  

@@ -212,9 +212,9 @@ pip install -r services/marketplace-api/requirements.txt
 ### 2. One-Time Database Initialization
 Build search indexes, unique keys, and automatic TTL expiration rules on MongoDB Atlas:
 ```bash
-cd backend
-python scripts/setup_indexes.py
-cd ..
+cd services/marketplace-api
+bash ../../../../scripts/setup/with-infisical.sh products/zolexora-marketplace python scripts/setup_indexes.py
+cd -
 ```
 
 ### 3. Spin Up Applications
@@ -230,36 +230,36 @@ Open 4 terminal windows:
 
 * **Terminal 1: FastAPI API Backend**
   ```bash
-  cd backend
-  source .venv/bin/activate
-  uvicorn main:app --reload --port 4100
+  cd services/marketplace-api
+  source ../../.venv/bin/activate
+  bash ../../../../scripts/setup/with-infisical.sh products/zolexora-marketplace uvicorn main:app --reload --port 4100
   ```
   API Docs (Swagger UI) will load at: `http://127.0.0.1:4100/docs`
 
-* **Terminal 2: Buyer Frontend Client**
+* **Terminal 2: Zolexora Shop storefront**
   ```bash
-  pnpm --filter web-buyer dev
+  pnpm --filter @zolexora/marketplace-shop-web dev
   ```
-  Runs at: `http://localhost:3000`
+  Runs at: `http://localhost:3103`
 
 * **Terminal 3: Seller Dashboard Client**
   ```bash
-  pnpm --filter web-seller dev
+  pnpm --filter @zolexora/marketplace-seller-web dev
   ```
-  Runs at: `http://localhost:3001`
+  Runs at: `http://localhost:3102`
 
 * **Terminal 4: Admin Panel Client**
   ```bash
-  pnpm --filter web-admin dev
+  pnpm --filter @zolexora/marketplace-admin dev
   ```
-  Runs at: `http://localhost:3002`
+  Runs at: `http://localhost:3101`
 
 #### Option C: Docker Local Stack (Complete Stack with Compose)
 Run the entire platform (including database, backend, and all web frontends) inside Docker:
 ```bash
-docker compose up --build
+pnpm docker:marketplace:start   # pulls ghcr.io/zolexora/zolexora-marketplace-* images if missing; secrets via Infisical
 ```
-*Port mapping is aligned automatically in [docker-compose.yml](docker-compose.yml).*
+*Gateway on `http://localhost:3079`; services are defined in [compose.yaml](compose.yaml).*
 
 ---
 
@@ -358,7 +358,7 @@ Expected output:
 }
 ```
 > [!NOTE]
-> If any service reports `false`, the corresponding development configuration may be missing or incorrect in `services/marketplace-api/.env`.
+> If any service reports `false`, the corresponding development configuration may be missing or incorrect in Infisical (`/Zolexora_Specfic_Credentials/Zolexora_Marketplace`).
 
 ---
 
@@ -469,15 +469,15 @@ To deploy the backend on a private VPS (like AWS EC2, DigitalOcean, or Hetzner):
 * **Scaling via Docker Compose**:
   Configure nginx to reverse proxy and scale backend containers:
   ```bash
-  cd backend
-  # Boot 4 parallel FastAPI worker instances
-  docker compose up -d --build --scale api=4
+  # Boot 4 parallel FastAPI worker instances (images from GHCR, secrets from Infisical)
+  bash scripts/setup/with-infisical.sh products/zolexora-marketplace \
+    docker compose -f products/zolexora-marketplace/compose.yaml up -d --scale backend=4
   ```
 
 * **Manual Setup with Nginx Load Balancing**:
   Copy the nginx config and create worker processes:
   ```bash
-  sudo cp infrastructure/nginx/legacy-api-host.conf /etc/nginx/sites-available/zolexora
+  sudo cp products/zolexora-marketplace/nginx.conf /etc/nginx/sites-available/zolexora
   sudo ln -s /etc/nginx/sites-available/zolexora /etc/nginx/sites-enabled/
   sudo nginx -t && sudo systemctl reload nginx
   
@@ -493,12 +493,12 @@ To deploy the backend on a private VPS (like AWS EC2, DigitalOcean, or Hetzner):
 
 | Symptom | Cause | Solution |
 | :--- | :--- | :--- |
-| **`CORS Blocked`** | Calling address not in allowed list | Add your frontend domain or local IP (e.g. `http://localhost:3001`) to `CORS_ORIGINS` in your `.env` |
+| **`CORS Blocked`** | Calling address not in allowed list | Add your frontend domain or local IP (e.g. `http://localhost:3001`) to `CORS_ORIGINS` in Infisical |
 | **`MongoDB Connection Timeout`** | Network restriction or invalid URI | Ensure `MONGO_URL` includes credentials and you have whitelisted your IP address (or added `0.0.0.0/0`) in MongoDB Atlas |
-| **`Google Login Fails`** | Mismatched client ID strings | Confirm `GOOGLE_CLIENT_ID` in `services/marketplace-api/.env` matches the frontend configuration |
-| **`Uploaded images not visible`** | Missing or incorrect CDN credentials | Validate `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET` inside your `.env` |
+| **`Google Login Fails`** | Mismatched client ID strings | Confirm the Google client ID keys in Infisical match the frontend configuration |
+| **`Uploaded images not visible`** | Missing or incorrect CDN credentials | Validate `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET` in Infisical |
 | **`Verification Emails not sending`** | Resend API auth failure | Ensure your Resend domain is verified at [resend.com/domains](https://resend.com/domains) and matches your `SENDER_EMAIL` |
-| **`Razorpay payment modal fails`** | Invalid merchant key loading | Ensure the development key is configured in `apps/storefronts/zolexora-shop/web/.env.local` |
+| **`Razorpay payment modal fails`** | Invalid merchant key loading | Ensure `NEXT_PUBLIC_RAZORPAY_KEY` is set in Infisical |
 | **`Admin portal displays blank screen`** | Authentication role mismatch | Sign in using the correct administrator credentials: `admin@zolexora.com` |
 | **`Port 4100 Address Already in Use`** | Zombie python process running | Free the port by running: `lsof -ti:4100 \| xargs kill -9` |
 

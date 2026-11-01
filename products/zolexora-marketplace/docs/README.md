@@ -20,10 +20,10 @@ Oracle Cloud Infrastructure (OCI) is the approved final hosting target. The inte
 
 ## Read this first
 
-1. [memory.md](memory.md) for stable facts and non-negotiable rules.
-2. [prd.md](prd.md) for product outcomes and acceptance criteria.
-3. [architecture.md](architecture.md) and [data-model.md](data-model.md) before changing service or persistence boundaries.
-4. [phases.md](phases.md) before starting implementation work.
+1. [memory.md](agents/memory.md) for stable facts and non-negotiable rules.
+2. [prd.md](planning/prd.md) for product outcomes and acceptance criteria.
+3. [architecture.md](architecture/architecture.md) and [data-model.md](architecture/data-model.md) before changing service or persistence boundaries.
+4. [phases.md](planning/phases.md) before starting implementation work.
 5. The applicable ADR under [decisions/](decisions/) before revisiting an accepted decision.
 6. [runbooks/local-development.md](runbooks/local-development.md) before running the repository locally.
 
@@ -31,19 +31,19 @@ Oracle Cloud Infrastructure (OCI) is the approved final hosting target. The inte
 
 | Document | Purpose |
 | --- | --- |
-| [architecture.md](architecture.md) | Current system, target system, boundaries, and migration direction |
-| [business-modules.md](business-modules.md) | Business capabilities and ownership rules |
-| [data-model.md](data-model.md) | Target entities, relationships, constraints, and current gaps |
-| [data-ownership.md](data-ownership.md) | Marketplace/ERP authority, synchronization, outage, PII, and reconciliation rules |
-| [design.md](design.md) | Multi-brand product and interface design rules |
-| [domains-and-routing.md](domains-and-routing.md) | Hostnames, storefront resolution, cookies, CORS, and routing |
-| [memory.md](memory.md) | Compact durable context for humans and coding agents |
-| [oracle-infrastructure.md](oracle-infrastructure.md) | OCI target topology, environments, security, and operations |
-| [payment-architecture.md](payment-architecture.md) | Storefront-specific gateway routing and payment lifecycle |
-| [erp-integration.md](erp-integration.md) | Independent ERP customer boundary and proposed generic contract |
-| [erp-reconciliation.md](erp-reconciliation.md) | Cross-system mismatch detection and controlled resolution |
-| [phases.md](phases.md) | Sequenced implementation roadmap and phase gates |
-| [prd.md](prd.md) | Product requirements and definition of success |
+| [architecture.md](architecture/architecture.md) | Current system, target system, boundaries, and migration direction |
+| [business-modules.md](architecture/business-modules.md) | Business capabilities and ownership rules |
+| [data-model.md](architecture/data-model.md) | Target entities, relationships, constraints, and current gaps |
+| [data-ownership.md](architecture/data-ownership.md) | Marketplace/ERP authority, synchronization, outage, PII, and reconciliation rules |
+| [design.md](architecture/design.md) | Multi-brand product and interface design rules |
+| [domains-and-routing.md](architecture/domains-and-routing.md) | Hostnames, storefront resolution, cookies, CORS, and routing |
+| [memory.md](agents/memory.md) | Compact durable context for humans and coding agents |
+| [oracle-infrastructure.md](architecture/oracle-infrastructure.md) | OCI target topology, environments, security, and operations |
+| [payment-architecture.md](architecture/payment-architecture.md) | Storefront-specific gateway routing and payment lifecycle |
+| [erp-integration.md](architecture/erp-integration.md) | Independent ERP customer boundary and proposed generic contract |
+| [erp-reconciliation.md](architecture/erp-reconciliation.md) | Cross-system mismatch detection and controlled resolution |
+| [phases.md](planning/phases.md) | Sequenced implementation roadmap and phase gates |
+| [prd.md](planning/prd.md) | Product requirements and definition of success |
 | [decisions/](decisions/) | Accepted architecture decision records |
 | [decisions/0006-canonical-repository-layout.md](decisions/0006-canonical-repository-layout.md) | Canonical capability-oriented repository layout |
 | [decisions/0007-separate-buyer-mobile-apps.md](decisions/0007-separate-buyer-mobile-apps.md) | Separate buyer mobile binaries and shared seller mobile ownership |
@@ -52,7 +52,7 @@ Oracle Cloud Infrastructure (OCI) is the approved final hosting target. The inte
 | [directory-plan/](directory-plan/) | Supplied Phase 1.5 blueprint and path mapping evidence |
 | [runbooks/local-development.md](runbooks/local-development.md) | Repository-backed local setup and verification commands |
 
-The existing [auth-token-storage-risk.md](auth-token-storage-risk.md) records a known current-state security risk and remains valid until the secure-session migration is complete.
+The existing [auth-token-storage-risk.md](legacy/auth-token-storage-risk.md) records a known current-state security risk and remains valid until the secure-session migration is complete.
 
 ## Status vocabulary
 
@@ -73,7 +73,7 @@ The existing [auth-token-storage-risk.md](auth-token-storage-risk.md) records a 
 
 ## Phase 4 additions
 
-- [Oracle persistence](oracle-persistence.md) — implemented Marketplace Oracle stack, migrations, bootstrap, readiness, and limits.
+- [Oracle persistence](architecture/oracle-persistence.md) — implemented Marketplace Oracle stack, migrations, bootstrap, readiness, and limits.
 - [ADR 0010](decisions/0010-oracle-marketplace-persistence-foundation.md) — accepted persistence and forward-migration decision.
 - [Phase 4 audit](../docs/status/audits/phase-4-oracle-persistence-foundation.md) — verification evidence and blockers.
 - [Phase 5 Oracle runtime audit](../docs/status/audits/phase-5-oracle-runtime-validation.md) — real disposable-Oracle migration and hardening evidence.

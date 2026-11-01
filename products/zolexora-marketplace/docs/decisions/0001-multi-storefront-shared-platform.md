@@ -68,8 +68,8 @@ Rejected for the initial migration because it adds operational and consistency c
 
 ## Related documents
 
-- [Architecture](../architecture.md)
-- [Data model](../data-model.md)
-- [Domains and routing](../domains-and-routing.md)
-- [Product requirements](../prd.md)
+- [Architecture](../architecture/architecture.md)
+- [Data model](../architecture/data-model.md)
+- [Domains and routing](../architecture/domains-and-routing.md)
+- [Product requirements](../planning/prd.md)
 

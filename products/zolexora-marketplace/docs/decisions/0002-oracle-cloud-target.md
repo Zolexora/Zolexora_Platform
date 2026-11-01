@@ -71,7 +71,7 @@ Rejected because data, image, identity, and runtime constraints need early stagi
 
 ## Related documents
 
-- [Oracle infrastructure](../oracle-infrastructure.md)
-- [Architecture](../architecture.md)
-- [Delivery phases](../phases.md)
+- [Oracle infrastructure](../architecture/oracle-infrastructure.md)
+- [Architecture](../architecture/architecture.md)
+- [Delivery phases](../planning/phases.md)
 

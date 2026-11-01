@@ -1,6 +1,6 @@
 # Project status index
 
-`docs/status/current-status.md` is the current project-status source of truth. Audit evidence belongs under `docs/status/audits/`; durable requirements and architecture belong under `docs/`. Root [`AGENTS.md`](../../AGENTS.md) defines required reading and maintenance rules.
+`docs/status/current-status.md` is the current project-status source of truth. Audit evidence belongs under `docs/status/audits/`; durable requirements and architecture belong under `docs/`. Root [`AGENTS.md`](../agents/AGENTS.md) defines required reading and maintenance rules.
 
 - Current phase: Phase 1 — deterministic monorepo baseline (complete with blockers)
 - Verdict: **PASS WITH BLOCKERS**

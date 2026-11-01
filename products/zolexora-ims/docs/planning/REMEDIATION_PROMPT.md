@@ -1,7 +1,7 @@
 # MASTER SECURITY REMEDIATION PROMPT: Zolexora IMS Hardening
 
 > **Target Codebase:** Zolexora IMS Monorepo (`apps/ims-admin`, `apps/ims-user`)  
-> **Input Audit:** [`GITHUB_AND_SECURITY_AUDIT_REPORT.md`](file:///workspaces/Zolexora_IMS/GITHUB_AND_SECURITY_AUDIT_REPORT.md)  
+> **Input Audit:** [`GITHUB_AND_SECURITY_AUDIT_REPORT.md`](../security/GITHUB_AND_SECURITY_AUDIT_REPORT.md)  
 > **Role:** Principal Security Engineer & Cloudflare Edge Systems Architect  
 > **Mission:** Execute complete remediation of all 10 critical and high-severity security vulnerabilities, eradicate backdoors, enforce multi-tenant isolation, secure edge sessions, and sanitize secret leaks.
 

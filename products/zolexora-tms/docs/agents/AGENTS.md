@@ -12,7 +12,7 @@ This document defines the core operational standards, tooling workflows, and arc
   - Use `research` subagents for extensive file audits, repository reconnaissance, or searching documentation without cluttering primary context.
   - Use `self` subagents for isolated task execution requiring workspace tools.
   - Define specialized subagents via `define_subagent` when repetitive domain-specific roles are needed.
-- **Clickable File Links**: Always link to referenced files using clickable GitHub-style markdown links with the `file://` scheme and file basenames (e.g., [package.json](file:///workspaces/Zolexora_TMS/package.json) or [docker-compose.yml](file:///workspaces/Zolexora_TMS/docker-compose.yml)).
+- **Clickable File Links**: Always link to referenced files using clickable GitHub-style markdown links with the `file://` scheme and file basenames (e.g., [package.json](../../package.json) or [compose.yaml](../../compose.yaml)).
 
 ---
 
@@ -32,13 +32,13 @@ When generating interactive components, previews, or data visualizations:
 
 ## 3. Model Context Protocol (MCP) Integration
 
-MCP servers are configured in `.agents/mcp_config.json` and globally in `~/.gemini/config/mcp_config.json`:
+MCP servers are configured in the repo-root `.agents/mcp_config.json` and globally in `~/.gemini/config/mcp_config.json`:
 - **`filesystem`**: Scoped file operations across the repository.
 - **`fetch`**: Fetch external web documentation and API endpoints.
 - **`sequential-thinking`**: Deep reasoning and step-by-step problem breakdown.
 - **`memory`**: Persistent cross-session knowledge and entity tracking.
 - **`puppeteer`**: Automated headless browser testing and UI inspection.
-- **`postgres`**: Database queries against local PostgreSQL (`5432:5432`).
+- **`postgres`**: Database queries against local PostgreSQL (host port from [docs/ports.md](../../../../docs/ports.md); never `5432`).
 - **`github`**: GitHub repository management, issues, and PR interactions.
 
 Manage servers via the Antigravity CLI:
@@ -51,16 +51,18 @@ agy mcp add <name> <commandOrUrl> [args...]
 
 ## 4. Zolexora TMS Monorepo Architecture
 
-- **Structure**:
-  - `apps/tms`: TMS Client Application (Next.js 16+, React 19, Tailwind CSS v4, port 3000).
-  - `apps/admin`: TMS Admin Dashboard (Next.js 16+, React 19, Tailwind CSS v4, port 3001).
-  - `infrastructure/`: Reverse proxy and deployment configurations.
-  - `docker-compose.yml`: Multi-container setup with PostgreSQL 16.
-- **Development Scripts**:
-  - `npm run build:tms`: Compile TMS frontend.
-  - `npm run build:admin`: Compile Admin frontend.
-  - `npm run lint:tms` / `npm run lint:admin`: Run ESLint across apps.
-- **Next.js Conventions**: Next.js 16+ has breaking architectural changes. Consult `node_modules/next/dist/docs/` for internal API references. Retain Next.js agent blocks in `apps/*/AGENTS.md`.
+- **Structure** (`products/zolexora-tms/`):
+  - `apps/tms-web` (`@zolexora/tms-web`): client app — Vite + React 19, dev port 3031.
+  - `apps/tms-admin` (`@zolexora/tms-admin`): admin dashboard — Vite + React 19, dev port 3032.
+  - `apps/tms-mobile` (`@zolexora/tms-mobile`): Expo app.
+  - `services/backend`: FastAPI API (port 4030 in Docker, host `4031`).
+  - `compose.yaml` + `nginx.conf`: Docker stack, gateway on host `3090`.
+- **Development Scripts** (run from the repo root):
+  - `pnpm dev:tms:infisical` / `pnpm dev:tms:admin:infisical` / `pnpm dev:tms:api:infisical`: dev servers with Infisical secrets.
+  - `pnpm dev:tms:mobile`: Expo dev server.
+  - `pnpm docker:tms:start|stop|restart|build|pull|logs|status`: Docker stack (GHCR images, `pull_policy: missing`).
+  - `pnpm turbo run lint typecheck build --filter='./products/zolexora-tms/**'`: checks for every TMS package.
+- **Secrets**: Infisical only (`/Zolexora_Specfic_Credentials/Zolexora_TMS`); never create `.env` files.
 - **Code Cleanliness**: Preserve all existing comments and docstrings. Verify TypeScript builds before completing tasks.
 
 ---

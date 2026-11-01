@@ -102,7 +102,7 @@ flowchart TD
 
 ## Core Contract Templates & Clauses
 
-Pre-configured in [`lib/legal-clauses.ts`](file:///workspaces/Zolexora_Platform/products/zolexora-appsuite/apps/web/lib/legal-clauses.ts):
+Pre-configured in [`lib/legal-clauses.ts`](../apps/client/lib/legal-clauses.ts):
 
 1. **Master Services Agreement (MSA):**
    - **IP Transfer Condition Precedent:** Intellectual property transfers only upon full payment settlement.
@@ -127,7 +127,7 @@ Pre-configured in [`lib/legal-clauses.ts`](file:///workspaces/Zolexora_Platform/
 
 ```bash
 # 1. Navigate to the AppSuite web application
-cd /workspaces/Zolexora_Platform/products/zolexora-appsuite/apps/web
+cd products/zolexora-appsuite/apps/client
 
 # 2. Secrets come from Infisical (/Firebase_Credentials/Zolexora_AppSuite); no .env files
 infisical login

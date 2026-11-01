@@ -60,22 +60,22 @@ This file is the shortest durable context for anyone resuming work on the reposi
 
 ## Decision records
 
-- [ADR 0001](decisions/0001-multi-storefront-shared-platform.md): shared platform with two storefronts.
-- [ADR 0002](decisions/0002-oracle-cloud-target.md): OCI is the final infrastructure target.
-- [ADR 0003](decisions/0003-separate-payment-gateways.md): storefronts use separate gateway configurations.
-- [ADR 0004](decisions/0004-secure-session-architecture.md): secure session handling for web and mobile.
-- [ADR 0005](decisions/0005-canonical-pnpm-workspace.md): pnpm and the root lockfile own all JavaScript packages.
-- [ADR 0006](decisions/0006-canonical-repository-layout.md): capability-oriented repository paths are canonical.
-- [ADR 0007](decisions/0007-separate-buyer-mobile-apps.md): each storefront owns a buyer mobile binary and seller mobile remains shared.
-- [ADR 0008](decisions/0008-storefront-context-resolution.md): request context uses exact registered signals, conflict rejection, and no default.
-- [ADR 0009](decisions/0009-independent-erp-customer-integration.md): independent ERP customer contract and asynchronous integration boundary.
-- [ADR 0010](decisions/0010-oracle-marketplace-persistence-foundation.md): SQLAlchemy/Alembic/python-oracledb, forward-only Oracle migrations, persisted fail-closed storefront resolution, and reliability schema.
-- [ADR 0012](decisions/0012-marketplace-cloud-agnostic-baseline.md): provider-neutral application and infrastructure baseline; Oracle/OCI targets superseded.
-- [ADR 0014](decisions/0014-postgresql-marketplace-foundation.md): provider-independent PostgreSQL, forward-only Alembic ownership, explicit transactions, and no active Oracle runtime.
+- [ADR 0001](../decisions/0001-multi-storefront-shared-platform.md): shared platform with two storefronts.
+- [ADR 0002](../decisions/0002-oracle-cloud-target.md): OCI is the final infrastructure target.
+- [ADR 0003](../decisions/0003-separate-payment-gateways.md): storefronts use separate gateway configurations.
+- [ADR 0004](../decisions/0004-secure-session-architecture.md): secure session handling for web and mobile.
+- [ADR 0005](../decisions/0005-canonical-pnpm-workspace.md): pnpm and the root lockfile own all JavaScript packages.
+- [ADR 0006](../decisions/0006-canonical-repository-layout.md): capability-oriented repository paths are canonical.
+- [ADR 0007](../decisions/0007-separate-buyer-mobile-apps.md): each storefront owns a buyer mobile binary and seller mobile remains shared.
+- [ADR 0008](../decisions/0008-storefront-context-resolution.md): request context uses exact registered signals, conflict rejection, and no default.
+- [ADR 0009](../decisions/0009-independent-erp-customer-integration.md): independent ERP customer contract and asynchronous integration boundary.
+- [ADR 0010](../decisions/0010-oracle-marketplace-persistence-foundation.md): SQLAlchemy/Alembic/python-oracledb, forward-only Oracle migrations, persisted fail-closed storefront resolution, and reliability schema.
+- [ADR 0012](../decisions/0012-marketplace-cloud-agnostic-baseline.md): provider-neutral application and infrastructure baseline; Oracle/OCI targets superseded.
+- [ADR 0014](../decisions/0014-postgresql-marketplace-foundation.md): provider-independent PostgreSQL, forward-only Alembic ownership, explicit transactions, and no active Oracle runtime.
 
 ## Working discipline
 
-- Read [phases.md](phases.md) and complete its gate before moving to a later phase.
+- Read [phases.md](../planning/phases.md) and complete its gate before moving to a later phase.
 - Preserve user work and keep each change inside the requested phase.
 - Add tests for storefront isolation, server-side totals, authorization, payment routing, and idempotency as those capabilities are introduced.
 - Do not commit, push, deploy, migrate production data, or rotate live secrets unless explicitly authorized.

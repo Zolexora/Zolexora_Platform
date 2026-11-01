@@ -61,9 +61,12 @@ Product backends have their own `pytest` suites under each product.
 ## Docs
 
 - [docs/architecture.md](docs/architecture.md): layout, dependency rules, platform vs product boundaries
+- [docs/project-tree.md](docs/project-tree.md): full project tree (file paths)
+- [products/README.md](products/README.md): product index
 - [docs/ports.md](docs/ports.md): host port registry
+- [docs/secrets.md](docs/secrets.md): Infisical folders and key names per product
 - [docs/architecture/adrs/](docs/architecture/adrs/): decisions
 - [docs/architecture/infrastructure/](docs/architecture/infrastructure/): infrastructure strategy
 - [scripts/README.md](scripts/README.md): scripts
-- [AGENTS.md](AGENTS.md): rules for AI agents
+- [AGENTS.md](AGENTS.md) and [.agents/rules/](.agents/rules/): rules for AI agents
 - Product docs: `products/<name>/README.md` and `products/<name>/docs/`

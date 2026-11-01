@@ -1,6 +1,6 @@
 # Zolexora Marketplace API Performance & Latency Findings Report
 
-**Report Location**: `/workspaces/ZolexoraMarketplace/docs/Api_Test_Report/`  
+**Report Location**: `products/zolexora-marketplace/docs/api-test-reports/`  
 **Date**: August 18, 2026  
 **Status**: Active Optimization Working Report  
 

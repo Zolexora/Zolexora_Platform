@@ -52,7 +52,7 @@ flowchart TD
 ### 2.1 Broken Multi-Tenant Isolation & BOLA / IDOR
 * **Mechanism:** In multi-tenant databases where all tenant records reside in shared tables, every database query must strictly enforce tenant scoping (`WHERE org_id = ?`). Without explicit scoping bound to the server-side session, users from Organization A can view or manipulate data belonging to Organization B.
 * **Code Findings in Zolexora:**
-  - In [`apps/ims-user/worker.js`](../apps/ims-user/worker.js):
+  - In [`apps/ims-user/worker.js`](../../apps/ims-user/worker.js):
     ```javascript
     async function getProducts(db) {
       const res = await db.prepare('SELECT * FROM products ORDER BY item_code ASC;').all();
@@ -66,7 +66,7 @@ flowchart TD
 ### 2.2 Cryptographic Failures & Static Salt Password Hashing
 * **Mechanism:** Fast hashing functions (like standard SHA-256) lack adaptive work factors (iteration counts or memory hardness). A static salt committed to version control enables instant GPU-accelerated hash cracking.
 * **Code Findings in Zolexora:**
-  - In [`apps/ims-user/worker.js`](../apps/ims-user/worker.js):
+  - In [`apps/ims-user/worker.js`](../../apps/ims-user/worker.js):
     ```javascript
     const SALT = '_zolexora_salt_2026';
 
@@ -82,7 +82,7 @@ flowchart TD
 ### 2.3 Interactive SQL Console & Incomplete Blacklist Evasion
 * **Mechanism:** Administrative endpoints providing raw SQL execution rely on blacklists to block destructive queries. Blacklists are notoriously vulnerable to syntax evasion and unlisted destructive keywords.
 * **Code Findings in Zolexora:**
-  - In [`apps/ims-admin/worker.js`](../apps/ims-admin/worker.js):
+  - In [`apps/ims-admin/worker.js`](../../apps/ims-admin/worker.js):
     ```javascript
     const dangerousPatterns = ['DROP DATABASE', 'DROP ALL', 'ATTACH', 'DETACH', 'PRAGMA', 'DROP TABLE'];
     if (dangerousPatterns.some(kw => upper.includes(kw))) {
@@ -100,7 +100,7 @@ flowchart TD
 ### 2.4 Session Identifier Leakage via URL Parameters
 * **Mechanism:** When session tokens are accepted in URL query parameters (`?sessionId=...`), tokens get logged in browser histories, proxy caches, server web logs, and external `Referer` headers when clicking outgoing links.
 * **Code Findings in Zolexora:**
-  - In [`apps/ims-user/worker.js`](../apps/ims-user/worker.js):
+  - In [`apps/ims-user/worker.js`](../../apps/ims-user/worker.js):
     ```javascript
     if (url) {
       const qToken = url.searchParams.get('sessionId') || url.searchParams.get('sessionToken');
@@ -119,7 +119,7 @@ flowchart TD
 ### 3.1 Asymmetric Database Starvation via Health Checks (Application-Layer DoS)
 * **Mechanism:** An unauthenticated endpoint that triggers multiple expensive internal operations can be bombarded with lightweight HTTP requests. The attacker spends minimal bandwidth while the backend exhausts its CPU, connection pool, or database worker thread capacity.
 * **Code Findings in Zolexora:**
-  - In [`apps/ims-user/worker.js`](../apps/ims-user/worker.js) (public `/api/health` and `/api/d1/health`):
+  - In [`apps/ims-user/worker.js`](../../apps/ims-user/worker.js) (public `/api/health` and `/api/d1/health`):
     ```javascript
     const tablesRes = await env.DB.prepare(
       "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%';"

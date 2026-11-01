@@ -190,5 +190,5 @@ This script:
 
 This project was developed using **GitHub Copilot** as an AI coding assistant, in compliance with the hackathon rules.
 
-For a detailed walkthrough of the internal components and data schemas, please refer to [ARCHITECTURE.md](file:///workspaces/01_SwarmFactory/ARCHITECTURE.md).
+For a detailed walkthrough of the internal components and data schemas, please refer to [ARCHITECTURE.md](ARCHITECTURE.md).
 

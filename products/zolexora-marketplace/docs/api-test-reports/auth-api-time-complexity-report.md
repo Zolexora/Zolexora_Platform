@@ -1,6 +1,6 @@
 # Time Complexity & Performance Analysis: Auth API Category
 
-**Location**: `/workspaces/ZolexoraMarketplace/docs/Api_Test_Report/auth-api-time-complexity-report.md`  
+**Location**: `products/zolexora-marketplace/docs/api-test-reports/auth-api-time-complexity-report.md`  
 **Category**: Identity, Authentication & Session Security (`/api/auth/*`)  
 **Date**: August 18, 2026  
 

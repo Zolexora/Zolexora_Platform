@@ -6,13 +6,18 @@ This repository is a Turborepo/pnpm monorepo housing the Zolexora ecosystem prod
 
 ## 1. Monorepo Organization
 
-- **`products/`**: Independent vertical products, all named `zolexora-<product>` (e.g. `zolexora-tms`, `zolexora-marketplace`, `zolexora-textile-care`). Each uses the same layout: `apps/` (frontends, mobile), `services/` (backends), `packages/` (product-local libs), `scripts/`, `docs/` — see [docs/architecture.md](docs/architecture.md#product-layout).
+- **`products/`**: 12 independent vertical products ([products/README.md](products/README.md)), all named `zolexora-<product>` (e.g. `zolexora-tms`, `zolexora-marketplace`, `zolexora-textile-care`). Each uses the same layout: `apps/` (frontends, mobile), `services/` (backends), `packages/` (product-local libs), `scripts/`, `docs/` — see [docs/architecture.md](docs/architecture.md#product-layout).
 - **`packages/`**: All shared libraries and configs, one folder per `@zolexora/<folder>` package (e.g. `utils`, `tsconfig`, `api-shield`, `user-auth-firebase`).
 - **`apps/`**: Cross-product apps: `zolexora-auth-service`, `zolexora-platform-admin`.
 - **`.github/`**: Workflows are named `zolexora-<product>-<purpose>.yml`; image builds call `reusable-docker-ghcr.yml`; shared steps live in `.github/actions/` (`setup-node`, `setup-python`, `docker-login`, `infisical`, `notify`).
 - **Naming**: npm packages `@zolexora/<product>-<app>`; GHCR images `ghcr.io/zolexora/zolexora-<product>-<service>`.
 - **`scripts/`**: Monorepo orchestration scripts (`scripts/dev/`, `scripts/setup/`, `scripts/docker/`).
-- **`.agents/`**: Customization system containing rules (`.agents/rules/`), skills (`.agents/skills/`), and MCP server configs.
+- **`infrastructure/`**: Shared Dockerfiles, nginx gateway image, database schemas/migrations, Supabase config.
+- **`tests/e2e/`**: Cross-product E2E suites (`auth-service`, `tms`).
+- **`.agents/`**: Customization system containing rules (`.agents/rules/`), skills (`.agents/skills/`), and MCP server configs (`.agents/mcp.json`).
+- **Full file map**: [docs/project-tree.md](docs/project-tree.md) (regenerate with `python3 scripts/dev/project-tree.py` after moving folders).
+- **Tooling**: one pnpm workspace + one root `turbo.json` and `pnpm-lock.yaml`; no nested lockfiles. Product `tsconfig.base.json` extends `@zolexora/tsconfig/base.json`. Dependency rules: [docs/architecture.md](docs/architecture.md#dependency-rules).
+- **Ports**: [docs/ports.md](docs/ports.md) is the host port registry; never bind host `5432`; update the registry in the same change that adds or moves a port.
 
 ---
 

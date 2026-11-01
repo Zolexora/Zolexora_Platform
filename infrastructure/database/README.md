@@ -19,11 +19,7 @@ infrastructure/database/
 ## Operational Tooling
 
 Platform-wide database operations are managed via standardized operational scripts:
-- **MariaDB Backup & Restore**:
-  - `scripts/backup.sh`: Creates full MariaDB database backups.
-  - `scripts/restore.sh`: Restores MariaDB databases and assets.
-  - `scripts/daily-backup.sh`: Automated daily snapshot scheduler.
-- **Host & VPS Deployment Engine**:
-  - `infrastructure/deployment/backup.sh`: Provider-neutral backup runner.
-  - `infrastructure/deployment/restore.sh`: Restores system snapshots.
-  - `infrastructure/deployment/verify-backup.sh`: Verifies backup integrity.
+- **ERP (MariaDB) backup & restore** — `products/zolexora-erp/scripts/`:
+  - `backup-frappe-site.sh`: Creates a verified site backup.
+  - `restore-frappe-site.sh <backup-dir>`: Restores a site from backup.
+  - `check-frappe-stack-health.sh`: Health-checks the ERP stack.
