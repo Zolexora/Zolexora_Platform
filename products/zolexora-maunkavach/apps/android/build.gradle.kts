@@ -160,7 +160,7 @@ dependencies {
     implementation("androidx.camera:camera-view:1.3.4")
     implementation("com.google.mlkit:barcode-scanning:17.3.0")
     implementation("com.google.zxing:core:3.5.3")
-    compileOnly("com.google.errorprone:error_prone_annotations:2.28.0")
+    compileOnly("com.google.errorprone:error_prone_annotations:2.51.0")
     compileOnly("com.google.code.findbugs:jsr305:3.0.2")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
