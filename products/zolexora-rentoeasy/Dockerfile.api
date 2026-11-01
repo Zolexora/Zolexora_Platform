@@ -1,4 +1,4 @@
-FROM node:22-alpine AS builder
+FROM node:26-alpine AS builder
 RUN apk add --no-cache openssl libc6-compat
 RUN corepack enable && corepack prepare pnpm@9 --activate
 WORKDIR /app
@@ -13,7 +13,7 @@ RUN pnpm --filter @zolexora/rentoeasy-utils build
 RUN pnpm --filter @zolexora/rentoeasy-api prisma:generate
 RUN pnpm --filter @zolexora/rentoeasy-api build
 
-FROM node:22-alpine
+FROM node:26-alpine
 RUN apk add --no-cache openssl libc6-compat
 WORKDIR /app
 COPY --from=builder /app ./
