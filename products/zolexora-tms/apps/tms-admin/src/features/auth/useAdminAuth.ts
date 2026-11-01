@@ -15,7 +15,7 @@ export function useAdminAuth() {
     return unsub;
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, _turnstileToken?: string) => {
     setError(null);
     try {
       await webAuth.signInWithEmail(auth, email, password);

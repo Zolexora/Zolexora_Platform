@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ZolexoraAuthProvider } from '@zolexora/user-auth-firebase';
+import { AuthProvider } from '@zolexora/auth-client/react';
+import { auth } from './lib/firebase';
 import { AuthenticationForm } from './components/authentication-form';
 import { ProtectedRoute } from './routes/ProtectedRoute';
 import { DashboardLayout } from './layouts/DashboardLayout';
@@ -53,7 +55,8 @@ export function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ZolexoraAuthProvider>
-        <BrowserRouter>
+        <AuthProvider product="zolexora-tms" firebaseAuth={auth}>
+          <BrowserRouter>
           <Routes>
             {/* Public Landing & Authentication */}
             <Route path="/" element={<LandingPage />} />
@@ -100,6 +103,7 @@ export function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>
+        </AuthProvider>
       </ZolexoraAuthProvider>
     </QueryClientProvider>
   );

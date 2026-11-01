@@ -1,11 +1,13 @@
 import { useState, FormEvent } from 'react';
 import { ShieldCheck, Loader2, AlertCircle } from 'lucide-react';
+import { TurnstileWidget } from '@zolexora/auth-client/turnstile';
 import { useAdminAuth } from './useAdminAuth';
 
 export function LoginPage() {
   const { signIn } = useAdminAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [turnstileToken, setTurnstileToken] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -14,7 +16,7 @@ export function LoginPage() {
     setError(null);
     setLoading(true);
     try {
-      await signIn(email, password);
+      await signIn(email, password, turnstileToken);
     } catch (err: any) {
       const msg: string = err.message ?? '';
       if (msg.includes('invalid-credential') || msg.includes('wrong-password') || msg.includes('user-not-found')) {
@@ -78,6 +80,19 @@ export function LoginPage() {
                 {error}
               </div>
             )}
+
+            <div className="pt-1 flex justify-center">
+              <TurnstileWidget
+                siteKey={
+                  // @ts-ignore
+                  (typeof window !== 'undefined' && window.__ENV__?.VITE_TURNSTILE_SITE_KEY) ||
+                  import.meta.env.VITE_TURNSTILE_SITE_KEY ||
+                  '0x4AAAAAAAx_MockDevSiteKey'
+                }
+                action="tms_admin_login"
+                onVerify={(tok) => setTurnstileToken(tok)}
+              />
+            </div>
 
             <button
               type="submit"

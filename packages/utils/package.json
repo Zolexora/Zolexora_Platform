@@ -15,6 +15,11 @@
       "types": "./dist/zolexora-id.d.ts",
       "import": "./dist/zolexora-id.js",
       "default": "./dist/zolexora-id.js"
+    },
+    "./validation": {
+      "types": "./dist/validation.d.ts",
+      "import": "./dist/validation.js",
+      "default": "./dist/validation.js"
     }
   },
   "scripts": {

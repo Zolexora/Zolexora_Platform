@@ -11,4 +11,10 @@ export {
   generateZolexoraOrgId,
   ZOLEXORA_ID_REGEX,
   ZOLEXORA_ORG_ID_REGEX,
-} from "@zolexora/utils";
+} from "@zolexora/utils/zolexora-id";
+
+export {
+  isPublicWebmailDomain,
+  isCorporateEmail,
+  BLOCKED_WEBMAIL_DOMAINS,
+} from "@zolexora/utils/validation";

@@ -5,7 +5,7 @@ import React, {
   useMemo,
   type ReactNode,
 } from "react";
-import { isValidZolexoraOrgId } from "@zolexora/utils";
+import { isValidZolexoraOrgId } from "@zolexora/utils/zolexora-id";
 import {
   DEFAULT_AUTH_SERVICE_URL,
   SESSION_STORAGE_KEY,

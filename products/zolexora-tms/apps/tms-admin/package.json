@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@tanstack/react-query": "^5.66.0",
+    "@zolexora/auth-client": "workspace:*",
     "@zolexora/user-auth-firebase": "workspace:*",
     "@zolexora/utils": "workspace:*",
     "clsx": "^2.1.1",

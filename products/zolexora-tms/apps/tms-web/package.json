@@ -10,7 +10,9 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
+    "@zolexora/auth-client": "workspace:*",
     "@zolexora/user-auth-firebase": "workspace:*",
+    "@zolexora/utils": "workspace:*",
     "firebase": "^12.19.0",
     "@tanstack/react-query": "^5.66.0",
     "clsx": "^2.1.1",
