@@ -19,7 +19,6 @@
     "${workspaceFolder}/products/zolexora-erp/services/frappe/zolexora_integrations"
   ],
   "npm.packageManager": "pnpm",
-  "gradle.nestedProjects": [
-    "products/zolexora-maunkavach"
-  ]
+  "gradle.nestedProjects": ["products/zolexora-maunkavach"],
+  "java.configuration.updateBuildConfiguration": "interactive"
 }

@@ -63,6 +63,8 @@ scratch/
 config/envs/**/*.env
 # Trivy Cache
 .trivy-cache/
+# Gradle caches (any path)
+.gradle/
 /storage/
 
 .pnpm-store/
