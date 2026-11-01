@@ -16,7 +16,7 @@ Clients submit software specifications, review structured milestone proposals, a
 products/zolexora-appsuite/
 ├── package.json                   # Product package metadata & scripts
 ├── README.md                      # Quickstart guide
-├── schema.sql                     # Supabase/PostgreSQL schema with RLS & audit trails
+├── services/backend/sql/supabase-schema.sql  # Supabase/PostgreSQL schema with RLS & audit trails
 ├── docs/                          # Product-specific guides and runbooks
 └── apps/
     └── web/                       # Next.js 15 Fullstack App Router application
@@ -165,4 +165,4 @@ pnpm --filter @zolexora/appsuite-client build
 ## Database Migrations
 
 To apply schema updates and Row Level Security policies, execute the SQL definitions in:
-👉 [`products/zolexora-appsuite/schema.sql`](file:///workspaces/Zolexora_Platform/products/zolexora-appsuite/schema.sql) in your Supabase SQL editor or migration pipeline.
+👉 [`services/backend/sql/supabase-schema.sql`](../services/backend/sql/supabase-schema.sql) in your Supabase SQL editor or migration pipeline.

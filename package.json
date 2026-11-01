@@ -3,10 +3,10 @@
   "private": true,
   "packageManager": "pnpm@9.12.3",
   "scripts": {
-    "build": "turbo run build",
+    "build": "turbo run build --filter='!./products/*'",
     "test": "vitest run platform/",
-    "lint": "turbo run lint",
-    "typecheck": "turbo run typecheck",
+    "lint": "turbo run lint --filter='!./products/*'",
+    "typecheck": "turbo run typecheck type-check --filter='!./products/*'",
     "clean": "turbo run clean && pnpm -r exec rm -rf node_modules dist .turbo",
     "dev:suite": "pnpm --filter @zolexora/appsuite-client dev:infisical",
     "dev:suite:client": "pnpm --filter @zolexora/appsuite-client dev:infisical",

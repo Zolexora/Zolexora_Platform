@@ -9,7 +9,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-appsuite_db}
     volumes:
       - appsuite_postgres_data:/var/lib/postgresql/data
-      - ./sql/render-schema.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./services/backend/sql/render-schema.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
     ports:
       # Expose only on loopback for VM security (override via .env if needed)
       - "${POSTGRES_BIND_IP:-127.0.0.1}:${POSTGRES_PORT:-5432}:5432"

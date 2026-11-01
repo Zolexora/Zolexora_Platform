@@ -8,14 +8,14 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "turbo run dev",
-    "dev:web": "turbo run dev --filter=./apps/*",
-    "dev:api": "turbo run dev --filter=./services/api",
-    "build": "turbo run build",
-    "lint": "turbo run lint",
-    "test": "turbo run test",
-    "type-check": "turbo run type-check",
-    "clean": "turbo run clean && rm -rf node_modules",
+    "dev": "turbo run dev --filter='./**' --filter='!@zolexora/rentoeasy'",
+    "dev:web": "turbo run dev --filter='./apps/*'",
+    "dev:api": "turbo run dev --filter='./services/api'",
+    "build": "turbo run build --filter='./**' --filter='!@zolexora/rentoeasy'",
+    "lint": "turbo run lint --filter='./**' --filter='!@zolexora/rentoeasy'",
+    "test": "turbo run test --filter='./**' --filter='!@zolexora/rentoeasy'",
+    "type-check": "turbo run type-check --filter='./**' --filter='!@zolexora/rentoeasy'",
+    "clean": "turbo run clean --filter='./**' --filter='!@zolexora/rentoeasy' && rm -rf node_modules",
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\""
   },
   "dependencies": {
@@ -27,7 +27,7 @@
     "rxjs": "7.8.2"
   },
   "devDependencies": {
-    "turbo": "^2.0.0",
+    "@zolexora/tsconfig": "workspace:*",
     "prettier": "^3.2.0",
     "typescript": "^5.4.0"
   },

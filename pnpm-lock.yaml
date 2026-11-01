@@ -1484,9 +1484,6 @@ importers:
       openapi-typescript:
         specifier: ^7.13.0
         version: 7.13.0(typescript@5.9.3)
-      turbo:
-        specifier: ^2.3.0
-        version: 2.11.7
       typescript:
         specifier: ^5.4.5
         version: 5.9.3
@@ -2306,12 +2303,12 @@ importers:
         specifier: 7.8.2
         version: 7.8.2
     devDependencies:
+      '@zolexora/tsconfig':
+        specifier: workspace:*
+        version: link:../../packages/tsconfig
       prettier:
         specifier: ^3.2.0
         version: 3.9.9
-      turbo:
-        specifier: ^2.0.0
-        version: 2.11.7
       typescript:
         specifier: ^5.4.0
         version: 5.9.3
@@ -2664,9 +2661,6 @@ importers:
       rimraf:
         specifier: ^5.0.1
         version: 5.0.10
-      turbo:
-        specifier: ^2.0.5
-        version: 2.11.7
       typescript:
         specifier: ^5.5.4
         version: 5.9.3

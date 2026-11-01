@@ -24,11 +24,15 @@ products/zolexora-<product>/
   services/    backends and APIs (FastAPI, Express, NestJS, Frappe apps)
   packages/    product-local shared code (types, API clients, UI)
   scripts/     docker-start.sh (start|stop|restart|build|pull|status|logs) + product scripts
-  docs/        product docs
-  compose.yaml, Dockerfile.*, .infisical.json, README.md
+  docs/        product docs (brand master images in docs/branding/)
+  infra/       optional: deploy targets (Bicep, Fly, Render, Koyeb, Cloudflare Pages)
+  contracts/   optional: machine-checked API specs (OpenAPI, ERP event schemas)
+  compose.yaml, Dockerfile.*, nginx.conf, nginx-conf.d/, other container files, .infisical.json, README.md
 ```
 
-Product notes: ERP's Frappe apps (including the `frappe`/`erpnext`/`payments` submodules) live in `services/frappe/`; IMS shares Python helpers via `services/shared/`; Zolexora AI's Python package is `services/api/backend/`; Maun Kavach's Android app is `apps/android/` (Gradle wrapper stays at the product root).
+Build tooling is root-only: one `turbo.json` (products run `turbo run <task> --filter='./**'`), and product `tsconfig.base.json` files extend `@zolexora/tsconfig/base.json`, keeping only product-specific options and `paths`.
+
+Product notes: ERP's Frappe apps (including the `frappe`/`erpnext`/`payments` submodules) live in `services/frappe/`; IMS shares Python helpers via `services/shared/`; AppSuite's SQL schemas are in `services/backend/sql/`; Zolexora AI's Python package is `services/api/backend/`; Maun Kavach's Android app is `apps/android/` (Gradle wrapper stays at the product root).
 
 npm packages are named `@zolexora/<product>-<app>` (e.g. `@zolexora/tms-web`, `@zolexora/textile-care-admin-web`); product root packages are `@zolexora/<product>`. GHCR images are `ghcr.io/zolexora/zolexora-<product>-<service>`, built by `.github/workflows/zolexora-<product>-docker.yml`.
 

@@ -36,7 +36,7 @@ jobs:
         env:
           NEXT_PUBLIC_API_URL: https://api.zolexora.com/api
       - run: pnpm type-check
-      - run: pnpm exec turbo run lint
+      - run: pnpm exec turbo run lint --filter='./**' --filter='!@zolexora/marketplace'
       - run: pnpm test
 
   backend:

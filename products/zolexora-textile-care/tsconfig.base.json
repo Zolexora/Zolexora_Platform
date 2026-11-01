@@ -1,30 +1,39 @@
 {
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "@zolexora/tsconfig/base.json",
   "compilerOptions": {
-    "target": "ES2022",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "module": "ESNext",
     "moduleResolution": "Bundler",
     "resolveJsonModule": true,
     "allowJs": false,
-    "skipLibCheck": true,
-    "strict": true,
     "noImplicitAny": true,
     "noUncheckedIndexedAccess": true,
     "noEmit": true,
     "jsx": "preserve",
     "declaration": true,
-    "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
     "paths": {
-      "@zolexora/textile-care-types": ["./packages/types/src/index.ts"],
-      "@zolexora/textile-care-config": ["./packages/config/src/index.ts"],
-      "@zolexora/textile-care-auth": ["./packages/auth/src/index.ts"],
-      "@zolexora/textile-care-tenant": ["./packages/tenant/src/index.ts"],
-      "@zolexora/textile-care-api-client": ["./packages/api-client/src/index.ts"],
-      "@zolexora/textile-care-branding": ["./packages/branding/src/index.ts"],
-      "@zolexora/textile-care-ui": ["./packages/ui/src/index.ts"]
+      "@zolexora/textile-care-types": [
+        "./packages/types/src/index.ts"
+      ],
+      "@zolexora/textile-care-config": [
+        "./packages/config/src/index.ts"
+      ],
+      "@zolexora/textile-care-auth": [
+        "./packages/auth/src/index.ts"
+      ],
+      "@zolexora/textile-care-tenant": [
+        "./packages/tenant/src/index.ts"
+      ],
+      "@zolexora/textile-care-api-client": [
+        "./packages/api-client/src/index.ts"
+      ],
+      "@zolexora/textile-care-branding": [
+        "./packages/branding/src/index.ts"
+      ],
+      "@zolexora/textile-care-ui": [
+        "./packages/ui/src/index.ts"
+      ]
     }
   }
 }
