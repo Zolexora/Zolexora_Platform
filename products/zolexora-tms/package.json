@@ -29,16 +29,5 @@
   },
   "dependencies": {
     "sonner": "^2.0.8"
-  },
-  "pnpm": {
-    "overrides": {
-      "react": "19.1.0",
-      "react-dom": "19.1.0"
-    },
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "better-sqlite3",
-      "node-gyp"
-    ]
   }
 }

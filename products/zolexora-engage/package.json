@@ -17,12 +17,5 @@
     "prettier": "^3.9.6",
     "typescript": "~5.9.3",
     "@zolexora/tsconfig": "workspace:*"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "better-sqlite3",
-      "node-gyp"
-    ]
   }
 }
