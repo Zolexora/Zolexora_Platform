@@ -19,6 +19,26 @@
     "${workspaceFolder}/products/zolexora-erp/services/frappe/zolexora_integrations"
   ],
   "npm.packageManager": "pnpm",
-  "gradle.nestedProjects": ["products/zolexora-maunkavach"],
-  "java.configuration.updateBuildConfiguration": "interactive"
+  "gradle.nestedProjects": [
+    "products/zolexora-maunkavach"
+  ],
+  "java.configuration.updateBuildConfiguration": "interactive",
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/node_modules/**": true,
+    "**/.pnpm-store/**": true,
+    "**/.venv/**": true,
+    "**/__pycache__/**": true,
+    "**/.turbo/**": true,
+    "**/dist/**": true,
+    "**/build/**": true,
+    "**/.next/**": true,
+    "**/.expo/**": true,
+    "**/.gradle/**": true,
+    "**/android/app/build/**": true,
+    "**/ios/Pods/**": true,
+    "products/zolexora-erp/services/frappe/frappe/**": true,
+    "products/zolexora-erp/services/frappe/erpnext/**": true
+  }
 }
