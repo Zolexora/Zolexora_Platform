@@ -593,22 +593,30 @@ describe("Adversarial Security & Stress Suite (Milestone 2 Challenge)", () => {
       }
     });
 
-    it("4.2 Accepts all permitted MIME types (pdf, png, jpeg, webp)", async () => {
-      const allowed = ["application/pdf", "image/png", "image/jpeg", "image/webp"];
+    const kycUser = "ZX-8K9M-4P2W-7Y3X";
+    const kycHeaders = () => ({
+      authorization: `Bearer ${new TokenService().signJwt({ uid: kycUser, zolexora_id: kycUser, role: "user" })}`,
+      "x-organisation-id": "ZX-ORG-4B8T-9M2K-7Y4X",
+    });
+    const MAGIC: Record<string, number[]> = {
+      "application/pdf": [0x25, 0x50, 0x44, 0x46, 0x2d],
+      "image/png": [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a],
+      "image/jpeg": [0xff, 0xd8, 0xff, 0xe0],
+      "image/webp": [0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0, 0x57, 0x45, 0x42, 0x50],
+    };
+    const fileOf = (mime: string, size = 2048) => {
+      const buf = Buffer.alloc(size, 0x20);
+      Buffer.from(MAGIC[mime]).copy(buf);
+      return `data:${mime};base64,${buf.toString("base64")}`;
+    };
 
-      for (const mime of allowed) {
+    it("4.2 Accepts all permitted MIME types (pdf, png, jpeg, webp)", async () => {
+      for (const mime of Object.keys(MAGIC)) {
         const res = await app.inject({
           method: "POST",
           url: "/api/v1/storage/kyc/upload",
-          headers: {
-            "x-file-mime": mime,
-            "x-file-size": "2048",
-          },
-          payload: {
-            document_type: "kyc_doc",
-            mime_type: mime,
-            file_size: 2048,
-          },
+          headers: kycHeaders(),
+          payload: { document_type: "kyc_doc", file: fileOf(mime) },
         });
         expect(res.statusCode).toBe(201);
         expect(res.json().mime_type).toBe(mime);
@@ -618,113 +626,52 @@ describe("Adversarial Security & Stress Suite (Milestone 2 Challenge)", () => {
     it("4.3 Exactly 10MB is accepted; 10MB + 1 byte is rejected with HTTP 400", async () => {
       const max10MB = 10 * 1024 * 1024; // 10,485,760 bytes
 
-      // Exact 10MB: Accepted
       const resValid = await app.inject({
         method: "POST",
         url: "/api/v1/storage/kyc/upload",
-        headers: {
-          "x-file-mime": "application/pdf",
-          "x-file-size": String(max10MB),
-        },
-        payload: {
-          document_type: "passport",
-          mime_type: "application/pdf",
-          file_size: max10MB,
-        },
+        headers: kycHeaders(),
+        payload: { document_type: "passport", file: fileOf("application/pdf", max10MB) },
       });
       expect(resValid.statusCode).toBe(201);
       expect(resValid.json().file_size).toBe(max10MB);
 
-      // 10MB + 1 byte: Rejected
       const resOver = await app.inject({
         method: "POST",
         url: "/api/v1/storage/kyc/upload",
-        headers: {
-          "x-file-mime": "application/pdf",
-          "x-file-size": String(max10MB + 1),
-        },
-        payload: {
-          document_type: "passport",
-          mime_type: "application/pdf",
-          file_size: max10MB + 1,
-        },
+        headers: kycHeaders(),
+        payload: { document_type: "passport", file: fileOf("application/pdf", max10MB + 1) },
       });
       expect(resOver.statusCode).toBe(400);
       expect(resOver.json().code).toBe("AUTH_FILE_TOO_LARGE");
     });
 
-    it("4.4 Signed URL expiry is strictly clamped between 600s and 900s", async () => {
-      // 1. Upload a document to sign
+    it("4.4 Signed URL expiry must lie within 600s–900s (400 AUTH_INVALID_EXPIRY_WINDOW otherwise)", async () => {
+      const headers = kycHeaders();
       const uploadRes = await app.inject({
         method: "POST",
         url: "/api/v1/storage/kyc/upload",
-        headers: { "x-file-mime": "application/pdf" },
-        payload: { document_type: "license", mime_type: "application/pdf", file_size: 1024 },
+        headers,
+        payload: { document_type: "license", file: fileOf("application/pdf", 1024) },
       });
       const docId = uploadRes.json().document_id;
+      const sign = (expiry_seconds: number) =>
+        app.inject({
+          method: "POST",
+          url: "/api/v1/storage/kyc/signed-url",
+          headers: { authorization: headers.authorization },
+          payload: { document_id: docId, expiry_seconds },
+        });
 
-      // 4.4a Below minimum: 300s -> clamped to 600s
-      const sign300 = await app.inject({
-        method: "POST",
-        url: "/api/v1/storage/kyc/signed-url",
-        payload: { document_id: docId, expiry_seconds: 300 },
-      });
-      expect(sign300.statusCode).toBe(200);
-      expect(sign300.json().expires_in_seconds).toBe(600);
-
-      // 4.4b 599s -> clamped to 600s
-      const sign599 = await app.inject({
-        method: "POST",
-        url: "/api/v1/storage/kyc/signed-url",
-        payload: { document_id: docId, expiry_seconds: 599 },
-      });
-      expect(sign599.statusCode).toBe(200);
-      expect(sign599.json().expires_in_seconds).toBe(600);
-
-      // 4.4c Exact lower boundary: 600s -> accepted as 600s
-      const sign600 = await app.inject({
-        method: "POST",
-        url: "/api/v1/storage/kyc/signed-url",
-        payload: { document_id: docId, expiry_seconds: 600 },
-      });
-      expect(sign600.statusCode).toBe(200);
-      expect(sign600.json().expires_in_seconds).toBe(600);
-
-      // 4.4d Midpoint: 750s -> accepted as 750s
-      const sign750 = await app.inject({
-        method: "POST",
-        url: "/api/v1/storage/kyc/signed-url",
-        payload: { document_id: docId, expiry_seconds: 750 },
-      });
-      expect(sign750.statusCode).toBe(200);
-      expect(sign750.json().expires_in_seconds).toBe(750);
-
-      // 4.4e Exact upper boundary: 900s -> accepted as 900s
-      const sign900 = await app.inject({
-        method: "POST",
-        url: "/api/v1/storage/kyc/signed-url",
-        payload: { document_id: docId, expiry_seconds: 900 },
-      });
-      expect(sign900.statusCode).toBe(200);
-      expect(sign900.json().expires_in_seconds).toBe(900);
-
-      // 4.4f Above maximum: 901s -> clamped to 900s
-      const sign901 = await app.inject({
-        method: "POST",
-        url: "/api/v1/storage/kyc/signed-url",
-        payload: { document_id: docId, expiry_seconds: 901 },
-      });
-      expect(sign901.statusCode).toBe(200);
-      expect(sign901.json().expires_in_seconds).toBe(900);
-
-      // 4.4g Negative / zero expiry clamped to 600s
-      const signNeg = await app.inject({
-        method: "POST",
-        url: "/api/v1/storage/kyc/signed-url",
-        payload: { document_id: docId, expiry_seconds: -100 },
-      });
-      expect(signNeg.statusCode).toBe(200);
-      expect(signNeg.json().expires_in_seconds).toBe(600);
+      for (const ok of [600, 750, 900]) {
+        const res = await sign(ok);
+        expect(res.statusCode).toBe(200);
+        expect(res.json().expires_in_seconds).toBe(ok);
+      }
+      for (const bad of [-100, 300, 599, 901]) {
+        const res = await sign(bad);
+        expect(res.statusCode).toBe(400);
+        expect(res.json().code).toBe("AUTH_INVALID_EXPIRY_WINDOW");
+      }
     });
   });
 

@@ -2,6 +2,7 @@ import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { CONSTANTS } from "../config/constants.js";
 import { AppError } from "../plugins/error-handler.js";
 import { KycDocumentRecord } from "../repositories/types.js";
+import { env } from "../config/env.js";
 
 export interface CloudinaryConfig {
   cloudName: string;
@@ -68,8 +69,9 @@ export class StorageService {
   constructor(
     cloudConfigOrName: string | CloudinaryConfig,
     kycEndpoint = "https://storage.zolexora.com",
-    signingSecret = process.env.STORAGE_SIGNING_SECRET || process.env.SESSION_SECRET || "zolexora-platform-auth-secret-key-32bytes-min"
+    signingSecret = env.STORAGE_SIGNING_SECRET || env.SESSION_SECRET
   ) {
+    if (!signingSecret) throw new Error("[CONFIG_FATAL] STORAGE_SIGNING_SECRET or SESSION_SECRET must come from Infisical");
     if (typeof cloudConfigOrName === "string") {
       this.cloudinaryConfig = {
         cloudName: cloudConfigOrName,
@@ -130,7 +132,7 @@ export class StorageService {
     mimeType: string,
     publicId: string
   ): Promise<{ url: string; public_id: string; bytes: number; format: string; version?: number }> {
-    const ext = mimeType === "image/jpeg" ? "jpg" : mimeType.split("/")[1] || "png";
+    const ext = mimeType === "image/jpeg" ? "jpg" : mimeType === "image/svg+xml" ? "svg" : mimeType.split("/")[1] || "png";
     const { cloudName, apiKey, apiSecret } = this.cloudinaryConfig;
 
     if (apiKey && apiSecret) {

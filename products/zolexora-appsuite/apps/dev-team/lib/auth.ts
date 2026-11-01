@@ -12,7 +12,7 @@ const globalForAuth = globalThis as unknown as {
 export function getZolexoraAuth() {
   if (!globalForAuth.zolexoraTeamAuth) {
     globalForAuth.zolexoraTeamAuth = createZolexoraAuth({
-      appUrl: process.env.DEV_TEAM_AUTH_APP_URL || 'http://localhost:3071',
+      appUrl: process.env.DEV_TEAM_AUTH_APP_URL || 'http://localhost:3074',
     })
   }
   return globalForAuth.zolexoraTeamAuth

@@ -8,14 +8,15 @@ import { clientsRouter } from './routes/clients.js'
 import { getDbPool } from './db.js'
 
 const app = express()
-const port = Number(process.env.PORT) || 3072
+const port = Number(process.env.PORT) || 3078
 
 // Middleware
 app.use(
   cors({
     origin: [
-      'http://localhost:3070',
-      'http://localhost:3071',
+      'http://localhost:3070', // gateway
+      'http://localhost:3073', // client dev
+      'http://localhost:3074', // dev-team dev
       process.env.APP_SUITE_CLIENT_URL || '',
       process.env.APP_SUITE_DEV_TEAM_URL || '',
     ].filter(Boolean),

@@ -52,16 +52,16 @@ FROM node:22-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production \
-    PORT=3071 \
+    PORT=3000 \
     HOSTNAME="0.0.0.0"
 
 COPY --from=builder /app/products/zolexora-appsuite/apps/dev-team/.next/standalone ./
 COPY --from=builder /app/products/zolexora-appsuite/apps/dev-team/.next/static ./products/zolexora-appsuite/apps/dev-team/.next/static
 COPY --from=builder /app/products/zolexora-appsuite/apps/dev-team/public ./products/zolexora-appsuite/apps/dev-team/public
 
-EXPOSE 3071
+EXPOSE 3000
 
 HEALTHCHECK --interval=15s --timeout=5s --retries=3 \
-  CMD wget -qO- http://127.0.0.1:${PORT:-3071}/login || exit 1
+  CMD wget -qO- http://127.0.0.1:${PORT:-3000}/login || exit 1
 
 CMD ["node", "products/zolexora-appsuite/apps/dev-team/server.js"]

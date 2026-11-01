@@ -3,10 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --port 3071",
-    "dev:infisical": "bash ../../../../scripts/setup/with-infisical.sh ../.. next dev --port 3071",
+    "dev": "next dev --port 3074",
+    "dev:infisical": "bash ../../../../scripts/setup/with-infisical.sh ../.. next dev --port 3074",
     "build": "next build",
-    "start": "next start --port 3071",
+    "start": "next start --port 3074",
     "lint": "next lint",
     "type-check": "tsc --noEmit"
   },

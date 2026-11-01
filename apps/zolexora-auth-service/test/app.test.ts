@@ -3,6 +3,7 @@ import { FastifyInstance } from "fastify";
 import { buildApp } from "../src/app.js";
 import { InMemoryAuthRepository } from "../src/repositories/in-memory-auth.repository.js";
 import { CONSTANTS } from "../src/config/constants.js";
+import { TokenService } from "../src/services/token.service.js";
 
 describe("apps/zolexora-auth-service integration tests", () => {
   let app: FastifyInstance;
@@ -131,11 +132,19 @@ describe("apps/zolexora-auth-service integration tests", () => {
   });
 
   it("Storage endpoints work as specified", async () => {
+    const zxId = "ZX-8K9M-4P2W-7Y3X";
+    const orgId = "ZX-ORG-4B8T-9M2K-7Y4X";
+    const tokens = new TokenService();
+    const userAuth = { authorization: `Bearer ${tokens.signJwt({ uid: zxId, zolexora_id: zxId, role: "user" })}` };
+    const adminAuth = { authorization: `Bearer ${tokens.signJwt({ uid: "emp_admin_1", zolexora_id: "ZX-4B8T-9M2K-7Y4X", org_id: orgId, role: "admin" })}` };
+    const png = `data:image/png;base64,${Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).toString("base64")}`;
+    const pdf = `data:application/pdf;base64,${Buffer.from("%PDF-1.4\n").toString("base64")}`;
+
     const avatarRes = await app.inject({
       method: "POST",
       url: "/api/v1/storage/avatars/upload",
-      headers: { "x-zolexora-id": "ZX-8K9M-4P2W-7Y3X" },
-      payload: {},
+      headers: { ...userAuth, "x-zolexora-id": zxId },
+      payload: { file: png },
     });
     expect(avatarRes.statusCode).toBe(200);
     expect(avatarRes.json().url).toContain("f_auto,q_auto");
@@ -143,8 +152,8 @@ describe("apps/zolexora-auth-service integration tests", () => {
     const logoRes = await app.inject({
       method: "POST",
       url: "/api/v1/storage/logos/upload",
-      headers: { "x-organisation-id": "ZX-ORG-4B8T-9M2K-7Y4X" },
-      payload: {},
+      headers: { ...adminAuth, "x-organisation-id": orgId },
+      payload: { file: png },
     });
     expect(logoRes.statusCode).toBe(200);
     expect(logoRes.json().url).toContain("f_auto,q_auto");
@@ -152,11 +161,8 @@ describe("apps/zolexora-auth-service integration tests", () => {
     const kycRes = await app.inject({
       method: "POST",
       url: "/api/v1/storage/kyc/upload",
-      headers: {
-        "x-file-mime": "application/pdf",
-        "x-file-size": "1000",
-      },
-      payload: {},
+      headers: { ...userAuth, "x-organisation-id": orgId },
+      payload: { document_type: "passport", file: pdf },
     });
     expect(kycRes.statusCode).toBe(201);
     const kycData = kycRes.json();
@@ -165,6 +171,7 @@ describe("apps/zolexora-auth-service integration tests", () => {
     const signedRes = await app.inject({
       method: "POST",
       url: "/api/v1/storage/kyc/signed-url",
+      headers: userAuth,
       payload: {
         document_id: kycData.document_id,
         expiry_seconds: 600,
@@ -172,5 +179,12 @@ describe("apps/zolexora-auth-service integration tests", () => {
     });
     expect(signedRes.statusCode).toBe(200);
     expect(signedRes.json().signed_url).toContain("expires=");
+
+    const anonRes = await app.inject({
+      method: "POST",
+      url: "/api/v1/storage/kyc/signed-url",
+      payload: { document_id: kycData.document_id },
+    });
+    expect(anonRes.statusCode).toBe(401);
   });
 });

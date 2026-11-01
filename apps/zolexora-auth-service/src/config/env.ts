@@ -21,6 +21,7 @@ const envSchema = z.object({
 
   // Session & Cryptography
   SESSION_SECRET: secret("zolexora-platform-auth-secret-key-32bytes-min", 16),
+  STORAGE_SIGNING_SECRET: z.string().min(16).optional(), // falls back to SESSION_SECRET
 
   // Cloudflare Turnstile
   // Cloudflare's always-pass test key, allowed only under NODE_ENV=test.

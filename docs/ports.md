@@ -12,7 +12,7 @@ Source of truth: the `ports:` entries in each `compose.yaml` (verified 2026-10-3
 
 | Product | Gateway (nginx) | Backend API | Postgres | Other | Defined in |
 | --- | --- | --- | --- | --- | --- |
-| Zolexora AppSuite | `3070` (`APPSUITE_PORT`), `3443` TLS | — | — | — | `products/zolexora-appsuite/compose.yaml` |
+| Zolexora AppSuite | `3070` (`APPSUITE_PORT`), `3443` TLS; local dev: client `3073`, dev-team `3074`, backend `3078` | — | — | — | `products/zolexora-appsuite/compose.yaml` |
 | Maun Kavach | `3071` (`MAUN_KAVACH_PORT`) | — | — | — | `products/zolexora-maunkavach/compose.yaml` |
 | Zolexora IMS | `3072` | — | — | — | `products/zolexora-ims/compose.yaml` |
 | Rento Easy | `3076` | — | — | — | `products/zolexora-rentoeasy/compose.yaml` |
@@ -38,4 +38,4 @@ Gateways not listed expose no other host ports; their APIs and databases are rea
 
 ## Free gateway ports
 
-`3073`, `3074`, `3078`, `3082`–`3089`, `3093`, `3094`, `3096`–`3099`. Postgres `5433`–`5449` and `5451` are free.
+`3082`–`3089`, `3093`, `3094`, `3096`–`3099`. Postgres `5433`–`5449` and `5451` are free.

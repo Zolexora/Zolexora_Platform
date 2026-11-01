@@ -10,7 +10,7 @@ const config: NextConfig = {
   },
   experimental: {
     serverActions: {
-      allowedOrigins: ['localhost:3070'],
+      allowedOrigins: ['localhost:3070', 'localhost:3073'],
     },
   },
 }

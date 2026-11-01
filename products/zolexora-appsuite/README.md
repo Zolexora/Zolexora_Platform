@@ -26,13 +26,13 @@ Zolexora AppSuite adheres strictly to a 7-color premium monochrome metallic & da
 ## Getting Started
 
 ```bash
-pnpm dev:client:infisical    # starts Client Portal on http://localhost:3070
-pnpm dev:team:infisical      # starts DevTeam Console on http://localhost:3071
+pnpm dev:client:infisical    # starts Client Portal on http://localhost:3073
+pnpm dev:team:infisical      # starts DevTeam Console on http://localhost:3074
 ```
 
 ## Structure
 
-- `apps/client/` — Client Portal (port 3070)
-- `apps/dev-team/` — Internal Engineering & Legal Console (port 3071)
-- `services/backend/` — Express / Node REST API service
+- `apps/client/` — Client Portal (dev port 3073; via gateway at :3070/)
+- `apps/dev-team/` — Internal Engineering & Legal Console (dev port 3074; via gateway at :3070/team)
+- `services/backend/` — Express / Node REST API service (dev port 3078; via gateway at :3070/api)
 - `assets/branding/` — Master normalized brand assets (`appsuite-logo-master.png`, `appsuite-favicon-master.png`)

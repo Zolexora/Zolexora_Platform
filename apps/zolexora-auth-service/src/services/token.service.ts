@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { env } from "../config/env.js";
 import { CONSTANTS } from "../config/constants.js";
 
 export interface CustomTokenClaims {
@@ -48,9 +49,10 @@ export class TokenService {
   public maxClockSkewSeconds: number;
 
   constructor(
-    secret = process.env.SESSION_SECRET || "zolexora-platform-auth-secret-key-32bytes-min",
+    secret = env.SESSION_SECRET,
     maxClockSkewSeconds = CONSTANTS.TOKEN.CLOCK_SKEW_TOLERANCE_SECONDS
   ) {
+    if (!secret) throw new Error("[CONFIG_FATAL] SESSION_SECRET must come from Infisical");
     this.secret = secret;
     this.maxClockSkewSeconds = maxClockSkewSeconds;
   }
