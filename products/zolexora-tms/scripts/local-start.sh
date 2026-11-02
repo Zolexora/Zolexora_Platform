@@ -14,11 +14,12 @@ if [ -z "$TMS_SECRETS_LOADED" ]; then
     exec bash scripts/setup/with-infisical.sh products/zolexora-tms bash products/zolexora-tms/scripts/local-start.sh "$@"
 fi
 
-# Local dev defaults (non-secret); override via Infisical or the shell
-export NODE_ENV="${NODE_ENV:-development}"
-TMS_BACKEND_PORT="${TMS_BACKEND_PORT:-4030}"
+# Everything comes from Infisical. NODE_ENV is deliberately NOT defaulted: development
+# mode unlocks destructive dev tooling, so it must be set explicitly in Infisical, and only
+# for an environment whose database is not production.
+: "${TMS_BACKEND_PORT:?TMS_BACKEND_PORT is not set in Infisical (/Zolexora_TMS)}"
 # Vite dev servers proxy /api to the backend started by this script
-export TMS_DEV_API_PROXY_TARGET="${TMS_DEV_API_PROXY_TARGET:-http://127.0.0.1:$TMS_BACKEND_PORT}"
+export TMS_DEV_API_PROXY_TARGET="http://127.0.0.1:$TMS_BACKEND_PORT"
 
 echo "Which services would you like to start locally?"
 echo "1) All Services (Default)"
@@ -112,13 +113,13 @@ echo "======================================"
 echo "Services are starting! (Press Ctrl+C to stop all)"
 
 if [[ "$SERVICES" == *"tms"* ]]; then
-    echo "- TMS Frontend: http://localhost:3031"
+    echo "- TMS Frontend: http://localhost:3000"
 fi
 if [[ "$SERVICES" == *"admin"* ]]; then
-    echo "- Admin Dashboard: http://localhost:3032"
+    echo "- Admin Dashboard: http://localhost:3001"
 fi
 if [[ "$SERVICES" == *"backend"* ]]; then
-    echo "- Backend API: http://localhost:$TMS_BACKEND_PORT/docs"
+    echo "- Backend API: http://localhost:$TMS_BACKEND_PORT (/docs only when NODE_ENV=development)"
 fi
 echo "======================================"
 

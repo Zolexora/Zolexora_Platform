@@ -26,16 +26,10 @@ if settings.SENTRY_DSN:
 async def lifespan(app: FastAPI):
     logger.info("Starting Zolexora TMS API service...")
     try:
-        from app.db.base import Base
-        from app.db.session import engine
         from app.modules.identity.roles.seed_platform_templates import seed as seed_role_templates
-        # Production schema is managed only by Alembic (which also applies RLS policies);
-        # create_all would add tables without tenant isolation.
-        if settings.IS_DEV_OR_TEST:
-            async with engine.begin() as conn:
-                await conn.run_sync(Base.metadata.create_all)
+        # The schema (including RLS policies) is managed only by Alembic: `alembic upgrade head`.
         await seed_role_templates()
-        logger.info("Database schema and platform role templates verified.")
+        logger.info("Platform role templates verified.")
     except Exception as e:
         logger.warning(f"Database auto-init on startup skipped or failed: {e}")
     yield
