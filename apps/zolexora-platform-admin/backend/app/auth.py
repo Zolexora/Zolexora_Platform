@@ -5,10 +5,19 @@ Every protected route forwards the caller's bearer token to the auth service's
 with is_platform_admin=true are let through.
 """
 import os
+
 import httpx
 from fastapi import Header, HTTPException
 
-AUTH_SERVICE_URL = os.environ.get("AUTH_SERVICE_URL", "").rstrip("/")
+
+def local_auth_url(url: str, in_docker: bool) -> str:
+    """One Infisical value works with and without Docker: a local auth service is
+    host.docker.internal from our Docker image (PLATFORM_ADMIN_IN_DOCKER=1) and localhost otherwise."""
+    a, b = ("localhost", "host.docker.internal") if in_docker else ("host.docker.internal", "localhost")
+    return url.rstrip("/").replace(f"//{a}:", f"//{b}:", 1)
+
+
+AUTH_SERVICE_URL = local_auth_url(os.environ.get("AUTH_SERVICE_URL", ""), os.environ.get("PLATFORM_ADMIN_IN_DOCKER") == "1")
 
 
 async def require_platform_admin(authorization: str = Header("")) -> dict:

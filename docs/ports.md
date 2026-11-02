@@ -22,7 +22,7 @@ Source of truth: the `ports:` entries in each `compose.yaml` (verified 2026-10-3
 | Auth Service | — | `3081` (`AUTH_SERVICE_PORT`) | — (Supabase) | — | `apps/zolexora-auth-service/compose.yaml` |
 | Zolexora TMS | `3090` (`TMS_PORT`) | `4031` (`TMS_BACKEND_PORT`) | — | — | `products/zolexora-tms/compose.yaml` |
 | Zolexora AI | `3091` | `4090` | — | — | `products/zolexora-ai/compose.yaml` |
-| Platform Admin | `3095` (`PLATFORM_ADMIN_GATEWAY_PORT`), frontend `3092` (localhost only) | `4041` (localhost only) | — (Supabase) | — | `apps/zolexora-platform-admin/compose.yaml` |
+| Platform Admin | `3095` (`PLATFORM_ADMIN_GATEWAY_PORT`; `pnpm dev:admin` uses it too), frontend `3092` (localhost only) | `4041` (localhost only) | — (Supabase) | — | `apps/zolexora-platform-admin/compose.yaml` |
 | ClarityFi | `3110` (`CLARITYFI_PORT`) | — | — | — | `products/zolexora-clarityfi/compose.yaml` |
 | Zolexora IronClub | `8085` | `4060` | `5452` (`IRONCLUB_POSTGRES_PORT`) | Redis `6382` | `products/zolexora-ironclub/compose.yaml` |
 | Zolexora ERP | `8080` / `8443` (`HTTP_PORT`/`HTTPS_PORT`) | Frappe `8000` (`FRAPPE_PORT`) | — | — | `products/zolexora-erp/compose.yaml` (secrets from Infisical `Zolexora_ERP`) |

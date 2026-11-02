@@ -25,7 +25,7 @@
 
     // 2. Product Nginx Ingress Gateways & Web Portals (3070–3099)
     3070, 3071, 3072, 3075, 3076, 3077, 3079, 3080, 3081, 3082, 3083, 3084,
-    3085, 3086, 3087, 3088, 3089, 3090,
+    3085, 3086, 3087, 3088, 3089, 3090, 3095,
 
     // 3. Backend APIs & Microservices (4000–4199)
     4010, 4020, 4030, 4031, 4040, 4050, 4060, 4070, 4080, 4090, 4100, 4110, 4120,
@@ -62,7 +62,8 @@
     "3077": { "label": "Engage Gateway", "onAutoForward": "notify" },
     "3079": { "label": "Marketplace Gateway", "onAutoForward": "notify" },
     "3080": { "label": "The Textile Care Gateway", "onAutoForward": "notify" },
-    "3081": { "label": "Platform Admin API", "onAutoForward": "silent" },
+    "3081": { "label": "Auth Service", "onAutoForward": "silent" },
+    "3095": { "label": "Platform Admin (gateway / dev)", "onAutoForward": "notify" },
     "3082": { "label": "Platform Admin Web", "onAutoForward": "notify" },
     "3083": { "label": "Maun Kavach Gateway", "onAutoForward": "notify" },
     "3084": { "label": "TMS Gateway (Alt)", "onAutoForward": "notify" },

@@ -69,3 +69,13 @@ def test_missing_auth_service_url_is_503(raw_client, monkeypatch):
 def test_cors_is_off_by_default(raw_client):
     r = raw_client.options("/api/accounts", headers={"Origin": "https://evil.example", "Access-Control-Request-Method": "GET"})
     assert "access-control-allow-origin" not in r.headers
+
+
+@pytest.mark.parametrize("url,in_docker,expected", [
+    ("http://localhost:3081/", True, "http://host.docker.internal:3081"),
+    ("http://host.docker.internal:3081", False, "http://localhost:3081"),
+    ("http://localhost:3081", False, "http://localhost:3081"),
+    ("https://auth.zolexora.com", True, "https://auth.zolexora.com"),
+])
+def test_local_auth_url_works_with_and_without_docker(url, in_docker, expected):
+    assert auth.local_auth_url(url, in_docker) == expected
