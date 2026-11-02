@@ -11,5 +11,5 @@ case "${1:-}" in
 esac
 
 exec bash "$WRAP" . bash -c '
-  for v in '"$REQUIRED"'; do [ -n "${!v:-}" ] || { echo "❌ $v missing in Infisical (/Zolexora_Specfic_Credentials/Zolexora_Engage)" >&2; exit 1; }; done
+  for v in '"$REQUIRED"'; do [ -n "${!v:-}" ] || { echo "❌ $v missing in Infisical (/Zolexora_Engage)" >&2; exit 1; }; done
   docker compose pull --ignore-pull-failures && docker compose up -d "$@"' _ "$@"

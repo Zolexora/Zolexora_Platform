@@ -28,7 +28,7 @@ pnpm dev
 
 ## Environment setup
 
-Secrets come only from Infisical (`/Zolexora_Specfic_Credentials/The_Textile_Care`); `scripts/start-docker.sh` injects them. Required keys: [docs/secrets.md](../../docs/secrets.md).
+Secrets come only from Infisical (`/Zolexora_Textile_Care`); `scripts/start-docker.sh` injects them. Required keys: [docs/secrets.md](../../docs/secrets.md).
 
 ## Testing
 

@@ -11,7 +11,7 @@ inputs:
     description: Infisical project ID (from the product's .infisical.json)
     required: true
   path:
-    description: Secret folder, e.g. /Zolexora_Specfic_Credentials/Zolexora_TMS
+    description: Secret folder, e.g. /Zolexora_TMS
     required: true
   environment:
     description: Environment slug (dev | staging | prod)

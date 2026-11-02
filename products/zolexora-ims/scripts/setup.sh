@@ -297,7 +297,7 @@ if command -v render &>/dev/null; then
   fi
 fi
 
-# 4. Secrets: injected at runtime from Infisical (/Zolexora_Specfic_Credentials/Zolexora_IMS). No .env files.
+# 4. Secrets: injected at runtime from Infisical (/Zolexora_IMS). No .env files.
 
 # ------------------------------------------------------------------------------
 # STEP 9: Self-Test & Quality Verification

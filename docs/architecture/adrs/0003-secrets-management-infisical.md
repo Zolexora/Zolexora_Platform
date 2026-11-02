@@ -18,7 +18,7 @@ The Zolexora Platform operates 10+ products with 20+ Supabase databases spread a
 
 Amended 2026-10-31: Infisical is the **only** secret source. There are no `.env` files, no `.env.example` templates and no fallback.
 
-1. **Folders.** Each product's `.infisical.json` names its folder: project `c4ac7d07…`, path `/Zolexora_Specfic_Credentials/<Product>` (AppSuite and auth-service still use project `188824cd…`). Required key names: [docs/secrets.md](../../secrets.md).
+1. **Folders.** Each product's `.infisical.json` names its folder: project `c4ac7d07…`, path `/Zolexora_<Product>` (auth-service still uses project `188824cd…`). Required key names: [docs/secrets.md](../../secrets.md).
 2. **One entry point.** Everything that needs secrets runs through `scripts/setup/with-infisical.sh <product-dir> <command>` (`infisical run --recursive`). It exits with an error if the CLI is missing or not authenticated; it never hangs and never continues without secrets.
 3. **Compose.** No `env_file:`. Services list variable names under `environment:`; secrets have no defaults (`${VAR}`, never `${VAR:-value}`). Non-secret settings such as ports may keep defaults.
 4. **Apps.** Code does not load `.env` files (no `dotenv`, `load_dotenv`, pydantic `env_file`). Secrets have no in-code defaults outside `NODE_ENV=test`.

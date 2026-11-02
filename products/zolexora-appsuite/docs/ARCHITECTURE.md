@@ -129,7 +129,7 @@ Pre-configured in [`lib/legal-clauses.ts`](../apps/client/lib/legal-clauses.ts):
 # 1. Navigate to the AppSuite web application
 cd products/zolexora-appsuite/apps/client
 
-# 2. Secrets come from Infisical (/Firebase_Credentials/Zolexora_AppSuite); no .env files
+# 2. Secrets come from Infisical (/Zolexora_AppSuite); no .env files
 infisical login
 
 # 3. Install workspace dependencies

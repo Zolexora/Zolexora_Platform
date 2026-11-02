@@ -131,8 +131,8 @@ fi
 
 # 1b. Infisical link (the only secret source)
 if [ ! -f "products/${PRODUCT}/.infisical.json" ]; then
-  printf '{\n  "workspaceId": "c4ac7d07-f26f-4fb8-bd04-6d3e037079f9",\n  "defaultEnvironment": "dev",\n  "secretsPath": "/Zolexora_Specfic_Credentials/%s"\n}\n' "$PRODUCT" > "products/${PRODUCT}/.infisical.json"
-  echo -e "  ${GREEN}✔ Created products/${PRODUCT}/.infisical.json — create that folder in Infisical.${NC}"
+  printf '{\n  "workspaceId": "c4ac7d07-f26f-4fb8-bd04-6d3e037079f9",\n  "defaultEnvironment": "dev",\n  "secretsPath": "/%s"\n}\n' "$PRODUCT" > "products/${PRODUCT}/.infisical.json"
+  echo -e "  ${GREEN}✔ Created products/${PRODUCT}/.infisical.json — set secretsPath to its Infisical folder (e.g. /Zolexora_TMS).${NC}"
 fi
 
 # 2. docker-start.sh

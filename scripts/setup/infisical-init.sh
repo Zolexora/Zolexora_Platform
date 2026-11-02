@@ -28,7 +28,7 @@ echo "  Infisical is the ONLY secret source — there are no .env files or templ
 echo ""
 echo "  1. Log in:            infisical login"
 echo "  2. Products read their folder from <product>/.infisical.json, under project"
-echo "     c4ac7d07-… → /Zolexora_Specfic_Credentials/<Product> (e.g. Zolexora_TMS)."
+echo "     c4ac7d07-… → /Zolexora_<Product> (e.g. /Zolexora_TMS)."
 echo "  3. Add each product's keys to its folder — key names: docs/secrets.md"
 echo "  4. Run anything that needs secrets via:"
 echo -e "       ${BLUE}bash scripts/setup/with-infisical.sh <product-dir> <command>${NC}"

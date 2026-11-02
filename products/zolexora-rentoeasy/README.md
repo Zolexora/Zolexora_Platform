@@ -119,7 +119,7 @@ Do not run `npm install` or commit `package-lock.json`.
 
 ## Environment Setup
 
-Secrets come only from Infisical (`/Zolexora_Specfic_Credentials/RentoEasy`); there are no `.env` files. Run commands through `bash scripts/setup/with-infisical.sh products/zolexora-rentoeasy <command>`.
+Secrets come only from Infisical (`/Zolexora_RentoEasy`); there are no `.env` files. Run commands through `bash scripts/setup/with-infisical.sh products/zolexora-rentoeasy <command>`.
 
 ### API Environment
 

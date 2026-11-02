@@ -50,7 +50,7 @@ jobs:
           client-id: ${{ secrets.INFISICAL_CLIENT_ID }}
           client-secret: ${{ secrets.INFISICAL_CLIENT_SECRET }}
           project-id: c4ac7d07-f26f-4fb8-bd04-6d3e037079f9
-          path: /Zolexora_Specfic_Credentials/MaunKavach
+          path: /Zolexora_MaunKavach
       - name: Required keys present
         if: github.event_name == 'push'
         run: |

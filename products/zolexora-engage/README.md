@@ -66,7 +66,7 @@ https://<your-render-api>.onrender.com/api/whatsapp/webhook
 ## Run with Docker
 
 ```bash
-./scripts/start-project.sh   # secrets from Infisical: /Zolexora_Specfic_Credentials/Zolexora_Engage
+./scripts/start-project.sh   # secrets from Infisical: /Zolexora_Engage
 ```
 
 The stack is served through nginx at <http://localhost:3077>. Stop with `Ctrl+C`; remove containers with `docker compose -f products/zolexora-engage/compose.yaml down`.

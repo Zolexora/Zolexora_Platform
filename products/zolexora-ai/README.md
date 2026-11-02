@@ -75,7 +75,7 @@ products/zolexora-ai/
 ### 1. Prerequisites
 
 Python 3.11+, Node 20+, Docker, the Infisical CLI. Secrets come only from Infisical
-(`/Zolexora_Specfic_Credentials/Zolexora_AI`, see `.infisical.json`); there is no `.env` file.
+(`/Zolexora_AI`, see `.infisical.json`); there is no `.env` file.
 
 ```bash
 infisical login

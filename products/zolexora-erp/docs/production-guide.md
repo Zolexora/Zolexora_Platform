@@ -24,7 +24,7 @@ The current repository includes vendored `frappe`, `erpnext`, and `payments` dir
 ## Local & Staging Deployment
 
 ```bash
-infisical login   # secrets: /Zolexora_Specfic_Credentials/Zolexora_ERP (key list: docs/secrets.md)
+infisical login   # secrets: /Zolexora_ERP (key list: docs/secrets.md)
 export INSTALL_PAYMENTS=1   # optional: enable Payments app
 bash scripts/setup/with-infisical.sh products/zolexora-erp docker compose -f products/zolexora-erp/compose.yaml up -d
 ./scripts/bootstrap-frappe-site.sh
@@ -40,7 +40,7 @@ bash scripts/setup/with-infisical.sh products/zolexora-erp docker compose -f pro
 
 ## Production Deployment & Secrets
 
-Use the same Compose setup and scripts, but inject secrets through the hosting platform (e.g. Northflank / Kubernetes / Docker Swarm secrets). Secrets come only from Infisical (`/Zolexora_Specfic_Credentials/Zolexora_ERP`, `prod` env) via a machine identity (`INFISICAL_TOKEN`).
+Use the same Compose setup and scripts, but inject secrets through the hosting platform (e.g. Northflank / Kubernetes / Docker Swarm secrets). Secrets come only from Infisical (`/Zolexora_ERP`, `prod` env) via a machine identity (`INFISICAL_TOKEN`).
 
 ### Key Environment Variables:
 - `SITE_NAME`: Production Frappe site name (e.g., `erp.zolexora.com`).

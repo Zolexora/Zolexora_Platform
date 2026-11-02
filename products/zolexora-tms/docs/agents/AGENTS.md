@@ -62,7 +62,7 @@ agy mcp add <name> <commandOrUrl> [args...]
   - `pnpm dev:tms:mobile`: Expo dev server.
   - `pnpm docker:tms:start|stop|restart|build|pull|logs|status`: Docker stack (GHCR images, `pull_policy: missing`).
   - `pnpm turbo run lint typecheck build --filter='./products/zolexora-tms/**'`: checks for every TMS package.
-- **Secrets**: Infisical only (`/Zolexora_Specfic_Credentials/Zolexora_TMS`); never create `.env` files.
+- **Secrets**: Infisical only (`/Zolexora_TMS`); never create `.env` files.
 - **Code Cleanliness**: Preserve all existing comments and docstrings. Verify TypeScript builds before completing tasks.
 
 ---

@@ -159,7 +159,7 @@ Make sure you have the following installed on your machine:
 Zolexora uses a multi-layered environment setup across its backend, web frontends, and mobile apps.
 
 ### 1. Quick Local Setup
-Secrets come only from Infisical (`/Zolexora_Specfic_Credentials/Zolexora_Marketplace`); there are no `.env` files. Log in with `infisical login` and run commands through `bash scripts/setup/with-infisical.sh products/zolexora-marketplace <command>`. Required keys per app: [docs/secrets.md](../../docs/secrets.md).
+Secrets come only from Infisical (`/Zolexora_Marketplace`); there are no `.env` files. Log in with `infisical login` and run commands through `bash scripts/setup/with-infisical.sh products/zolexora-marketplace <command>`. Required keys per app: [docs/secrets.md](../../docs/secrets.md).
 
 ### 2. Backend & Core Configuration
 Configure these key subsystems in Infisical:
@@ -358,7 +358,7 @@ Expected output:
 }
 ```
 > [!NOTE]
-> If any service reports `false`, the corresponding development configuration may be missing or incorrect in Infisical (`/Zolexora_Specfic_Credentials/Zolexora_Marketplace`).
+> If any service reports `false`, the corresponding development configuration may be missing or incorrect in Infisical (`/Zolexora_Marketplace`).
 
 ---
 

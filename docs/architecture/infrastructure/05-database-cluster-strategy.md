@@ -275,7 +275,7 @@ data = await client.schema("ims").from_("products").select("*").execute()
 
 ---
 
-## Part 3 — Platform Admin secrets (Infisical `/Zolexora_Specfic_Credentials/Zolexora_Admin_Panel`)
+## Part 3 — Platform Admin secrets (Infisical `/Zolexora_Platform_Admin`)
 
 > Superseded 2026-10-31: there is no `.env.example`; these keys live in Infisical (names in `docs/secrets.md`).
 
@@ -418,6 +418,6 @@ infisical login
 | `config.py` | `products/platform-admin/backend/app/db/` | ~80 lines Python |
 | `connections.py` | `products/platform-admin/backend/app/db/` | ~120 lines Python |
 | `health.py` | `products/platform-admin/backend/app/db/` | ~60 lines Python |
-| Platform Admin keys | Infisical `/Zolexora_Specfic_Credentials/Zolexora_Admin_Panel` | — |
+| Platform Admin keys | Infisical `/Zolexora_Platform_Admin` | — |
 
 **Nothing is built yet. Read this report and confirm when ready.**

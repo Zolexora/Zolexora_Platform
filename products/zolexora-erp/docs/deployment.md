@@ -7,7 +7,7 @@ Detailed steps to deploy Zolexora ERP to production.
 ## 1. Local & On-Premise Deployment
 
 ### Configuration
-1. Add the ERP keys from `docs/secrets.md` to Infisical (`/Zolexora_Specfic_Credentials/Zolexora_ERP`) and run `infisical login`.
+1. Add the ERP keys from `docs/secrets.md` to Infisical (`/Zolexora_ERP`) and run `infisical login`.
 2. Update the credentials, port maps, and site parameters.
 3. Keep default Redis configuration (cache, queue, and socketio addresses are mapped via container hostnames).
 

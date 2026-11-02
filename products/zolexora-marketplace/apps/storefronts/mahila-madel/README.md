@@ -62,7 +62,7 @@ shopkart/
 
 ## 🚀 Quick Start
 
-This storefront has `web/` and `mobile/` apps only; the API is `services/marketplace-api`. Secrets come from Infisical (`/Zolexora_Specfic_Credentials/Zolexora_Marketplace`); see the Marketplace README for setup.
+This storefront has `web/` and `mobile/` apps only; the API is `services/marketplace-api`. Secrets come from Infisical (`/Zolexora_Marketplace`); see the Marketplace README for setup.
 
 ## 🔑 Demo Accounts
 

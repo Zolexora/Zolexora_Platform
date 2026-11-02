@@ -429,7 +429,7 @@ Skills are mirrored across three standard discovery directories:
 
 ## 13. Environment Variables Reference
 
-Key names only — values live in Infisical (`/Zolexora_Specfic_Credentials/Zolexora_TMS`), injected via `bash scripts/setup/with-infisical.sh products/zolexora-tms <cmd>`; there is no `.env` file ([docs/secrets.md](../../../../docs/secrets.md)):
+Key names only — values live in Infisical (`/Zolexora_TMS`), injected via `bash scripts/setup/with-infisical.sh products/zolexora-tms <cmd>`; there is no `.env` file ([docs/secrets.md](../../../../docs/secrets.md)):
 
 ```env
 # Application
