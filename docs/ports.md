@@ -19,7 +19,7 @@ Source of truth: the `ports:` entries in each `compose.yaml` (verified 2026-10-3
 | Zolexora Engage | `3077` | — | — | — | `products/zolexora-engage/compose.yaml` |
 | Zolexora Marketplace | `3079` | — | — | — | `products/zolexora-marketplace/compose.yaml` |
 | The Textile Care | `3080` | — | — | — | `products/zolexora-textile-care/compose.yaml` |
-| Auth Service | — | `3081` (`AUTH_SERVICE_PORT`) | `5451` (`AUTH_POSTGRES_PORT`) | — | `apps/zolexora-auth-service/compose.yaml` |
+| Auth Service | — | `3081` (`AUTH_SERVICE_PORT`) | — (Supabase) | — | `apps/zolexora-auth-service/compose.yaml` |
 | Zolexora TMS | `3090` (`TMS_PORT`) | `4031` (`TMS_BACKEND_PORT`) | — | — | `products/zolexora-tms/compose.yaml` |
 | Zolexora AI | `3091` | `4090` | — | — | `products/zolexora-ai/compose.yaml` |
 | Platform Admin | `3095` (`PLATFORM_ADMIN_GATEWAY_PORT`), frontend `3092` | `4041` | `5450` | — | `apps/zolexora-platform-admin/compose.yaml` |

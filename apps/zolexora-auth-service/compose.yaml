@@ -1,33 +1,8 @@
 # Every value comes from Infisical — run via scripts/docker-start.sh (wraps scripts/setup/with-infisical.sh).
 # No defaults: Compose refuses to start if a required key is missing.
+# Databases are the two Supabase projects referenced in Infisical (no local Postgres container);
+# set them up with scripts/db/auth-service-{upgrade-users,schema,admin-schema}.sql.
 services:
-  auth-postgres:
-    image: postgres:16-alpine
-    container_name: zolexora-auth-postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${AUTH_POSTGRES_USER:?AUTH_POSTGRES_USER must be set in Infisical}
-      POSTGRES_PASSWORD: ${AUTH_POSTGRES_PASSWORD:?AUTH_POSTGRES_PASSWORD must be set in Infisical}
-      POSTGRES_DB: ${AUTH_POSTGRES_DB:?AUTH_POSTGRES_DB must be set in Infisical}
-    volumes:
-      - auth_postgres_data:/var/lib/postgresql/data
-      - ../../scripts/db/auth-service-schema.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
-    ports:
-      - "${AUTH_POSTGRES_PORT:?AUTH_POSTGRES_PORT must be set in Infisical}:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 512M
-        reservations:
-          cpus: '0.1'
-          memory: 128M
-
   auth-service:
     image: ${AUTH_SERVICE_IMAGE:-ghcr.io/zolexora/zolexora-auth-service:latest}
     pull_policy: missing
@@ -82,9 +57,6 @@ services:
       - ZOLEXORA_RESEND_API_KEY
       - AUTH_FROM_EMAIL
       - ZOLEXORA_AUTH_FROM_EMAIL
-    depends_on:
-      auth-postgres:
-        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- \"http://localhost:$$PORT/health\" || exit 1"]
       interval: 15s
@@ -98,7 +70,3 @@ services:
         reservations:
           cpus: '0.1'
           memory: 128M
-
-volumes:
-  auth_postgres_data:
-    name: zolexora_auth_postgres_data
