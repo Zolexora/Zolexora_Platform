@@ -66,35 +66,13 @@ export default function CapacityGauge({ databases, overallThresholdAlert = false
     };
   };
 
-  const configuredDatabases = databases.filter(
-    (db) => db.is_configured && db.threshold_state !== 'UNCONFIGURED'
-  );
-  const unconfiguredDatabases = databases.filter(
-    (db) => !db.is_configured || db.threshold_state === 'UNCONFIGURED'
-  );
 
   return (
     <div className="space-y-6">
-      {/* Informative Header when clusters are pending Infisical activation */}
-      {unconfiguredDatabases.length > 0 && (
-        <div className="bg-slate-900/80 border border-slate-800 rounded-lg p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-amber-950/60 border border-amber-800/80 rounded-md text-amber-300">
-              🔑
-            </div>
-            <div>
-              <p className="font-semibold text-slate-200">
-                {configuredDatabases.length} of {databases.length} Cloud Databases Connected
-              </p>
-              <p className="text-slate-400 text-[11px] mt-0.5">
-                Local PostgreSQL instances are strictly excluded from monitoring. Connect cloud Supabase clusters and MongoDB Atlas via Infisical or environment variables to view live telemetry.
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-2 text-[11px] text-slate-400">
-            <span className="inline-block w-2 h-2 rounded-full bg-amber-400"></span>
-            <span>Infisical Path: <code className="text-indigo-300 font-mono">/shared/database-pool</code></span>
-          </div>
+      {databases.length === 0 && (
+        <div className="bg-slate-900/80 border border-slate-800 rounded-lg p-4 text-xs text-slate-400">
+          No database connections yet. Add a Supabase connection (with its Postgres URL) or a MongoDB connection under{' '}
+          <a href="/accounts" className="text-indigo-300 hover:underline">Accounts → Add connection</a> to see capacity.
         </div>
       )}
 
@@ -124,7 +102,7 @@ export default function CapacityGauge({ databases, overallThresholdAlert = false
 
           return (
             <div
-              key={`${db.service}-${db.project_or_cluster}`}
+              key={db.connection_id}
               className={`bg-slate-900 border rounded-lg p-5 flex flex-col justify-between transition-all ${
                 isUnconfigured
                   ? 'border-slate-800/80 bg-slate-900/50'
@@ -156,8 +134,8 @@ export default function CapacityGauge({ databases, overallThresholdAlert = false
                   <div className="space-y-3 mt-4">
                     <div className="flex justify-between items-baseline text-xs">
                       <span className="text-slate-400">Capacity Used:</span>
-                      <span className="font-mono text-amber-300/90 font-medium">
-                        Unconfigured
+                      <span className="font-mono text-rose-300 font-medium">
+                        {db.used_pretty}
                       </span>
                     </div>
 
@@ -166,14 +144,9 @@ export default function CapacityGauge({ databases, overallThresholdAlert = false
                       <div className="h-full rounded-full bg-slate-800/60 w-full" />
                     </div>
 
-                    <div className="bg-slate-950/70 p-2.5 rounded border border-slate-800/70 space-y-1">
-                      <span className="text-[10px] text-slate-500 uppercase font-semibold tracking-wider block">
-                        Expected Infisical Secret
-                      </span>
-                      <code className="text-[11px] font-mono text-indigo-300 break-all select-all block">
-                        {db.infisical_path || `/shared/database-pool/${db.project_or_cluster.toUpperCase()}_URL`}
-                      </code>
-                    </div>
+                    <p className="text-[11px] text-slate-400">
+                      Could not reach this database. Re-check its keys with Test under Accounts.
+                    </p>
 
                     <div className="flex justify-between text-[11px] text-slate-500">
                       <span>0 B tracked</span>
@@ -221,7 +194,7 @@ export default function CapacityGauge({ databases, overallThresholdAlert = false
                       ⚠️ Autonomous Archive Recommended
                     </div>
                     <button
-                      onClick={() => handleOpenArchiveModal(db.project_or_cluster)}
+                      onClick={() => handleOpenArchiveModal(db.connection_id)}
                       className="w-full px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded text-xs font-semibold shadow transition-colors"
                     >
                       Run 90% Archival Preview
@@ -229,7 +202,7 @@ export default function CapacityGauge({ databases, overallThresholdAlert = false
                   </div>
                 ) : db.usage_percentage >= 70 ? (
                   <button
-                    onClick={() => handleOpenArchiveModal(db.project_or_cluster)}
+                    onClick={() => handleOpenArchiveModal(db.connection_id)}
                     className="w-full px-3 py-1.5 bg-amber-600/80 hover:bg-amber-600 text-white rounded text-xs font-medium transition-colors"
                   >
                     Simulate Archival Preview

@@ -9,7 +9,9 @@ class SystemHealthResponse(BaseModel):
     timestamp: str
 
 class DatabaseTargetHealth(BaseModel):
-    target: str
+    target: str  # connection id
+    name: Optional[str] = None
+    provider: Optional[str] = None
     status: Literal["healthy", "degraded", "unhealthy", "unconfigured"]
     latency_ms: int
     details: Optional[str] = None

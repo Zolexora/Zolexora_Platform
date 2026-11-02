@@ -22,7 +22,8 @@ class EmailSendResponse(BaseModel):
 
 class ProviderQuotaMetric(BaseModel):
     provider: Literal["resend", "brevo", "sendgrid"]
-    account_id: str
+    account_id: str  # connection id
+    name: str = ""
     daily_limit: int
     daily_used: int
     remaining_today: int

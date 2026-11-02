@@ -1,52 +1,30 @@
 from unittest.mock import MagicMock, patch
-from app.db.connections import generate_r2_presigned_url, get_r2_bucket_for_product
 
-def test_r2_bucket_product_resolution():
-    """Verify products resolve to their dedicated Cloudflare R2 storage buckets."""
-    assert get_r2_bucket_for_product("zolexora-ims") == "zolexora-ims-files"
-    assert get_r2_bucket_for_product("zolexora-marketplace") == "zolexora-marketplace-files"
-    assert get_r2_bucket_for_product("zolexora-tms") == "zolexora-tms-files"
-    assert get_r2_bucket_for_product("other-product") == "zolexora-platform-files"
+R2 = {"provider": "r2", "name": "Files", "config": {"account_id": "acct", "bucket": "ims-files", "access_key_id": "AK", "secret_access_key": "SK"}}
 
-def test_presigned_url_endpoint(client):
-    """POST /api/storage/presigned-url returns the URL signed by the R2 client."""
-    mock_s3 = MagicMock()
-    mock_s3.generate_presigned_url.return_value = "https://acct.r2.cloudflarestorage.com/zolexora-ims-files/catalog/product-image-44.jpg?X-Amz-Signature=x"
-    payload = {
-        "product": "zolexora-ims",
-        "file_key": "catalog/product-image-44.jpg",
-        "operation": "get_object",
-        "expiry_seconds": 1800
-    }
-    with patch("app.db.connections.get_r2_client", return_value=mock_s3):
-        response = client.post("/api/storage/presigned-url", json=payload)
-    assert response.status_code == 200
-    data = response.json()
-    assert "catalog/product-image-44.jpg" in data["url"]
-    assert data["bucket"] == "zolexora-ims-files"
-    assert data["file_key"] == "catalog/product-image-44.jpg"
-    assert data["expires_in_seconds"] == 1800
 
-def test_presigned_url_unconfigured_r2_is_503(client):
-    """No R2 credentials: 503, never a fake unsigned URL."""
-    with patch("app.db.connections.get_r2_client", return_value=None):
-        response = client.post("/api/storage/presigned-url", json={"product": "zolexora-ims", "file_key": "a.jpg"})
-    assert response.status_code == 503
+def test_presigned_url_from_r2_connection(client, post_conn):
+    conn_id = post_conn(R2).json()["id"]
+    s3 = MagicMock()
+    s3.generate_presigned_url.return_value = "https://acct.r2.cloudflarestorage.com/ims-files/a.jpg?X-Amz-Signature=x"
+    with patch("app.routers.storage.clients.r2_client", return_value=s3):
+        res = client.post("/api/storage/presigned-url", json={"connection_id": conn_id, "file_key": "a.jpg", "expiry_seconds": 600})
+    assert res.status_code == 200 and res.json()["bucket"] == "ims-files"
+    s3.generate_presigned_url.assert_called_once_with(ClientMethod="get_object", Params={"Bucket": "ims-files", "Key": "a.jpg"}, ExpiresIn=600)
 
-def test_presigned_url_rejects_long_expiry_and_empty_key(client):
-    assert client.post("/api/storage/presigned-url", json={"product": "p", "file_key": "a", "expiry_seconds": 604800}).status_code == 422
-    assert client.post("/api/storage/presigned-url", json={"product": "p", "file_key": ""}).status_code == 422
 
-def test_boto3_presigned_url_generation():
-    """Verify boto3 client method is invoked when boto3 is initialized."""
-    mock_s3 = MagicMock()
-    mock_s3.generate_presigned_url.return_value = "https://r2.cloudflarestorage.com/signed-url-boto3"
+def test_unknown_or_non_r2_connection_is_404(client, post_conn):
+    other = post_conn({"provider": "resend", "name": "r", "config": {"api_key": "k"}}).json()["id"]
+    for conn_id in ("missing", other):
+        assert client.post("/api/storage/presigned-url", json={"connection_id": conn_id, "file_key": "a"}).status_code == 404
 
-    with patch("app.db.connections.get_r2_client", return_value=mock_s3):
-        url = generate_r2_presigned_url("zolexora-tms-files", "bol/bol-001.pdf", "get_object", 3600)
-        assert url == "https://r2.cloudflarestorage.com/signed-url-boto3"
-        mock_s3.generate_presigned_url.assert_called_once_with(
-            ClientMethod="get_object",
-            Params={"Bucket": "zolexora-tms-files", "Key": "bol/bol-001.pdf"},
-            ExpiresIn=3600
-        )
+
+def test_draining_r2_is_409(client, post_conn):
+    conn_id = post_conn(R2).json()["id"]
+    client.put(f"/api/connections/{conn_id}/status", json={"status": "DRAINING"})
+    assert client.post("/api/storage/presigned-url", json={"connection_id": conn_id, "file_key": "a"}).status_code == 409
+
+
+def test_limits(client):
+    assert client.post("/api/storage/presigned-url", json={"connection_id": "x", "file_key": "a", "expiry_seconds": 604800}).status_code == 422
+    assert client.post("/api/storage/presigned-url", json={"connection_id": "x", "file_key": ""}).status_code == 422

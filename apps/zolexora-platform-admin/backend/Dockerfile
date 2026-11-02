@@ -14,6 +14,7 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PORT=8000 \
     ADMIN_DATA_DIR=/data \
+    INFISICAL_CONFIG=/config/infisical.json \
     PATH="/opt/venv/bin:$PATH"
 
 RUN useradd --system --uid 1001 admin && mkdir /data && chown admin /data

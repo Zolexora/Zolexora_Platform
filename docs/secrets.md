@@ -56,8 +56,9 @@ Names only. Add any missing key to the product's Infisical folder (project `c4ac
 
 ### zolexora-platform-admin — `/Zolexora_Specfic_Credentials/Zolexora_Admin_Panel`
 
-- **product root**: `ENVIRONMENT`, `SUPABASE_CORE_URL`, `SUPABASE_CORE_SERVICE_KEY`, `SUPABASE_CORE_PG_URL`, `SUPABASE_COMMERCE_URL`, `SUPABASE_COMMERCE_SERVICE_KEY`, `SUPABASE_COMMERCE_PG_URL`, `SUPABASE_BUSINESS_URL`, `SUPABASE_BUSINESS_SERVICE_KEY`, `SUPABASE_BUSINESS_PG_URL`, `SUPABASE_AI_ERP_URL`, `SUPABASE_AI_ERP_SERVICE_KEY`, `SUPABASE_AI_ERP_PG_URL`, `MONGO_URI`, `CF_ACCOUNT_ID`, `RESEND_API_KEY`
-- **product root**: `SUPABASE_CORE_URL`, `SUPABASE_CORE_ANON_KEY`, `SUPABASE_CORE_SERVICE_KEY`, `SUPABASE_COMMERCE_URL`, `SUPABASE_COMMERCE_ANON_KEY`, `SUPABASE_COMMERCE_SERVICE_KEY`, `SUPABASE_BUSINESS_URL`, `SUPABASE_BUSINESS_ANON_KEY`, `SUPABASE_BUSINESS_SERVICE_KEY`, `SUPABASE_AI_ERP_URL`, `SUPABASE_AI_ERP_ANON_KEY`, `SUPABASE_AI_ERP_SERVICE_KEY`, `MONGO_URI`, `CF_ACCOUNT_ID`, `CF_API_TOKEN`, `D1_SESSIONS_ID`, `D1_CATALOG_ID`, `D1_CONFIG_ID`, `D1_ROUTES_ID`, `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_IMS`, `R2_BUCKET_MARKETPLACE`, `R2_BUCKET_TMS`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
+- **product root**: `AUTH_SERVICE_URL`, `AUTH_SERVICE_PUBLIC_URL`, `TURNSTILE_SITE_KEY`, `INFISICAL_CLIENT_ID`, `INFISICAL_CLIENT_SECRET` (machine identity: read on this folder, write on `connections/`), optional `CORS_ORIGINS`
+- **provider values** (any names, here or in subfolders): e.g. `SUPABASE_CORE_URL`, `SUPABASE_CORE_ANON_KEY`, `MONGO_URI`, `RESEND_API_KEY`. They are not passed as env; register them in the panel (Connections → Add connection) by key name.
+- **`connections/`**: written by the panel, one `CONN_<id>` record per account: JSON with key names only, no values.
 
 ### zolexora-rentoeasy — `/Zolexora_Specfic_Credentials/RentoEasy`
 

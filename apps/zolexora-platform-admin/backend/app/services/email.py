@@ -1,285 +1,165 @@
-import os
+"""Email router across the email connections added in the panel (Resend -> Brevo -> SendGrid).
+
+Each connection has its own daily limit and in-memory daily count (reset at UTC midnight,
+lost on restart). A connection at >= 90% of its limit, DRAINING, or failing is skipped.
+"""
 import uuid
 from datetime import datetime, timezone
-from typing import List, Dict, Optional, Any
+from typing import Any, Dict, List, Optional
+
 import httpx
+
+from .. import clients
+from ..connections import Connection, list_connections
 from ..schemas.email import (
+    EmailLogRecord,
+    EmailLogsResponse,
+    EmailQuotasResponse,
     EmailSendRequest,
     EmailSendResponse,
     ProviderQuotaMetric,
-    EmailQuotasResponse,
-    EmailLogRecord,
-    EmailLogsResponse,
 )
 
-# ============================================================================
-# ZOLEXORA PLATFORM — MULTI-PROVIDER EMAIL ROUTER & LOG COLLECTOR
-# Intelligent routing across Resend (100/d), Brevo (300/d), SendGrid (100/d)
-# Dynamic failover at 90% quota capacity, and permanent MongoDB log archiving.
-# ============================================================================
-
-DAILY_LIMITS = {
-    "resend": 100,
-    "brevo": 300,
-    "sendgrid": 100,
-}
-
-# In-memory daily usage, reset when the UTC date changes. Lost on restart.
-_daily_usage: Dict[str, int] = {p: 0 for p in DAILY_LIMITS}
-_usage_day = datetime.now(timezone.utc).date()
-
-# In-memory log of recent sends, used when MongoDB is unconfigured or offline.
-_fallback_logs: List[EmailLogRecord] = []
+PROVIDER_ORDER = ["resend", "brevo", "sendgrid"]
+DEFAULT_DAILY_LIMITS = {"resend": 100, "brevo": 300, "sendgrid": 100}  # free tiers
+THROTTLE_PCT = 90.0
 FALLBACK_LOG_LIMIT = 500
+
+_daily_usage: Dict[str, int] = {}  # connection id -> sends today
+_usage_day = datetime.now(timezone.utc).date()
+_fallback_logs: List[EmailLogRecord] = []
+
 
 def _roll_day() -> None:
     global _usage_day
     today = datetime.now(timezone.utc).date()
     if today != _usage_day:
         _usage_day = today
-        reset_daily_usage()
+        _daily_usage.clear()
 
-def get_daily_usage(provider: str) -> int:
-    """Returns current daily usage for a provider."""
+
+def get_daily_usage(conn_id: str) -> int:
     _roll_day()
-    return _daily_usage.get(provider, 0)
+    return _daily_usage.get(conn_id, 0)
 
-def set_daily_usage(provider: str, count: int) -> None:
-    """Sets daily usage for a provider (useful for testing failover scenarios)."""
-    _daily_usage[provider] = count
+
+def set_daily_usage(conn_id: str, count: int) -> None:
+    _daily_usage[conn_id] = count
+
 
 def reset_daily_usage() -> None:
-    """Resets daily usage counters."""
-    for p in DAILY_LIMITS:
-        _daily_usage[p] = 0
+    _daily_usage.clear()
 
-def get_provider_quotas() -> EmailQuotasResponse:
-    """
-    Returns current quota metrics for all configured email providers.
-    Calculates 90% threshold throttling.
-    """
-    _roll_day()
-    metrics: List[ProviderQuotaMetric] = []
-    for provider, limit in DAILY_LIMITS.items():
-        used = _daily_usage.get(provider, 0)
-        pct = round((used / limit) * 100, 2)
-        throttled = pct >= 90.0
-        remaining = max(0, limit - used)
 
-        metrics.append(
-            ProviderQuotaMetric(
-                provider=provider,  # type: ignore
-                account_id=f"{provider}-acc-01",
-                daily_limit=limit,
-                daily_used=used,
-                remaining_today=remaining,
-                usage_percentage=pct,
-                is_throttled=throttled
-            )
-        )
+def daily_limit(conn: Connection) -> int:
+    value = conn.config.get("daily_limit", "")
+    return int(value) if value.isdigit() and int(value) > 0 else DEFAULT_DAILY_LIMITS[conn.provider]
 
-    return EmailQuotasResponse(
-        providers=metrics,
-        timestamp=datetime.now(timezone.utc).isoformat()
-    )
 
-async def archive_log_record(log_record: EmailLogRecord) -> None:
-    """
-    Asynchronously archives an email delivery log record into MongoDB Atlas 'email_logs'.
-    Falls back safely to in-memory audit log without failing if MongoDB is unconfigured.
-    """
-    _fallback_logs.insert(0, log_record)
+def usage_pct(conn: Connection) -> float:
+    return round(get_daily_usage(conn.id) / daily_limit(conn) * 100, 2)
+
+
+async def email_connections() -> List[Connection]:
+    conns = await list_connections(category="email")
+    return sorted(conns, key=lambda c: PROVIDER_ORDER.index(c.provider))  # stable: name order kept
+
+
+async def get_provider_quotas() -> EmailQuotasResponse:
+    metrics = []
+    for conn in await email_connections():
+        limit, used = daily_limit(conn), get_daily_usage(conn.id)
+        metrics.append(ProviderQuotaMetric(
+            provider=conn.provider, account_id=conn.id, name=conn.name, daily_limit=limit, daily_used=used,
+            remaining_today=max(0, limit - used), usage_percentage=usage_pct(conn),
+            is_throttled=usage_pct(conn) >= THROTTLE_PCT,
+        ))
+    return EmailQuotasResponse(providers=metrics, timestamp=datetime.now(timezone.utc).isoformat())
+
+
+async def _log_collection():
+    for conn in await list_connections(provider="mongodb"):
+        if not conn.error and conn.status == "ACTIVE" and conn.config.get("email_log_collection"):
+            return clients.mongo_db(conn)[conn.config["email_log_collection"]]
+    return None
+
+
+async def archive_log_record(record: EmailLogRecord) -> None:
+    """Writes to the MongoDB email-log connection if one is set; always keeps a recent in-memory copy."""
+    _fallback_logs.insert(0, record)
     del _fallback_logs[FALLBACK_LOG_LIMIT:]
-
     try:
-        from ..db.connections import get_mongo
-        db = await get_mongo("zolexora-engage", raise_on_missing=False)
-        if db is not None:
-            collection = db["email_logs"]
-            await collection.insert_one(log_record.model_dump())
+        if (collection := await _log_collection()) is not None:
+            await collection.insert_one(record.model_dump())
     except Exception:
-        # Non-blocking graceful degradation: log stored in _fallback_logs
         pass
+
+
+async def _dispatch(conn: Connection, request: EmailSendRequest) -> Optional[str]:
+    """Sends through one connection. Returns the provider message id, or None on failure."""
+    key = conn.config["api_key"]
+    sender = request.sender_email or conn.config.get("sender_email") or "noreply@zolexora.com"
+    body = request.html_content or request.text_content or ""
+    fallback_id = f"msg_{conn.provider}_{uuid.uuid4().hex[:12]}"
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        if conn.provider == "resend":
+            resp = await client.post("https://api.resend.com/emails", headers={"Authorization": f"Bearer {key}"},
+                                     json={"from": sender, "to": request.to, "subject": request.subject, "html": body})
+            return resp.json().get("id", fallback_id) if resp.status_code in (200, 201) else None
+        if conn.provider == "brevo":
+            resp = await client.post("https://api.brevo.com/v3/smtp/email", headers={"api-key": key}, json={
+                "sender": {"name": request.sender_name, "email": sender},
+                "to": [{"email": a} for a in request.to], "subject": request.subject, "htmlContent": body})
+            return resp.json().get("messageId", fallback_id) if resp.status_code in (200, 201) else None
+        resp = await client.post("https://api.sendgrid.com/v3/mail/send", headers={"Authorization": f"Bearer {key}"}, json={
+            "personalizations": [{"to": [{"email": a} for a in request.to]}], "from": {"email": sender},
+            "subject": request.subject, "content": [{"type": "text/html", "value": body}]})
+        return fallback_id if resp.status_code in (200, 202) else None
+
 
 async def send_email(request: EmailSendRequest) -> EmailSendResponse:
-    """
-    Dispatches a transactional email through the intelligent multi-provider router.
-    Evaluates provider quotas in priority order: Resend -> Brevo -> SendGrid.
-    Fails over when provider reaches >= 90% daily limit, has no API key, or returns an error.
-    """
     _roll_day()
-    provider_priority = ["resend", "brevo", "sendgrid"]
+    now = datetime.now(timezone.utc).isoformat()
     attempts = 0
-    now_iso = datetime.now(timezone.utc).isoformat()
-
-    for provider in provider_priority:
+    for conn in await email_connections():
+        if conn.error or conn.status != "ACTIVE" or usage_pct(conn) >= THROTTLE_PCT:
+            continue
         attempts += 1
-        limit = DAILY_LIMITS[provider]
-        used = _daily_usage.get(provider, 0)
-        usage_pct = (used / limit) * 100.0
-
-        # Skip provider if daily quota reached 90% threshold
-        if usage_pct >= 90.0:
-            continue
-
-        api_key = os.getenv(f"{provider.upper()}_API_KEY")
-        if not api_key:
-            continue
-
-        success = False
-        message_id = f"msg_{provider}_{uuid.uuid4().hex[:12]}"
-        body = request.html_content or request.text_content or ""
-
         try:
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                if provider == "resend":
-                    resp = await client.post(
-                        "https://api.resend.com/emails",
-                        headers={"Authorization": f"Bearer {api_key}"},
-                        json={
-                            "from": request.sender_email or "onboarding@resend.dev",
-                            "to": request.to,
-                            "subject": request.subject,
-                            "html": body,
-                        }
-                    )
-                    if resp.status_code in (200, 201):
-                        message_id = resp.json().get("id", message_id)
-                        success = True
-                elif provider == "brevo":
-                    resp = await client.post(
-                        "https://api.brevo.com/v3/smtp/email",
-                        headers={"api-key": api_key},
-                        json={
-                            "sender": {"name": request.sender_name, "email": request.sender_email or "noreply@zolexora.com"},
-                            "to": [{"email": addr} for addr in request.to],
-                            "subject": request.subject,
-                            "htmlContent": body,
-                        }
-                    )
-                    if resp.status_code in (200, 201):
-                        message_id = resp.json().get("messageId", message_id)
-                        success = True
-                elif provider == "sendgrid":
-                    resp = await client.post(
-                        "https://api.sendgrid.com/v3/mail/send",
-                        headers={"Authorization": f"Bearer {api_key}"},
-                        json={
-                            "personalizations": [{"to": [{"email": addr} for addr in request.to]}],
-                            "from": {"email": request.sender_email or "noreply@zolexora.com"},
-                            "subject": request.subject,
-                            "content": [{"type": "text/html", "value": body}]
-                        }
-                    )
-                    if resp.status_code in (200, 202):
-                        success = True
-
+            message_id = await _dispatch(conn, request)
         except Exception:
-            # On network or API error, fail over to next provider
-            success = False
+            message_id = None
+        if message_id is None:
+            continue
+        _daily_usage[conn.id] = get_daily_usage(conn.id) + 1
+        await archive_log_record(EmailLogRecord(
+            id=str(uuid.uuid4()), message_id=message_id, provider=conn.provider, account=conn.id,
+            product=request.product, recipient=request.to[0], subject=request.subject, status="sent", sent_at=now))
+        return EmailSendResponse(success=True, message_id=message_id, provider_used=conn.provider,
+                                 account_used=conn.id, status="sent", attempt_count=attempts, timestamp=now)
 
-        if success:
-            _daily_usage[provider] = used + 1
-            log_record = EmailLogRecord(
-                id=str(uuid.uuid4()),
-                message_id=message_id,
-                provider=provider,
-                account=f"{provider}-acc-01",
-                product=request.product,
-                recipient=request.to[0] if request.to else "unknown@zolexora.com",
-                subject=request.subject,
-                status="sent",
-                sent_at=now_iso,
-                opened=False,
-                bounce_reason=None
-            )
-            await archive_log_record(log_record)
-
-            return EmailSendResponse(
-                success=True,
-                message_id=message_id,
-                provider_used=provider,  # type: ignore
-                account_used=f"{provider}-acc-01",
-                status="sent",
-                attempt_count=attempts,
-                timestamp=now_iso
-            )
-
-    # If all providers were throttled or failed
     failed_id = f"failed_{uuid.uuid4().hex[:8]}"
-    failed_record = EmailLogRecord(
-        id=str(uuid.uuid4()),
-        message_id=failed_id,
-        provider="none",
-        account="none",
-        product=request.product,
-        recipient=request.to[0] if request.to else "unknown@zolexora.com",
-        subject=request.subject,
-        status="failed",
-        sent_at=now_iso,
-        opened=False,
-        bounce_reason="No provider delivered: each was unconfigured, over 90% of its daily quota, or failed."
-    )
-    await archive_log_record(failed_record)
+    await archive_log_record(EmailLogRecord(
+        id=str(uuid.uuid4()), message_id=failed_id, provider="none", account="none", product=request.product,
+        recipient=request.to[0], subject=request.subject, status="failed", sent_at=now,
+        bounce_reason="No email connection delivered: none added, all draining or over 90% of their daily limit, or all failed."))
+    return EmailSendResponse(success=False, message_id=failed_id, provider_used=None, account_used="none",
+                             status="failed", attempt_count=attempts, timestamp=now)
 
-    return EmailSendResponse(
-        success=False,
-        message_id=failed_id,
-        provider_used=None,
-        account_used="none",
-        status="failed",
-        attempt_count=attempts,
-        timestamp=now_iso
-    )
 
-async def query_email_logs(
-    product: Optional[str] = None,
-    provider: Optional[str] = None,
-    status: Optional[str] = None,
-    page: int = 1,
-    limit: int = 50
-) -> EmailLogsResponse:
-    """
-    Queries archived email logs from MongoDB Atlas or fallback store.
-    Supports filtering by product, provider, status, and pagination.
-    """
-    records: List[EmailLogRecord] = []
-
+async def query_email_logs(product: Optional[str] = None, provider: Optional[str] = None,
+                           status: Optional[str] = None, page: int = 1, limit: int = 50) -> EmailLogsResponse:
+    query: Dict[str, Any] = {k: v for k, v in (("product", product), ("provider", provider), ("status", status)) if v}
     try:
-        from ..db.connections import get_mongo
-        db = await get_mongo("zolexora-engage", raise_on_missing=False)
-        if db is not None:
-            collection = db["email_logs"]
-            query: Dict[str, Any] = {}
-            if product:
-                query["product"] = product
-            if provider:
-                query["provider"] = provider
-            if status:
-                query["status"] = status
-
+        if (collection := await _log_collection()) is not None:
             cursor = collection.find(query).sort("sent_at", -1).skip((page - 1) * limit).limit(limit)
+            records = []
             async for doc in cursor:
-                doc["id"] = str(doc.get("_id", doc.get("id", "")))
+                doc.pop("_id", None)
                 records.append(EmailLogRecord(**doc))
-
-            total_count = await collection.count_documents(query)
-            if records:
-                return EmailLogsResponse(logs=records, total=total_count, page=page, limit=limit)
+            return EmailLogsResponse(logs=records, total=await collection.count_documents(query), page=page, limit=limit)
     except Exception:
         pass
-
-    # Fallback to in-memory store
-    filtered = _fallback_logs
-    if product:
-        filtered = [item for item in filtered if item.product == product]
-    if provider:
-        filtered = [item for item in filtered if item.provider == provider]
-    if status:
-        filtered = [item for item in filtered if item.status == status]
-
-    total = len(filtered)
-    start_idx = (page - 1) * limit
-    paged = filtered[start_idx:start_idx + limit]
-
-    return EmailLogsResponse(logs=paged, total=total, page=page, limit=limit)
+    filtered = [r for r in _fallback_logs if all(getattr(r, k) == v for k, v in query.items())]
+    start = (page - 1) * limit
+    return EmailLogsResponse(logs=filtered[start:start + limit], total=len(filtered), page=page, limit=limit)

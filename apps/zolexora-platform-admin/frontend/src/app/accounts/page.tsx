@@ -2,23 +2,17 @@
 
 import React, { useEffect, useState } from 'react';
 import AccountTable from '@/components/AccountTable';
-import DiagnosticBanner from '@/components/DiagnosticBanner';
+import ConnectionForm from '@/components/ConnectionForm';
 import { fetchAccounts } from '@/lib/api';
-import { DiscoveredAccount, AccountDiagnosticAlert } from '@/lib/types';
+import { DiscoveredAccount } from '@/lib/types';
 
-export default function DynamicAccountsPage() {
+export default function ConnectionsPage() {
   const [accounts, setAccounts] = useState<DiscoveredAccount[]>([]);
-  const [alerts, setAlerts] = useState<AccountDiagnosticAlert[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const loadAccounts = async () => {
-    setIsLoading(true);
     try {
-      const res = await fetchAccounts();
-      setAccounts(res.accounts);
-      setAlerts(res.alerts);
-    } catch (e) {
-      console.error('Failed to load accounts list:', e);
+      setAccounts((await fetchAccounts()).accounts);
     } finally {
       setIsLoading(false);
     }
@@ -33,25 +27,18 @@ export default function DynamicAccountsPage() {
   return (
     <div className="space-y-6">
       <div className="border-b border-slate-800 pb-4">
-        <h1 className="text-2xl font-black tracking-tight text-white">
-          Dynamic Account Manager & Infisical Secrets Sync
-        </h1>
+        <h1 className="text-2xl font-black tracking-tight text-white">Connections</h1>
         <p className="text-sm text-slate-400 mt-1">
-          Discovers multi-tenant accounts across Infisical workspace paths, tracks usage quotas, and triggers failovers.
+          Supabase, MongoDB, R2, email, Cloudflare and Firebase accounts to monitor and use. Values stay in Infisical; the panel only stores key names.
         </p>
       </div>
 
-      <DiagnosticBanner alerts={alerts} />
+      <ConnectionForm onSaved={loadAccounts} />
 
-      {isLoading && accounts.length === 0 ? (
-        <div className="text-center py-12 text-slate-400 text-sm">
-          Loading discovered accounts...
-        </div>
+      {isLoading ? (
+        <div className="text-center py-12 text-slate-400 text-sm">Loading connections…</div>
       ) : (
-        <AccountTable
-          initialAccounts={accounts}
-          onAccountsUpdated={loadAccounts}
-        />
+        <AccountTable initialAccounts={accounts} onAccountsUpdated={loadAccounts} />
       )}
     </div>
   );

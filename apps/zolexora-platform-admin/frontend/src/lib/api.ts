@@ -14,6 +14,10 @@ import type {
   EmailSendResponse,
   FleetService,
   FleetResponse,
+  Connection,
+  ConnectionInput,
+  ProbeResult,
+  ProviderSpec,
 } from './types';
 import { SESSION_EXPIRED_EVENT, SESSION_STORAGE_KEY } from '@zolexora/auth-client';
 
@@ -53,9 +57,15 @@ async function fetchJson<T>(endpoint: string, options?: RequestInit): Promise<T>
     }
     if (!res.ok) {
       const errorText = await res.text();
-      throw new Error(`API error ${res.status} on ${endpoint}: ${errorText}`);
+      let detail = errorText;
+      try {
+        const parsed = JSON.parse(errorText).detail;
+        detail = typeof parsed === 'string' ? parsed : JSON.stringify(parsed);
+      } catch {}
+      throw new Error(detail || `API error ${res.status} on ${endpoint}`);
     }
 
+    if (res.status === 204) return undefined as T;
     return (await res.json()) as T;
   } catch (error) {
     console.warn(`[Platform Admin API] Request to ${endpoint} failed:`, error);
@@ -247,3 +257,20 @@ export async function fetchFleetOverview(): Promise<FleetService[]> {
     return [];
   }
 }
+
+// -------------------------------------------------------------
+// Connections
+// -------------------------------------------------------------
+
+export const fetchProviders = () => fetchJson<ProviderSpec[]>('/api/connections/providers');
+
+export const fetchConnections = () => fetchJson<Connection[]>('/api/connections');
+
+export const testConnection = (input: ConnectionInput) =>
+  fetchJson<ProbeResult>('/api/connections/test', { method: 'POST', body: JSON.stringify(input) });
+
+export const createConnection = (input: ConnectionInput) =>
+  fetchJson<Connection>('/api/connections', { method: 'POST', body: JSON.stringify(input) });
+
+export const deleteConnection = (id: string) =>
+  fetchJson<void>(`/api/connections/${id}`, { method: 'DELETE' });

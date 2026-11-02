@@ -77,7 +77,7 @@ export default function HotTableTable({ tables, onPinChange }: HotTableTableProp
               const activityScore = tbl.read_activity_score || 50;
 
               return (
-                <tr key={fullName} className="hover:bg-slate-800/40 transition-colors">
+                <tr key={`${tbl.connection_id}-${fullName}`} className="hover:bg-slate-800/40 transition-colors">
                   <td className="px-4 py-3 font-mono text-indigo-300">
                     <span className="px-2 py-0.5 rounded bg-indigo-950/80 border border-indigo-800/60">
                       {tbl.schema_name}

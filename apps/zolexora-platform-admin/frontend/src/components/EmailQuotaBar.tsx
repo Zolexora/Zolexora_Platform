@@ -120,7 +120,7 @@ export default function EmailQuotaBar({
                     </span>
                     <span className="font-semibold text-white">{info.name}</span>
                     <span className="text-slate-400 font-mono text-[11px]">
-                      ({p.account_id})
+                      ({p.name || p.account_id})
                     </span>
                   </div>
 

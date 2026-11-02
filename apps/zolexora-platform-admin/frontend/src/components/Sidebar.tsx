@@ -40,8 +40,8 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
     },
     {
       href: '/accounts',
-      label: 'Dynamic Accounts',
-      shortLabel: 'Accounts',
+      label: 'Connections',
+      shortLabel: 'Connections',
       icon: KeyIcon,
       badge: 'Infisical',
       badgeColor: 'bg-indigo-950 text-indigo-300 border-indigo-800',

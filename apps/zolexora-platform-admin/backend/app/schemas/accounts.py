@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from typing import List, Optional, Literal
 
 AccountStatus = Literal["ACTIVE", "DRAINING", "DISCONNECTED", "QUOTA_THROTTLED"]
-ProviderType = Literal["firebase", "cloudflare", "supabase", "mongodb", "resend", "brevo", "sendgrid"]
+ProviderType = Literal["firebase", "cloudflare", "supabase", "mongodb", "r2", "resend", "brevo", "sendgrid"]
 
 class DiscoveredAccount(BaseModel):
     id: str
@@ -45,4 +45,4 @@ class AccountsListResponse(BaseModel):
     alerts: List[AccountDiagnosticAlert] = []
 
 class AccountStatusUpdateRequest(BaseModel):
-    status: AccountStatus
+    status: Literal["ACTIVE", "DRAINING"]  # QUOTA_THROTTLED is derived, not set

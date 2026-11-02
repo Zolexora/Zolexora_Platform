@@ -1,40 +1,27 @@
 from fastapi import APIRouter, HTTPException
-from ..schemas.accounts import (
-    AccountsListResponse,
-    AccountSyncResponse,
-    DiscoveredAccount,
-    AccountStatusUpdateRequest,
-)
-from ..services.accounts import (
-    get_accounts_list,
-    sync_accounts_from_infisical,
-    update_account_status,
-)
+from ..connections import set_status
+from ..schemas.accounts import AccountsListResponse, AccountStatusUpdateRequest, AccountSyncResponse, DiscoveredAccount
+from ..services.accounts import get_accounts_list, sync_from_infisical, to_account
 
 router = APIRouter(prefix="/api/accounts", tags=["Accounts"])
 
+
 @router.get("", response_model=AccountsListResponse)
-def list_accounts() -> AccountsListResponse:
-    """
-    Returns all discovered accounts across Firebase, Cloudflare, Supabase, and email providers.
-    Includes count summaries and missing-credential diagnostic alerts.
-    """
-    return get_accounts_list()
+async def list_accounts() -> AccountsListResponse:
+    """One row per connection, with email quota state."""
+    return await get_accounts_list()
+
 
 @router.post("/sync", response_model=AccountSyncResponse)
-def trigger_accounts_sync() -> AccountSyncResponse:
-    """
-    Triggers dynamic re-sync and live discovery of accounts from Infisical / environment variables.
-    Evaluates 90% quota thresholds and updates account states.
-    """
-    return sync_accounts_from_infisical()
+async def trigger_accounts_sync() -> AccountSyncResponse:
+    """Re-reads connections from Infisical."""
+    return await sync_from_infisical()
+
 
 @router.put("/{account_id}/status", response_model=DiscoveredAccount)
-def change_account_status(account_id: str, request: AccountStatusUpdateRequest) -> DiscoveredAccount:
-    """
-    Updates the operational status of an account (e.g. toggling DRAINING for maintenance).
-    """
-    account = update_account_status(account_id, request.status)
-    if not account:
+async def change_account_status(account_id: str, request: AccountStatusUpdateRequest) -> DiscoveredAccount:
+    """ACTIVE or DRAINING (DRAINING connections are skipped by email routing)."""
+    conn = await set_status(account_id, request.status)
+    if conn is None:
         raise HTTPException(status_code=404, detail=f"Account '{account_id}' not found.")
-    return account
+    return to_account(conn)

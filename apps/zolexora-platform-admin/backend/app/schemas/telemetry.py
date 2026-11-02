@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Literal
 
 class HotTableMetric(BaseModel):
+    connection_id: Optional[str] = None
     schema_name: str
     table_name: str
     row_count_estimate: int
@@ -11,6 +12,7 @@ class HotTableMetric(BaseModel):
     is_pinned: bool = False
 
 class StorageQuotaMetric(BaseModel):
+    connection_id: str
     service: str
     project_or_cluster: str
     free_tier_limit_bytes: int
@@ -29,7 +31,7 @@ class CapacityTelemetryResponse(BaseModel):
     timestamp: str
 
 class ArchivePreviewRequest(BaseModel):
-    database: str
+    database: str  # connection id
     target_capacity_percent: float = Field(40.0, ge=1, le=100)
 
 class ArchivePreviewResponse(BaseModel):

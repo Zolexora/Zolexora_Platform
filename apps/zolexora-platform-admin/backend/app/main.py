@@ -1,14 +1,16 @@
 import logging
 import os
 from contextlib import asynccontextmanager
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from . import clients
 from .auth import require_platform_admin
-from .db.connections import close_all_connections
-from .services.accounts import sync_accounts_from_infisical
+from .connections import InfisicalError, reload
 from .routers import (
     health_router,
     accounts_router,
+    connections_router,
     telemetry_router,
     email_router,
     storage_router,
@@ -20,11 +22,11 @@ logger = logging.getLogger("platform-admin")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     try:
-        sync_accounts_from_infisical()
-    except Exception:
-        logger.exception("Initial account discovery failed")
+        logger.info("Loaded %d connections from Infisical", len(await reload()))
+    except Exception as e:
+        logger.warning("Connections not loaded at startup (retried on first request): %s", e)
     yield
-    await close_all_connections()
+    await clients.close_all()
 
 
 app = FastAPI(
@@ -43,13 +45,19 @@ if cors_origins:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=cors_origins,
-        allow_methods=["GET", "POST", "PUT"],
+        allow_methods=["GET", "POST", "PUT", "DELETE"],
         allow_headers=["Authorization", "Content-Type"],
     )
+
+@app.exception_handler(InfisicalError)
+async def infisical_error(_: Request, exc: InfisicalError) -> JSONResponse:
+    return JSONResponse(status_code=502, content={"detail": f"Connections store: {exc}"})
+
 
 admin_only = [Depends(require_platform_admin)]
 app.include_router(health_router)  # /api/health is the unauthenticated liveness probe; /databases is guarded in the router
 app.include_router(accounts_router, dependencies=admin_only)
+app.include_router(connections_router, dependencies=admin_only)
 app.include_router(telemetry_router, dependencies=admin_only)
 app.include_router(email_router, dependencies=admin_only)
 app.include_router(storage_router, dependencies=admin_only)

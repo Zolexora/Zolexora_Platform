@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { DiscoveredAccount, AccountStatus, AccountSyncResponse } from '@/lib/types';
-import { syncAccounts, updateAccountStatus } from '@/lib/api';
+import { deleteConnection, syncAccounts, updateAccountStatus } from '@/lib/api';
 
 interface AccountTableProps {
   initialAccounts: DiscoveredAccount[];
@@ -10,10 +10,10 @@ interface AccountTableProps {
 }
 
 export default function AccountTable({
-  initialAccounts,
+  initialAccounts: accounts,
   onAccountsUpdated,
 }: AccountTableProps) {
-  const [accounts, setAccounts] = useState<DiscoveredAccount[]>(initialAccounts);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<AccountSyncResponse | null>(null);
   const [updatingAccountId, setUpdatingAccountId] = useState<string | null>(null);
@@ -45,13 +45,23 @@ export default function AccountTable({
   const handleStatusChange = async (accountId: string, newStatus: AccountStatus) => {
     setUpdatingAccountId(accountId);
     try {
-      const updated = await updateAccountStatus(accountId, newStatus);
-      setAccounts((prev) =>
-        prev.map((acc) => (acc.id === accountId ? { ...acc, status: updated.status } : acc))
-      );
+      await updateAccountStatus(accountId, newStatus);
       if (onAccountsUpdated) onAccountsUpdated();
-    } catch (e) {
-      console.error(`Failed to update account ${accountId} status:`, e);
+    } catch (e: any) {
+      setActionError(e?.message || 'Status update failed');
+    } finally {
+      setUpdatingAccountId(null);
+    }
+  };
+
+  const handleRemove = async (account: DiscoveredAccount) => {
+    if (!window.confirm(`Remove "${account.alias}"? Its values in Infisical are not touched.`)) return;
+    setUpdatingAccountId(account.id);
+    try {
+      await deleteConnection(account.id);
+      if (onAccountsUpdated) onAccountsUpdated();
+    } catch (e: any) {
+      setActionError(e?.message || 'Remove failed');
     } finally {
       setUpdatingAccountId(null);
     }
@@ -92,6 +102,7 @@ export default function AccountTable({
       cloudflare: 'bg-orange-950 text-orange-300 border-orange-800',
       supabase: 'bg-emerald-950 text-emerald-300 border-emerald-800',
       mongodb: 'bg-green-950 text-green-300 border-green-800',
+      r2: 'bg-orange-950 text-orange-300 border-orange-800',
       resend: 'bg-slate-900 text-white border-slate-700',
       brevo: 'bg-sky-950 text-sky-300 border-sky-800',
       sendgrid: 'bg-blue-950 text-blue-300 border-blue-800',
@@ -117,9 +128,9 @@ export default function AccountTable({
       {/* Top Action Bar with Sync Trigger & Filters */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-slate-900 border border-slate-800 p-4 rounded-lg">
         <div>
-          <h3 className="text-base font-bold text-white">Dynamic Account Discovery</h3>
+          <h3 className="text-base font-bold text-white">Connections</h3>
           <p className="text-xs text-slate-400">
-            Real-time multi-account registry from Infisical workspace paths and fallback env variables.
+            DISCONNECTED means a named key is missing in Infisical. Draining connections are skipped by email routing and storage.
           </p>
         </div>
 
@@ -132,6 +143,7 @@ export default function AccountTable({
             <option value="ALL">All Providers</option>
             <option value="supabase">Supabase</option>
             <option value="mongodb">MongoDB</option>
+            <option value="r2">Cloudflare R2</option>
             <option value="cloudflare">Cloudflare</option>
             <option value="firebase">Firebase</option>
             <option value="resend">Resend</option>
@@ -144,7 +156,7 @@ export default function AccountTable({
             disabled={isSyncing}
             className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-900 disabled:opacity-60 text-white rounded text-xs font-semibold shadow flex items-center space-x-1.5 transition-colors whitespace-nowrap"
           >
-            <span>{isSyncing ? '🔄 Syncing Infisical...' : '🔄 Re-sync from Infisical'}</span>
+            <span>{isSyncing ? 'Reloading…' : 'Reload from Infisical'}</span>
           </button>
         </div>
       </div>
@@ -162,7 +174,7 @@ export default function AccountTable({
             <span className="font-semibold uppercase tracking-wider mr-2">
               Sync Status: {syncResult.status}
             </span>
-            Discovered {syncResult.discovered_count} accounts ({syncResult.active_count} active,{' '}
+            Loaded {syncResult.discovered_count} connections ({syncResult.active_count} active,{' '}
             {syncResult.throttled_count} throttled).
             {syncResult.diagnostics.length > 0 && (
               <p className="mt-1 text-[11px] opacity-90">{syncResult.diagnostics.join(' • ')}</p>
@@ -174,6 +186,13 @@ export default function AccountTable({
           >
             ✕
           </button>
+        </div>
+      )}
+
+      {actionError && (
+        <div className="p-3 rounded-lg text-xs border bg-rose-950/80 border-rose-800 text-rose-200 flex justify-between">
+          <span>{actionError}</span>
+          <button onClick={() => setActionError(null)} className="ml-2">✕</button>
         </div>
       )}
 
@@ -223,7 +242,7 @@ export default function AccountTable({
                                   (account.monthly_quota_total || 0) /
                                   (1024 * 1024)
                                 ).toFixed(0)} MB`
-                              : 'Dynamic quota'}
+                              : '—'}
                           </span>
                           <span
                             className={`font-semibold ${
@@ -250,9 +269,9 @@ export default function AccountTable({
                     <td className="px-4 py-3 font-mono text-slate-300">
                       {account.latency_ms ? `${account.latency_ms}ms` : '—'}
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-right whitespace-nowrap">
                       <select
-                        value={account.status}
+                        value={account.status === 'DRAINING' ? 'DRAINING' : 'ACTIVE'}
                         disabled={isUpdating}
                         onChange={(e) =>
                           handleStatusChange(account.id, e.target.value as AccountStatus)
@@ -261,9 +280,14 @@ export default function AccountTable({
                       >
                         <option value="ACTIVE">ACTIVE</option>
                         <option value="DRAINING">DRAINING</option>
-                        <option value="QUOTA_THROTTLED">QUOTA_THROTTLED</option>
-                        <option value="DISCONNECTED">DISCONNECTED</option>
                       </select>
+                      <button
+                        onClick={() => handleRemove(account)}
+                        disabled={isUpdating}
+                        className="ml-2 rounded border border-rose-900 px-2 py-1 text-xs text-rose-300 hover:bg-rose-950 disabled:opacity-50"
+                      >
+                        Remove
+                      </button>
                     </td>
                   </tr>
                 );
@@ -272,7 +296,7 @@ export default function AccountTable({
           </table>
           {filteredAccounts.length === 0 && (
             <div className="text-center py-8 text-slate-400 text-xs">
-              No accounts discovered or matching the active filter.
+              No connections yet. Add one above.
             </div>
           )}
         </div>

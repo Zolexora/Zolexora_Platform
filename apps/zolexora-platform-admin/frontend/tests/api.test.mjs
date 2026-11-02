@@ -1,7 +1,7 @@
 import test, { beforeEach } from 'node:test';
 import assert from 'node:assert';
 import { SESSION_EXPIRED_EVENT, SESSION_STORAGE_KEY } from '@zolexora/auth-client';
-import { fetchAccounts, fetchDatabaseHealth, fetchEmailQuotas, fetchSystemHealth } from '../src/lib/api.ts';
+import { createConnection, deleteConnection, fetchAccounts, fetchDatabaseHealth, fetchEmailQuotas, fetchSystemHealth } from '../src/lib/api.ts';
 
 let calls;
 let events;
@@ -21,7 +21,7 @@ beforeEach(() => {
     calls.push({ url, headers: init.headers });
     const { status, body } = nextResponse;
     if (status === 0) throw new TypeError('fetch failed');
-    return { ok: status < 400, status, json: async () => body, text: async () => JSON.stringify(body) };
+    return { ok: status < 400, status, json: async () => body, text: async () => (body === undefined ? '' : JSON.stringify(body)) };
   };
 });
 
@@ -58,4 +58,15 @@ test('backend offline: health helpers degrade instead of throwing', async () => 
   const db = await fetchDatabaseHealth();
   assert.strictEqual(db.overall_status, 'degraded');
   assert.deepStrictEqual(db.targets, {});
+});
+
+test('delete connection handles 204 No Content', async () => {
+  nextResponse = { status: 204, body: undefined };
+  assert.strictEqual(await deleteConnection('abc'), undefined);
+  assert.strictEqual(calls[0].url, '/api/connections/abc');
+});
+
+test('backend error detail reaches the form', async () => {
+  nextResponse = { status: 422, body: { detail: 'Missing: API key' } };
+  await assert.rejects(createConnection({ provider: 'supabase', name: 'x', keys: {} }), /Missing: API key/);
 });

@@ -12,6 +12,8 @@ export type DatabaseTargetStatus = 'healthy' | 'degraded' | 'unhealthy' | 'uncon
 
 export interface DatabaseTargetHealth {
   target: string;
+  name?: string | null;
+  provider?: string | null;
   status: DatabaseTargetStatus;
   latency_ms: number;
   details?: string | null;
@@ -25,7 +27,7 @@ export interface DatabaseHealthReport {
 }
 
 export type AccountStatus = 'ACTIVE' | 'DRAINING' | 'DISCONNECTED' | 'QUOTA_THROTTLED';
-export type ProviderType = 'firebase' | 'cloudflare' | 'supabase' | 'mongodb' | 'resend' | 'brevo' | 'sendgrid';
+export type ProviderType = 'firebase' | 'cloudflare' | 'supabase' | 'mongodb' | 'r2' | 'resend' | 'brevo' | 'sendgrid';
 
 export interface DiscoveredAccount {
   id: string;
@@ -72,6 +74,7 @@ export interface AccountsListResponse {
 }
 
 export interface HotTableMetric {
+  connection_id?: string | null;
   schema_name: string;
   table_name: string;
   row_count_estimate: number;
@@ -82,6 +85,7 @@ export interface HotTableMetric {
 }
 
 export interface StorageQuotaMetric {
+  connection_id: string;
   service: string;
   project_or_cluster: string;
   free_tier_limit_bytes: number;
@@ -124,6 +128,7 @@ export type EmailProviderName = 'resend' | 'brevo' | 'sendgrid';
 export interface ProviderQuotaMetric {
   provider: EmailProviderName;
   account_id: string;
+  name: string;
   daily_limit: number;
   daily_used: number;
   remaining_today: number;
@@ -199,4 +204,44 @@ export interface FleetResponse {
   stopped_count: number;
   unconfigured_count: number;
   timestamp: string;
+}
+
+// -------------------------------------------------------------
+// Connections (provider accounts added in the panel, stored in Infisical)
+// -------------------------------------------------------------
+
+export interface ConnectionField {
+  name: string;
+  label: string;
+  required: boolean;
+  placeholder: string; // example Infisical key name
+}
+
+export interface ProviderSpec {
+  provider: ProviderType;
+  label: string;
+  category: 'database' | 'storage' | 'email' | 'edge';
+  fields: ConnectionField[];
+  hint: string;
+}
+
+export interface Connection {
+  id: string;
+  provider: ProviderType;
+  name: string;
+  status: 'ACTIVE' | 'DRAINING';
+  keys: Record<string, string>; // field -> Infisical key name (values never leave Infisical)
+  error?: string | null; // e.g. a named key is missing in Infisical
+}
+
+export interface ConnectionInput {
+  provider: ProviderType;
+  name: string;
+  keys: Record<string, string>;
+}
+
+export interface ProbeResult {
+  status: 'healthy' | 'degraded';
+  latency_ms?: number | null;
+  detail: string;
 }
