@@ -148,7 +148,7 @@ webcolors==25.10.0
 webencodings==0.5.1
 websocket-client==1.9.0
 websockets==15.0.1
-asyncpg==0.31.0
+asyncpg==0.32.0
 redis>=5.0.0
 SQLAlchemy==2.0.51
 alembic==1.18.5
