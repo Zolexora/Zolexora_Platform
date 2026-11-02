@@ -13,8 +13,8 @@ services:
       # Localhost only: browsers reach the API through the gateway (3095).
       - "127.0.0.1:${PLATFORM_ADMIN_BACKEND_PORT:-4041}:8000"
     # Names only, values come from the Infisical-injected environment. No provider keys here:
-    # Supabase, Mongo, R2, email, Cloudflare and Firebase accounts are added in the panel
-    # (Accounts -> Add connection) and stored in Infisical under <admin path>/connections.
+    # provider values live in Infisical; the panel (Connections -> Add connection) stores only
+    # their key names in /data/connections.json and reads the values with a read-only identity.
     environment:
       - ENVIRONMENT=development
       - PORT=8000
@@ -25,8 +25,8 @@ services:
       - INFISICAL_ENV
       - INFISICAL_SITE_URL
     volumes:
-      - platform_admin_data:/data
-      - ./.infisical.json:/config/infisical.json:ro  # project + folder the connections live in
+      - platform_admin_data:/data  # connections.json (key names) and table pins
+      - ./.infisical.json:/config/infisical.json:ro  # project + folder the values are read from
     deploy:
       resources:
         limits:

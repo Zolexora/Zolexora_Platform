@@ -4,7 +4,7 @@ import pytest
 from unittest.mock import AsyncMock, patch
 from app import connections
 from app.clients import Probe
-from app.connections import Connection, InfisicalStore
+from app.connections import Connection, InfisicalStore, RecordFile
 from tests.conftest import ADMIN_PATH
 
 SECRET = "anon-secret-value"
@@ -97,11 +97,36 @@ def test_test_endpoint_resolves_and_probes_without_saving(client, store, infisic
     assert client.post("/api/connections/test", json=body({**KEYS, "url": "NOPE"})).status_code == 422
 
 
-def test_reload_picks_up_records_added_in_infisical(client, store, infisical_values):
+def test_reload_picks_up_edited_records(client, store, infisical_values):
     assert client.get("/api/accounts").json()["total_count"] == 0
-    store.items["abc"] = Connection(id="abc", provider="supabase", name="Added in Infisical", keys=KEYS)
+    store.items["abc"] = Connection(id="abc", provider="supabase", name="Edited by hand", keys=KEYS)
     assert client.post("/api/accounts/sync").json()["discovered_count"] == 1
-    assert client.get("/api/accounts").json()["accounts"][0]["alias"] == "Added in Infisical"
+    assert client.get("/api/accounts").json()["accounts"][0]["alias"] == "Edited by hand"
+
+
+@pytest.mark.asyncio
+async def test_record_file_round_trip(tmp_path):
+    f = RecordFile()  # ADMIN_DATA_DIR is tmp_path (conftest)
+    conn = Connection(id="a1b2", provider="resend", name="Main", keys={"api_key": "RESEND_API_KEY"},
+                      config={"api_key": "re_secret"})
+    await f.put(conn, create=True)
+    saved = json.loads((tmp_path / "connections.json").read_text())
+    assert saved == {"a1b2": {"provider": "resend", "name": "Main", "status": "ACTIVE", "keys": {"api_key": "RESEND_API_KEY"}}}
+    assert "re_secret" not in (tmp_path / "connections.json").read_text()  # resolved values never written
+    await f.put(conn.model_copy(update={"status": "DRAINING"}), create=False)
+    assert (await f.list())[0].status == "DRAINING"
+    await f.delete("a1b2")
+    assert await f.list() == []
+
+
+@pytest.mark.asyncio
+async def test_record_file_missing_or_malformed(tmp_path):
+    assert await RecordFile().list() == []
+    (tmp_path / "connections.json").write_text(json.dumps({"ok": {"provider": "brevo", "name": "B", "keys": {"api_key": "K"}}, "bad": {"x": 1}}))
+    assert [c.id for c in await RecordFile().list()] == ["ok"]
+    (tmp_path / "connections.json").write_text("{broken")
+    with pytest.raises(connections.InfisicalError, match="not valid JSON"):
+        await RecordFile().list()
 
 
 def test_store_errors_are_502(client, store, monkeypatch):
@@ -155,39 +180,26 @@ def infisical(monkeypatch, tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_infisical_store_round_trip(infisical):
+async def test_infisical_store_reads_folders_only(infisical):
     s = InfisicalStore()
     assert await s.read_folder("/Admin_Panel") == {"SUPABASE_CORE_URL": "https://abc.supabase.co"}
     assert await s.read_folder("/Admin_Panel/missing") == {}
-    conn = Connection(id="a1b2", provider="resend", name="Main", keys={"api_key": "RESEND_API_KEY"})
-    await s.put(conn, create=True)
-    saved = json.loads(infisical["folders"]["/Admin_Panel/connections"]["CONN_A1B2"])
-    assert saved == {"provider": "resend", "name": "Main", "status": "ACTIVE", "keys": {"api_key": "RESEND_API_KEY"}}
-    assert [c.model_dump() for c in await s.list()] == [conn.model_dump()]
-    await s.put(conn.model_copy(update={"status": "DRAINING"}), create=False)
-    assert ("PATCH", "/api/v3/secrets/raw/CONN_A1B2") in infisical["requests"]
-    await s.delete("a1b2")
-    assert await s.list() == []
+    await s.read_folder("/Admin_Panel")
     assert infisical["logins"] == 1  # token reused
+    assert {m for m, path in infisical["requests"] if path != "/api/v1/auth/universal-auth/login"} == {"GET"}  # read-only
 
 
 @pytest.mark.asyncio
 async def test_infisical_store_relogs_on_expired_token(infisical):
     s = InfisicalStore()
-    await s.list()
+    await s.read_folder("/Admin_Panel")
     infisical["expire_next"] = True
-    await s.list()
+    await s.read_folder("/Admin_Panel")
     assert infisical["logins"] == 2
-
-
-@pytest.mark.asyncio
-async def test_infisical_store_skips_non_connection_and_malformed_records(infisical):
-    infisical["folders"]["/Admin_Panel/connections"].update({"OTHER_KEY": "x", "CONN_BAD": "{not json"})
-    assert await InfisicalStore().list() == []
 
 
 @pytest.mark.asyncio
 async def test_infisical_store_needs_machine_identity(infisical, monkeypatch):
     monkeypatch.delenv("INFISICAL_CLIENT_SECRET")
     with pytest.raises(connections.InfisicalError, match="INFISICAL_CLIENT_ID"):
-        await InfisicalStore().list()
+        await InfisicalStore().read_folder("/Admin_Panel")

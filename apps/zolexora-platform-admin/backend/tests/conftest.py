@@ -15,7 +15,7 @@ ADMIN_PATH = "/Admin_Panel"
 
 
 class FakeStore:
-    """In-memory stand-in for Infisical: values per folder, plus the connections folder."""
+    """In-memory stand-in for Infisical values (per folder) and for the connection-records file."""
 
     parent = ADMIN_PATH
 
@@ -40,7 +40,8 @@ class FakeStore:
 def store(monkeypatch, tmp_path):
     """Fresh fake store, empty cache, temp data dir, zeroed email counters for every test."""
     fake = FakeStore()
-    monkeypatch.setattr(connections, "_store", fake)
+    monkeypatch.setattr(connections, "_store", fake)         # Infisical values
+    monkeypatch.setattr(connections, "_record_store", fake)  # connection records (RecordFile tested separately)
     monkeypatch.setattr(connections, "_cache", None)
     connections.forget_values()
     monkeypatch.setenv("ADMIN_DATA_DIR", str(tmp_path))

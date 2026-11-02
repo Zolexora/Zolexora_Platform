@@ -2,10 +2,11 @@
 
 You put the values in Infisical (admin folder, or a subfolder of it) the usual way. In the panel
 you only say which key holds what, e.g. url -> SUPABASE_CORE_URL. The panel never receives or
-stores a secret value: it reads values from Infisical when it needs them (cached 5 minutes).
+stores a secret value: it reads values from Infisical with a read-only (Viewer) machine identity
+when it needs them (cached 5 minutes).
 
-Each connection record is one Infisical secret `CONN_<ID>` in `<admin secretsPath>/connections`,
-whose value is JSON: {"provider", "name", "status", "keys": {field: KEY_NAME}}.
+The records themselves hold key names only (no secrets), so they live in the admin's data
+volume: `$ADMIN_DATA_DIR/connections.json` = {id: {"provider", "name", "status", "keys"}}.
 """
 import json
 import os
@@ -120,7 +121,7 @@ def _project_config() -> dict:
         raise InfisicalError(f"Cannot read {path}: {e}")
 
 class InfisicalStore:
-    """Reads key values and reads/writes CONN_* records with a machine identity (Universal Auth)."""
+    """Reads key values with a read-only machine identity (Universal Auth, project role Viewer)."""
 
     def __init__(self):
         cfg = _project_config()
@@ -128,7 +129,6 @@ class InfisicalStore:
         self.project = cfg.get("workspaceId", "")
         self.env = os.environ.get("INFISICAL_ENV") or cfg.get("defaultEnvironment", "dev")
         self.parent = "/" + (cfg.get("secretsPath") or "/").strip("/")
-        self.path = f"{self.parent.rstrip('/')}/connections"
         self._token: Optional[str] = None
 
     async def _auth(self, client: httpx.AsyncClient) -> dict:
@@ -165,32 +165,46 @@ class InfisicalStore:
             raise InfisicalError(f"Infisical read of {path} failed (HTTP {res.status_code})")
         return {s["secretKey"]: s.get("secretValue", "") for s in res.json().get("secrets", []) if s.get("secretKey")}
 
+
+# --- Connection records (key names only) in the data volume ---------------------------------
+
+class RecordFile:
+    """connections.json in ADMIN_DATA_DIR (a persistent volume in Docker)."""
+
+    def path(self) -> Path:
+        return Path(os.environ.get("ADMIN_DATA_DIR", Path(__file__).resolve().parent)) / "connections.json"
+
+    def _read(self) -> dict:
+        try:
+            return json.loads(self.path().read_text())
+        except FileNotFoundError:
+            return {}
+        except ValueError as e:
+            raise InfisicalError(f"{self.path()} is not valid JSON: {e}")
+
+    def _write(self, data: dict) -> None:
+        tmp = self.path().with_suffix(".tmp")
+        tmp.write_text(json.dumps(data, indent=2))
+        os.replace(tmp, self.path())  # atomic: never a half-written file
+
     async def list(self) -> list[Connection]:
         out = []
-        for key, value in (await self.read_folder(self.path)).items():
-            if key.startswith("CONN_"):
-                try:
-                    out.append(Connection(id=key[5:].lower(), **json.loads(value)))
-                except Exception:
-                    pass  # a hand-edited, malformed record is skipped rather than breaking the panel
+        for conn_id, record in self._read().items():
+            try:
+                out.append(Connection(id=conn_id, **record))
+            except Exception:
+                pass  # a hand-edited, malformed record is skipped rather than breaking the panel
         return out
 
     async def put(self, conn: Connection, create: bool) -> None:
-        if create:
-            # Create the folder on first use; "already exists" is fine.
-            await self._call("POST", "/api/v1/folders", json={
-                "workspaceId": self.project, "environment": self.env, "name": "connections", "path": self.parent})
-        body = {**self._scope(self.path), "type": "shared",
-                "secretValue": json.dumps(conn.model_dump(exclude={"id"}))}
-        res = await self._call("POST" if create else "PATCH", f"/api/v3/secrets/raw/CONN_{conn.id.upper()}", json=body)
-        if res.status_code != 200:
-            raise InfisicalError(f"Infisical write failed (HTTP {res.status_code})")
+        data = self._read()
+        data[conn.id] = conn.model_dump(exclude={"id"})
+        self._write(data)
 
     async def delete(self, conn_id: str) -> None:
-        res = await self._call("DELETE", f"/api/v3/secrets/raw/CONN_{conn_id.upper()}",
-                               json={**self._scope(self.path), "type": "shared"})
-        if res.status_code not in (200, 404):
-            raise InfisicalError(f"Infisical delete failed (HTTP {res.status_code})")
+        data = self._read()
+        data.pop(conn_id, None)
+        self._write(data)
 
 # --- Resolving key names to values ------------------------------------------------------------
 
@@ -230,8 +244,9 @@ def forget_values() -> None:
 
 # --- Cached registry used by the rest of the app --------------------------------------------
 
-_store: Optional[InfisicalStore] = None
-_cache: Optional[dict[str, Connection]] = None  # records (key names only)
+_store: Optional[InfisicalStore] = None          # values (read-only)
+_record_store: RecordFile = RecordFile()          # records (key names only)
+_cache: Optional[dict[str, Connection]] = None
 
 def store() -> InfisicalStore:
     global _store
@@ -240,10 +255,10 @@ def store() -> InfisicalStore:
     return _store
 
 async def reload() -> list[Connection]:
-    """Re-reads records and drops cached values (picks up edits made directly in Infisical)."""
+    """Re-reads records and drops cached values (picks up value changes made in Infisical)."""
     global _cache
     forget_values()
-    _cache = {c.id: c for c in await store().list()}
+    _cache = {c.id: c for c in await _record_store.list()}
     return [await resolve(c) for c in _cache.values()]
 
 async def _records() -> dict[str, Connection]:
@@ -275,7 +290,7 @@ async def add_connection(data: ConnectionInput) -> Connection:
     candidate = await check_input(data)
     records = await _records()
     conn = candidate.model_copy(update={"id": uuid.uuid4().hex[:12]})
-    await store().put(conn, create=True)
+    await _record_store.put(conn, create=True)
     records[conn.id] = conn.model_copy(update={"config": {}, "error": None})
     return conn
 
@@ -284,7 +299,7 @@ async def set_status(conn_id: str, status: ConnectionStatus) -> Optional[Connect
     if conn_id not in records:
         return None
     updated = records[conn_id].model_copy(update={"status": status})
-    await store().put(updated, create=False)
+    await _record_store.put(updated, create=False)
     records[conn_id] = updated
     return await resolve(updated)
 
@@ -292,6 +307,6 @@ async def delete_connection(conn_id: str) -> bool:
     records = await _records()
     if conn_id not in records:
         return False
-    await store().delete(conn_id)
+    await _record_store.delete(conn_id)
     records.pop(conn_id, None)
     return True
