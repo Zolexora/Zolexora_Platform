@@ -428,11 +428,11 @@ export function ZolexoraAuthProvider({
   // Immediate Sign Out with Backend Revocation
   const signOut = useCallback(async () => {
     try {
-      if (user?.uid) {
+      if (user?.uid && token) {
         // Trigger backend token revocation
         await fetch(`${baseUrl}/api/v1/auth/tokens/revoke`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", [HEADER_AUTHORIZATION]: `Bearer ${token}` },
           body: JSON.stringify({
             uid: user.uid,
             reason: "user_logout",
@@ -457,7 +457,7 @@ export function ZolexoraAuthProvider({
       }
       onAuthStateChange?.(null, null);
     }
-  }, [baseUrl, user?.uid, firebaseAuth, onAuthStateChange]);
+  }, [baseUrl, user?.uid, token, firebaseAuth, onAuthStateChange]);
 
   const getToken = useCallback(
     async (forceRefresh = false): Promise<string | null> => {
