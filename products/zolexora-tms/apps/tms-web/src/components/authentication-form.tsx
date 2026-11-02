@@ -245,7 +245,7 @@ export function AuthenticationForm() {
             <div className="pt-1 flex justify-center">
               <TurnstileWidget
                 siteKey={turnstileSiteKey}
-                action="tms_employee_login"
+                action="track2-employee-login"
                 onVerify={(tok) => setTurnstileToken(tok)}
               />
             </div>

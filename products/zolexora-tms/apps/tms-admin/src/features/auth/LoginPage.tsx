@@ -89,7 +89,7 @@ export function LoginPage() {
                   import.meta.env.VITE_TURNSTILE_SITE_KEY ||
                   '0x4AAAAAAAx_MockDevSiteKey'
                 }
-                action="tms_admin_login"
+                action="track3-admin-login"
                 onVerify={(tok) => setTurnstileToken(tok)}
               />
             </div>
