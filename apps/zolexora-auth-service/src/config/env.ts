@@ -23,7 +23,6 @@ const envSchema = z.object({
   ADMIN_DATABASE_URL: str,
 
   SESSION_SECRET: z.string().min(32),
-  STORAGE_SIGNING_SECRET: z.string().min(32),
   TOKEN_TTL_SECONDS: int,
 
   TURNSTILE_SECRET_KEY: str,
@@ -41,7 +40,13 @@ const envSchema = z.object({
   CLOUDINARY_CLOUD_NAME: str,
   CLOUDINARY_API_KEY: str,
   CLOUDINARY_API_SECRET: str,
-  KYC_STORAGE_ENDPOINT: z.string().url(),
+  // KYC documents: any S3-compatible private bucket (Supabase Storage, Cloudflare R2, AWS S3, MinIO…).
+  // Switching provider = changing these values in Infisical; no code change.
+  KYC_STORAGE_S3_ENDPOINT: z.string().url(), // path-style base URL, e.g. https://<ref>.supabase.co/storage/v1/s3
+  KYC_STORAGE_S3_REGION: str,
+  KYC_STORAGE_BUCKET: str,
+  KYC_STORAGE_ACCESS_KEY_ID: str,
+  KYC_STORAGE_SECRET_ACCESS_KEY: str,
   KYC_SIGNED_URL_DEFAULT_TTL: int,
 
   RESEND_API_KEY: str,

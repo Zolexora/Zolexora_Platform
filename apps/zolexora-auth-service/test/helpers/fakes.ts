@@ -1,4 +1,5 @@
 // TEST ONLY fakes for external services. These fixtures used to live in src/ — they must never ship.
+import { AwsClient } from "aws4fetch";
 import { buildApp } from "../../src/app.js";
 import { env } from "../../src/config/env.js";
 import { AppError } from "../../src/plugins/error-handler.js";
@@ -61,4 +62,24 @@ export async function buildTestApp(repo = new InMemoryAuthRepository(), mail = n
   const app = await buildApp({ repo, mail, turnstile: new FakeTurnstile(), logger: false });
   await app.ready();
   return Object.assign(app, { mail });
+}
+
+/** Recomputes a SigV4 presigned GET URL with the configured credentials and checks the signature. */
+export async function verifyPresignedUrl(signedUrl: string): Promise<boolean> {
+  const url = new URL(signedUrl);
+  const signature = url.searchParams.get("X-Amz-Signature");
+  const datetime = url.searchParams.get("X-Amz-Date");
+  const expires = url.searchParams.get("X-Amz-Expires");
+  if (!signature || !datetime || !expires) return false;
+  const client = new AwsClient({
+    accessKeyId: env.KYC_STORAGE_ACCESS_KEY_ID,
+    secretAccessKey: env.KYC_STORAGE_SECRET_ACCESS_KEY,
+    region: env.KYC_STORAGE_S3_REGION,
+    service: "s3",
+  });
+  const resigned = await client.sign(`${url.origin}${url.pathname}?X-Amz-Expires=${expires}`, {
+    method: "GET",
+    aws: { signQuery: true, datetime },
+  });
+  return new URL(resigned.url).searchParams.get("X-Amz-Signature") === signature;
 }

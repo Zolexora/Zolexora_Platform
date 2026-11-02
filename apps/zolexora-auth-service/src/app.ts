@@ -7,6 +7,7 @@ import { TurnstileService } from "./services/turnstile.service.js";
 import { RateLimitService } from "./services/rate-limit.service.js";
 import { TokenService } from "./services/token.service.js";
 import { StorageService } from "./services/storage.service.js";
+import { KycStorageService } from "./services/kyc-storage.service.js";
 import { OtpService } from "./services/otp.service.js";
 import { MailService } from "./services/mail.service.js";
 import { env } from "./config/env.js";
@@ -71,8 +72,13 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
     cloudName: env.CLOUDINARY_CLOUD_NAME,
     apiKey: env.CLOUDINARY_API_KEY,
     apiSecret: env.CLOUDINARY_API_SECRET,
-    kycEndpoint: env.KYC_STORAGE_ENDPOINT,
-    signingSecret: env.STORAGE_SIGNING_SECRET,
+  });
+  const kycStorage = new KycStorageService({
+    endpoint: env.KYC_STORAGE_S3_ENDPOINT,
+    region: env.KYC_STORAGE_S3_REGION,
+    bucket: env.KYC_STORAGE_BUCKET,
+    accessKeyId: env.KYC_STORAGE_ACCESS_KEY_ID,
+    secretAccessKey: env.KYC_STORAGE_SECRET_ACCESS_KEY,
     defaultSignedUrlTtl: env.KYC_SIGNED_URL_DEFAULT_TTL,
   });
 
@@ -82,7 +88,7 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
   await app.register(track3AdminRoutes, { repo, turnstile, rateLimiter, tokenService });
   await app.register(sessionRoutes, { repo, tokenService });
   await app.register(mediaRoutes, { storage, repo, tokenService });
-  await app.register(kycRoutes, { storage, repo, tokenService });
+  await app.register(kycRoutes, { kycStorage, repo, tokenService });
 
   return app;
 }

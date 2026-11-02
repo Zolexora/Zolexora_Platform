@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { FastifyInstance } from "fastify";
 import { IAuthRepository } from "../../repositories/types.js";
 import { TokenService } from "../../services/token.service.js";
-import { StorageService } from "../../services/storage.service.js";
+import { KycStorageService } from "../../services/kyc-storage.service.js";
 import { AppError } from "../../plugins/error-handler.js";
 import { CONSTANTS } from "../../config/constants.js";
 import { createAuthMiddleware } from "../../middleware/auth.middleware.js";
@@ -23,7 +23,7 @@ interface SignedUrlBody {
 
 export async function kycRoutes(
   app: FastifyInstance,
-  opts: { storage: StorageService; repo: IAuthRepository; tokenService: TokenService }
+  opts: { kycStorage: KycStorageService; repo: IAuthRepository; tokenService: TokenService }
 ) {
   const authenticate = createAuthMiddleware({ tokenService: opts.tokenService, repo: opts.repo });
 
@@ -60,18 +60,27 @@ export async function kycRoutes(
         throw new AppError({ statusCode: 404, code: "AUTH_ORG_NOT_FOUND", message: "Organisation not found." });
       }
 
+      // File first (private bucket, random key), then metadata. Roll the file back if metadata fails.
       const documentId = randomUUID();
-      const doc = await opts.repo.saveKycDocument({
-        document_id: documentId,
-        user_id: userId,
-        owner_id: userId,
-        org_id: orgId,
-        document_type: req.body?.document_type,
-        storage_key: `kyc/${orgId}/${userId}/${documentId}.${EXT[u.mime]}`,
-        file_size: u.size,
-        mime_type: u.mime,
-        created_at: new Date().toISOString(),
-      });
+      const key = `kyc/${orgId}/${userId}/${documentId}.${EXT[u.mime]}`;
+      await opts.kycStorage.put(key, u.buffer!, u.mime);
+      let doc;
+      try {
+        doc = await opts.repo.saveKycDocument({
+          document_id: documentId,
+          user_id: userId,
+          owner_id: userId,
+          org_id: orgId,
+          document_type: req.body?.document_type,
+          storage_key: key,
+          file_size: u.size,
+          mime_type: u.mime,
+          created_at: new Date().toISOString(),
+        });
+      } catch (err) {
+        await opts.kycStorage.remove(key);
+        throw err;
+      }
       return reply.status(201).send({
         document_id: doc.document_id,
         document_type: doc.document_type,
@@ -105,7 +114,7 @@ export async function kycRoutes(
         (!!doc.org_id && user.org_id === doc.org_id && isOrgAdmin(user.role));
       if (!allowed) throw forbidden("You cannot access this document.");
 
-      return reply.send(opts.storage.generateSignedUrl(doc, expiry_seconds));
+      return reply.send(await opts.kycStorage.signedGetUrl(doc.storage_key, expiry_seconds));
     }
   );
 }

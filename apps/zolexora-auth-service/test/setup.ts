@@ -11,7 +11,6 @@ Object.assign(process.env, {
   AUTH_DATABASE_URL: "postgresql://unused-in-tests/auth",
   ADMIN_DATABASE_URL: "postgresql://unused-in-tests/admin",
   SESSION_SECRET: "test-session-secret-0123456789abcdef0123456789",
-  STORAGE_SIGNING_SECRET: "test-storage-secret-0123456789abcdef012345678",
   TOKEN_TTL_SECONDS: "3600",
   TURNSTILE_SECRET_KEY: "test-turnstile-secret",
   TURNSTILE_VERIFY_URL: "https://turnstile.test/siteverify",
@@ -25,16 +24,37 @@ Object.assign(process.env, {
   CLOUDINARY_CLOUD_NAME: "test-cloud",
   CLOUDINARY_API_KEY: "test-cloudinary-key",
   CLOUDINARY_API_SECRET: "test-cloudinary-secret",
-  KYC_STORAGE_ENDPOINT: "https://storage.test",
+  KYC_STORAGE_S3_ENDPOINT: "https://s3.test/storage/v1/s3",
+  KYC_STORAGE_S3_REGION: "test-region-1",
+  KYC_STORAGE_BUCKET: "kyc-test",
+  KYC_STORAGE_ACCESS_KEY_ID: "test-access-key",
+  KYC_STORAGE_SECRET_ACCESS_KEY: "test-secret-access-key",
   KYC_SIGNED_URL_DEFAULT_TTL: "900",
   RESEND_API_KEY: "test-resend-key",
   RESEND_API_URL: "https://mail.test/emails",
   AUTH_FROM_EMAIL: "Zolexora Test <auth@zolexora.test>",
 });
 
-/** Fake Cloudinary upload API; echoes a deterministic secure_url. */
+/** Objects stored by the fake S3 endpoint, keyed by URL path. */
+export const fakeS3Objects = new Map<string, { contentType: string; size: number }>();
+
+/** Fake Cloudinary upload API and fake S3-compatible bucket. */
 async function fakeFetch(input: string | URL | Request, init?: RequestInit): Promise<Response> {
   const url = String(input instanceof Request ? input.url : input);
+  if (url.startsWith("https://s3.test/")) {
+    const req = input instanceof Request ? input : new Request(url, init);
+    if (!req.headers.get("authorization")?.startsWith("AWS4-HMAC-SHA256")) return new Response("unsigned", { status: 403 });
+    const path = new URL(url).pathname;
+    if (req.method === "PUT") {
+      const body = await req.arrayBuffer();
+      fakeS3Objects.set(path, { contentType: req.headers.get("content-type") ?? "", size: body.byteLength });
+      return new Response(null, { status: 200 });
+    }
+    if (req.method === "DELETE") {
+      fakeS3Objects.delete(path);
+      return new Response(null, { status: 204 });
+    }
+  }
   if (url.startsWith("https://api.cloudinary.com/")) {
     const form = init?.body as FormData;
     const publicId = String(form.get("public_id"));

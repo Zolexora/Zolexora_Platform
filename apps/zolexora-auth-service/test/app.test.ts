@@ -184,7 +184,7 @@ describe("apps/zolexora-auth-service integration tests", () => {
       },
     });
     expect(signedRes.statusCode).toBe(200);
-    expect(signedRes.json().signed_url).toContain("expires=");
+    expect(signedRes.json().signed_url).toContain("X-Amz-Signature=");
 
     const anonRes = await app.inject({
       method: "POST",

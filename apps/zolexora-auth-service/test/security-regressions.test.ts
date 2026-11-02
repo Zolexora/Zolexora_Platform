@@ -3,6 +3,8 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { verifyPassword } from "@zolexora/utils";
 import { TURNSTILE, buildTestApp, testTokens } from "./helpers/fakes.js";
 import { InMemoryAuthRepository, SEED, TEST_PASSWORDS } from "./helpers/in-memory-auth.repository.js";
+import { fakeS3Objects } from "./setup.js";
+import { env } from "../src/config/env.js";
 
 const ORG = SEED.defaultOrg;
 const bearer = (claims: Record<string, any>) => ({ authorization: `Bearer ${testTokens().signJwt(claims)}` });
@@ -214,5 +216,33 @@ describe("Security regressions", () => {
     });
     expect(res.statusCode).toBe(500);
     expect(res.body).not.toContain("db-internal");
+  });
+
+  describe("KYC files are stored in the S3-compatible bucket", () => {
+    const pdf = Buffer.from("%PDF-1.4\nhello kyc\n");
+    const upload = () =>
+      app.inject({
+        method: "POST",
+        url: "/api/v1/storage/kyc/upload",
+        headers: { ...bearer({ uid: "usr_k", zolexora_id: SEED.consumerZxId }), "x-organisation-id": ORG },
+        payload: { file: `data:application/pdf;base64,${pdf.toString("base64")}` },
+      });
+    const objectPath = (key: string) => new URL(`${env.KYC_STORAGE_S3_ENDPOINT}/${env.KYC_STORAGE_BUCKET}/${key}`).pathname;
+
+    it("uploads the file bytes, not just metadata", async () => {
+      const res = await upload();
+      expect(res.statusCode).toBe(201);
+      const stored = fakeS3Objects.get(objectPath(res.json().storage_key));
+      expect(stored).toEqual({ contentType: "application/pdf", size: pdf.length });
+    });
+
+    it("removes the uploaded file when the metadata write fails", async () => {
+      fakeS3Objects.clear();
+      repo.saveKycDocument = async () => {
+        throw new Error("db down");
+      };
+      expect((await upload()).statusCode).toBe(500);
+      expect(fakeS3Objects.size).toBe(0);
+    });
   });
 });

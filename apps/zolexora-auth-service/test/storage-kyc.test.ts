@@ -1,16 +1,15 @@
-import { buildTestApp, testTokens } from "./helpers/fakes.js";
+import { buildTestApp, testTokens, verifyPresignedUrl } from "./helpers/fakes.js";
+import { fakeS3Objects } from "./setup.js";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { FastifyInstance } from "fastify";
 import { TokenService } from "../src/services/token.service.js";
 import { InMemoryAuthRepository } from "./helpers/in-memory-auth.repository.js";
-import { StorageService } from "../src/services/storage.service.js";
 import { env } from "../src/config/env.js";
 
 describe("Milestone 4: Storage KYC Unit Tests (Upload, MIME, RBAC, Signed URLs)", () => {
   let app: FastifyInstance;
   let repo: InMemoryAuthRepository;
   let tokenService: TokenService;
-  let storage: StorageService;
 
   const docOwnerId = "ZX-8K9M-4P2W-7Y3X";
   const otherUserId = "ZX-3R7V-9Q1B-5M8K";
@@ -28,14 +27,6 @@ describe("Milestone 4: Storage KYC Unit Tests (Upload, MIME, RBAC, Signed URLs)"
   beforeAll(async () => {
     repo = new InMemoryAuthRepository();
     tokenService = testTokens();
-    storage = new StorageService({
-      cloudName: env.CLOUDINARY_CLOUD_NAME,
-      apiKey: env.CLOUDINARY_API_KEY,
-      apiSecret: env.CLOUDINARY_API_SECRET,
-      kycEndpoint: env.KYC_STORAGE_ENDPOINT,
-      signingSecret: env.STORAGE_SIGNING_SECRET,
-      defaultSignedUrlTtl: env.KYC_SIGNED_URL_DEFAULT_TTL,
-    });
 
     ownerToken = tokenService.signJwt({
       uid: docOwnerId,
@@ -302,14 +293,14 @@ describe("Milestone 4: Storage KYC Unit Tests (Upload, MIME, RBAC, Signed URLs)"
 
       expect(res.statusCode).toBe(200);
       const data = res.json();
-      expect(data.signed_url).toContain("expires=");
-      expect(data.signed_url).toContain("sig=");
+      expect(data.signed_url.startsWith(`${env.KYC_STORAGE_S3_ENDPOINT}/${env.KYC_STORAGE_BUCKET}/kyc/`)).toBe(true);
+      expect(data.signed_url).toContain("X-Amz-Expires=600");
+      expect(data.signed_url).toContain("X-Amz-Signature=");
       expect(data.expires_in_seconds).toBe(600);
       expect(new Date(data.expires_at).getTime()).toBeGreaterThan(Date.now());
 
-      // Verify HMAC-SHA256 signature using storage verification
-      const verify = storage.verifySignedUrl(data.signed_url);
-      expect(verify.valid).toBe(true);
+      // Verify the SigV4 presigned signature
+      expect(await verifyPresignedUrl(data.signed_url)).toBe(true);
     });
 
     it("URL-02: Document owner can generate signed URL with boundary 900s (15 min)", async () => {
@@ -329,7 +320,7 @@ describe("Milestone 4: Storage KYC Unit Tests (Upload, MIME, RBAC, Signed URLs)"
       expect(res.statusCode).toBe(200);
       const data = res.json();
       expect(data.expires_in_seconds).toBe(900);
-      expect(storage.verifySignedUrl(data.signed_url).valid).toBe(true);
+      expect(await verifyPresignedUrl(data.signed_url)).toBe(true);
     });
 
     it("URL-03: Defaults to 900 seconds (15 min) when expiry_seconds is omitted", async () => {
@@ -348,7 +339,7 @@ describe("Milestone 4: Storage KYC Unit Tests (Upload, MIME, RBAC, Signed URLs)"
       expect(res.statusCode).toBe(200);
       const data = res.json();
       expect(data.expires_in_seconds).toBe(900);
-      expect(storage.verifySignedUrl(data.signed_url).valid).toBe(true);
+      expect(await verifyPresignedUrl(data.signed_url)).toBe(true);
     });
 
     it("URL-04: Rejects expiry below 600s with HTTP 400 AUTH_INVALID_EXPIRY_WINDOW", async () => {
@@ -406,7 +397,7 @@ describe("Milestone 4: Storage KYC Unit Tests (Upload, MIME, RBAC, Signed URLs)"
       expect(res.statusCode).toBe(200);
       const data = res.json();
       expect(data.expires_in_seconds).toBe(750);
-      expect(storage.verifySignedUrl(data.signed_url).valid).toBe(true);
+      expect(await verifyPresignedUrl(data.signed_url)).toBe(true);
     });
 
     it("URL-07: Organization Owner can generate signed URL for document in their organization", async () => {
@@ -516,15 +507,15 @@ describe("Milestone 4: Storage KYC Unit Tests (Upload, MIME, RBAC, Signed URLs)"
       });
 
       const { signed_url } = res.json();
-      expect(storage.verifySignedUrl(signed_url).valid).toBe(true);
+      expect(await verifyPresignedUrl(signed_url)).toBe(true);
 
-      // Tamper with expires parameter
-      const tamperedExpires = signed_url.replace(/expires=\d+/, "expires=9999999999");
-      expect(storage.verifySignedUrl(tamperedExpires).valid).toBe(false);
+      // Tamper with the expiry window
+      const tamperedExpires = signed_url.replace(/X-Amz-Expires=\d+/, "X-Amz-Expires=604800");
+      expect(await verifyPresignedUrl(tamperedExpires)).toBe(false);
 
-      // Tamper with signature
-      const tamperedSig = signed_url.replace(/sig=[a-f0-9]{64}/, `sig=${"0".repeat(64)}`);
-      expect(storage.verifySignedUrl(tamperedSig).valid).toBe(false);
+      // Tamper with the object key (another user's document)
+      const tamperedKey = signed_url.replace(/\/kyc\/[^/]+\/[^/]+\//, "/kyc/ZX-ORG-AAAA-BBBB-CCCC/ZX-AAAA-BBBB-CCCC/");
+      expect(await verifyPresignedUrl(tamperedKey)).toBe(false);
     });
   });
 });

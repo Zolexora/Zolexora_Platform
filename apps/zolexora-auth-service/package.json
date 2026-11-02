@@ -17,6 +17,7 @@
     "@fastify/swagger": "^9.4.2",
     "@fastify/swagger-ui": "^5.2.2",
     "@zolexora/utils": "workspace:*",
+    "aws4fetch": "^1.0.20",
     "fastify": "^5.2.1",
     "pg": "^8.13.3",
     "pino": "^9.6.0",
