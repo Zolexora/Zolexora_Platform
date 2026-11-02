@@ -1,104 +1,55 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import {
-  syncSecretsFromInfisical,
-  getSecretsDiagnostics,
-  getSecret,
-  resolveAliases,
-  SECRET_ALIASES,
-} from "../src/config/infisical.js";
-import { buildApp } from "../src/app.js";
-import { InMemoryAuthRepository } from "../src/repositories/in-memory-auth.repository.js";
+import { describe, it, expect, afterEach } from "vitest";
+import { resolveAliases } from "../src/config/infisical.js";
+import { loadEnv } from "../src/config/env.js";
 
-describe("Infisical Dynamic Secrets Sync & Structured Fallback Diagnostics", () => {
-  const originalEnv = { ...process.env };
-
-  beforeEach(() => {
-    process.env = { ...originalEnv };
-  });
-
+describe("Infisical-only configuration", () => {
+  const saved = { ...process.env };
   afterEach(() => {
-    process.env = { ...originalEnv };
+    process.env = { ...saved };
   });
 
-  it("1. syncSecretsFromInfisical() produces valid structured diagnostics in fallback mode", async () => {
-    const diag = await syncSecretsFromInfisical({ forceFallback: true });
-
-    expect(diag).toBeDefined();
-    expect(diag.status).toBe("environment_fallback");
-    expect(diag.provider).toBe("process_environment");
-    expect(diag.workspaceId).toBe("188824cd-59ce-468f-b60f-f2da7aeefe63");
-    expect(diag.secretsPath).toBe("/");
-    expect(Array.isArray(diag.diagnostics)).toBe(true);
-    expect(diag.diagnostics.length).toBeGreaterThan(0);
-    expect(diag.timestamp).toBeDefined();
-    expect(diag.durationMs).toBeGreaterThanOrEqual(0);
-  });
-
-  it("2. resolveAliases() maps Zolexora_Auth vault aliases to canonical auth-service keys", () => {
+  it("1. resolveAliases() maps Infisical key names onto canonical keys without overriding explicit values", () => {
     delete process.env.AUTH_DATABASE_URL;
-    process.env.ZOLEXORA_AUTHENTICATION_DATABASE_URL = "postgresql://zolexora_test_user:pass@remote:5432/zolexora_auth";
-
-    delete process.env.FIREBASE_PROJECT_ID;
-    process.env.ZOLEXORA_FIREBASE_PROJECT_ID = "zolexora-auth-cloud";
-
-    delete process.env.SESSION_SECRET;
-    process.env.ZOLEXORA_AUTHENTICATION_SECRET_KEY = "super-secret-vault-jwt-key-32chars";
-
+    process.env.ZOLEXORA_AUTHENTICATION_DATABASE_URL = "postgresql://alias/auth";
+    process.env.RESEND_API_KEY = "explicit";
+    process.env.ZOLEXORA_PRODUCTION_RESEND_API_KEY = "alias";
     resolveAliases();
-
-    expect(process.env.AUTH_DATABASE_URL).toBe("postgresql://zolexora_test_user:pass@remote:5432/zolexora_auth");
-    expect(process.env.FIREBASE_PROJECT_ID).toBe("zolexora-auth-cloud");
-    expect(process.env.SESSION_SECRET).toBe("super-secret-vault-jwt-key-32chars");
+    expect(process.env.AUTH_DATABASE_URL).toBe("postgresql://alias/auth");
+    expect(process.env.RESEND_API_KEY).toBe("explicit");
   });
 
-  it("3. getSecret() correctly resolves canonical key and alias fallback", () => {
-    delete process.env.RESEND_API_KEY;
-    process.env.ZOLEXORA_PRODUCTION_RESEND_API_KEY = "re_test_live_key_99999";
-
-    const secret = getSecret("RESEND_API_KEY");
-    expect(secret).toBe("re_test_live_key_99999");
-
-    const defaultVal = getSecret("NON_EXISTENT_KEY", "fallback_default");
-    expect(defaultVal).toBe("fallback_default");
+  it("2. SESSION_SECRET is never derived from another credential (no alias)", () => {
+    delete process.env.SESSION_SECRET;
+    process.env.ZOLEXORA_AUTHENTICATION_SECRET_KEY = "x".repeat(64);
+    resolveAliases();
+    expect(process.env.SESSION_SECRET).toBeUndefined();
   });
 
-  it("4. GET /api/v1/health/secrets returns HTTP 200 with diagnostics schema", async () => {
-    const repo = new InMemoryAuthRepository();
-    const app = await buildApp({ repo, logger: false });
-    await app.ready();
-
-    const res = await app.inject({
-      method: "GET",
-      url: "/api/v1/health/secrets",
-    });
-
-    expect(res.statusCode).toBe(200);
-    const body = res.json();
-    expect(body.status).toBeDefined();
-    expect(body.provider).toBeDefined();
-    expect(body.workspaceId).toBe("188824cd-59ce-468f-b60f-f2da7aeefe63");
-    expect(Array.isArray(body.diagnostics)).toBe(true);
-
-    await app.close();
+  it("3. loadEnv() fails fast listing missing keys — no defaults exist", () => {
+    for (const key of ["SESSION_SECRET", "PORT", "TURNSTILE_SECRET_KEY", "CLOUDINARY_CLOUD_NAME", "BASE_URL"]) {
+      delete process.env[key];
+    }
+    expect(() => loadEnv()).toThrow(/SESSION_SECRET[\s\S]*PORT|PORT[\s\S]*SESSION_SECRET/);
+    expect(() => loadEnv()).toThrow(/TURNSTILE_SECRET_KEY/);
+    expect(() => loadEnv()).toThrow(/CLOUDINARY_CLOUD_NAME/);
   });
 
-  it("5. GET /api/v1/health includes secrets sync status summary", async () => {
-    const repo = new InMemoryAuthRepository();
-    const app = await buildApp({ repo, logger: false });
-    await app.ready();
+  it("4. Error output contains key names only, never secret values", () => {
+    process.env.SESSION_SECRET = "too-short-secret-value";
+    let message = "";
+    try {
+      loadEnv();
+    } catch (err: any) {
+      message = err.message;
+    }
+    expect(message).toContain("SESSION_SECRET");
+    expect(message).not.toContain("too-short-secret-value");
+  });
 
-    const res = await app.inject({
-      method: "GET",
-      url: "/api/v1/health",
-    });
-
-    expect(res.statusCode).toBe(200);
-    const body = res.json();
-    expect(body.status).toBe("ok");
-    expect(body.secrets).toBeDefined();
-    expect(body.secrets.status).toBeDefined();
-    expect(body.secrets.provider).toBeDefined();
-
-    await app.close();
+  it("5. Wildcard CORS is rejected because credentials are enabled", () => {
+    process.env.CORS_ORIGIN = "*";
+    expect(() => loadEnv()).toThrow(/CORS_ORIGIN/);
+    process.env.CORS_ORIGIN = "https://a.example, https://b.example";
+    expect(loadEnv().CORS_ORIGIN).toEqual(["https://a.example", "https://b.example"]);
   });
 });

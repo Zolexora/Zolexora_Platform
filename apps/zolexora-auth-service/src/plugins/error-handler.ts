@@ -43,8 +43,7 @@ export function registerErrorHandler(app: FastifyInstance) {
         }
       }
     } else if (
-      (error as any).code === "FST_REQ_FILE_TOO_LARGE" ||
-      (error as any).code === "FST_ERR_CTP_BODY_TOO_LARGE"
+(error as any).code === "FST_ERR_CTP_BODY_TOO_LARGE"
     ) {
       statusCode = 400;
       code = "AUTH_FILE_TOO_LARGE";
@@ -58,6 +57,13 @@ export function registerErrorHandler(app: FastifyInstance) {
       statusCode = 400;
       code = "VALIDATION_ERROR";
       details = { issues: (error as any).issues };
+    }
+
+    // Never leak internal error details (DB errors, stack messages) to clients.
+    if (statusCode >= 500) {
+      code = statusCode === 500 ? "INTERNAL_SERVER_ERROR" : code;
+      message = error instanceof AppError ? error.message : "An unexpected error occurred.";
+      details = {};
     }
 
     reply.status(statusCode).send({

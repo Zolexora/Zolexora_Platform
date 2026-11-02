@@ -1,35 +1,15 @@
 import { IAuthRepository } from "./types.js";
 import { PostgresAuthRepository } from "./postgres-auth.repository.js";
-import { InMemoryAuthRepository } from "./in-memory-auth.repository.js";
 import { env } from "../config/env.js";
 
-let repoInstance: IAuthRepository | null = null;
-
+/** Connects to PostgreSQL and fails startup if either database is unreachable. */
 export async function getAuthRepository(): Promise<IAuthRepository> {
-  if (repoInstance) return repoInstance;
-
-  // In test mode or when configured, can use memory directly
-  if (process.env.AUTH_REPO_MODE === "memory") {
-    repoInstance = new InMemoryAuthRepository();
-    return repoInstance;
+  const repo = new PostgresAuthRepository(env.AUTH_DATABASE_URL, env.ADMIN_DATABASE_URL);
+  if (!(await repo.isHealthy())) {
+    await repo.close();
+    throw new Error("[DB_FATAL] Auth or admin PostgreSQL database is unreachable.");
   }
-
-  const pgRepo = new PostgresAuthRepository(
-    env.AUTH_DATABASE_URL,
-    env.ADMIN_DATABASE_URL
-  );
-
-  // Probe health
-  const healthy = await pgRepo.isHealthy();
-  if (!healthy) {
-    // If postgres isn't running or accessible, pgRepo will seamlessly use fallback
-    console.warn(
-      `[AUTH_REPO_NOTICE] PostgreSQL connection at ${env.AUTH_DATABASE_URL} not immediately available. Dual repository running with initialized seeded in-memory fallback.`
-    );
-  }
-
-  repoInstance = pgRepo;
-  return repoInstance;
+  return repo;
 }
 
 export * from "./types.js";

@@ -230,3 +230,21 @@ CREATE TRIGGER trg_zolexora_kyc_docs_updated_at
     BEFORE UPDATE ON public.zolexora_kyc_documents
     FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
+
+-- ------------------------------------------------------------------------------
+-- 8. One-Time Codes Table (`zolexora_auth_otps`)
+-- ------------------------------------------------------------------------------
+-- Signup verification and password reset codes. Only an HMAC of the code is stored.
+-- `payload` holds the pending signup data (password hash, phone, generated ZX ID).
+CREATE TABLE IF NOT EXISTS public.zolexora_auth_otps (
+    email       TEXT NOT NULL CHECK (email = lower(email)),
+    purpose     TEXT NOT NULL CHECK (purpose IN ('signup', 'reset')),
+    code_hash   TEXT NOT NULL,
+    payload     JSONB NOT NULL DEFAULT '{}'::jsonb,
+    attempts    INTEGER NOT NULL DEFAULT 0,
+    expires_at  TIMESTAMPTZ NOT NULL,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (email, purpose)
+);
+
+CREATE INDEX IF NOT EXISTS idx_auth_otps_expires_at ON public.zolexora_auth_otps(expires_at);

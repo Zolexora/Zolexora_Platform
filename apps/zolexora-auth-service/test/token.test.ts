@@ -1,10 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { TokenService } from "../src/services/token.service.js";
-import { CONSTANTS } from "../src/config/constants.js";
 
 describe("TokenService Unit Test Suite", () => {
-  const secret = "zolexora-platform-auth-secret-key-32bytes-min";
-  const tokenService = new TokenService(secret);
+  const secret = "unit-test-secret-0123456789abcdef0123456789ab";
+  const tokenService = new TokenService(secret, 3600);
 
   it("1. Correctly signs and verifies a standard JWT", () => {
     const payload = {
@@ -26,7 +25,10 @@ describe("TokenService Unit Test Suite", () => {
   it("2. Rejects empty or malformed token", () => {
     expect(tokenService.verifyAndDecode("").valid).toBe(false);
     expect(tokenService.verifyAndDecode(null as any).valid).toBe(false);
-    expect(tokenService.verifyAndDecode("invalid.token").valid).toBe(true); // Opaque test token fallback
+    // Non-JWT strings are never accepted (no opaque/fixture token fallback).
+    expect(tokenService.verifyAndDecode("invalid.token").valid).toBe(false);
+    expect(tokenService.verifyAndDecode("usr_anything").valid).toBe(false);
+    expect(tokenService.verifyAndDecode("expired_token").valid).toBe(false);
     expect(tokenService.verifyAndDecode("a.b.c").valid).toBe(false); // Bad signature
   });
 
@@ -42,10 +44,13 @@ describe("TokenService Unit Test Suite", () => {
     expect(result.reason).toBe("TOKEN_EXPIRED");
   });
 
-  it("4. Identifies fixture expired tokens", () => {
-    const result = tokenService.verifyAndDecode("expired_token");
-    expect(result.valid).toBe(false);
-    expect(result.expired).toBe(true);
+  it("4. Rejects tokens signed with a different secret or a non-HS256 header", () => {
+    const other = new TokenService("another-secret-0123456789abcdef0123456789ab", 3600);
+    expect(tokenService.verifyAndDecode(other.signJwt({ uid: "usr_x" })).reason).toBe("INVALID_SIGNATURE");
+
+    const [, body] = tokenService.signJwt({ uid: "usr_x" }).split(".");
+    const noneHeader = Buffer.from(JSON.stringify({ alg: "none", typ: "JWT" })).toString("base64url");
+    expect(tokenService.verifyAndDecode(`${noneHeader}.${body}.`).valid).toBe(false);
   });
 
   it("5. Rejects future iat exceeding clock skew tolerance (> 300s) with valid: false, futureIat: true", () => {
@@ -115,15 +120,15 @@ describe("TokenService Unit Test Suite", () => {
     expect(strictResult.futureIat).toBe(true);
   });
 
-  it("9. Identifies future iat fixture tokens", () => {
-    const result = tokenService.verifyAndDecode("test_future_iat_token");
-    expect(result.valid).toBe(false);
-    expect(result.futureIat).toBe(true);
-    expect(result.reason).toBe("TOKEN_FUTURE_IAT");
+  it("9. Every token carries a unique jti", () => {
+    const a = tokenService.verifyAndDecode(tokenService.signJwt({ uid: "usr_1" })).payload!;
+    const b = tokenService.verifyAndDecode(tokenService.signJwt({ uid: "usr_1" })).payload!;
+    expect(a.jti).toBeTruthy();
+    expect(a.jti).not.toBe(b.jti);
   });
 
   it("10. Minting helpers generate valid JWT tokens with appropriate claims", () => {
-    const userToken = tokenService.mintUserCustomToken("usr_1", "ZX-8K9M-4P2W-7Y3X");
+    const userToken = tokenService.mintUserCustomToken("usr_1", "ZX-8K9M-4P2W-7Y3X", "usr_1@example.com");
     const userDecoded = tokenService.verifyAndDecode(userToken);
     expect(userDecoded.valid).toBe(true);
     expect(userDecoded.payload?.type).toBe("user");
@@ -133,7 +138,7 @@ describe("TokenService Unit Test Suite", () => {
       org_id: "ZX-ORG-1234-5678-9012",
       role: "driver",
       permissions: ["trips:read"],
-    });
+    }, "emp_1@example.com");
     const empDecoded = tokenService.verifyAndDecode(empToken);
     expect(empDecoded.valid).toBe(true);
     expect(empDecoded.payload?.type).toBe("employee");
@@ -143,7 +148,7 @@ describe("TokenService Unit Test Suite", () => {
       zolexora_id: "ZX-8K9M-4P2W-7Y3X",
       role: "superadmin",
       permissions: ["*"],
-    });
+    }, "adm_1@example.com");
     const adminDecoded = tokenService.verifyAndDecode(adminToken);
     expect(adminDecoded.valid).toBe(true);
     expect(adminDecoded.payload?.type).toBe("platform_admin");

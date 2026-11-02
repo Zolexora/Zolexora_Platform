@@ -6,10 +6,8 @@ import { StorageService } from "../../services/storage.service.js";
 import { AppError } from "../../plugins/error-handler.js";
 import { CONSTANTS } from "../../config/constants.js";
 import { createAuthMiddleware } from "../../middleware/auth.middleware.js";
-import {
-  ORG_ID_RE, USER_ID_RE, UPLOAD_BODY_LIMIT, UploadBody,
-  parseUpload, validateUpload, forbidden, isOrgAdmin,
-} from "./upload.js";
+import { ORG_ID_RE, USER_ID_RE, UPLOAD_BODY_LIMIT, UploadBody, parseUpload, validateUpload } from "./upload.js";
+import { forbidden, isOrgAdmin } from "../auth/request.js";
 
 const EXT: Record<string, string> = {
   "application/pdf": "pdf",
@@ -42,16 +40,21 @@ export async function kycRoutes(
       await authenticate(req, reply);
       const user = req.user!;
 
-      const userId = String(req.headers["x-zolexora-id"] || user.zolexora_id);
-      const orgId = String(req.headers["x-organisation-id"] || req.headers["x-organization-id"] || user.org_id || "");
+      // The owner is always the caller (platform admins may upload on behalf of a user).
+      // Employees are pinned to their token's organisation; consumers (no org claim) choose the organisation
+      // they submit to, which only shares their own document with that organisation.
+      const header = (name: string) => (req.headers[name] as string | undefined)?.trim();
+      const headerOrg = header("x-organisation-id") || header("x-organization-id");
+      const userId = (user.is_platform_admin && header("x-zolexora-id")) || user.zolexora_id || "";
+      const orgId = (user.is_platform_admin && headerOrg) || user.org_id || headerOrg || "";
+      if ((header("x-zolexora-id") && header("x-zolexora-id") !== userId) || (headerOrg && headerOrg !== orgId)) {
+        throw forbidden("You can only upload KYC documents for your own account and organisation.");
+      }
       if (!USER_ID_RE.test(userId)) {
-        throw new AppError({ statusCode: 400, code: "AUTH_INVALID_ID_FORMAT", message: "X-Zolexora-ID must be ZX-XXXX-XXXX-XXXX (Crockford Base32)." });
+        throw new AppError({ statusCode: 400, code: "AUTH_INVALID_ID_FORMAT", message: "Token or X-Zolexora-ID must carry a ZX-XXXX-XXXX-XXXX ID." });
       }
       if (!ORG_ID_RE.test(orgId)) {
-        throw new AppError({ statusCode: 400, code: "AUTH_INVALID_ORG_ID_FORMAT", message: "X-Organisation-ID must be ZX-ORG-XXXX-XXXX-XXXX (Crockford Base32)." });
-      }
-      if (!user.is_platform_admin && user.zolexora_id !== userId) {
-        throw forbidden("You can only upload your own KYC documents.");
+        throw new AppError({ statusCode: 400, code: "AUTH_INVALID_ORG_ID_FORMAT", message: "Token or X-Organisation-ID must carry a ZX-ORG-XXXX-XXXX-XXXX ID." });
       }
       if (!(await opts.repo.getOrganizationByOrgId(orgId))) {
         throw new AppError({ statusCode: 404, code: "AUTH_ORG_NOT_FOUND", message: "Organisation not found." });
@@ -98,7 +101,7 @@ export async function kycRoutes(
       const user = req.user!;
       const allowed =
         user.is_platform_admin ||
-        (doc.user_id ?? doc.owner_id) === user.zolexora_id ||
+        doc.owner_id === user.zolexora_id ||
         (!!doc.org_id && user.org_id === doc.org_id && isOrgAdmin(user.role));
       if (!allowed) throw forbidden("You cannot access this document.");
 

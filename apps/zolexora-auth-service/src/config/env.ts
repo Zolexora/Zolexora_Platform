@@ -1,57 +1,52 @@
 import { z } from "zod";
 import { resolveAliases } from "./infisical.js";
 
-// Secrets have no defaults: they must come from Infisical. Fixed dev values exist only for NODE_ENV=test.
-const IS_TEST = process.env.NODE_ENV === "test";
-const secret = (testValue: string, min = 1) =>
-  IS_TEST ? z.string().min(min).default(testValue) : z.string().min(min);
-
+// Every value comes from Infisical (scripts/setup/with-infisical.sh). No defaults, no fallbacks.
+const str = z.string().trim().min(1);
+const int = z.coerce.number().int().positive();
+const list = str.transform((v) => v.split(",").map((s) => s.trim()).filter(Boolean));
 
 const envSchema = z.object({
-  PORT: z.coerce.number().default(3081),
-  HOST: z.string().default("0.0.0.0"),
-  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
-  BASE_URL: z.string().default("http://localhost:3081"),
-  CORS_ORIGIN: z.string().default("*"),
+  NODE_ENV: z.enum(["development", "production", "test"]),
+  PORT: int,
+  HOST: str,
+  BASE_URL: z.string().url(),
+  // Comma-separated allow-list; "*" is rejected because credentials are enabled.
+  CORS_ORIGIN: list.refine((o) => !o.includes("*"), "CORS_ORIGIN must list explicit origins, not *"),
+  // Fastify trustProxy: "false", "true" (trust every hop — only behind a proxy that overwrites X-Forwarded-For),
+  // or a comma-separated list of proxy IPs/CIDRs (recommended).
+  TRUST_PROXY: str.transform((v): boolean | string[] =>
+    v === "true" ? true : v === "false" ? false : v.split(",").map((s) => s.trim()),
+  ),
 
-  // Databases
-  AUTH_DATABASE_URL: secret("postgresql://postgres:postgres@localhost:5432/zolexora_auth"),
-  ADMIN_DATABASE_URL: secret("postgresql://postgres:postgres@localhost:5440/platform_admin"),
-  DATABASE_URL: z.string().optional(),
+  AUTH_DATABASE_URL: str,
+  ADMIN_DATABASE_URL: str,
 
-  // Session & Cryptography
-  SESSION_SECRET: secret("zolexora-platform-auth-secret-key-32bytes-min", 16),
-  STORAGE_SIGNING_SECRET: z.string().min(16).optional(), // falls back to SESSION_SECRET
+  SESSION_SECRET: z.string().min(32),
+  STORAGE_SIGNING_SECRET: z.string().min(32),
+  TOKEN_TTL_SECONDS: int,
 
-  // Cloudflare Turnstile
-  // Cloudflare's always-pass test key, allowed only under NODE_ENV=test.
-  TURNSTILE_SECRET_KEY: secret("1x0000000000000000000000000000000AA"),
-  TURNSTILE_VERIFY_URL: z
-    .string()
-    .url()
-    .default("https://challenges.cloudflare.com/turnstile/v0/siteverify"),
-  TURNSTILE_TIMEOUT_MS: z.coerce.number().default(5000),
-  TURNSTILE_EXPECTED_HOSTNAMES: z.string().optional(),
+  TURNSTILE_SECRET_KEY: str,
+  TURNSTILE_VERIFY_URL: z.string().url(),
+  TURNSTILE_TIMEOUT_MS: int,
+  TURNSTILE_EXPECTED_HOSTNAMES: list,
 
-  // Rate Limiting
-  RATE_LIMIT_MAX_ATTEMPTS: z.coerce.number().default(5),
-  RATE_LIMIT_WINDOW_SECONDS: z.coerce.number().default(900),
+  RATE_LIMIT_MAX_ATTEMPTS: int,
+  RATE_LIMIT_WINDOW_SECONDS: int,
+  RATE_LIMIT_LOCKOUT_SECONDS: int,
 
-  // Storage & Media
-  CLOUDINARY_CLOUD_NAME: z.string().default("zolexora"),
-  CLOUDINARY_API_KEY: z.string().optional(),
-  CLOUDINARY_API_SECRET: z.string().optional(),
-  KYC_STORAGE_ENDPOINT: z.string().default("https://storage.zolexora.com"),
-  KYC_SIGNED_URL_DEFAULT_TTL: z.coerce.number().default(900),
+  OTP_TTL_SECONDS: int,
+  OTP_MAX_ATTEMPTS: int,
 
-  // Firebase Admin Credentials
-  FIREBASE_PROJECT_ID: z.string().default("zolexora-auth"),
-  FIREBASE_CLIENT_EMAIL: z.string().optional(),
-  FIREBASE_PRIVATE_KEY: z.string().optional(),
+  CLOUDINARY_CLOUD_NAME: str,
+  CLOUDINARY_API_KEY: str,
+  CLOUDINARY_API_SECRET: str,
+  KYC_STORAGE_ENDPOINT: z.string().url(),
+  KYC_SIGNED_URL_DEFAULT_TTL: int,
 
-  // Email & Resend
-  RESEND_API_KEY: z.string().optional(),
-  AUTH_FROM_EMAIL: z.string().default("Zolexora <auth@zolexora.com>"),
+  RESEND_API_KEY: str,
+  RESEND_API_URL: z.string().url(),
+  AUTH_FROM_EMAIL: str,
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;
@@ -60,27 +55,12 @@ export function loadEnv(): EnvConfig {
   resolveAliases();
   const result = envSchema.safeParse(process.env);
   if (!result.success) {
-    const errorDetails = result.error.issues
-      .map((issue) => `  - ${issue.path.join(".")}: ${issue.message}`)
-      .join("\n");
-    throw new Error(`[CONFIG_FATAL] Invalid environment configuration:\n${errorDetails}`);
+    const missing = result.error.issues.map((i) => `  - ${i.path.join(".")}: ${i.message}`).join("\n");
+    throw new Error(
+      `[CONFIG_FATAL] Invalid or missing Infisical configuration (start via scripts/setup/with-infisical.sh):\n${missing}`,
+    );
   }
   return result.data;
 }
 
-// At import time secrets may not be synced yet (main() syncs, then calls refreshEnv(), which validates strictly).
-function initialEnv(): EnvConfig {
-  try {
-    return loadEnv();
-  } catch (err) {
-    if (IS_TEST) throw err;
-    return envSchema.partial().parse(process.env) as EnvConfig;
-  }
-}
-
-export let env: EnvConfig = initialEnv();
-
-export function refreshEnv(): EnvConfig {
-  env = loadEnv();
-  return env;
-}
+export const env: EnvConfig = loadEnv();

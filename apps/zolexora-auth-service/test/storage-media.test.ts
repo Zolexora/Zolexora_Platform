@@ -1,8 +1,8 @@
+import { buildTestApp, testTokens } from "./helpers/fakes.js";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { FastifyInstance } from "fastify";
-import { buildApp } from "../src/app.js";
 import { TokenService } from "../src/services/token.service.js";
-import { InMemoryAuthRepository } from "../src/repositories/in-memory-auth.repository.js";
+import { InMemoryAuthRepository } from "./helpers/in-memory-auth.repository.js";
 
 describe("Milestone 4: Storage Media Unit Tests (Avatars & Logos)", () => {
   let app: FastifyInstance;
@@ -23,7 +23,7 @@ describe("Milestone 4: Storage Media Unit Tests (Avatars & Logos)", () => {
 
   beforeAll(async () => {
     repo = new InMemoryAuthRepository();
-    tokenService = new TokenService();
+    tokenService = testTokens();
 
     // Mint tokens for tests
     ownerToken = tokenService.signJwt({
@@ -72,7 +72,7 @@ describe("Milestone 4: Storage Media Unit Tests (Avatars & Logos)", () => {
       permissions: ["*"],
     });
 
-    app = await buildApp({ repo, logger: false });
+    app = await buildTestApp(repo);
     await app.ready();
   });
 
@@ -307,7 +307,7 @@ describe("Milestone 4: Storage Media Unit Tests (Avatars & Logos)", () => {
       expect(data.code).toBe("AUTH_FORBIDDEN");
     });
 
-    it("MED-12: Platform superadmin can upload logo for any valid organization", async () => {
+    it("MED-12: SVG logos are rejected (stored XSS risk), even for a platform superadmin", async () => {
       const res = await app.inject({
         method: "POST",
         url: "/api/v1/storage/logos/upload",
@@ -321,7 +321,9 @@ describe("Milestone 4: Storage Media Unit Tests (Avatars & Logos)", () => {
         },
       });
 
-      expect(res.statusCode).toBe(200);
+      expect(res.statusCode).toBe(415);
+      expect(res.json().code).toBe("AUTH_INVALID_MIME_TYPE");
+      return;
       const data = res.json();
       expect(data.public_id).toBe(`orgs/logos/${validOrgId}`);
       expect(data.url).toContain("f_auto,q_auto");

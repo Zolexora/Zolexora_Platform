@@ -4,13 +4,11 @@ import { TokenService } from "../../services/token.service.js";
 import { StorageService } from "../../services/storage.service.js";
 import { AppError } from "../../plugins/error-handler.js";
 import { createAuthMiddleware } from "../../middleware/auth.middleware.js";
-import {
-  ORG_ID_RE, USER_ID_RE, UPLOAD_BODY_LIMIT, UploadBody,
-  parseUpload, validateUpload, forbidden, isOrgAdmin,
-} from "./upload.js";
+import { ORG_ID_RE, USER_ID_RE, UPLOAD_BODY_LIMIT, UploadBody, parseUpload, validateUpload } from "./upload.js";
+import { forbidden, isOrgAdmin } from "../auth/request.js";
 
-const AVATAR_MIMES = ["image/png", "image/jpeg", "image/webp"] as const;
-const LOGO_MIMES = [...AVATAR_MIMES, "image/svg+xml"] as const;
+// SVG is excluded: it can carry script and would be served from the CDN as active content.
+const IMAGE_MIMES = ["image/png", "image/jpeg", "image/webp"] as const;
 
 export async function mediaRoutes(
   app: FastifyInstance,
@@ -35,7 +33,7 @@ export async function mediaRoutes(
         throw forbidden("You can only upload your own avatar.");
       }
       const u = parseUpload(req);
-      const buffer = validateUpload(u, AVATAR_MIMES);
+      const buffer = validateUpload(u, IMAGE_MIMES);
       return reply.send(await opts.storage.uploadToCloudinary(buffer, u.mime, `users/avatars/${zxId}`));
     }
   );
@@ -60,7 +58,7 @@ export async function mediaRoutes(
         throw forbidden("Only an admin or owner of this organisation can upload its logo.");
       }
       const u = parseUpload(req);
-      const buffer = validateUpload(u, LOGO_MIMES);
+      const buffer = validateUpload(u, IMAGE_MIMES);
       return reply.send(await opts.storage.uploadToCloudinary(buffer, u.mime, `orgs/logos/${orgId}`));
     }
   );

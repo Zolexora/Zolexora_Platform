@@ -1,18 +1,14 @@
-import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
+import { FastifyInstance, FastifyRequest } from "fastify";
+import { isValidZolexoraOrgId, normalizeZolexoraOrgId, isPublicWebmailDomain, verifyPassword } from "@zolexora/utils";
 import { IAuthRepository } from "../../repositories/types.js";
 import { TurnstileService } from "../../services/turnstile.service.js";
 import { RateLimitService } from "../../services/rate-limit.service.js";
 import { TokenService } from "../../services/token.service.js";
 import { AppError } from "../../plugins/error-handler.js";
+import { createAuthMiddleware } from "../../middleware/auth.middleware.js";
 import {
-  isValidZolexoraOrgId,
-  normalizeZolexoraOrgId,
-  isPublicWebmailDomain,
-  validatePassword,
-  hashPassword,
-  verifyPassword,
-  MAX_PASSWORD_BYTES,
-} from "@zolexora/utils";
+  assertPasswordSize, forbidden, getRemoteIp, getTurnstileToken, hashNewPassword, isOrgAdmin,
+} from "./request.js";
 
 interface EmployeeLoginBody {
   product?: string;
@@ -24,174 +20,108 @@ interface EmployeeLoginBody {
 
 interface CreateEmployeeBody {
   org_id?: string;
-  email: string;
+  email?: string;
   password?: string;
   role?: string;
   permissions?: string[];
-  turnstile_token?: string;
 }
+
+const invalidOrgId = (raw: string) =>
+  new AppError({
+    statusCode: 400,
+    code: "AUTH_INVALID_ORG_ID_FORMAT",
+    message: `Invalid Zolexora Org ID format: "${raw}". Expected ZX-ORG-XXXX-XXXX-XXXX`,
+  });
 
 export async function track2EmployeeRoutes(
   app: FastifyInstance,
-  opts: {
-    repo: IAuthRepository;
-    turnstile: TurnstileService;
-    rateLimiter: RateLimitService;
-    tokenService: TokenService;
-  }
+  opts: { repo: IAuthRepository; turnstile: TurnstileService; rateLimiter: RateLimitService; tokenService: TokenService },
 ) {
-  const getTurnstileToken = (req: FastifyRequest, body: any): string | undefined => {
-    return (
-      body?.turnstile_token ||
-      (req.headers["cf-turnstile-token"] as string | undefined) ||
-      (req.headers["CF-Turnstile-Token"] as string | undefined)
-    );
-  };
+  const authenticate = createAuthMiddleware({ tokenService: opts.tokenService, repo: opts.repo });
 
-  const getRemoteIp = (req: FastifyRequest): string => {
-    const cfIp = req.headers["cf-connecting-ip"];
-    if (typeof cfIp === "string" && cfIp.trim() !== "") {
-      return cfIp.trim();
-    }
-    const forwarded = req.headers["x-forwarded-for"];
-    if (typeof forwarded === "string") {
-      return forwarded.split(",")[0].trim();
-    }
-    if (Array.isArray(forwarded) && forwarded.length > 0) {
-      return forwarded[0].split(",")[0].trim();
-    }
-    return req.ip || "127.0.0.1";
-  };
-
-  // 1. Employee Login
-  app.post(
+  // 1. Employee login
+  app.post<{ Body: EmployeeLoginBody }>(
     "/api/v1/auth/employee/login",
-    {
-      schema: {
-        description: "Organization-scoped employee login with strict canonical Org ID validation and zero friction",
-        tags: ["Track 2: Organization Employee"],
-      },
-    },
-    async (req: FastifyRequest<{ Body: EmployeeLoginBody }>, reply: FastifyReply) => {
-      const body = req.body || ({} as EmployeeLoginBody);
-      const turnstileToken = getTurnstileToken(req, body);
-
-      // Step 1: Turnstile Bot Defense
-      await opts.turnstile.verifyToken(turnstileToken, {
+    { schema: { description: "Organization-scoped employee login", tags: ["Track 2: Organization Employee"] } },
+    async (req: FastifyRequest<{ Body: EmployeeLoginBody }>, reply) => {
+      const body = req.body ?? {};
+      await opts.turnstile.verifyToken(getTurnstileToken(req), {
         remoteIp: getRemoteIp(req),
         expectedAction: "track2-employee-login",
       });
 
-      // Step 2: Canonical Org ID Format Validation
-      const rawOrgId = body.org_id || "";
-      if (!isValidZolexoraOrgId(rawOrgId)) {
-        throw new AppError({
-          statusCode: 400,
-          code: "AUTH_INVALID_ORG_ID_FORMAT",
-          message: `Invalid Zolexora Org ID format: "${rawOrgId}". Expected ZX-ORG-XXXX-XXXX-XXXX`,
-        });
+      const rawOrgId = body.org_id ?? "";
+      if (!isValidZolexoraOrgId(rawOrgId)) throw invalidOrgId(rawOrgId);
+      const orgId = normalizeZolexoraOrgId(rawOrgId);
+
+      const ip = getRemoteIp(req);
+      const identifier = (body.user_id_or_email ?? "").toLowerCase().trim();
+      const keys = [`ip:${ip}`, `attempt:${ip}:org:${orgId}:${identifier}`];
+      keys.forEach((k) => opts.rateLimiter.checkAllowed(k));
+
+      const password = body.password ?? "";
+      assertPasswordSize(password);
+
+      const employee = await opts.repo.getEmployeeByOrgAndIdentifier(orgId, identifier);
+      if (!employee || !(await verifyPassword(password, employee.password_hash))) {
+        keys.forEach((k) => opts.rateLimiter.recordFailure(k));
+        throw new AppError({ statusCode: 401, code: "AUTH_INVALID_CREDENTIALS", message: "Invalid employee credentials" });
       }
-      const canonicalOrgId = normalizeZolexoraOrgId(rawOrgId);
+      keys.forEach((k) => opts.rateLimiter.recordSuccess(k));
 
-      const remoteIp = getRemoteIp(req);
-      const identifier = (body.user_id_or_email || "").toLowerCase().trim();
-      const ipKey = `ip:${remoteIp}`;
-      const attemptKey = `attempt:${remoteIp}:org:${canonicalOrgId}:${identifier}`;
-
-      // Step 3: Rate Limit Check (Scoped per IP and per Account+IP)
-      opts.rateLimiter.checkAllowed(ipKey);
-      opts.rateLimiter.checkAllowed(attemptKey);
-
-      // Step 4: Pre-Hash Password Bounds Check (Algorithmic DoS Defense)
-      const password = body.password || "";
-      if (Buffer.byteLength(password, "utf8") > MAX_PASSWORD_BYTES) {
-        throw new AppError({
-          statusCode: 400,
-          code: "AUTH_PASSWORD_POLICY_VIOLATION",
-          message: `Password exceeds maximum allowed size of ${MAX_PASSWORD_BYTES} bytes.`,
-        });
+      const org = await opts.repo.getOrganizationByOrgId(orgId);
+      if (employee.status !== "active" || org?.status !== "active") {
+        throw new AppError({ statusCode: 403, code: "AUTH_ACCOUNT_DISABLED", message: "Employee or organisation is not active." });
       }
 
-      // Step 5: Employee Credential Lookup & Verification
-      const employee = await opts.repo.getEmployeeByOrgAndIdentifier(canonicalOrgId, identifier);
-
-      if (!employee) {
-        opts.rateLimiter.recordFailure(ipKey);
-        opts.rateLimiter.recordFailure(attemptKey);
-        throw new AppError({
-          statusCode: 401,
-          code: "AUTH_INVALID_CREDENTIALS",
-          message: "Invalid employee credentials",
-        });
-      }
-
-      // Strictly verify password hash using constant-time Argon2id/Scrypt crypto
-      const isValid = await verifyPassword(password, employee.password_hash);
-      if (!isValid) {
-        opts.rateLimiter.recordFailure(ipKey);
-        opts.rateLimiter.recordFailure(attemptKey);
-        throw new AppError({
-          statusCode: 401,
-          code: "AUTH_INVALID_CREDENTIALS",
-          message: "Invalid employee credentials",
-        });
-      }
-
-      // Step 5: Record Success & Reset Lockout
-      opts.rateLimiter.recordSuccess(ipKey);
-      opts.rateLimiter.recordSuccess(attemptKey);
-
-      const resolvedProduct = employee.product || body.product || "zolexora-tms";
-      const customToken = opts.tokenService.mintEmployeeCustomToken(
-        employee.id,
-        {
-          zolexora_id: employee.zolexora_id,
-          org_id: canonicalOrgId,
-          role: employee.role,
-          product: resolvedProduct,
-          permissions: employee.permissions,
-        },
-        employee.email
-      );
-
+      const claims = {
+        zolexora_id: employee.zolexora_id,
+        org_id: orgId,
+        role: employee.role,
+        product: employee.product || body.product,
+        permissions: employee.permissions,
+      };
       return reply.status(200).send({
         success: true,
-        customToken,
-        claims: {
-          zolexora_id: employee.zolexora_id,
-          org_id: canonicalOrgId,
-          role: employee.role,
-          product: resolvedProduct,
-          permissions: employee.permissions,
-        },
-        user: {
-          uid: employee.id,
-          zolexora_id: employee.zolexora_id,
-          email: employee.email,
-          status: employee.status,
-        },
-        org: {
-          zolexora_org_id: canonicalOrgId,
-          role: employee.role,
-        },
+        customToken: opts.tokenService.mintEmployeeCustomToken(employee.id, claims, employee.email),
+        claims,
+        user: { uid: employee.id, zolexora_id: employee.zolexora_id, email: employee.email, status: employee.status },
+        org: { zolexora_org_id: orgId, role: employee.role },
       });
-    }
+    },
   );
 
-  // 2. Employee Provisioning (Webmail Rejection & Zero Friction)
-  app.post(
+  // 2. Employee provisioning — platform admins, or admins/owners of the same organisation.
+  app.post<{ Body: CreateEmployeeBody }>(
     "/api/v1/auth/employee/create",
     {
-      schema: {
-        description: "Provision corporate employee with strict public webmail rejection and zero verification friction",
-        tags: ["Track 2: Organization Employee"],
-      },
+      preHandler: [authenticate],
+      schema: { description: "Provision a corporate employee (org admin/owner or platform admin)", tags: ["Track 2: Organization Employee"] },
     },
-    async (req: FastifyRequest<{ Body: CreateEmployeeBody }>, reply: FastifyReply) => {
-      const body = req.body || ({} as CreateEmployeeBody);
-      const email = (body.email || "").toLowerCase().trim();
+    async (req, reply) => {
+      const body = req.body ?? {};
+      const user = req.user!;
 
-      // Step 1: Webmail Domain Rejection (Test T1.2.03, T3.04)
+      const rawOrgId = body.org_id ?? "";
+      if (!isValidZolexoraOrgId(rawOrgId)) throw invalidOrgId(rawOrgId);
+      const orgId = normalizeZolexoraOrgId(rawOrgId);
+
+      const isSameOrgAdmin = user.org_id === orgId && isOrgAdmin(user.role);
+      if (!user.is_platform_admin && !isSameOrgAdmin) {
+        throw forbidden("Only an admin or owner of this organisation can create employees.");
+      }
+      const role = body.role ?? "member";
+      if (role === "owner" && !user.is_platform_admin && user.role !== "owner") {
+        throw forbidden("Only an owner or platform admin can grant the owner role.");
+      }
+      const permissions = Array.isArray(body.permissions) ? body.permissions.map(String) : [];
+      if (!user.is_platform_admin && !user.permissions?.includes("*") &&
+          permissions.some((p) => !user.permissions?.includes(p))) {
+        throw forbidden("You cannot grant permissions you do not hold.");
+      }
+
+      const email = (body.email ?? "").toLowerCase().trim();
+      if (!email) throw new AppError({ statusCode: 400, code: "BAD_REQUEST", message: "Email is required." });
       if (isPublicWebmailDomain(email)) {
         throw new AppError({
           statusCode: 400,
@@ -200,45 +130,24 @@ export async function track2EmployeeRoutes(
         });
       }
 
-      const rawOrgId = body.org_id || "ZX-ORG-4B8T-9M2K-7Y4X";
-      const canonicalOrgId = normalizeZolexoraOrgId(rawOrgId);
-
-      const password = body.password;
-      if (!password) {
-        throw new AppError({
-          statusCode: 400,
-          code: "AUTH_PASSWORD_POLICY_VIOLATION",
-          message: "Password is required.",
-        });
+      if (!(await opts.repo.getOrganizationByOrgId(orgId))) {
+        throw new AppError({ statusCode: 404, code: "AUTH_ORG_NOT_FOUND", message: "Organisation not found." });
       }
-      try {
-        validatePassword(password);
-      } catch (err: any) {
-        throw new AppError({
-          statusCode: 400,
-          code: "AUTH_PASSWORD_POLICY_VIOLATION",
-          message: err.message,
-        });
-      }
-      const passwordHash = await hashPassword(password, "argon2id");
-
       const employee = await opts.repo.createEmployee({
-        zolexora_org_id: canonicalOrgId,
+        zolexora_org_id: orgId,
         email,
-        password_hash: passwordHash,
-        role: body.role || "member",
-        permissions: body.permissions || ["trips:read"],
+        password_hash: await hashNewPassword(body.password),
+        role,
+        permissions,
       });
+      if (!employee) {
+        throw new AppError({ statusCode: 409, code: "AUTH_EMPLOYEE_EXISTS", message: "Employee already exists in this organisation." });
+      }
 
       return reply.status(201).send({
         success: true,
-        employee: {
-          zolexora_id: employee.zolexora_id,
-          email: employee.email,
-          org_id: canonicalOrgId,
-          status: "active",
-        },
+        employee: { zolexora_id: employee.zolexora_id, email: employee.email, org_id: orgId, status: employee.status },
       });
-    }
+    },
   );
 }

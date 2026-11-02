@@ -1,72 +1,54 @@
-import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { IAuthRepository } from "../../repositories/types.js";
+import { FastifyInstance } from "fastify";
+import { IAuthRepository, RevocationType } from "../../repositories/types.js";
 import { TokenService } from "../../services/token.service.js";
-import { AppError } from "../../plugins/error-handler.js";
 import { createAuthMiddleware } from "../../middleware/auth.middleware.js";
+import { forbidden } from "./request.js";
 
 interface RevokeTokenBody {
-  uid: string;
+  uid?: string;
   reason?: string;
-  actor_id?: string;
-  revocation_type?: "user_all_tokens" | "single_token";
+  revocation_type?: RevocationType;
 }
 
-export async function sessionRoutes(
-  app: FastifyInstance,
-  opts: { repo: IAuthRepository; tokenService: TokenService }
-) {
+export async function sessionRoutes(app: FastifyInstance, opts: { repo: IAuthRepository; tokenService: TokenService }) {
   const authenticate = createAuthMiddleware({ tokenService: opts.tokenService, repo: opts.repo });
 
-  // 1. Token Revocation Endpoint
-  app.post(
+  // single_token revokes the caller's current token (logout).
+  // user_all_tokens revokes every session of `uid` (default: the caller); other users require a platform admin.
+  app.post<{ Body: RevokeTokenBody }>(
     "/api/v1/auth/tokens/revoke",
     {
-      schema: {
-        description: "Immediately invalidate sessions and refresh tokens for target UID",
-        tags: ["Session & Tokens"],
-      },
+      preHandler: [authenticate],
+      schema: { description: "Log out the current token, or invalidate all sessions of a user", tags: ["Session & Tokens"] },
     },
-    async (req: FastifyRequest<{ Body: RevokeTokenBody }>, reply: FastifyReply) => {
-      const body = req.body || ({} as RevokeTokenBody);
-      const uid = body.uid;
-      if (!uid) {
-        throw new AppError({
-          statusCode: 400,
-          code: "BAD_REQUEST",
-          message: "Target UID is required for token revocation.",
-        });
+    async (req, reply) => {
+      const body = req.body ?? {};
+      const caller = req.user!;
+      const type: RevocationType = body.revocation_type === "single_token" ? "single_token" : "user_all_tokens";
+
+      let target: string;
+      if (type === "single_token") {
+        target = req.tokenPayload!.jti;
+      } else {
+        target = body.uid || caller.uid;
+        if (target !== caller.uid && !caller.is_platform_admin) {
+          throw forbidden("Only platform admins can revoke other users' sessions.");
+        }
       }
 
-      const result = await opts.repo.revokeToken(
-        uid,
-        body.reason,
-        body.actor_id,
-        body.revocation_type
-      );
-
+      const result = await opts.repo.revokeToken(target, type, body.reason || "Session revocation", caller.uid);
       return reply.status(200).send({
         success: true,
-        uid: result.uid,
+        uid: type === "single_token" ? caller.uid : target,
+        revocation_type: type,
         revoked_at: new Date(result.revoked_at).toISOString(),
       });
-    }
+    },
   );
 
-  // 2. Authenticated Session Introspection Endpoint
   app.get(
     "/api/v1/auth/me",
-    {
-      preHandler: [authenticate],
-      schema: {
-        description: "Introspect active bearer token, verify signatures and revocation timestamps",
-        tags: ["Session & Tokens"],
-      },
-    },
-    async (req: FastifyRequest, reply: FastifyReply) => {
-      return reply.status(200).send({
-        user: req.user,
-        authenticated: true,
-      });
-    }
+    { preHandler: [authenticate], schema: { description: "Introspect the active bearer token", tags: ["Session & Tokens"] } },
+    async (req, reply) => reply.status(200).send({ user: req.user, authenticated: true }),
   );
 }

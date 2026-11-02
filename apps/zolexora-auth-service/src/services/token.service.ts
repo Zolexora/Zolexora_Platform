@@ -1,5 +1,4 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
-import { env } from "../config/env.js";
+import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { CONSTANTS } from "../config/constants.js";
 
 export interface CustomTokenClaims {
@@ -21,6 +20,7 @@ export interface TokenVerificationResult {
 
 export interface TokenPayload {
   uid: string;
+  jti: string;
   email?: string;
   zolexora_id?: string;
   org_id?: string;
@@ -33,178 +33,71 @@ export interface TokenPayload {
   exp: number;
 }
 
-function base64UrlEncode(data: string | Buffer): string {
-  const buf = typeof data === "string" ? Buffer.from(data, "utf8") : data;
-  return buf.toString("base64url");
-}
-
-function base64UrlDecode(str: string): string {
-  return Buffer.from(str, "base64url").toString("utf8");
-}
+const HEADER = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64url");
 
 export class TokenService {
-  private secret: string;
-  private opaqueTokenCache = new Map<string, { iat: number; exp: number }>();
-
-  public maxClockSkewSeconds: number;
-
   constructor(
-    secret = env.SESSION_SECRET,
-    maxClockSkewSeconds = CONSTANTS.TOKEN.CLOCK_SKEW_TOLERANCE_SECONDS
+    private readonly secret: string,
+    private readonly ttlSeconds: number,
+    public readonly maxClockSkewSeconds: number = CONSTANTS.TOKEN.CLOCK_SKEW_TOLERANCE_SECONDS,
   ) {
     if (!secret) throw new Error("[CONFIG_FATAL] SESSION_SECRET must come from Infisical");
-    this.secret = secret;
-    this.maxClockSkewSeconds = maxClockSkewSeconds;
   }
 
-  public reset(): void {
-    this.opaqueTokenCache.clear();
+  private sign(data: string): Buffer {
+    return createHmac("sha256", this.secret).update(data).digest();
   }
 
-  public signJwt(payload: Record<string, any>, expiresInSeconds = 3600): string {
-    const header = { alg: "HS256", typ: "JWT" };
+  public signJwt(payload: Record<string, any>, expiresInSeconds = this.ttlSeconds): string {
     const now = Math.floor(Date.now() / 1000);
-    const fullPayload: TokenPayload = {
-      iat: now,
-      exp: now + expiresInSeconds,
-      uid: payload.uid,
-      email: payload.email,
-      zolexora_id: payload.zolexora_id,
-      org_id: payload.org_id,
-      role: payload.role,
-      product: payload.product,
-      permissions: payload.permissions,
-      is_platform_admin: payload.is_platform_admin,
-      type: payload.type,
-      ...payload,
-    };
-
-    const encodedHeader = base64UrlEncode(JSON.stringify(header));
-    const encodedPayload = base64UrlEncode(JSON.stringify(fullPayload));
-    const dataToSign = `${encodedHeader}.${encodedPayload}`;
-
-    const signature = createHmac("sha256", this.secret).update(dataToSign).digest();
-    const encodedSignature = base64UrlEncode(signature);
-
-    return `${dataToSign}.${encodedSignature}`;
+    const body = Buffer.from(
+      JSON.stringify({ ...payload, jti: randomUUID(), iat: payload.iat ?? now, exp: payload.exp ?? now + expiresInSeconds }),
+    ).toString("base64url");
+    const data = `${HEADER}.${body}`;
+    return `${data}.${this.sign(data).toString("base64url")}`;
   }
 
-  public verifyAndDecode(
-    token: string,
-    options: { maxClockSkewSeconds?: number } = {}
-  ): TokenVerificationResult {
-    if (!token || typeof token !== "string") {
-      return { valid: false, reason: "EMPTY_TOKEN" };
+  public verifyAndDecode(token: string, options: { maxClockSkewSeconds?: number } = {}): TokenVerificationResult {
+    const parts = typeof token === "string" ? token.split(".") : [];
+    if (parts.length !== 3) return { valid: false, reason: "MALFORMED_TOKEN" };
+
+    const [h, p, s] = parts;
+    const expected = this.sign(`${h}.${p}`);
+    const actual = Buffer.from(s, "base64url");
+    if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) {
+      return { valid: false, reason: "INVALID_SIGNATURE" };
     }
 
-    const maxSkew = options.maxClockSkewSeconds ?? this.maxClockSkewSeconds;
-
-    // 1. Compact 3-part JWT
-    const parts = token.split(".");
-    if (parts.length === 3) {
-      const [encodedHeader, encodedPayload, encodedSignature] = parts;
-      const dataToSign = `${encodedHeader}.${encodedPayload}`;
-      const expectedSig = createHmac("sha256", this.secret).update(dataToSign).digest();
-      const actualSig = Buffer.from(encodedSignature, "base64url");
-
-      if (expectedSig.length !== actualSig.length || !timingSafeEqual(expectedSig, actualSig)) {
-        return { valid: false, reason: "INVALID_SIGNATURE" };
-      }
-
-      try {
-        const payload: TokenPayload = JSON.parse(base64UrlDecode(encodedPayload));
-        const now = Math.floor(Date.now() / 1000);
-        if (payload.exp && now >= payload.exp) {
-          return { valid: false, expired: true, reason: "TOKEN_EXPIRED", payload };
-        }
-        if (typeof payload.iat === "number" && payload.iat > now + maxSkew) {
-          return { valid: false, futureIat: true, reason: "TOKEN_FUTURE_IAT", payload };
-        }
-        return { valid: true, payload };
-      } catch {
-        return { valid: false, reason: "MALFORMED_PAYLOAD" };
-      }
+    let header: any;
+    let payload: TokenPayload;
+    try {
+      header = JSON.parse(Buffer.from(h, "base64url").toString("utf8"));
+      payload = JSON.parse(Buffer.from(p, "base64url").toString("utf8"));
+    } catch {
+      return { valid: false, reason: "MALFORMED_PAYLOAD" };
+    }
+    if (header?.alg !== "HS256" || typeof payload?.uid !== "string" || typeof payload.jti !== "string" ||
+        typeof payload.iat !== "number" || typeof payload.exp !== "number") {
+      return { valid: false, reason: "MALFORMED_PAYLOAD" };
     }
 
-    // 2. Compatibility check for test harness fixture tokens
-    if (token === "expired_token" || token.includes("expired")) {
-      return { valid: false, expired: true, reason: "TOKEN_EXPIRED" };
+    const now = Math.floor(Date.now() / 1000);
+    if (now >= payload.exp) return { valid: false, expired: true, reason: "TOKEN_EXPIRED", payload };
+    if (payload.iat > now + (options.maxClockSkewSeconds ?? this.maxClockSkewSeconds)) {
+      return { valid: false, futureIat: true, reason: "TOKEN_FUTURE_IAT", payload };
     }
-    if (token.includes("future_iat") || token.includes("future_token")) {
-      const now = Math.floor(Date.now() / 1000);
-      return {
-        valid: false,
-        futureIat: true,
-        reason: "TOKEN_FUTURE_IAT",
-        payload: {
-          uid: "usr_future_fixture",
-          iat: now + 600,
-          exp: now + 3600,
-        },
-      };
-    }
-
-    // Extract uid from opaque test tokens (e.g. active_valid_token_uid_101, token_belonging_to_emp_suspended_99)
-    let extractedUid = "usr_active";
-    const uidMatch = token.match(/(?:emp|usr|adm)_[a-zA-Z0-9_-]+/i);
-    const belongingMatch = token.match(/belonging_to_([a-zA-Z0-9_-]+)/i);
-    if (uidMatch) {
-      extractedUid = uidMatch[0];
-    } else if (belongingMatch) {
-      extractedUid = belongingMatch[1];
-    }
-
-    let cached = this.opaqueTokenCache.get(token);
-    if (!cached) {
-      const now = Math.floor(Date.now() / 1000);
-      cached = { iat: now, exp: now + 3600 };
-      this.opaqueTokenCache.set(token, cached);
-    }
-
-    return {
-      valid: true,
-      payload: {
-        uid: extractedUid,
-        email: "user@zolexora.com",
-        zolexora_id: "ZX-8K9M-4P2W-7Y3X",
-        iat: cached.iat,
-        exp: cached.exp,
-      },
-    };
+    return { valid: true, payload };
   }
 
-  public mintUserCustomToken(uid: string, zolexoraId: string, email?: string): string {
-    return this.signJwt({
-      uid,
-      zolexora_id: zolexoraId,
-      email: email || `${uid}@user.zolexora.com`,
-      type: "user",
-    });
+  public mintUserCustomToken(uid: string, zolexoraId: string, email: string): string {
+    return this.signJwt({ uid, zolexora_id: zolexoraId, email, type: "user" });
   }
 
-  public mintEmployeeCustomToken(
-    uid: string,
-    claims: CustomTokenClaims,
-    email?: string
-  ): string {
-    return this.signJwt({
-      uid,
-      email: email || `${uid}@corp.zolexora.com`,
-      ...claims,
-      type: "employee",
-    });
+  public mintEmployeeCustomToken(uid: string, claims: CustomTokenClaims, email: string): string {
+    return this.signJwt({ uid, email, ...claims, type: "employee" });
   }
 
-  public mintAdminCustomToken(
-    adminId: string,
-    claims: CustomTokenClaims,
-    email?: string
-  ): string {
-    return this.signJwt({
-      uid: adminId,
-      email: email || `${adminId}@admin.zolexora.com`,
-      ...claims,
-      type: "platform_admin",
-    });
+  public mintAdminCustomToken(adminId: string, claims: CustomTokenClaims, email: string): string {
+    return this.signJwt({ uid: adminId, email, ...claims, type: "platform_admin" });
   }
 }

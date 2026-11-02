@@ -3,10 +3,9 @@ set -e
 
 # Always execute from the repository root
 cd "$(dirname "$0")/../../.."
-REPO_ROOT="$(pwd)"
 
 COMPOSE_FILE="apps/zolexora-auth-service/compose.yaml"
-# All secrets come from Infisical (apps/zolexora-auth-service/.infisical.json)
+# Every compose call goes through Infisical: compose.yaml has no defaults and fails without it.
 run_compose() {
   bash scripts/setup/with-infisical.sh apps/zolexora-auth-service docker compose -f "$COMPOSE_FILE" "$@"
 }
@@ -18,11 +17,11 @@ case "$ACTION" in
     echo "======================================"
     echo "🚀 Starting Zolexora Auth Service Stack"
     echo "======================================"
-    docker compose -f "$COMPOSE_FILE" pull --ignore-pull-failures || true
+    run_compose pull --ignore-pull-failures || true
     run_compose up -d
     echo ""
     echo "✅ Auth Service Stack status:"
-    docker compose -f "$COMPOSE_FILE" ps
+    run_compose ps
     ;;
   stop|down)
     echo "🛑 Stopping Auth Service Stack..."
@@ -38,14 +37,14 @@ case "$ACTION" in
     ;;
   pull)
     echo "📥 Pulling prebuilt images..."
-    docker compose -f "$COMPOSE_FILE" pull --ignore-pull-failures || true
+    run_compose pull --ignore-pull-failures || true
     ;;
   status|ps)
-    docker compose -f "$COMPOSE_FILE" ps
+    run_compose ps
     ;;
   logs)
     shift || true
-    docker compose -f "$COMPOSE_FILE" logs -f "$@"
+    run_compose logs -f "$@"
     ;;
   *)
     echo "Usage: $0 {start|stop|restart|build|pull|status|logs}"

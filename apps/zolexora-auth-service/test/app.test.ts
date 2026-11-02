@@ -1,9 +1,14 @@
+import { TURNSTILE, buildTestApp, testTokens } from "./helpers/fakes.js";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { FastifyInstance } from "fastify";
-import { buildApp } from "../src/app.js";
-import { InMemoryAuthRepository } from "../src/repositories/in-memory-auth.repository.js";
+import { InMemoryAuthRepository } from "./helpers/in-memory-auth.repository.js";
 import { CONSTANTS } from "../src/config/constants.js";
-import { TokenService } from "../src/services/token.service.js";
+
+// Employee provisioning requires an org admin (or platform admin) token.
+const orgAdminAuth = () => ({
+  authorization: `Bearer ${testTokens().signJwt({ uid: "emp_admin_1", zolexora_id: "ZX-4B8T-9M2K-7Y4X", org_id: "ZX-ORG-4B8T-9M2K-7Y4X", role: "admin", permissions: ["*"] })}`,
+});
+
 
 describe("apps/zolexora-auth-service integration tests", () => {
   let app: FastifyInstance;
@@ -11,7 +16,7 @@ describe("apps/zolexora-auth-service integration tests", () => {
 
   beforeAll(async () => {
     repo = new InMemoryAuthRepository();
-    app = await buildApp({ repo, logger: false });
+    app = await buildTestApp(repo);
     await app.ready();
   });
 
@@ -78,7 +83,7 @@ describe("apps/zolexora-auth-service integration tests", () => {
         email: "test@example.com",
         phoneNumber: "+919876543210",
         password: "Short1!",
-        turnstile_token: CONSTANTS.TURNSTILE.VALID_TOKEN,
+        turnstile_token: TURNSTILE.VALID_TOKEN,
       },
     });
     expect(res.statusCode).toBe(400);
@@ -94,7 +99,7 @@ describe("apps/zolexora-auth-service integration tests", () => {
         org_id: "INVALID-ORG",
         user_id_or_email: "dispatcher@zolexora.com",
         password: "CorporateSecurePass123!",
-        turnstile_token: CONSTANTS.TURNSTILE.VALID_TOKEN,
+        turnstile_token: TURNSTILE.VALID_TOKEN,
       },
     });
     expect(res.statusCode).toBe(400);
@@ -106,11 +111,12 @@ describe("apps/zolexora-auth-service integration tests", () => {
     const res = await app.inject({
       method: "POST",
       url: "/api/v1/auth/employee/create",
+          headers: orgAdminAuth(),
       payload: {
         org_id: "ZX-ORG-4B8T-9M2K-7Y4X",
         email: "dispatcher@gmail.com",
         password: "CorporateSecurePass123!",
-        turnstile_token: CONSTANTS.TURNSTILE.VALID_TOKEN,
+        turnstile_token: TURNSTILE.VALID_TOKEN,
       },
     });
     expect(res.statusCode).toBe(400);
@@ -134,7 +140,7 @@ describe("apps/zolexora-auth-service integration tests", () => {
   it("Storage endpoints work as specified", async () => {
     const zxId = "ZX-8K9M-4P2W-7Y3X";
     const orgId = "ZX-ORG-4B8T-9M2K-7Y4X";
-    const tokens = new TokenService();
+    const tokens = testTokens();
     const userAuth = { authorization: `Bearer ${tokens.signJwt({ uid: zxId, zolexora_id: zxId, role: "user" })}` };
     const adminAuth = { authorization: `Bearer ${tokens.signJwt({ uid: "emp_admin_1", zolexora_id: "ZX-4B8T-9M2K-7Y4X", org_id: orgId, role: "admin" })}` };
     const png = `data:image/png;base64,${Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).toString("base64")}`;

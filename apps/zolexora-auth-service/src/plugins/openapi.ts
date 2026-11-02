@@ -2,6 +2,7 @@ import { FastifyInstance } from "fastify";
 import fastifySwagger from "@fastify/swagger";
 import fastifySwaggerUi from "@fastify/swagger-ui";
 import { CONSTANTS } from "../config/constants.js";
+import { env } from "../config/env.js";
 
 export async function registerOpenApi(app: FastifyInstance) {
   await app.register(fastifySwagger, {
@@ -11,12 +12,9 @@ export async function registerOpenApi(app: FastifyInstance) {
         title: "Zolexora Centralized Authentication Service",
         version: CONSTANTS.SERVICE_VERSION,
         description:
-          "Production-hardened Central Authentication Microservice for Zolexora Platform, supporting Track 1 (Global Identity), Track 2 (Organization-Scoped Employee), and Track 3 (Platform Admin) authentication, Argon2id/Scrypt crypto, Turnstile anti-abuse, and secure storage.",
+          "Production-hardened Central Authentication Microservice for Zolexora Platform, supporting Track 1 (Global Identity), Track 2 (Organization-Scoped Employee), and Track 3 (Platform Admin) authentication, scrypt/Argon2id password hashing, Turnstile anti-abuse, and secure storage.",
       },
-      servers: [
-        { url: "http://localhost:3081", description: "Local Development Gateway" },
-        { url: "https://auth.zolexora.com", description: "Production Authority Gateway" },
-      ],
+      servers: [{ url: env.BASE_URL }],
       components: {
         securitySchemes: {
           bearerAuth: {

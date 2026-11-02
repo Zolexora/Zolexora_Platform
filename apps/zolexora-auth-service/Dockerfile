@@ -1,50 +1,33 @@
 # Multi-stage production build for @zolexora/auth-service
 # Build context MUST be repo root: docker build -f apps/zolexora-auth-service/Dockerfile .
+# Runtime configuration (PORT, HOST, NODE_ENV, secrets) comes from Infisical via compose.yaml — nothing is baked in.
 
-FROM node:22-alpine AS base
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
+# Node 24 provides native crypto.argon2 (verifies existing argon2id hashes).
+FROM node:24-alpine AS builder
+WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@9.12.3 --activate
 
-FROM base AS builder
-WORKDIR /app
-
-# Copy root workspace configurations
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json tsconfig.json ./
-
-# Copy packages and auth-service workspace
 COPY packages ./packages
 COPY apps/zolexora-auth-service ./apps/zolexora-auth-service
 
-# Install dependencies and build shared packages & auth-service
-RUN pnpm config set ignore-scripts true && pnpm install --no-frozen-lockfile
-RUN pnpm --filter @zolexora/utils build
+# Lockfile-exact install; dependency lifecycle scripts stay disabled.
+RUN pnpm install --frozen-lockfile --ignore-scripts --filter @zolexora/auth-service...
 RUN pnpm --filter @zolexora/auth-service build
 
-FROM node:22-alpine AS runner
+# Production-only dependency tree (no devDependencies), plus the compiled output.
+RUN pnpm --filter @zolexora/auth-service deploy --prod --ignore-scripts /out \
+ && rm -rf /out/src /out/test \
+ && cp -r apps/zolexora-auth-service/dist /out/dist \
+ && cp -r packages/utils/dist /out/node_modules/@zolexora/utils/dist
+
+FROM node:24-alpine AS runner
 WORKDIR /app
-
-# Security: non-root user
 RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 authservice
-
-# Copy dependencies and build outputs
-COPY --from=builder --chown=authservice:nodejs /app/node_modules ./node_modules
-COPY --from=builder --chown=authservice:nodejs /app/packages ./packages
-COPY --from=builder --chown=authservice:nodejs /app/apps/zolexora-auth-service/dist ./apps/zolexora-auth-service/dist
-COPY --from=builder --chown=authservice:nodejs /app/apps/zolexora-auth-service/package.json ./apps/zolexora-auth-service/package.json
-COPY --from=builder --chown=authservice:nodejs /app/apps/zolexora-auth-service/.infisical.json ./apps/zolexora-auth-service/.infisical.json
-
-WORKDIR /app/apps/zolexora-auth-service
-
+COPY --from=builder --chown=authservice:nodejs /out ./
 USER authservice
 
-ENV PORT=3081 \
-    HOST=0.0.0.0 \
-    NODE_ENV=production
-
-EXPOSE 3081
-
 HEALTHCHECK --interval=15s --timeout=5s --retries=3 \
-  CMD wget -qO- http://localhost:3081/health || exit 1
+  CMD wget -qO- "http://localhost:${PORT}/health" || exit 1
 
 CMD ["node", "dist/index.js"]

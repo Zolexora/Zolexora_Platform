@@ -47,12 +47,6 @@ export function parseUpload(req: FastifyRequest<{ Body: UploadBody }>): ParsedUp
   return { mime, size, buffer };
 }
 
-function detect(buffer: Buffer): string | null {
-  const head = buffer.subarray(0, 512).toString("utf8").trimStart();
-  if (/^(<\?xml[^>]*>\s*)?<svg[\s>]/i.test(head)) return "image/svg+xml";
-  return detectMimeFromBuffer(buffer);
-}
-
 /** Enforces MIME allow-list, size limit, magic bytes, and presence of the file. */
 export function validateUpload(u: ParsedUpload, allowed: readonly string[]): Buffer {
   if (!allowed.includes(u.mime)) {
@@ -68,7 +62,7 @@ export function validateUpload(u: ParsedUpload, allowed: readonly string[]): Buf
   if (!u.buffer || u.buffer.length === 0) {
     throw new AppError({ statusCode: 400, code: "AUTH_FILE_REQUIRED", message: "file is required." });
   }
-  const detected = detect(u.buffer);
+  const detected = detectMimeFromBuffer(u.buffer);
   if (detected !== u.mime) {
     throw new AppError({
       statusCode: 415,
@@ -78,8 +72,3 @@ export function validateUpload(u: ParsedUpload, allowed: readonly string[]): Buf
   }
   return u.buffer;
 }
-
-export const forbidden = (message: string) =>
-  new AppError({ statusCode: 403, code: "AUTH_FORBIDDEN", message });
-
-export const isOrgAdmin = (role?: string) => role === "admin" || role === "owner";

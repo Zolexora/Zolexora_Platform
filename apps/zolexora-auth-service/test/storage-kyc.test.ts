@@ -1,9 +1,10 @@
+import { buildTestApp, testTokens } from "./helpers/fakes.js";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { FastifyInstance } from "fastify";
-import { buildApp } from "../src/app.js";
 import { TokenService } from "../src/services/token.service.js";
-import { InMemoryAuthRepository } from "../src/repositories/in-memory-auth.repository.js";
+import { InMemoryAuthRepository } from "./helpers/in-memory-auth.repository.js";
 import { StorageService } from "../src/services/storage.service.js";
+import { env } from "../src/config/env.js";
 
 describe("Milestone 4: Storage KYC Unit Tests (Upload, MIME, RBAC, Signed URLs)", () => {
   let app: FastifyInstance;
@@ -26,8 +27,15 @@ describe("Milestone 4: Storage KYC Unit Tests (Upload, MIME, RBAC, Signed URLs)"
 
   beforeAll(async () => {
     repo = new InMemoryAuthRepository();
-    tokenService = new TokenService();
-    storage = new StorageService("zolexora", "https://storage.zolexora.com");
+    tokenService = testTokens();
+    storage = new StorageService({
+      cloudName: env.CLOUDINARY_CLOUD_NAME,
+      apiKey: env.CLOUDINARY_API_KEY,
+      apiSecret: env.CLOUDINARY_API_SECRET,
+      kycEndpoint: env.KYC_STORAGE_ENDPOINT,
+      signingSecret: env.STORAGE_SIGNING_SECRET,
+      defaultSignedUrlTtl: env.KYC_SIGNED_URL_DEFAULT_TTL,
+    });
 
     ownerToken = tokenService.signJwt({
       uid: docOwnerId,
@@ -83,7 +91,7 @@ describe("Milestone 4: Storage KYC Unit Tests (Upload, MIME, RBAC, Signed URLs)"
       permissions: ["*"],
     });
 
-    app = await buildApp({ repo, logger: false });
+    app = await buildTestApp(repo);
     await app.ready();
   });
 

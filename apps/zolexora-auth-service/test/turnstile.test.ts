@@ -1,6 +1,6 @@
+import { TURNSTILE } from "./helpers/fakes.js";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { TurnstileService } from "../src/services/turnstile.service.js";
-import { CONSTANTS } from "../src/config/constants.js";
 import { AppError } from "../src/plugins/error-handler.js";
 
 describe("TurnstileService Unit Test Suite", () => {
@@ -54,112 +54,17 @@ describe("TurnstileService Unit Test Suite", () => {
       });
     });
 
-    it("1.5 Rejects timeout-or-duplicate fixture token with HTTP 403 AUTH_TURNSTILE_TIMEOUT_OR_DUPLICATE", async () => {
-      await expect(
-        service.verifyToken(CONSTANTS.TURNSTILE.TIMEOUT_DUPLICATE_TOKEN)
-      ).rejects.toMatchObject({
-        statusCode: 403,
-        code: "AUTH_TURNSTILE_TIMEOUT_OR_DUPLICATE",
+    it("1.5 Fixture-looking tokens get no local shortcut: every token goes to Cloudflare", async () => {
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ success: false, "error-codes": ["invalid-input-response"] }),
       });
-
-      await expect(
-        service.verifyToken("custom-timeout-or-duplicate-token")
-      ).rejects.toMatchObject({
-        statusCode: 403,
-        code: "AUTH_TURNSTILE_TIMEOUT_OR_DUPLICATE",
-      });
-    });
-
-    it("1.6 Rejects invalid fixture tokens with HTTP 403 AUTH_TURNSTILE_FAILED without outbound fetch", async () => {
-      const fetchSpy = vi.fn();
       vi.stubGlobal("fetch", fetchSpy);
-
-      await expect(
-        service.verifyToken(CONSTANTS.TURNSTILE.INVALID_TOKEN)
-      ).rejects.toMatchObject({
-        statusCode: 403,
-        code: "AUTH_TURNSTILE_FAILED",
-      });
-
-      await expect(service.verifyToken("0.invalid-token")).rejects.toMatchObject({
-        statusCode: 403,
-        code: "AUTH_TURNSTILE_FAILED",
-      });
-
-      await expect(service.verifyToken("2x00000000000000000000AA")).rejects.toMatchObject({
-        statusCode: 403,
-        code: "AUTH_TURNSTILE_FAILED",
-      });
-
-      await expect(service.verifyToken("mock_invalid_sample")).rejects.toMatchObject({
-        statusCode: 403,
-        code: "AUTH_TURNSTILE_FAILED",
-      });
-
-      expect(fetchSpy).not.toHaveBeenCalled();
-    });
-  });
-
-  // =========================================================================
-  // 2. Fixture Tokens with Action & Hostname Validation
-  // =========================================================================
-  describe("2. Fixture Tokens with Action & Hostname Validation", () => {
-    it("2.1 Valid fixture token with matching expectedAction passes", async () => {
-      await expect(
-        service.verifyToken(CONSTANTS.TURNSTILE.VALID_TOKEN, {
-          expectedAction: "track1-public-login",
-        })
-      ).resolves.toBeUndefined();
-    });
-
-    it("2.2 Fixture token simulating action mismatch throws HTTP 403 AUTH_TURNSTILE_FAILED", async () => {
-      await expect(
-        service.verifyToken("0.valid-action-mismatch", {
-          expectedAction: "track1-public-login",
-        })
-      ).rejects.toMatchObject({
-        statusCode: 403,
-        code: "AUTH_TURNSTILE_FAILED",
-        message: expect.stringContaining("Action mismatch"),
-      });
-    });
-
-    it("2.3 Fixture token simulating missing action throws HTTP 403 AUTH_TURNSTILE_FAILED", async () => {
-      await expect(
-        service.verifyToken("0.valid-missing-action", {
-          expectedAction: "track1-public-login",
-        })
-      ).rejects.toMatchObject({
-        statusCode: 403,
-        code: "AUTH_TURNSTILE_FAILED",
-        message: expect.stringContaining("Action mismatch"),
-      });
-    });
-
-    it("2.4 Valid fixture token with authorized hostname passes", async () => {
-      await expect(
-        service.verifyToken("0.valid-test-token")
-      ).resolves.toBeUndefined();
-    });
-
-    it("2.5 Fixture token simulating hostname mismatch throws HTTP 403 AUTH_TURNSTILE_FAILED", async () => {
-      await expect(
-        service.verifyToken("0.valid-hostname-mismatch")
-      ).rejects.toMatchObject({
-        statusCode: 403,
-        code: "AUTH_TURNSTILE_FAILED",
-        message: expect.stringContaining("is not authorized"),
-      });
-    });
-
-    it("2.6 Fixture token simulating missing hostname throws HTTP 403 AUTH_TURNSTILE_FAILED", async () => {
-      await expect(
-        service.verifyToken("0.valid-missing-hostname")
-      ).rejects.toMatchObject({
-        statusCode: 403,
-        code: "AUTH_TURNSTILE_FAILED",
-        message: expect.stringContaining("is not authorized"),
-      });
+      for (const token of [TURNSTILE.VALID_TOKEN, "1x00000000000000000000AA", "mock_valid_x", "test_valid_x", "0.valid-anything"]) {
+        await expect(service.verifyToken(token)).rejects.toMatchObject({ statusCode: 403, code: "AUTH_TURNSTILE_FAILED" });
+      }
+      expect(fetchSpy).toHaveBeenCalledTimes(5);
     });
   });
 
@@ -224,7 +129,7 @@ describe("TurnstileService Unit Test Suite", () => {
         })
       );
 
-      await service.verifyToken("live_token_string_ip_test", "198.51.100.42");
+      await service.verifyToken("live_token_string_ip_test", { remoteIp: "198.51.100.42" });
       const bodyParams = capturedOptions.body as URLSearchParams;
       expect(bodyParams.get("remoteip")).toBe("198.51.100.42");
       expect(bodyParams.get("idempotency_key")).toBeNull();
@@ -441,8 +346,8 @@ describe("TurnstileService Unit Test Suite", () => {
       ).resolves.toBeUndefined();
     });
 
-    it("5.6 Passes without action/hostname check if expectedAction and expectedHostnames are empty", async () => {
-      const openService = new TurnstileService(DEFAULT_SECRET, DEFAULT_VERIFY_URL);
+    it("5.6 Rejects every hostname when no expected hostnames are configured (fail closed)", async () => {
+      const openService = new TurnstileService(DEFAULT_SECRET, DEFAULT_VERIFY_URL, { timeoutMs: 1000, expectedHostnames: [] });
 
       vi.stubGlobal(
         "fetch",
@@ -459,7 +364,7 @@ describe("TurnstileService Unit Test Suite", () => {
 
       await expect(
         openService.verifyToken("live_token_open_service")
-      ).resolves.toBeUndefined();
+      ).rejects.toMatchObject({ statusCode: 403, code: "AUTH_TURNSTILE_FAILED" });
     });
   });
 
@@ -543,31 +448,6 @@ describe("TurnstileService Unit Test Suite", () => {
         code: "AUTH_TURNSTILE_FAILED",
       });
     });
-
-    it("6.5 Verifies clearTimeout is executed on both success and error paths", async () => {
-      const clearTimeoutSpy = vi.spyOn(globalThis, "clearTimeout");
-
-      vi.stubGlobal(
-        "fetch",
-        vi.fn().mockResolvedValue({
-          ok: true,
-          status: 200,
-          json: async () => ({
-            success: true,
-            hostname: "auth.zolexora.com",
-          }),
-        })
-      );
-
-      await service.verifyToken("live_token_timer_cleanup_success");
-      expect(clearTimeoutSpy).toHaveBeenCalled();
-
-      clearTimeoutSpy.mockClear();
-
-      vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("Network drop")));
-      await expect(service.verifyToken("live_token_timer_cleanup_fail")).rejects.toBeDefined();
-      expect(clearTimeoutSpy).toHaveBeenCalled();
-    });
   });
 
   // =========================================================================
@@ -578,7 +458,7 @@ describe("TurnstileService Unit Test Suite", () => {
       const dummyService = new TurnstileService(
         "1x0000000000000000000000000000000AA",
         DEFAULT_VERIFY_URL,
-        { expectedHostnames: ["auth.zolexora.com"] }
+        { timeoutMs: 1000, expectedHostnames: ["auth.zolexora.com"] }
       );
 
       const fetchSpy = vi.fn().mockResolvedValue({

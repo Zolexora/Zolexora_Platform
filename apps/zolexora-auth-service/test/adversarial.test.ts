@@ -1,9 +1,7 @@
+import { TURNSTILE, buildTestApp, testTokens } from "./helpers/fakes.js";
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { FastifyInstance } from "fastify";
-import { buildApp } from "../src/app.js";
-import { InMemoryAuthRepository } from "../src/repositories/in-memory-auth.repository.js";
-import { CONSTANTS } from "../src/config/constants.js";
-import { TokenService } from "../src/services/token.service.js";
+import { InMemoryAuthRepository } from "./helpers/in-memory-auth.repository.js";
 import { RateLimitService } from "../src/services/rate-limit.service.js";
 import { validatePassword } from "@zolexora/utils";
 
@@ -13,7 +11,7 @@ describe("Adversarial Security & Stress Suite (Milestone 2 Challenge)", () => {
 
   beforeEach(async () => {
     repo = new InMemoryAuthRepository();
-    app = await buildApp({ repo, logger: false });
+    app = await buildTestApp(repo);
     await app.ready();
   });
 
@@ -123,7 +121,7 @@ describe("Adversarial Security & Stress Suite (Milestone 2 Challenge)", () => {
         payload: {
           email: "consumer@clarityfi.app",
           password: "CorporateSecurePass123!",
-          turnstile_token: CONSTANTS.TURNSTILE.TIMEOUT_DUPLICATE_TOKEN,
+          turnstile_token: TURNSTILE.TIMEOUT_DUPLICATE_TOKEN,
         },
       });
       expect(res.statusCode).toBe(403);
@@ -136,12 +134,12 @@ describe("Adversarial Security & Stress Suite (Milestone 2 Challenge)", () => {
         method: "POST",
         url: "/api/v1/auth/public/login",
         headers: {
-          "cf-turnstile-token": CONSTANTS.TURNSTILE.VALID_TOKEN,
+          "cf-turnstile-token": TURNSTILE.VALID_TOKEN,
         },
         payload: {
           email: "consumer@clarityfi.app",
           password: "CorporateSecurePass123!",
-          turnstile_token: CONSTANTS.TURNSTILE.INVALID_TOKEN,
+          turnstile_token: TURNSTILE.INVALID_TOKEN,
         },
       });
       expect(res1.statusCode).toBe(403);
@@ -152,12 +150,12 @@ describe("Adversarial Security & Stress Suite (Milestone 2 Challenge)", () => {
         method: "POST",
         url: "/api/v1/auth/public/login",
         headers: {
-          "cf-turnstile-token": CONSTANTS.TURNSTILE.INVALID_TOKEN,
+          "cf-turnstile-token": TURNSTILE.INVALID_TOKEN,
         },
         payload: {
           email: "consumer@clarityfi.app",
           password: "CorporateSecurePass123!",
-          turnstile_token: CONSTANTS.TURNSTILE.VALID_TOKEN,
+          turnstile_token: TURNSTILE.VALID_TOKEN,
         },
       });
       expect(res2.statusCode).toBe(200);
@@ -168,7 +166,7 @@ describe("Adversarial Security & Stress Suite (Milestone 2 Challenge)", () => {
         method: "POST",
         url: "/api/v1/auth/public/login",
         headers: {
-          "cf-turnstile-token": CONSTANTS.TURNSTILE.VALID_TOKEN,
+          "cf-turnstile-token": TURNSTILE.VALID_TOKEN,
         },
         payload: {
           email: "consumer@clarityfi.app",
@@ -183,7 +181,7 @@ describe("Adversarial Security & Stress Suite (Milestone 2 Challenge)", () => {
         method: "POST",
         url: "/api/v1/auth/public/login",
         headers: {
-          "CF-Turnstile-Token": CONSTANTS.TURNSTILE.VALID_TOKEN,
+          "CF-Turnstile-Token": TURNSTILE.VALID_TOKEN,
         },
         payload: {
           email: "consumer@clarityfi.app",
@@ -237,7 +235,7 @@ describe("Adversarial Security & Stress Suite (Milestone 2 Challenge)", () => {
           payload: {
             email: "victim_rate1@zolexora.com",
             password: "WrongPassword123!",
-            turnstile_token: CONSTANTS.TURNSTILE.VALID_TOKEN,
+            turnstile_token: TURNSTILE.VALID_TOKEN,
           },
         });
         expect(res.statusCode).toBe(401);
@@ -252,7 +250,7 @@ describe("Adversarial Security & Stress Suite (Milestone 2 Challenge)", () => {
         payload: {
           email: "victim_rate1@zolexora.com",
           password: "WrongPassword123!",
-          turnstile_token: CONSTANTS.TURNSTILE.VALID_TOKEN,
+          turnstile_token: TURNSTILE.VALID_TOKEN,
         },
       });
 
@@ -283,7 +281,7 @@ describe("Adversarial Security & Stress Suite (Milestone 2 Challenge)", () => {
           payload: {
             email,
             password: "WrongPassword123!",
-            turnstile_token: CONSTANTS.TURNSTILE.VALID_TOKEN,
+            turnstile_token: TURNSTILE.VALID_TOKEN,
           },
         });
         expect(res.statusCode).toBe(401);
@@ -297,7 +295,7 @@ describe("Adversarial Security & Stress Suite (Milestone 2 Challenge)", () => {
         payload: {
           email,
           password: "CorporateSecurePass123!",
-          turnstile_token: CONSTANTS.TURNSTILE.VALID_TOKEN,
+          turnstile_token: TURNSTILE.VALID_TOKEN,
         },
       });
       expect(successRes.statusCode).toBe(200);
@@ -311,7 +309,7 @@ describe("Adversarial Security & Stress Suite (Milestone 2 Challenge)", () => {
           payload: {
             email,
             password: "WrongPasswordAgain!",
-            turnstile_token: CONSTANTS.TURNSTILE.VALID_TOKEN,
+            turnstile_token: TURNSTILE.VALID_TOKEN,
           },
         });
         expect(res.statusCode).toBe(401); // Not 429!
@@ -325,7 +323,7 @@ describe("Adversarial Security & Stress Suite (Milestone 2 Challenge)", () => {
         payload: {
           email,
           password: "WrongPasswordAgain!",
-          turnstile_token: CONSTANTS.TURNSTILE.VALID_TOKEN,
+          turnstile_token: TURNSTILE.VALID_TOKEN,
         },
       });
       expect(sixthAfterReset.statusCode).toBe(429);
@@ -344,7 +342,7 @@ describe("Adversarial Security & Stress Suite (Milestone 2 Challenge)", () => {
           payload: {
             email: "user_ip_iso1@zolexora.com",
             password: "WrongPassword123!",
-            turnstile_token: CONSTANTS.TURNSTILE.VALID_TOKEN,
+            turnstile_token: TURNSTILE.VALID_TOKEN,
           },
         });
       }
@@ -356,7 +354,7 @@ describe("Adversarial Security & Stress Suite (Milestone 2 Challenge)", () => {
         payload: {
           email: "user_ip_iso1@zolexora.com",
           password: "WrongPassword123!",
-          turnstile_token: CONSTANTS.TURNSTILE.VALID_TOKEN,
+          turnstile_token: TURNSTILE.VALID_TOKEN,
         },
       });
       expect(lockedRes.statusCode).toBe(429);
@@ -369,7 +367,7 @@ describe("Adversarial Security & Stress Suite (Milestone 2 Challenge)", () => {
         payload: {
           email: "consumer@clarityfi.app",
           password: "CorporateSecurePass123!",
-          turnstile_token: CONSTANTS.TURNSTILE.VALID_TOKEN,
+          turnstile_token: TURNSTILE.VALID_TOKEN,
         },
       });
       expect(innocentRes.statusCode).toBe(200);
@@ -390,7 +388,7 @@ describe("Adversarial Security & Stress Suite (Milestone 2 Challenge)", () => {
           payload: {
             email: targetEmail,
             password: "WrongPassword123!",
-            turnstile_token: CONSTANTS.TURNSTILE.VALID_TOKEN,
+            turnstile_token: TURNSTILE.VALID_TOKEN,
           },
         });
         expect(res.statusCode).toBe(401);
@@ -405,7 +403,7 @@ describe("Adversarial Security & Stress Suite (Milestone 2 Challenge)", () => {
         payload: {
           email: targetEmail,
           password: "WrongPassword123!",
-          turnstile_token: CONSTANTS.TURNSTILE.VALID_TOKEN,
+          turnstile_token: TURNSTILE.VALID_TOKEN,
         },
       });
       expect(lockedResA.statusCode).toBe(429);
@@ -419,7 +417,7 @@ describe("Adversarial Security & Stress Suite (Milestone 2 Challenge)", () => {
         payload: {
           email: targetEmail,
           password: "DifferentWrongPassword!",
-          turnstile_token: CONSTANTS.TURNSTILE.VALID_TOKEN,
+          turnstile_token: TURNSTILE.VALID_TOKEN,
         },
       });
       expect(resBWrong.statusCode).toBe(401);
@@ -433,7 +431,7 @@ describe("Adversarial Security & Stress Suite (Milestone 2 Challenge)", () => {
         payload: {
           email: targetEmail,
           password: "CorporateSecurePass123!",
-          turnstile_token: CONSTANTS.TURNSTILE.VALID_TOKEN,
+          turnstile_token: TURNSTILE.VALID_TOKEN,
         },
       });
       expect(resBSuccess.statusCode).toBe(200);
@@ -448,14 +446,14 @@ describe("Adversarial Security & Stress Suite (Milestone 2 Challenge)", () => {
         payload: {
           email: targetEmail,
           password: "CorporateSecurePass123!",
-          turnstile_token: CONSTANTS.TURNSTILE.VALID_TOKEN,
+          turnstile_token: TURNSTILE.VALID_TOKEN,
         },
       });
       expect(lockedResAAfter.statusCode).toBe(429);
     });
 
     it("2.5 Sliding-window eviction: failed attempts outside 15-minute window do not cause lockout", () => {
-      const rateLimiter = new RateLimitService();
+      const rateLimiter = new RateLimitService({ maxAttempts: 5, windowSeconds: 900, lockoutSeconds: 900 });
       const key = "ip:198.51.100.99";
 
       // Simulate 4 failures 16 minutes ago (now - 960_000ms)
@@ -464,7 +462,6 @@ describe("Adversarial Security & Stress Suite (Milestone 2 Challenge)", () => {
 
       // Access store internally to simulate past timestamps
       (rateLimiter as any).store.set(key, {
-        failures: 4,
         lockedUntil: 0,
         timestamps: [pastTime, pastTime + 1000, pastTime + 2000, pastTime + 3000],
       });
@@ -492,7 +489,7 @@ describe("Adversarial Security & Stress Suite (Milestone 2 Challenge)", () => {
           email: "pass_11@zolexora.com",
           phoneNumber: "+919876543210",
           password: "A".repeat(11),
-          turnstile_token: CONSTANTS.TURNSTILE.VALID_TOKEN,
+          turnstile_token: TURNSTILE.VALID_TOKEN,
         },
       });
       expect(res.statusCode).toBe(400);
@@ -507,7 +504,7 @@ describe("Adversarial Security & Stress Suite (Milestone 2 Challenge)", () => {
           email: "pass_12@zolexora.com",
           phoneNumber: "+919876543210",
           password: "A".repeat(12),
-          turnstile_token: CONSTANTS.TURNSTILE.VALID_TOKEN,
+          turnstile_token: TURNSTILE.VALID_TOKEN,
         },
       });
       expect(res.statusCode).toBe(201);
@@ -522,7 +519,7 @@ describe("Adversarial Security & Stress Suite (Milestone 2 Challenge)", () => {
           email: "pass_1024@zolexora.com",
           phoneNumber: "+919876543210",
           password: "A".repeat(1024),
-          turnstile_token: CONSTANTS.TURNSTILE.VALID_TOKEN,
+          turnstile_token: TURNSTILE.VALID_TOKEN,
         },
       });
       expect(res.statusCode).toBe(201);
@@ -538,7 +535,7 @@ describe("Adversarial Security & Stress Suite (Milestone 2 Challenge)", () => {
           email: "pass_1025@zolexora.com",
           phoneNumber: "+919876543210",
           password: "A".repeat(1025),
-          turnstile_token: CONSTANTS.TURNSTILE.VALID_TOKEN,
+          turnstile_token: TURNSTILE.VALID_TOKEN,
         },
       });
       const elapsed = performance.now() - start;
@@ -595,7 +592,7 @@ describe("Adversarial Security & Stress Suite (Milestone 2 Challenge)", () => {
 
     const kycUser = "ZX-8K9M-4P2W-7Y3X";
     const kycHeaders = () => ({
-      authorization: `Bearer ${new TokenService().signJwt({ uid: kycUser, zolexora_id: kycUser, role: "user" })}`,
+      authorization: `Bearer ${testTokens().signJwt({ uid: kycUser, zolexora_id: kycUser, role: "user" })}`,
       "x-organisation-id": "ZX-ORG-4B8T-9M2K-7Y4X",
     });
     const MAGIC: Record<string, number[]> = {
@@ -681,7 +678,8 @@ describe("Adversarial Security & Stress Suite (Milestone 2 Challenge)", () => {
   describe("5. Token Revocation & Immediate Session Invalidation", () => {
     it("5.1 Subsequent /api/v1/auth/me calls are immediately rejected with HTTP 401 following revocation", async () => {
       const uid = "emp_adversarial_revocation_007";
-      const token = `token_belonging_to_${uid}`;
+      const tokens = testTokens();
+      const token = tokens.signJwt({ uid, iat: Math.floor(Date.now() / 1000) - 5 });
 
       // 1. Token is authorized before revocation
       const beforeRes = await app.inject({
@@ -696,7 +694,8 @@ describe("Adversarial Security & Stress Suite (Milestone 2 Challenge)", () => {
       const revokeRes = await app.inject({
         method: "POST",
         url: "/api/v1/auth/tokens/revoke",
-        payload: { uid, reason: "Adversarial test invalidation" },
+        headers: { authorization: `Bearer ${token}` },
+        payload: { reason: "Adversarial test invalidation" },
       });
       expect(revokeRes.statusCode).toBe(200);
       const revokeData = revokeRes.json();
@@ -716,7 +715,7 @@ describe("Adversarial Security & Stress Suite (Milestone 2 Challenge)", () => {
       expect(err.error.code).toBe("AUTH_TOKEN_REVOKED");
 
       // 4. Other unrevoked user's token is still valid
-      const otherToken = "token_belonging_to_innocent_user_999";
+      const otherToken = tokens.signJwt({ uid: "usr_innocent_999" });
       const otherRes = await app.inject({
         method: "GET",
         url: "/api/v1/auth/me",
@@ -737,7 +736,7 @@ describe("Adversarial Security & Stress Suite (Milestone 2 Challenge)", () => {
 
     it("5.3 Validates token issuance timestamp (iat <= T rejected, iat > T accepted)", async () => {
       const uid = "emp_timestamp_test_101";
-      const tokenService = new TokenService();
+      const tokenService = testTokens();
 
       // Issue Token 1 before revocation (simulated older timestamp)
       const tokenBefore = tokenService.signJwt({
@@ -757,7 +756,7 @@ describe("Adversarial Security & Stress Suite (Milestone 2 Challenge)", () => {
       expect(resBefore.statusCode).toBe(200);
 
       // Revoke user at current timestamp T
-      await repo.revokeToken(uid, "Password reset");
+      await repo.revokeToken(uid, "user_all_tokens", "Password reset", "test");
 
       // Token 1 (iat = 1000 <= T) is immediately rejected
       const resAfterOld = await app.inject({
@@ -789,7 +788,7 @@ describe("Adversarial Security & Stress Suite (Milestone 2 Challenge)", () => {
 
     it("5.4 Rejects token with future iat exceeding clock skew tolerance (+600s) with HTTP 401", async () => {
       const uid = "usr_attacker_future_600";
-      const tokenService = new TokenService();
+      const tokenService = testTokens();
       const now = Math.floor(Date.now() / 1000);
 
       const futureToken = tokenService.signJwt({
@@ -813,7 +812,7 @@ describe("Adversarial Security & Stress Suite (Milestone 2 Challenge)", () => {
 
     it("5.5 Rejects token with iat strictly 1 second past clock skew tolerance (now + 301s) with HTTP 401", async () => {
       const uid = "usr_attacker_future_301";
-      const tokenService = new TokenService();
+      const tokenService = testTokens();
       const now = Math.floor(Date.now() / 1000);
 
       const futureToken = tokenService.signJwt({
@@ -835,7 +834,7 @@ describe("Adversarial Security & Stress Suite (Milestone 2 Challenge)", () => {
 
     it("5.6 Accepts token with iat within allowable clock skew tolerance (now + 10s and now + 300s)", async () => {
       const uid = "usr_legit_skewed";
-      const tokenService = new TokenService();
+      const tokenService = testTokens();
       const now = Math.floor(Date.now() / 1000);
 
       // 1. Within 10s skew

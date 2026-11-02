@@ -1,19 +1,21 @@
+# Every value comes from Infisical — run via scripts/docker-start.sh (wraps scripts/setup/with-infisical.sh).
+# No defaults: Compose refuses to start if a required key is missing.
 services:
   auth-postgres:
     image: postgres:16-alpine
     container_name: zolexora-auth-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${AUTH_POSTGRES_USER:-auth_admin}
-      POSTGRES_PASSWORD: ${AUTH_POSTGRES_PASSWORD:-auth_secret_dev_pass}
-      POSTGRES_DB: ${AUTH_POSTGRES_DB:-zolexora_auth}
+      POSTGRES_USER: ${AUTH_POSTGRES_USER:?AUTH_POSTGRES_USER must be set in Infisical}
+      POSTGRES_PASSWORD: ${AUTH_POSTGRES_PASSWORD:?AUTH_POSTGRES_PASSWORD must be set in Infisical}
+      POSTGRES_DB: ${AUTH_POSTGRES_DB:?AUTH_POSTGRES_DB must be set in Infisical}
     volumes:
       - auth_postgres_data:/var/lib/postgresql/data
       - ../../scripts/db/auth-service-schema.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
     ports:
-      - "${AUTH_POSTGRES_PORT:-5451}:5432"
+      - "${AUTH_POSTGRES_PORT:?AUTH_POSTGRES_PORT must be set in Infisical}:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${AUTH_POSTGRES_USER:-auth_admin} -d ${AUTH_POSTGRES_DB:-zolexora_auth}"]
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -37,36 +39,54 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
-      - "${AUTH_SERVICE_PORT:-3081}:3081"
+      - "${AUTH_SERVICE_PORT:?AUTH_SERVICE_PORT must be set in Infisical}:${PORT:?PORT must be set in Infisical}"
+    # Names only: values are passed through from the Infisical-injected environment.
+    # Infisical key aliases (ZOLEXORA_*) are resolved by src/config/infisical.ts.
     environment:
-      - NODE_ENV=production
-      - PORT=3081
-      - HOST=0.0.0.0
-      - BASE_URL=${AUTH_BASE_URL:-http://localhost:3081}
-      - CORS_ORIGIN=${CORS_ORIGIN:-*}
-      - AUTH_DATABASE_URL=postgresql://${AUTH_POSTGRES_USER:-auth_admin}:${AUTH_POSTGRES_PASSWORD:-auth_secret_dev_pass}@auth-postgres:5432/${AUTH_POSTGRES_DB:-zolexora_auth}
-      - ADMIN_DATABASE_URL=${ADMIN_DATABASE_URL:-postgresql://${AUTH_POSTGRES_USER:-auth_admin}:${AUTH_POSTGRES_PASSWORD:-auth_secret_dev_pass}@auth-postgres:5432/${AUTH_POSTGRES_DB:-zolexora_auth}}
-      - SESSION_SECRET=${SESSION_SECRET:-zolexora-platform-auth-secret-key-32bytes-min}
-      - STORAGE_SIGNING_SECRET=${STORAGE_SIGNING_SECRET:-}
-      - TURNSTILE_SECRET_KEY=${TURNSTILE_SECRET_KEY:-1x0000000000000000000000000000000AA}
-      - TURNSTILE_EXPECTED_HOSTNAMES=${TURNSTILE_EXPECTED_HOSTNAMES:-}
-      - RATE_LIMIT_MAX_ATTEMPTS=${RATE_LIMIT_MAX_ATTEMPTS:-5}
-      - RATE_LIMIT_WINDOW_SECONDS=${RATE_LIMIT_WINDOW_SECONDS:-900}
-      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME:-zolexora}
-      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY:-}
-      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET:-}
-      - KYC_STORAGE_ENDPOINT=${KYC_STORAGE_ENDPOINT:-https://storage.zolexora.com}
-      - KYC_SIGNED_URL_DEFAULT_TTL=${KYC_SIGNED_URL_DEFAULT_TTL:-900}
-      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID:-zolexora-auth}
-      - FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL:-}
-      - FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY:-}
-      - RESEND_API_KEY=${RESEND_API_KEY:-}
-      - AUTH_FROM_EMAIL=${AUTH_FROM_EMAIL:-Zolexora <auth@zolexora.com>}
+      - NODE_ENV
+      - PORT
+      - HOST
+      - BASE_URL
+      - CORS_ORIGIN
+      - TRUST_PROXY
+      - AUTH_DATABASE_URL
+      - ADMIN_DATABASE_URL
+      - ZOLEXORA_AUTHENTICATION_DATABASE_URL
+      - ZOLEXORA_AUTHENTICATION_INTERNAL_DATABASE_URL
+      - ZOLEXORA_ADMIN_DATABASE_URL
+      - SESSION_SECRET
+      - STORAGE_SIGNING_SECRET
+      - TOKEN_TTL_SECONDS
+      - TURNSTILE_SECRET_KEY
+      - CF_TURNSTILE_SECRET_KEY
+      - CLOUDFLARE_TURNSTILE_SECRET_KEY
+      - TURNSTILE_VERIFY_URL
+      - TURNSTILE_TIMEOUT_MS
+      - TURNSTILE_EXPECTED_HOSTNAMES
+      - RATE_LIMIT_MAX_ATTEMPTS
+      - RATE_LIMIT_WINDOW_SECONDS
+      - RATE_LIMIT_LOCKOUT_SECONDS
+      - OTP_TTL_SECONDS
+      - OTP_MAX_ATTEMPTS
+      - CLOUDINARY_CLOUD_NAME
+      - CLOUDINARY_API_KEY
+      - CLOUDINARY_API_SECRET
+      - ZOLEXORA_CLOUDINARY_CLOUD_NAME
+      - ZOLEXORA_CLOUDINARY_API_KEY
+      - ZOLEXORA_CLOUDINARY_API_SECRET
+      - KYC_STORAGE_ENDPOINT
+      - KYC_SIGNED_URL_DEFAULT_TTL
+      - RESEND_API_KEY
+      - RESEND_API_URL
+      - ZOLEXORA_PRODUCTION_RESEND_API_KEY
+      - ZOLEXORA_RESEND_API_KEY
+      - AUTH_FROM_EMAIL
+      - ZOLEXORA_AUTH_FROM_EMAIL
     depends_on:
       auth-postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3081/health"]
+      test: ["CMD-SHELL", "wget -qO- \"http://localhost:$$PORT/health\" || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 3

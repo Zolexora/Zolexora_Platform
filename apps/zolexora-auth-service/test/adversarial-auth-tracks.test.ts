@@ -1,31 +1,30 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
-import { FastifyInstance } from "fastify";
-import { buildApp } from "../src/app.js";
-import { InMemoryAuthRepository } from "../src/repositories/in-memory-auth.repository.js";
-import { CONSTANTS } from "../src/config/constants.js";
+import { TURNSTILE, buildTestApp, testTokens } from "./helpers/fakes.js";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { InMemoryAuthRepository } from "./helpers/in-memory-auth.repository.js";
 import { BLOCKED_WEBMAIL_DOMAINS } from "@zolexora/utils";
 
+// Employee provisioning requires an org admin (or platform admin) token.
+const orgAdminAuth = () => ({
+  authorization: `Bearer ${testTokens().signJwt({ uid: "emp_admin_1", zolexora_id: "ZX-4B8T-9M2K-7Y4X", org_id: "ZX-ORG-4B8T-9M2K-7Y4X", role: "admin", permissions: ["*"] })}`,
+});
+
+
 describe("Milestone 2 Adversarial & Empirical Probing: Authentication Tracks", () => {
-  let app: FastifyInstance;
+  let app: Awaited<ReturnType<typeof buildTestApp>>;
   let repo: InMemoryAuthRepository;
 
-  const VALID_TURNSTILE = CONSTANTS.TURNSTILE.VALID_TOKEN;
+  const VALID_TURNSTILE = TURNSTILE.VALID_TOKEN;
   const VALID_ORG = "ZX-ORG-4B8T-9M2K-7Y4X";
   const VALID_EMP_PASS = "CorporateSecurePass123!";
   const VALID_ADMIN_PASS = "MasterSuperadminSecret2026!";
 
-  beforeAll(async () => {
-    repo = new InMemoryAuthRepository();
-    app = await buildApp({ repo, logger: false });
-    await app.ready();
-  });
-
-  afterAll(async () => {
-    await app.close();
-  });
-
   beforeEach(async () => {
-    await repo.reset();
+    repo = new InMemoryAuthRepository();
+    app = await buildTestApp(repo);
+  });
+
+  afterEach(async () => {
+    await app.close();
   });
 
   // =========================================================================
@@ -103,8 +102,9 @@ describe("Milestone 2 Adversarial & Empirical Probing: Authentication Tracks", (
         },
       });
 
-      expect(res.statusCode).toBe(404);
-      expect(res.json().code).toBe("AUTH_USER_NOT_FOUND");
+      // Same response as a wrong code: no account/registration enumeration.
+      expect(res.statusCode).toBe(400);
+      expect(res.json().code).toBe("AUTH_OTP_INVALID_OR_EXPIRED");
     });
 
     it("T1-ADV-05: Rejects invalid or incorrect OTP codes", async () => {
@@ -150,29 +150,22 @@ describe("Milestone 2 Adversarial & Empirical Probing: Authentication Tracks", (
       });
       expect(signupRes.statusCode).toBe(201);
 
-      // 2. Manually mutate repository pending registration to simulate expired TTL (> 600s in the past)
-      const pending = await repo.getPendingRegistrationByEmail("ttl.expired@example.com");
-      expect(pending).not.toBeNull();
-      // Age the registration past expiration
-      if (pending) {
-        pending.expires_at = Date.now() - 10000; // 10 seconds ago (expired)
-      }
+      // 2. Age the stored code past its expiry
+      const email = "ttl.expired@example.com";
+      const code = app.mail.lastCode(email);
+      expect(code).toMatch(/^\d{6}$/);
+      const otp = await repo.getOtp(email, "signup");
+      expect(otp).not.toBeNull();
+      otp!.expires_at = Date.now() - 10_000;
 
-      // 3. Attempt verification with the correct default OTP
+      // 3. The correct code is rejected once expired
       const verifyRes = await app.inject({
         method: "POST",
         url: "/api/v1/auth/public/verify-email-otp",
-        payload: {
-          email: "ttl.expired@example.com",
-          otp: "123456",
-        },
+        payload: { email, otp: code },
       });
-
-      // EMPIRICAL OBSERVATION & DEFECT REPRODUCTION:
-      // The repository sets record.expires_at = Date.now() + 600000ms upon creation.
-      // However, verifyPendingEmailOtp() never checks `if (Date.now() > record.expires_at)`.
-      // Consequently, expired registrations return 200 instead of 400 AUTH_OTP_INVALID_OR_EXPIRED.
-      expect(verifyRes.statusCode).toBe(200);
+      expect(verifyRes.statusCode).toBe(400);
+      expect(verifyRes.json().code).toBe("AUTH_OTP_INVALID_OR_EXPIRED");
     });
 
     it("T1-ADV-07: Product routing matrix routes all consumer apps to /dashboard and enterprise SaaS to /select-organization", async () => {
@@ -298,6 +291,7 @@ describe("Milestone 2 Adversarial & Empirical Probing: Authentication Tracks", (
         const resLower = await app.inject({
           method: "POST",
           url: "/api/v1/auth/employee/create",
+          headers: orgAdminAuth(),
           payload: {
             org_id: VALID_ORG,
             email: `employee@${domain}`,
@@ -311,6 +305,7 @@ describe("Milestone 2 Adversarial & Empirical Probing: Authentication Tracks", (
         const resUpper = await app.inject({
           method: "POST",
           url: "/api/v1/auth/employee/create",
+          headers: orgAdminAuth(),
           payload: {
             org_id: VALID_ORG,
             email: `EMPLOYEE@${domain.toUpperCase()}`,
@@ -325,6 +320,7 @@ describe("Milestone 2 Adversarial & Empirical Probing: Authentication Tracks", (
         const resMixed = await app.inject({
           method: "POST",
           url: "/api/v1/auth/employee/create",
+          headers: orgAdminAuth(),
           payload: {
             org_id: VALID_ORG,
             email: `user@${mixed}`,
@@ -341,6 +337,7 @@ describe("Milestone 2 Adversarial & Empirical Probing: Authentication Tracks", (
       const resSubdomain = await app.inject({
         method: "POST",
         url: "/api/v1/auth/employee/create",
+          headers: orgAdminAuth(),
         payload: {
           org_id: VALID_ORG,
           email: "user@mail.gmail.com",
@@ -354,6 +351,7 @@ describe("Milestone 2 Adversarial & Empirical Probing: Authentication Tracks", (
       const resLegit = await app.inject({
         method: "POST",
         url: "/api/v1/auth/employee/create",
+          headers: orgAdminAuth(),
         payload: {
           org_id: VALID_ORG,
           email: "contact@notgmail.com",
