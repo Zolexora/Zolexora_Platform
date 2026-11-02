@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { fetchSystemHealth, fetchDatabaseHealth } from '@/lib/api';
-import { MenuIcon, RefreshIcon, ApiDocsIcon } from './icons';
+import { useAuth } from '@zolexora/auth-client/react';
+import { MenuIcon, RefreshIcon } from './icons';
 
 interface TopBarProps {
   isSidebarCollapsed: boolean;
@@ -16,6 +17,7 @@ export default function TopBar({
   onMobileMenuToggle,
 }: TopBarProps) {
   const pathname = usePathname();
+  const { user, signOut } = useAuth();
   const [healthStatus, setHealthStatus] = useState<'healthy' | 'degraded' | 'unhealthy'>('healthy');
   const [environment, setEnvironment] = useState<string>('Development');
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -105,18 +107,6 @@ export default function TopBar({
           <span className="font-semibold text-sky-400">Docker Gateway :3095</span>
         </div>
 
-        {/* Swagger API Quick Link */}
-        <a
-          href="/docs"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="hidden sm:flex items-center space-x-1.5 px-3 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white text-xs font-medium transition-colors"
-          title="Open Interactive Swagger Documentation"
-        >
-          <ApiDocsIcon className="w-3.5 h-3.5 text-indigo-400" />
-          <span>Swagger Docs</span>
-        </a>
-
         {/* Refresh Trigger */}
         <button
           onClick={loadHealth}
@@ -144,6 +134,14 @@ export default function TopBar({
           />
           <span className="capitalize">{healthStatus === 'healthy' ? 'System Operational' : 'Degraded'}</span>
         </div>
+
+        <button
+          onClick={() => signOut()}
+          title={user?.email ? `Signed in as ${user.email}` : undefined}
+          className="px-3 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white text-xs font-medium transition-colors"
+        >
+          Sign out
+        </button>
       </div>
     </header>
   );

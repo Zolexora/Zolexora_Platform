@@ -101,8 +101,16 @@ export default function CapacityGauge({ databases, overallThresholdAlert = false
       {/* Cluster Storage Quotas Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {databases.map((db) => {
-          const isUnconfigured = !db.is_configured || db.threshold_state === 'UNCONFIGURED';
-          const styling = isUnconfigured
+          const isUnreachable = db.threshold_state === 'UNREACHABLE';
+          const isUnconfigured = isUnreachable || !db.is_configured || db.threshold_state === 'UNCONFIGURED';
+          const styling = isUnreachable
+            ? {
+                bar: 'bg-slate-700',
+                text: 'text-rose-400',
+                badge: 'bg-rose-950 text-rose-300 border-rose-800 font-mono',
+                label: 'UNREACHABLE',
+              }
+            : isUnconfigured
             ? {
                 bar: 'bg-slate-700',
                 text: 'text-slate-400',

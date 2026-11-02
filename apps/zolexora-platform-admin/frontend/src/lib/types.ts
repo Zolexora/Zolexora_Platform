@@ -88,7 +88,7 @@ export interface StorageQuotaMetric {
   used_bytes: number;
   used_pretty: string;
   usage_percentage: number;
-  threshold_state: 'NORMAL' | 'WARNING' | 'CRITICAL' | 'UNCONFIGURED';
+  threshold_state: 'NORMAL' | 'WARNING' | 'CRITICAL' | 'UNCONFIGURED' | 'UNREACHABLE';
   is_configured?: boolean;
   infisical_path?: string | null;
   tables?: HotTableMetric[] | null;
@@ -171,7 +171,7 @@ export interface EmailSendRequest {
 export interface EmailSendResponse {
   success: boolean;
   message_id: string;
-  provider_used: EmailProviderName;
+  provider_used: EmailProviderName | null;
   account_used: string;
   status: 'queued' | 'sent' | 'failed';
   attempt_count: number;

@@ -86,7 +86,7 @@ export default function EmailLogViewer({ initialLogs, initialTotal }: EmailLogVi
       setSendResult({
         success: false,
         message_id: 'err_fallback_offline',
-        provider_used: 'resend',
+        provider_used: null,
         account_used: 'offline_mode',
         status: 'failed',
         attempt_count: 1,

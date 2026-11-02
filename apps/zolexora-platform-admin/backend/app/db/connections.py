@@ -110,24 +110,15 @@ def generate_r2_presigned_url(
     operation: str = "get_object",
     expiry_seconds: int = 3600
 ) -> str:
-    """
-    Generates a secure pre-signed Cloudflare R2 URL using boto3.
-    Degrades gracefully to a signed URL format if client credentials are mock or missing.
-    """
+    """Generates a pre-signed Cloudflare R2 URL. Raises RuntimeError when R2 is not configured."""
     client = get_r2_client()
-    if client is not None:
-        try:
-            return client.generate_presigned_url(
-                ClientMethod=operation,
-                Params={"Bucket": bucket, "Key": file_key},
-                ExpiresIn=expiry_seconds
-            )
-        except Exception:
-            pass
-
-    # Non-blocking fallback for unconfigured environments
-    account_id = os.getenv("R2_ACCOUNT_ID", "mock-account")
-    return f"https://{account_id}.r2.cloudflarestorage.com/{bucket}/{file_key}?operation={operation}&expires_in={expiry_seconds}"
+    if client is None:
+        raise RuntimeError("R2 is not configured (R2_ACCOUNT_ID / R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY)")
+    return client.generate_presigned_url(
+        ClientMethod=operation,
+        Params={"Bucket": bucket, "Key": file_key},
+        ExpiresIn=expiry_seconds
+    )
 
 def get_r2_bucket_for_product(product: str) -> str:
     """Resolves target R2 bucket for a product."""

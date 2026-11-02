@@ -1,9 +1,9 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional, Literal, Dict, Any
 
 class EmailSendRequest(BaseModel):
     product: str
-    to: List[str]
+    to: List[str] = Field(min_length=1)
     subject: str
     html_content: Optional[str] = None
     text_content: Optional[str] = None
@@ -14,7 +14,7 @@ class EmailSendRequest(BaseModel):
 class EmailSendResponse(BaseModel):
     success: bool
     message_id: str
-    provider_used: Literal["resend", "brevo", "sendgrid"]
+    provider_used: Optional[Literal["resend", "brevo", "sendgrid"]] = None
     account_used: str
     status: Literal["queued", "sent", "failed"]
     attempt_count: int

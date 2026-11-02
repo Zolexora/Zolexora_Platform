@@ -15,13 +15,21 @@ import type {
   FleetService,
   FleetResponse,
 } from './types';
+import { SESSION_EXPIRED_EVENT, SESSION_STORAGE_KEY } from '@zolexora/auth-client';
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL !== undefined
-    ? process.env.NEXT_PUBLIC_API_URL
-    : (typeof window !== 'undefined'
-      ? ''
-      : (process.env.INTERNAL_API_URL || 'http://platform-admin-backend:8000'));
+// Browser: same origin, through the nginx gateway (/api -> backend). Set NEXT_PUBLIC_API_URL only for `next dev`.
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
+
+/** Bearer token of the signed-in platform admin (stored by @zolexora/auth-client). */
+function authHeader(): Record<string, string> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const token = JSON.parse(window.localStorage.getItem(SESSION_STORAGE_KEY) || 'null')?.token;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  } catch {
+    return {};
+  }
+}
 
 /**
  * Generic JSON fetch wrapper with timeout and error handling.
@@ -33,12 +41,16 @@ async function fetchJson<T>(endpoint: string, options?: RequestInit): Promise<T>
       ...options,
       headers: {
         'Content-Type': 'application/json',
+        ...authHeader(),
         ...(options?.headers || {}),
       },
       cache: 'no-store',
       signal: options?.signal || AbortSignal.timeout(10000),
     });
 
+    if (res.status === 401 && typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT)); // back to the login form
+    }
     if (!res.ok) {
       const errorText = await res.text();
       throw new Error(`API error ${res.status} on ${endpoint}: ${errorText}`);

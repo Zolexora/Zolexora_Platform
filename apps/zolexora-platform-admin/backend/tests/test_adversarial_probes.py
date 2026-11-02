@@ -22,6 +22,7 @@ from app.services.email import (
     get_daily_usage,
 )
 from app.schemas.email import EmailSendRequest
+from tests.fakes import fake_pg_pool
 from app.db.telemetry import (
     collect_postgres_capacity,
     collect_mongo_capacity,
@@ -89,10 +90,7 @@ async def test_probe_health_databases_direct_exception_injection():
     """
     with patch("app.db.health.get_supabase_url", return_value="https://test.supabase.co"), \
          patch("app.db.health.get_supabase_key", return_value="service_key"), \
-         patch("app.db.health.get_supabase") as mock_get_client:
-        mock_client = MagicMock()
-        mock_client.table.side_effect = RuntimeError("Kernel TCP stack abort")
-        mock_get_client.return_value = mock_client
+         patch("app.db.health.httpx.AsyncClient.get", side_effect=RuntimeError("Kernel TCP stack abort")):
 
         res = await check_supabase_health("core")
         assert res.status == "degraded"
@@ -321,19 +319,22 @@ async def test_probe_capacity_threshold_states_warning_and_critical():
     - >= 90% -> CRITICAL
     """
     # 79% of 500MB
-    with patch("app.db.telemetry.SIMULATED_PG_SIZES", {"core": int(POSTGRES_FREE_LIMIT_BYTES * 0.79)}):
+    with patch("app.db.telemetry.get_pg_pool_dsn", return_value="postgresql://x"), \
+         patch("app.db.telemetry.get_asyncpg_pool", AsyncMock(return_value=fake_pg_pool(int(POSTGRES_FREE_LIMIT_BYTES * 0.79)))):
         m79 = await collect_postgres_capacity("core")
         assert m79.threshold_state == "NORMAL"
         assert m79.usage_percentage == 79.0
 
     # 85% of 500MB
-    with patch("app.db.telemetry.SIMULATED_PG_SIZES", {"core": int(POSTGRES_FREE_LIMIT_BYTES * 0.85)}):
+    with patch("app.db.telemetry.get_pg_pool_dsn", return_value="postgresql://x"), \
+         patch("app.db.telemetry.get_asyncpg_pool", AsyncMock(return_value=fake_pg_pool(int(POSTGRES_FREE_LIMIT_BYTES * 0.85)))):
         m85 = await collect_postgres_capacity("core")
         assert m85.threshold_state == "WARNING"
         assert m85.usage_percentage == 85.0
 
     # 92% of 500MB
-    with patch("app.db.telemetry.SIMULATED_PG_SIZES", {"core": int(POSTGRES_FREE_LIMIT_BYTES * 0.92)}):
+    with patch("app.db.telemetry.get_pg_pool_dsn", return_value="postgresql://x"), \
+         patch("app.db.telemetry.get_asyncpg_pool", AsyncMock(return_value=fake_pg_pool(int(POSTGRES_FREE_LIMIT_BYTES * 0.92)))):
         m92 = await collect_postgres_capacity("core")
         assert m92.threshold_state == "CRITICAL"
         assert m92.usage_percentage == 92.0
@@ -345,7 +346,10 @@ async def test_probe_capacity_overall_alert_aggregation():
     If any single database (e.g. MongoDB Atlas) reaches >= 90%, overall_threshold_alert must be True.
     """
     critical_size = int(MONGO_FREE_LIMIT_BYTES * 0.95)
-    with patch("app.db.telemetry.SIMULATED_MONGO_SIZE", critical_size):
+    mongo_db = MagicMock()
+    mongo_db.command = AsyncMock(return_value={"storageSize": critical_size, "indexSize": 0})
+    with patch("app.db.telemetry.get_secret", side_effect=lambda k, d=None: "mongodb://x" if k == "MONGO_URI" else d), \
+         patch("app.db.telemetry.get_mongo", AsyncMock(return_value=mongo_db)):
         telemetry = await get_capacity_telemetry()
         assert telemetry.overall_threshold_alert is True
         mongo_metric = next((d for d in telemetry.databases if d.service == "mongodb_atlas"), None)
@@ -370,10 +374,12 @@ def test_probe_table_pinning_and_archive_exclusion(client):
         assert table_to_pin in get_pinned_tables()
 
         # Archive preview must list this table in skipped
-        preview_resp = client.post("/api/telemetry/archive/preview", json={
-            "database": "core",
-            "target_capacity_percent": 30.0
-        })
+        table = {"schemaname": "tms", "tablename": "events", "row_count": 1000, "total_bytes": 1024 * 1000}
+        with patch("app.db.telemetry.get_asyncpg_pool", AsyncMock(return_value=fake_pg_pool(POSTGRES_FREE_LIMIT_BYTES // 2, [table]))):
+            preview_resp = client.post("/api/telemetry/archive/preview", json={
+                "database": "core",
+                "target_capacity_percent": 30.0
+            })
         assert preview_resp.status_code == 200
         preview_data = preview_resp.json()
         assert table_to_pin in preview_data["pinned_tables_skipped"]

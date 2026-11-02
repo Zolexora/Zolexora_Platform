@@ -34,7 +34,7 @@ export default function AccountTable({
         active_count: accounts.filter((a) => a.status === 'ACTIVE').length,
         throttled_count: accounts.filter((a) => a.status === 'QUOTA_THROTTLED').length,
         disconnected_count: accounts.filter((a) => a.status === 'DISCONNECTED').length,
-        diagnostics: ['Infisical CLI authentication unavailable; fallback to environment secrets.'],
+        diagnostics: [`Sync request failed: ${e instanceof Error ? e.message : String(e)}`],
         timestamp: new Date().toISOString(),
       });
     } finally {

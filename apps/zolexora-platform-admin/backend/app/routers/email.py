@@ -21,12 +21,7 @@ async def dispatch_email(request: EmailSendRequest) -> EmailSendResponse:
     Routes intelligently across Resend, Brevo, and SendGrid accounts with 90% quota failover.
     Archives delivery records into MongoDB 'email_logs'.
     """
-    response = await send_email(request)
-    if not response.success and response.status == "failed":
-        # We still return the structured response body with status 503 if requested, or return 200 with success=False
-        # Project spec indicates response contract: { success: bool, message_id: str, provider_used: ..., status: ... }
-        return response
-    return response
+    return await send_email(request)
 
 @router.get("/quotas", response_model=EmailQuotasResponse)
 def get_quotas() -> EmailQuotasResponse:

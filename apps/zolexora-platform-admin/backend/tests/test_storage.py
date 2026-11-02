@@ -9,21 +9,33 @@ def test_r2_bucket_product_resolution():
     assert get_r2_bucket_for_product("other-product") == "zolexora-platform-files"
 
 def test_presigned_url_endpoint(client):
-    """POST /api/storage/presigned-url returns presigned S3/R2 URL."""
+    """POST /api/storage/presigned-url returns the URL signed by the R2 client."""
+    mock_s3 = MagicMock()
+    mock_s3.generate_presigned_url.return_value = "https://acct.r2.cloudflarestorage.com/zolexora-ims-files/catalog/product-image-44.jpg?X-Amz-Signature=x"
     payload = {
         "product": "zolexora-ims",
         "file_key": "catalog/product-image-44.jpg",
         "operation": "get_object",
         "expiry_seconds": 1800
     }
-    response = client.post("/api/storage/presigned-url", json=payload)
+    with patch("app.db.connections.get_r2_client", return_value=mock_s3):
+        response = client.post("/api/storage/presigned-url", json=payload)
     assert response.status_code == 200
     data = response.json()
-    assert "url" in data
     assert "catalog/product-image-44.jpg" in data["url"]
     assert data["bucket"] == "zolexora-ims-files"
     assert data["file_key"] == "catalog/product-image-44.jpg"
     assert data["expires_in_seconds"] == 1800
+
+def test_presigned_url_unconfigured_r2_is_503(client):
+    """No R2 credentials: 503, never a fake unsigned URL."""
+    with patch("app.db.connections.get_r2_client", return_value=None):
+        response = client.post("/api/storage/presigned-url", json={"product": "zolexora-ims", "file_key": "a.jpg"})
+    assert response.status_code == 503
+
+def test_presigned_url_rejects_long_expiry_and_empty_key(client):
+    assert client.post("/api/storage/presigned-url", json={"product": "p", "file_key": "a", "expiry_seconds": 604800}).status_code == 422
+    assert client.post("/api/storage/presigned-url", json={"product": "p", "file_key": ""}).status_code == 422
 
 def test_boto3_presigned_url_generation():
     """Verify boto3 client method is invoked when boto3 is initialized."""

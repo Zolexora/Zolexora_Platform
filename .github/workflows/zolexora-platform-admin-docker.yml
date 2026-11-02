@@ -31,8 +31,7 @@ jobs:
           },
           {
             "service": "frontend",
-            "file": "apps/zolexora-platform-admin/frontend/Dockerfile",
-            "build-args": "NEXT_PUBLIC_API_URL=http://localhost:4041"
+            "file": "apps/zolexora-platform-admin/frontend/Dockerfile"
           },
           {
             "service": "nginx",

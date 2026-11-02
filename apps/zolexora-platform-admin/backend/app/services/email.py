@@ -24,18 +24,24 @@ DAILY_LIMITS = {
     "sendgrid": 100,
 }
 
-# In-memory daily usage tracking
-_daily_usage: Dict[str, int] = {
-    "resend": 0,
-    "brevo": 0,
-    "sendgrid": 0,
-}
+# In-memory daily usage, reset when the UTC date changes. Lost on restart.
+_daily_usage: Dict[str, int] = {p: 0 for p in DAILY_LIMITS}
+_usage_day = datetime.now(timezone.utc).date()
 
-# Fallback in-memory log storage when MongoDB Atlas is unconfigured or offline
+# In-memory log of recent sends, used when MongoDB is unconfigured or offline.
 _fallback_logs: List[EmailLogRecord] = []
+FALLBACK_LOG_LIMIT = 500
+
+def _roll_day() -> None:
+    global _usage_day
+    today = datetime.now(timezone.utc).date()
+    if today != _usage_day:
+        _usage_day = today
+        reset_daily_usage()
 
 def get_daily_usage(provider: str) -> int:
     """Returns current daily usage for a provider."""
+    _roll_day()
     return _daily_usage.get(provider, 0)
 
 def set_daily_usage(provider: str, count: int) -> None:
@@ -44,14 +50,15 @@ def set_daily_usage(provider: str, count: int) -> None:
 
 def reset_daily_usage() -> None:
     """Resets daily usage counters."""
-    global _daily_usage
-    _daily_usage = {"resend": 0, "brevo": 0, "sendgrid": 0}
+    for p in DAILY_LIMITS:
+        _daily_usage[p] = 0
 
 def get_provider_quotas() -> EmailQuotasResponse:
     """
     Returns current quota metrics for all configured email providers.
     Calculates 90% threshold throttling.
     """
+    _roll_day()
     metrics: List[ProviderQuotaMetric] = []
     for provider, limit in DAILY_LIMITS.items():
         used = _daily_usage.get(provider, 0)
@@ -82,6 +89,7 @@ async def archive_log_record(log_record: EmailLogRecord) -> None:
     Falls back safely to in-memory audit log without failing if MongoDB is unconfigured.
     """
     _fallback_logs.insert(0, log_record)
+    del _fallback_logs[FALLBACK_LOG_LIMIT:]
 
     try:
         from ..db.connections import get_mongo
@@ -97,8 +105,9 @@ async def send_email(request: EmailSendRequest) -> EmailSendResponse:
     """
     Dispatches a transactional email through the intelligent multi-provider router.
     Evaluates provider quotas in priority order: Resend -> Brevo -> SendGrid.
-    Fails over when provider reaches >= 90% daily limit or returns an error.
+    Fails over when provider reaches >= 90% daily limit, has no API key, or returns an error.
     """
+    _roll_day()
     provider_priority = ["resend", "brevo", "sendgrid"]
     attempts = 0
     now_iso = datetime.now(timezone.utc).isoformat()
@@ -114,61 +123,56 @@ async def send_email(request: EmailSendRequest) -> EmailSendResponse:
             continue
 
         api_key = os.getenv(f"{provider.upper()}_API_KEY")
+        if not api_key:
+            continue
 
-        # In testing or mock mode, or when api_key is present, attempt dispatch
         success = False
         message_id = f"msg_{provider}_{uuid.uuid4().hex[:12]}"
+        body = request.html_content or request.text_content or ""
 
         try:
-            if api_key and not api_key.startswith("mock-") and not api_key.startswith("test-"):
-                # Real provider dispatch via HTTP API
-                async with httpx.AsyncClient(timeout=10.0) as client:
-                    if provider == "resend":
-                        resp = await client.post(
-                            "https://api.resend.com/emails",
-                            headers={"Authorization": f"Bearer {api_key}"},
-                            json={
-                                "from": request.sender_email or "onboarding@resend.dev",
-                                "to": request.to,
-                                "subject": request.subject,
-                                "html": request.html_content or request.text_content or "",
-                            }
-                        )
-                        if resp.status_code in (200, 201):
-                            data = resp.json()
-                            message_id = data.get("id", message_id)
-                            success = True
-                    elif provider == "brevo":
-                        resp = await client.post(
-                            "https://api.brevo.com/v3/smtp/email",
-                            headers={"api-key": api_key},
-                            json={
-                                "sender": {"name": request.sender_name, "email": request.sender_email or "noreply@zolexora.com"},
-                                "to": [{"email": addr} for addr in request.to],
-                                "subject": request.subject,
-                                "htmlContent": request.html_content or request.text_content or "",
-                            }
-                        )
-                        if resp.status_code in (200, 201):
-                            data = resp.json()
-                            message_id = data.get("messageId", message_id)
-                            success = True
-                    elif provider == "sendgrid":
-                        resp = await client.post(
-                            "https://api.sendgrid.com/v3/mail/send",
-                            headers={"Authorization": f"Bearer {api_key}"},
-                            json={
-                                "personalizations": [{"to": [{"email": addr} for addr in request.to]}],
-                                "from": {"email": request.sender_email or "noreply@zolexora.com"},
-                                "subject": request.subject,
-                                "content": [{"type": "text/html", "value": request.html_content or request.text_content or ""}]
-                            }
-                        )
-                        if resp.status_code in (200, 202):
-                            success = True
-            else:
-                # Simulated / sandbox delivery (for development & testing without live keys)
-                success = True
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                if provider == "resend":
+                    resp = await client.post(
+                        "https://api.resend.com/emails",
+                        headers={"Authorization": f"Bearer {api_key}"},
+                        json={
+                            "from": request.sender_email or "onboarding@resend.dev",
+                            "to": request.to,
+                            "subject": request.subject,
+                            "html": body,
+                        }
+                    )
+                    if resp.status_code in (200, 201):
+                        message_id = resp.json().get("id", message_id)
+                        success = True
+                elif provider == "brevo":
+                    resp = await client.post(
+                        "https://api.brevo.com/v3/smtp/email",
+                        headers={"api-key": api_key},
+                        json={
+                            "sender": {"name": request.sender_name, "email": request.sender_email or "noreply@zolexora.com"},
+                            "to": [{"email": addr} for addr in request.to],
+                            "subject": request.subject,
+                            "htmlContent": body,
+                        }
+                    )
+                    if resp.status_code in (200, 201):
+                        message_id = resp.json().get("messageId", message_id)
+                        success = True
+                elif provider == "sendgrid":
+                    resp = await client.post(
+                        "https://api.sendgrid.com/v3/mail/send",
+                        headers={"Authorization": f"Bearer {api_key}"},
+                        json={
+                            "personalizations": [{"to": [{"email": addr} for addr in request.to]}],
+                            "from": {"email": request.sender_email or "noreply@zolexora.com"},
+                            "subject": request.subject,
+                            "content": [{"type": "text/html", "value": body}]
+                        }
+                    )
+                    if resp.status_code in (200, 202):
+                        success = True
 
         except Exception:
             # On network or API error, fail over to next provider
@@ -214,14 +218,14 @@ async def send_email(request: EmailSendRequest) -> EmailSendResponse:
         status="failed",
         sent_at=now_iso,
         opened=False,
-        bounce_reason="All configured providers exceeded daily quota or failed delivery."
+        bounce_reason="No provider delivered: each was unconfigured, over 90% of its daily quota, or failed."
     )
     await archive_log_record(failed_record)
 
     return EmailSendResponse(
         success=False,
         message_id=failed_id,
-        provider_used="sendgrid",  # fallback reporting
+        provider_used=None,
         account_used="none",
         status="failed",
         attempt_count=attempts,

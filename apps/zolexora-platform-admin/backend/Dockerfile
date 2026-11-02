@@ -1,12 +1,11 @@
-# Stage 1: Build & install Python packages
+# Stage 1: install Python packages into a virtualenv
 FROM python:3.12-slim AS builder
 
-WORKDIR /app
+RUN python -m venv /opt/venv
+COPY apps/zolexora-platform-admin/backend/requirements.txt /tmp/requirements.txt
+RUN /opt/venv/bin/pip install --no-cache-dir -r /tmp/requirements.txt
 
-COPY apps/zolexora-platform-admin/backend/requirements.txt ./requirements.txt
-RUN pip install --no-cache-dir --user -r requirements.txt
-
-# Stage 2: Minimal runtime image
+# Stage 2: minimal runtime image, non-root
 FROM python:3.12-slim AS runner
 
 WORKDIR /app
@@ -14,14 +13,15 @@ WORKDIR /app
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PORT=8000 \
-    PATH="/root/.local/bin:$PATH"
+    ADMIN_DATA_DIR=/data \
+    PATH="/opt/venv/bin:$PATH"
 
-# Copy installed packages from builder
-COPY --from=builder /root/.local /root/.local
+RUN useradd --system --uid 1001 admin && mkdir /data && chown admin /data
 
-# Copy application source code
+COPY --from=builder /opt/venv /opt/venv
 COPY apps/zolexora-platform-admin/backend/app ./app
 
+USER admin
 EXPOSE 8000
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

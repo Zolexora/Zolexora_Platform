@@ -12,13 +12,13 @@ FROM base AS installer
 WORKDIR /app
 COPY --from=builder /app/out/json/ .
 COPY --from=builder /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
-RUN pnpm config set ignore-scripts true && pnpm install --no-frozen-lockfile
+RUN pnpm config set ignore-scripts true && pnpm install --frozen-lockfile
 
 COPY --from=builder /app/out/full/ .
 COPY turbo.json turbo.json
-ARG NEXT_PUBLIC_API_URL=http://localhost:4041
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
-RUN pnpm --filter @zolexora/platform-admin-frontend build
+# turbo builds workspace deps (@zolexora/auth-client) first. The API is same-origin via nginx,
+# and sign-in config is read at runtime, so nothing environment-specific is baked in.
+RUN pnpm turbo run build --filter=@zolexora/platform-admin-frontend
 
 FROM node:22-alpine AS runner
 WORKDIR /app

@@ -9,6 +9,7 @@ from .config import (
     POSTGRES_FREE_LIMIT_BYTES,
     MONGO_FREE_LIMIT_BYTES,
 )
+from .config import get_pg_pool_dsn
 from .connections import get_asyncpg_pool, get_mongo
 from .health import check_supabase_health, check_mongo_health
 from ..services.infisical import get_secret, sync_secrets_from_infisical
@@ -21,7 +22,8 @@ from ..schemas.telemetry import (
     FleetResponse,
 )
 
-EXCLUSIONS_FILE = os.path.join(os.path.dirname(__file__), "archive_exclusions.json")
+# ADMIN_DATA_DIR is a persistent volume in Docker; locally the file sits next to this module.
+EXCLUSIONS_FILE = os.path.join(os.environ.get("ADMIN_DATA_DIR", os.path.dirname(__file__)), "archive_exclusions.json")
 
 def format_bytes(num_bytes: int) -> str:
     """Formats bytes into human readable KB/MB/GB string."""
@@ -33,6 +35,17 @@ def format_bytes(num_bytes: int) -> str:
         return f"{num_bytes / (1024 * 1024):.1f} MB"
     else:
         return f"{num_bytes / (1024 * 1024 * 1024):.2f} GB"
+
+def _threshold_state(is_configured: bool, reachable: bool, usage_pct: float) -> str:
+    if not is_configured:
+        return "UNCONFIGURED"
+    if not reachable:
+        return "UNREACHABLE"
+    if usage_pct >= 90.0:
+        return "CRITICAL"
+    if usage_pct >= 80.0:
+        return "WARNING"
+    return "NORMAL"
 
 def get_pinned_tables() -> List[str]:
     """Reads list of pinned tables that must never be auto-archived."""
@@ -74,34 +87,27 @@ async def collect_postgres_capacity(project_name: str) -> StorageQuotaMetric:
     """
     free_limit = POSTGRES_FREE_LIMIT_BYTES
     used_bytes = 0
+    reachable = False
+    is_configured = get_pg_pool_dsn(project_name) is not None
 
-    pool = await get_asyncpg_pool(project_name)
+    pool = await get_asyncpg_pool(project_name) if is_configured else None
     if pool:
         try:
             async with pool.acquire() as conn:
-                db_size = await conn.fetchval("SELECT pg_database_size(current_database());")
-                if db_size:
-                    used_bytes = int(db_size)
+                used_bytes = int(await conn.fetchval("SELECT pg_database_size(current_database());") or 0)
+                reachable = True
         except Exception:
             pass
 
     usage_pct = round((used_bytes / free_limit) * 100, 2)
-    is_configured = pool is not None
-    if not is_configured:
-        threshold_state = "UNCONFIGURED"
-    elif usage_pct >= 90.0:
-        threshold_state = "CRITICAL"
-    elif usage_pct >= 80.0:
-        threshold_state = "WARNING"
-    else:
-        threshold_state = "NORMAL"
+    threshold_state = _threshold_state(is_configured, reachable, usage_pct)
 
     return StorageQuotaMetric(
         service="supabase_postgresql",
         project_or_cluster=f"supabase_{project_name}",
         free_tier_limit_bytes=free_limit,
         used_bytes=used_bytes,
-        used_pretty=format_bytes(used_bytes) if is_configured else "Unconfigured",
+        used_pretty=format_bytes(used_bytes) if reachable else threshold_state.title(),
         usage_percentage=usage_pct,
         threshold_state=threshold_state,
         is_configured=is_configured,
@@ -118,33 +124,27 @@ async def collect_mongo_capacity() -> StorageQuotaMetric:
     mongo_uri = get_secret("MONGO_URI")
     is_configured = bool(mongo_uri)
 
+    reachable = False
+
     if mongo_uri:
         try:
             db = await get_mongo("zolexora-ai", raise_on_missing=False)
             if db is not None:
                 stats = await db.command("dbStats")
-                storage_size = stats.get("storageSize", 0) + stats.get("indexSize", 0)
-                if storage_size > 0:
-                    used_bytes = int(storage_size)
+                used_bytes = int(stats.get("storageSize", 0) + stats.get("indexSize", 0))
+                reachable = True
         except Exception:
             pass
 
     usage_pct = round((used_bytes / free_limit) * 100, 2)
-    if not is_configured:
-        threshold_state = "UNCONFIGURED"
-    elif usage_pct >= 90.0:
-        threshold_state = "CRITICAL"
-    elif usage_pct >= 80.0:
-        threshold_state = "WARNING"
-    else:
-        threshold_state = "NORMAL"
+    threshold_state = _threshold_state(is_configured, reachable, usage_pct)
 
     return StorageQuotaMetric(
         service="mongodb_atlas",
         project_or_cluster="cluster0",
         free_tier_limit_bytes=free_limit,
         used_bytes=used_bytes,
-        used_pretty=format_bytes(used_bytes) if is_configured else "Unconfigured",
+        used_pretty=format_bytes(used_bytes) if reachable else threshold_state.title(),
         usage_percentage=usage_pct,
         threshold_state=threshold_state,
         is_configured=is_configured,
@@ -226,19 +226,53 @@ async def get_capacity_telemetry() -> CapacityTelemetryResponse:
         timestamp=datetime.now(timezone.utc).isoformat()
     )
 
-def calculate_archive_preview(database: str, target_capacity_percent: float = 40.0) -> ArchivePreviewResponse:
+ARCHIVE_TARGETS = [*SUPABASE_PROJECTS, "mongodb_atlas"]
+ARCHIVE_CUTOFF_DAYS = 90  # retention policy: rows older than this are archive candidates
+
+async def calculate_archive_preview(database: str, target_capacity_percent: float = 40.0) -> ArchivePreviewResponse:
     """
-    Calculates rows to archive and target cutoff date needed to shrink a cloud database.
+    Estimates how many rows must be archived to shrink a database to the target % of its free tier.
+    Uses the live database size and its average row size; 0 rows when the database is not reachable.
     """
-    free_limit = POSTGRES_FREE_LIMIT_BYTES if database != "mongodb_atlas" else MONGO_FREE_LIMIT_BYTES
+    # The UI sends the capacity card's project_or_cluster ("supabase_core", "cluster0").
+    target = "mongodb_atlas" if database == "cluster0" else database.removeprefix("supabase_")
+    if target not in ARCHIVE_TARGETS:
+        raise ValueError(f"Unknown database '{database}'. Expected one of {ARCHIVE_TARGETS}.")
+
     current_used = 0
+    avg_row_bytes = 0
+    if target == "mongodb_atlas":
+        free_limit = MONGO_FREE_LIMIT_BYTES
+        try:
+            db = await get_mongo("zolexora-ai", raise_on_missing=False)
+            if db is not None:
+                stats = await db.command("dbStats")
+                current_used = int(stats.get("storageSize", 0) + stats.get("indexSize", 0))
+                avg_row_bytes = int(stats.get("avgObjSize", 0))
+        except Exception:
+            pass
+    else:
+        free_limit = POSTGRES_FREE_LIMIT_BYTES
+        pool = await get_asyncpg_pool(target)
+        if pool:
+            try:
+                async with pool.acquire() as conn:
+                    row = await conn.fetchrow("""
+                        SELECT pg_database_size(current_database()) AS db_bytes,
+                               COALESCE(sum(pg_total_relation_size(relid)), 0) AS table_bytes,
+                               COALESCE(sum(n_live_tup), 0) AS row_count
+                        FROM pg_stat_user_tables
+                    """)
+                    current_used = int(row["db_bytes"])
+                    if row["row_count"]:
+                        avg_row_bytes = int(row["table_bytes"]) // int(row["row_count"])
+            except Exception:
+                pass
+
     target_bytes = int(free_limit * (target_capacity_percent / 100.0))
-
     bytes_to_free = max(0, current_used - target_bytes)
-    estimated_rows = max(0, bytes_to_free // 1024)
-
-    cutoff_date = (datetime.now(timezone.utc) - timedelta(days=90)).strftime("%Y-%m-%d")
-    pinned = get_pinned_tables()
+    estimated_rows = bytes_to_free // avg_row_bytes if avg_row_bytes else 0
+    cutoff_date = (datetime.now(timezone.utc) - timedelta(days=ARCHIVE_CUTOFF_DAYS)).strftime("%Y-%m-%d")
 
     return ArchivePreviewResponse(
         database=database,
@@ -246,7 +280,7 @@ def calculate_archive_preview(database: str, target_capacity_percent: float = 40
         target_usage_bytes=target_bytes,
         estimated_rows_to_archive=estimated_rows,
         cutoff_date=cutoff_date,
-        pinned_tables_skipped=pinned
+        pinned_tables_skipped=get_pinned_tables()
     )
 
 async def probe_endpoint(url: str, timeout_sec: float = 0.8) -> tuple[bool, Optional[int]]:
@@ -289,7 +323,7 @@ async def collect_fleet_telemetry() -> FleetResponse:
             status="operational" if nginx_ok else "degraded",
             latency_ms=nginx_lat,
             last_checked=now_iso,
-            details="Nginx 1.31 reverse proxy gateway routing /api, /docs, and frontend"
+            details="Nginx 1.31 reverse proxy gateway routing /api and frontend"
         )
     )
 
@@ -325,7 +359,7 @@ async def collect_fleet_telemetry() -> FleetResponse:
             host="Control Plane Service",
             endpoint="http://localhost:4041/api (port 3095/api via Gateway)",
             status="operational" if be_ok else "degraded",
-            latency_ms=be_lat or 1,
+            latency_ms=be_lat,
             last_checked=now_iso,
             details="FastAPI 1.0.0 central connection router & Infisical secret manager"
         )
@@ -352,11 +386,11 @@ async def collect_fleet_telemetry() -> FleetResponse:
                 category="database",
                 environment="Cloud Database Tier",
                 host="Supabase Cloud",
-                endpoint=f"aws-0-eu-central-1.pooler.supabase.com:6543 ({proj})",
+                endpoint=f"Supabase pooler :6543 ({proj})",
                 status=status_val,
                 latency_ms=h.latency_ms if h.latency_ms > 0 else None,
                 last_checked=now_iso,
-                details=h.details or f"PostgREST pooler ({desc}) • Infisical: /shared/database-pool/SUPABASE_{proj.upper()}_URL"
+                details=h.details or h.error or f"PostgREST pooler ({desc}) • Infisical: /shared/database-pool/SUPABASE_{proj.upper()}_URL"
             )
         )
 
@@ -373,7 +407,7 @@ async def collect_fleet_telemetry() -> FleetResponse:
             status=mongo_status,
             latency_ms=mongo_h.latency_ms if mongo_h.latency_ms > 0 else None,
             last_checked=now_iso,
-            details=mongo_h.details or "M0 Free Tier document store • Infisical: /shared/MONGO_URI"
+            details=mongo_h.details or mongo_h.error or "M0 Free Tier document store • Infisical: /shared/MONGO_URI"
         )
     )
 
@@ -392,9 +426,9 @@ async def collect_fleet_telemetry() -> FleetResponse:
             host="Cloudflare",
             endpoint="https://api-edge.zolexora.com",
             status="operational" if cf_id else "unconfigured",
-            latency_ms=18 if cf_id else None,
+            latency_ms=None,
             last_checked=now_iso,
-            details="Cloudflare Workers WAF & Turnstile Bot Shield • Infisical: /platform-admin/CF_ACCOUNT_ID" if not cf_id else "Edge Workers active"
+            details="Account ID present (not probed)" if cf_id else "Infisical: /platform-admin/CF_ACCOUNT_ID"
         )
     )
 
@@ -409,9 +443,9 @@ async def collect_fleet_telemetry() -> FleetResponse:
             host="Cloudflare R2",
             endpoint=f"https://{r2_id or 'r2'}.r2.cloudflarestorage.com",
             status="operational" if r2_id else "unconfigured",
-            latency_ms=22 if r2_id else None,
+            latency_ms=None,
             last_checked=now_iso,
-            details="Distributed S3-compatible asset store • Infisical: /shared/R2_ACCOUNT_ID" if not r2_id else "R2 Buckets active"
+            details="Account ID present (not probed)" if r2_id else "Infisical: /shared/R2_ACCOUNT_ID"
         )
     )
 
@@ -426,9 +460,9 @@ async def collect_fleet_telemetry() -> FleetResponse:
             host="Resend Cloud",
             endpoint="https://api.resend.com/emails",
             status="operational" if resend_key else "unconfigured",
-            latency_ms=25 if resend_key else None,
+            latency_ms=None,
             last_checked=now_iso,
-            details="Primary transactional delivery channel (100/day tier) • Infisical: /shared/RESEND_API_KEY"
+            details="API key present (not probed)" if resend_key else "Infisical: /shared/RESEND_API_KEY"
         )
     )
 
@@ -443,9 +477,9 @@ async def collect_fleet_telemetry() -> FleetResponse:
             host="Brevo Cloud",
             endpoint="https://api.brevo.com/v3/smtp/email",
             status="operational" if brevo_key else "unconfigured",
-            latency_ms=45 if brevo_key else None,
+            latency_ms=None,
             last_checked=now_iso,
-            details="Secondary transactional failover channel (300/day tier) • Infisical: /shared/BREVO_API_KEY"
+            details="API key present (not probed)" if brevo_key else "Infisical: /shared/BREVO_API_KEY"
         )
     )
 
@@ -460,9 +494,9 @@ async def collect_fleet_telemetry() -> FleetResponse:
             host="SendGrid Cloud",
             endpoint="https://api.sendgrid.com/v3/mail/send",
             status="operational" if sendgrid_key else "unconfigured",
-            latency_ms=50 if sendgrid_key else None,
+            latency_ms=None,
             last_checked=now_iso,
-            details="Tertiary emergency failover channel (100/day tier) • Infisical: /shared/SENDGRID_API_KEY"
+            details="API key present (not probed)" if sendgrid_key else "Infisical: /shared/SENDGRID_API_KEY"
         )
     )
 

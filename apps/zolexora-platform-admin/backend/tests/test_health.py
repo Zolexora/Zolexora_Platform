@@ -59,12 +59,8 @@ async def test_check_mongo_health_missing_credentials():
 async def test_check_supabase_health_connection_error():
     """Test that connection exceptions degrade gracefully to status 'degraded'."""
     with patch("app.db.health.get_supabase_url", return_value="https://test.supabase.co"), \
-         patch("app.db.health.get_supabase_key", return_value="test-key"), \
-         patch("app.db.health.get_supabase") as mock_get_client:
-        
-        mock_client = MagicMock()
-        mock_client.table.side_effect = ConnectionRefusedError("Supabase endpoint unreachable")
-        mock_get_client.return_value = mock_client
+         patch("app.db.health.get_supabase_key", return_value="service_key"), \
+         patch("app.db.health.httpx.AsyncClient.get", side_effect=ConnectionRefusedError("Supabase endpoint unreachable")):
 
         result = await check_supabase_health("core")
         assert result.status == "degraded"
@@ -96,3 +92,19 @@ async def test_system_health_healthy_aggregation():
         assert report.overall_status == "healthy"
         for t in report.targets.values():
             assert t.status == "healthy"
+
+
+@pytest.mark.asyncio
+async def test_check_supabase_health_status_codes():
+    """200 is healthy; a rejected key or server error is degraded (no string matching on errors)."""
+    def answer(code):
+        r = MagicMock(); r.status_code = code; return r
+    with patch("app.db.health.get_supabase_url", return_value="https://test.supabase.co"), \
+         patch("app.db.health.get_supabase_key", return_value="service_key"):
+        with patch("app.db.health.httpx.AsyncClient.get", AsyncMock(return_value=answer(200))):
+            assert (await check_supabase_health("core")).status == "healthy"
+        with patch("app.db.health.httpx.AsyncClient.get", AsyncMock(return_value=answer(401))):
+            res = await check_supabase_health("core")
+            assert res.status == "degraded" and "key rejected" in res.error
+        with patch("app.db.health.httpx.AsyncClient.get", AsyncMock(return_value=answer(404))):
+            assert (await check_supabase_health("core")).status == "degraded"

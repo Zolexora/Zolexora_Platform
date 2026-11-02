@@ -73,8 +73,8 @@ def sync_accounts_from_infisical() -> AccountSyncResponse:
 
         project_id = os.getenv(project_id_var)
         explicit_status = os.getenv(status_var, "ACTIVE")
-        quota_total = int(os.getenv(quota_total_var, "10000"))
-        quota_used = int(os.getenv(quota_used_var, "0"))
+        quota_total = int(os.environ[quota_total_var]) if os.getenv(quota_total_var) else None
+        quota_used = int(os.environ[quota_used_var]) if os.getenv(quota_used_var) else None
 
         if not project_id:
             # Missing credential diagnostic event
@@ -95,13 +95,13 @@ def sync_accounts_from_infisical() -> AccountSyncResponse:
                 project_id_or_account_id=f"unconfigured-{slug}",
                 status="DISCONNECTED",
                 monthly_quota_total=quota_total,
-                monthly_quota_used=0,
+                monthly_quota_used=None,
                 quota_percentage=0.0,
                 last_synced_at=now_iso
             )
             continue
 
-        quota_pct = round((quota_used / quota_total) * 100, 2) if quota_total > 0 else 0.0
+        quota_pct = round((quota_used / quota_total) * 100, 2) if quota_total and quota_used is not None else 0.0
 
         # Enforce 90% quota throttling threshold
         if explicit_status == "ACTIVE" and quota_pct >= 90.0:
@@ -120,7 +120,6 @@ def sync_accounts_from_infisical() -> AccountSyncResponse:
             monthly_quota_total=quota_total,
             monthly_quota_used=quota_used,
             quota_percentage=quota_pct,
-            latency_ms=12,
             last_synced_at=now_iso
         )
 
@@ -133,10 +132,6 @@ def sync_accounts_from_infisical() -> AccountSyncResponse:
             alias="Cloudflare Primary Edge",
             project_id_or_account_id=cf_account_id,
             status="ACTIVE",
-            monthly_quota_total=10000000,
-            monthly_quota_used=240000,
-            quota_percentage=2.4,
-            latency_ms=18,
             last_synced_at=now_iso
         )
     else:
@@ -159,10 +154,6 @@ def sync_accounts_from_infisical() -> AccountSyncResponse:
                 alias=f"Supabase {proj.title()}",
                 project_id_or_account_id=url.split("//")[-1].split(".")[0],
                 status="ACTIVE",
-                monthly_quota_total=500,
-                monthly_quota_used=180,
-                quota_percentage=36.0,
-                latency_ms=25,
                 last_synced_at=now_iso
             )
 

@@ -122,3 +122,42 @@ def test_email_logs_ingestion_and_query(client):
     assert matching is not None
     assert matching["recipient"] == recipient
     assert matching["status"] == "sent"
+
+def test_no_provider_keys_means_failed_not_sent(client, monkeypatch):
+    """Without API keys nothing is delivered, so the router must report failure (never a simulated send)."""
+    for name in ("RESEND", "BREVO", "SENDGRID"):
+        monkeypatch.delenv(f"{name}_API_KEY", raising=False)
+    response = client.post("/api/email/send", json={"product": "zolexora-tms", "to": ["a@example.com"], "subject": "s"})
+    data = response.json()
+    assert data["success"] is False
+    assert data["status"] == "failed"
+    assert data["provider_used"] is None
+    assert get_daily_usage("resend") == 0
+
+
+def test_provider_error_fails_over(client):
+    """A provider answering non-2xx is not counted as sent; the next provider is used."""
+    from unittest.mock import MagicMock, patch
+
+    async def post(url, *args, **kwargs):
+        resp = MagicMock()
+        resp.status_code = 500 if "resend.com" in url else 201
+        resp.json.return_value = {"messageId": "brevo-1"}
+        return resp
+
+    with patch("app.services.email.httpx.AsyncClient.post", side_effect=post):
+        data = client.post("/api/email/send", json={"product": "x", "to": ["a@example.com"], "subject": "s"}).json()
+    assert data["provider_used"] == "brevo"
+    assert get_daily_usage("resend") == 0
+
+
+def test_daily_usage_resets_on_new_utc_day():
+    from datetime import date
+    from app.services import email
+    set_daily_usage("resend", 95)
+    email._usage_day = date(2000, 1, 1)
+    assert get_daily_usage("resend") == 0
+
+
+def test_empty_recipient_list_rejected(client):
+    assert client.post("/api/email/send", json={"product": "x", "to": [], "subject": "s"}).status_code == 422

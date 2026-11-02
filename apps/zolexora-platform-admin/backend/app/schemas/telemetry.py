@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional, Literal
 
 class HotTableMetric(BaseModel):
@@ -17,7 +17,7 @@ class StorageQuotaMetric(BaseModel):
     used_bytes: int
     used_pretty: str
     usage_percentage: float
-    threshold_state: Literal["NORMAL", "WARNING", "CRITICAL", "UNCONFIGURED"]
+    threshold_state: Literal["NORMAL", "WARNING", "CRITICAL", "UNCONFIGURED", "UNREACHABLE"]
     is_configured: bool = False
     infisical_path: Optional[str] = None
     tables: Optional[List[HotTableMetric]] = None
@@ -30,7 +30,7 @@ class CapacityTelemetryResponse(BaseModel):
 
 class ArchivePreviewRequest(BaseModel):
     database: str
-    target_capacity_percent: float = 40.0
+    target_capacity_percent: float = Field(40.0, ge=1, le=100)
 
 class ArchivePreviewResponse(BaseModel):
     database: str

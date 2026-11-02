@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from ..schemas.telemetry import (
     CapacityTelemetryResponse,
     ArchivePreviewRequest,
@@ -34,12 +34,15 @@ async def get_capacity() -> CapacityTelemetryResponse:
     return await get_capacity_telemetry()
 
 @router.post("/archive/preview", response_model=ArchivePreviewResponse)
-def preview_archive(request: ArchivePreviewRequest) -> ArchivePreviewResponse:
+async def preview_archive(request: ArchivePreviewRequest) -> ArchivePreviewResponse:
     """
     Calculates estimated historical records and cutoff date to shrink DB capacity to target % (default 40%).
     Respects hot storage pinned table exclusions.
     """
-    return calculate_archive_preview(request.database, request.target_capacity_percent)
+    try:
+        return await calculate_archive_preview(request.database, request.target_capacity_percent)
+    except ValueError as e:
+        raise HTTPException(422, str(e))
 
 @router.get("/archive/exclusions", response_model=ArchiveExclusionsResponse)
 def list_archive_exclusions() -> ArchiveExclusionsResponse:

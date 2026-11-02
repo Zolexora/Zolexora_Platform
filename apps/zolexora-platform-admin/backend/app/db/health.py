@@ -1,9 +1,9 @@
-import os
 import time
+import httpx
 from datetime import datetime, timezone
 from typing import Dict
-from .config import PRODUCT_DB_MAP, MONGO_DB_MAP, SUPABASE_PROJECTS, get_supabase_url, get_supabase_key
-from .connections import get_supabase, get_mongo
+from .config import MONGO_DB_MAP, SUPABASE_PROJECTS, get_supabase_url, get_supabase_key
+from .connections import get_mongo
 from ..schemas.health import DatabaseTargetHealth, DatabaseHealthReport
 
 # ============================================================================
@@ -28,46 +28,27 @@ async def check_supabase_health(project_name: str) -> DatabaseTargetHealth:
             error=None
         )
 
-    # Find a product mapped to this project to use its client config
-    sample_product = next(
-        (p for p, cfg in PRODUCT_DB_MAP.items() if cfg["supabase_project"] == project_name),
-        None
-    )
-    if not sample_product:
-        return DatabaseTargetHealth(
-            target=f"supabase_{project_name}",
-            status="unconfigured",
-            latency_ms=-1,
-            details=f"No products registered for project {project_name}"
-        )
-
     start_time = time.time()
     try:
-        client = get_supabase(sample_product, raise_on_missing=False)
-        if not client:
-            return DatabaseTargetHealth(
-                target=f"supabase_{project_name}",
-                status="unconfigured",
-                latency_ms=-1,
-                details=f"Client initialization failed for project {project_name}"
-            )
-
-        # Probing a system table or non-existent table to verify REST API is reachable
-        client.table("non_existent_table").select("*").limit(1).execute()
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            res = await client.get(f"{url.rstrip('/')}/rest/v1/", headers={"apikey": key, "Authorization": f"Bearer {key}"})
     except Exception as e:
-        err_msg = str(e)
-        # If the response code indicates table/relation does not exist, PostgREST endpoint is healthy
-        if any(keyword in err_msg for keyword in ["40", "Relation", "relation", "does not exist", "PGRST"]):
-            pass
-        else:
-            return DatabaseTargetHealth(
-                target=f"supabase_{project_name}",
-                status="degraded",
-                latency_ms=-1,
-                error=err_msg
-            )
+        return DatabaseTargetHealth(
+            target=f"supabase_{project_name}",
+            status="degraded",
+            latency_ms=-1,
+            error=f"PostgREST unreachable: {e}"
+        )
 
     latency = max(1, int((time.time() - start_time) * 1000))
+    if res.status_code != 200:
+        reason = "service key rejected" if res.status_code in (401, 403) else f"HTTP {res.status_code}"
+        return DatabaseTargetHealth(
+            target=f"supabase_{project_name}",
+            status="degraded",
+            latency_ms=latency,
+            error=f"PostgREST answered {reason}"
+        )
     return DatabaseTargetHealth(
         target=f"supabase_{project_name}",
         status="healthy",
@@ -79,7 +60,8 @@ async def check_mongo_health() -> DatabaseTargetHealth:
     """
     Checks the health of the MongoDB Atlas cluster with non-blocking graceful degradation.
     """
-    mongo_uri = os.getenv("MONGO_URI")
+    from ..services.infisical import get_secret
+    mongo_uri = get_secret("MONGO_URI")
     if not mongo_uri:
         return DatabaseTargetHealth(
             target="mongodb_atlas",

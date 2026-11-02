@@ -1,6 +1,7 @@
 import os
 from datetime import datetime, timezone
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from ..auth import require_platform_admin
 from ..schemas.health import SystemHealthResponse, DatabaseHealthReport
 from ..db.health import get_system_health
 
@@ -19,7 +20,7 @@ def get_system_health_status() -> SystemHealthResponse:
         timestamp=datetime.now(timezone.utc).isoformat()
     )
 
-@router.get("/databases", response_model=DatabaseHealthReport)
+@router.get("/databases", response_model=DatabaseHealthReport, dependencies=[Depends(require_platform_admin)])
 async def get_database_health() -> DatabaseHealthReport:
     """
     Returns structured health latency and status for all configured database targets.

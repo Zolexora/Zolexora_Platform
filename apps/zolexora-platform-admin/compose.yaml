@@ -1,30 +1,4 @@
 services:
-  platform-admin-postgres:
-    image: postgres:16-alpine
-    container_name: platform-admin-postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${PLATFORM_ADMIN_POSTGRES_USER:-admin}
-      POSTGRES_PASSWORD: ${PLATFORM_ADMIN_POSTGRES_PASSWORD}
-      POSTGRES_DB: ${PLATFORM_ADMIN_POSTGRES_DB:-platform_admin}
-    volumes:
-      - platform_admin_postgres_data:/var/lib/postgresql/data
-    ports:
-      - "${PLATFORM_ADMIN_POSTGRES_PORT:-5450}:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${PLATFORM_ADMIN_POSTGRES_USER:-admin} -d ${PLATFORM_ADMIN_POSTGRES_DB:-platform_admin}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 512M
-        reservations:
-          cpus: '0.1'
-          memory: 128M
-
   platform-admin-backend:
     image: ${PLATFORM_ADMIN_BACKEND_IMAGE:-ghcr.io/zolexora/zolexora-platform-admin-backend:latest}
     pull_policy: missing
@@ -36,53 +10,41 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
-      - "${PLATFORM_ADMIN_BACKEND_PORT:-4041}:8000"
+      # Localhost only: browsers reach the API through the gateway (3095).
+      - "127.0.0.1:${PLATFORM_ADMIN_BACKEND_PORT:-4041}:8000"
+    # Names only: values are passed through from the Infisical-injected environment.
     environment:
       - ENVIRONMENT=development
-      - SUPABASE_CORE_ANON_KEY
-      - SUPABASE_COMMERCE_ANON_KEY
-      - SUPABASE_BUSINESS_ANON_KEY
-      - SUPABASE_AI_ERP_ANON_KEY
-      - CF_API_TOKEN
-      - D1_SESSIONS_ID
-      - D1_CATALOG_ID
-      - D1_CONFIG_ID
-      - D1_ROUTES_ID
+      - PORT=8000
+      - AUTH_SERVICE_URL
+      - CORS_ORIGINS
+      - SUPABASE_CORE_URL
+      - SUPABASE_CORE_SERVICE_KEY
+      - SUPABASE_CORE_PG_URL
+      - SUPABASE_COMMERCE_URL
+      - SUPABASE_COMMERCE_SERVICE_KEY
+      - SUPABASE_COMMERCE_PG_URL
+      - SUPABASE_BUSINESS_URL
+      - SUPABASE_BUSINESS_SERVICE_KEY
+      - SUPABASE_BUSINESS_PG_URL
+      - SUPABASE_AI_ERP_URL
+      - SUPABASE_AI_ERP_SERVICE_KEY
+      - SUPABASE_AI_ERP_PG_URL
+      - MONGO_URI
+      - CF_ACCOUNT_ID
       - R2_ACCOUNT_ID
       - R2_ACCESS_KEY_ID
       - R2_SECRET_ACCESS_KEY
       - R2_BUCKET_IMS
       - R2_BUCKET_MARKETPLACE
       - R2_BUCKET_TMS
-      - CLOUDINARY_CLOUD_NAME
-      - CLOUDINARY_API_KEY
-      - CLOUDINARY_API_SECRET
-      - PORT=8000
-      - DATABASE_URL=postgresql://${PLATFORM_ADMIN_POSTGRES_USER:-admin}:${PLATFORM_ADMIN_POSTGRES_PASSWORD}@platform-admin-postgres:5432/${PLATFORM_ADMIN_POSTGRES_DB:-platform_admin}
-      - INFISICAL_TOKEN=${INFISICAL_TOKEN}
-      - INFISICAL_CLIENT_ID=${INFISICAL_CLIENT_ID:-}
-      - INFISICAL_CLIENT_SECRET=${INFISICAL_CLIENT_SECRET}
-      - INFISICAL_WORKSPACE_ID=${INFISICAL_WORKSPACE_ID:-}
-      - INFISICAL_SITE_URL=${INFISICAL_SITE_URL:-https://app.infisical.com}
-      - SUPABASE_CORE_URL=${SUPABASE_CORE_URL:-}
-      - SUPABASE_CORE_SERVICE_KEY=${SUPABASE_CORE_SERVICE_KEY}
-      - SUPABASE_CORE_PG_URL=${SUPABASE_CORE_PG_URL:-}
-      - SUPABASE_COMMERCE_URL=${SUPABASE_COMMERCE_URL:-}
-      - SUPABASE_COMMERCE_SERVICE_KEY=${SUPABASE_COMMERCE_SERVICE_KEY}
-      - SUPABASE_COMMERCE_PG_URL=${SUPABASE_COMMERCE_PG_URL:-}
-      - SUPABASE_BUSINESS_URL=${SUPABASE_BUSINESS_URL:-}
-      - SUPABASE_BUSINESS_SERVICE_KEY=${SUPABASE_BUSINESS_SERVICE_KEY}
-      - SUPABASE_BUSINESS_PG_URL=${SUPABASE_BUSINESS_PG_URL:-}
-      - SUPABASE_AI_ERP_URL=${SUPABASE_AI_ERP_URL:-}
-      - SUPABASE_AI_ERP_SERVICE_KEY=${SUPABASE_AI_ERP_SERVICE_KEY}
-      - SUPABASE_AI_ERP_PG_URL=${SUPABASE_AI_ERP_PG_URL:-}
-      - MONGO_URI=${MONGO_URI:-}
-      - CF_ACCOUNT_ID=${CF_ACCOUNT_ID:-}
-      - RESEND_API_KEY=${RESEND_API_KEY}
-      - FIREBASE_ACTIVE_ACCOUNTS=${FIREBASE_ACTIVE_ACCOUNTS:-}
-    depends_on:
-      platform-admin-postgres:
-        condition: service_healthy
+      - R2_BUCKET_DEFAULT
+      - RESEND_API_KEY
+      - BREVO_API_KEY
+      - SENDGRID_API_KEY
+      - FIREBASE_ACTIVE_ACCOUNTS
+    volumes:
+      - platform_admin_data:/data
     deploy:
       resources:
         limits:
@@ -103,15 +65,15 @@ services:
     build:
       context: ../../
       dockerfile: apps/zolexora-platform-admin/frontend/Dockerfile
-      args:
-        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:4041}
     container_name: platform-admin-frontend
     restart: unless-stopped
     ports:
-      - "${PLATFORM_ADMIN_FRONTEND_PORT:-3092}:3000"
+      - "127.0.0.1:${PLATFORM_ADMIN_FRONTEND_PORT:-3092}:3000"
+    # Read per request by the root layout, so the image is the same in every environment.
     environment:
       - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:4041}
+      - AUTH_SERVICE_PUBLIC_URL
+      - TURNSTILE_SITE_KEY
     depends_on:
       platform-admin-backend:
         condition: service_healthy
@@ -159,4 +121,4 @@ services:
       retries: 3
 
 volumes:
-  platform_admin_postgres_data:
+  platform_admin_data:
