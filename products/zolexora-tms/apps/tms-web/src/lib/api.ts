@@ -1,25 +1,12 @@
-import { getIdToken } from './firebase';
+import { getSessionToken, expireSession } from './session';
+import { runtimeEnv } from './runtime';
 
 export function getApiBaseUrl(): string {
-  try {
-    // @ts-ignore
-    if (typeof window !== 'undefined' && window.__ENV__?.VITE_API_BASE_URL !== undefined) {
-      // @ts-ignore
-      return String(window.__ENV__.VITE_API_BASE_URL);
-    }
-  } catch {}
-
-  try {
-    if (import.meta.env.VITE_API_BASE_URL !== undefined) {
-      return String(import.meta.env.VITE_API_BASE_URL);
-    }
-  } catch {}
-
-  return '';
+  return runtimeEnv('VITE_API_BASE_URL');
 }
 
 export async function apiClient<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const token = await getIdToken();
+  const token = getSessionToken();
   const baseUrl = getApiBaseUrl();
   
   const headers = new Headers(options.headers || {});
@@ -43,6 +30,10 @@ export async function apiClient<T>(endpoint: string, options: RequestInit = {}):
     headers,
   });
 
+  if (response.status === 401) {
+    expireSession();
+  }
+
   if (!response.ok) {
     let errorDetail = 'API request failed';
     try {
@@ -54,5 +45,8 @@ export async function apiClient<T>(endpoint: string, options: RequestInit = {}):
     throw new Error(errorDetail);
   }
 
+  if (response.status === 204 || response.headers.get('content-length') === '0') {
+    return undefined as T;
+  }
   return response.json();
 }

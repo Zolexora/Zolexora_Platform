@@ -19,7 +19,7 @@ import { DutyStatus } from '../../src/types/tms';
 
 export default function DashboardScreen() {
   const router = useRouter();
-  const { user, activeOrg, isOnDuty, toggleDutyStatus } = useAuth();
+  const { user, activeOrg } = useAuth();
 
   const { data: duties = [], refetch, isLoading } = useQuery({
     queryKey: ['duties', user?.id],
@@ -70,14 +70,6 @@ export default function DashboardScreen() {
               <Text style={styles.orgName}>{activeOrg.organisation_name}</Text>
             )}
           </View>
-          <TouchableOpacity
-            style={[styles.statusToggle, isOnDuty && styles.statusToggleActive]}
-            onPress={toggleDutyStatus}
-          >
-            <Text style={styles.statusToggleText}>
-              {isOnDuty ? '🟢  On Duty' : '⚫  Off Duty'}
-            </Text>
-          </TouchableOpacity>
         </View>
 
         {/* Stats Row */}
@@ -156,13 +148,6 @@ export default function DashboardScreen() {
           </View>
         )}
 
-        {/* Vehicle Info */}
-        {user?.assigned_vehicle_reg && (
-          <Card style={styles.vehicleCard}>
-            <Text style={styles.sectionTitle}>🚗  Assigned Vehicle</Text>
-            <Text style={styles.vehicleReg}>{user.assigned_vehicle_reg}</Text>
-          </Card>
-        )}
 
         {/* Quick Actions */}
         <Text style={styles.sectionTitle}>Quick Actions</Text>
@@ -203,23 +188,6 @@ const styles = StyleSheet.create({
   driverName: { fontSize: 22, fontWeight: '800', color: theme.colors.textPrimary },
   orgName: { fontSize: 12, color: theme.colors.textMuted, marginTop: 2 },
 
-  statusToggle: {
-    backgroundColor: theme.colors.surfaceSubtle,
-    borderRadius: theme.radius.full,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  statusToggleActive: {
-    borderColor: theme.colors.success,
-    backgroundColor: theme.colors.successMuted,
-  },
-  statusToggleText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: theme.colors.textPrimary,
-  },
 
   statsRow: { flexDirection: 'row', gap: theme.spacing.sm, marginBottom: theme.spacing.xl },
   statCard: {
@@ -259,8 +227,6 @@ const styles = StyleSheet.create({
   pendingRoute: { fontSize: 12, color: theme.colors.textSecondary, marginTop: 2 },
   pendingArrow: { fontSize: 22, color: theme.colors.textMuted, marginLeft: 8 },
 
-  vehicleCard: { marginBottom: theme.spacing.xl, padding: theme.spacing.lg },
-  vehicleReg: { fontSize: 20, fontWeight: '900', color: theme.colors.textPrimary, letterSpacing: 1 },
 
   actionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm },
   actionCard: {

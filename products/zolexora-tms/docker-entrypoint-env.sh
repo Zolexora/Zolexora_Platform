@@ -1,8 +1,14 @@
 #!/bin/sh
-# Generate /usr/share/nginx/html/env-config.js dynamically in container RAM from container environment
-echo "window.__ENV__ = {" > /usr/share/nginx/html/env-config.js
-for var in $(env | grep -E '^(NEXT_PUBLIC|VITE)_' | cut -d= -f1); do
-  val=$(eval echo "\$$var")
-  echo "  \"$var\": \"$val\"," >> /usr/share/nginx/html/env-config.js
-done
-echo "};" >> /usr/share/nginx/html/env-config.js
+# Writes window.__ENV__ (served as /env-config.js) from the container environment, which compose
+# fills from Infisical. Only public, browser-safe keys are exposed; values are JSON-escaped.
+set -eu
+out=/usr/share/nginx/html/env-config.js
+{
+  echo "window.__ENV__ = {"
+  for var in AUTH_SERVICE_PUBLIC_URL TURNSTILE_SITE_KEY $(env | grep -oE '^VITE_[A-Z0-9_]+' || true); do
+    eval "val=\${$var-}"
+    esc=$(printf '%s' "$val" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' -e 's/</\\u003c/g')
+    printf '  "%s": "%s",\n' "$var" "$esc"
+  done
+  echo "};"
+} > "$out"

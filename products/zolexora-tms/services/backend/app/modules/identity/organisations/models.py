@@ -1,6 +1,6 @@
 import enum
 import uuid
-from sqlalchemy import CheckConstraint, Enum, String
+from sqlalchemy import CheckConstraint, Enum, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base, TimestampMixin
@@ -63,8 +63,11 @@ class Organisation(Base, TimestampMixin):
         default=OrganisationStatus.ACTIVE,
         nullable=False,
     )
+    # The Zolexora auth service organisation (ZX-ORG id) whose employees use this workspace
+    zolexora_org_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     __table_args__ = (
         CheckConstraint("length(trim(name)) between 2 and 160", name="org_name_len_check"),
+        UniqueConstraint("zolexora_org_id", name="uq_organisations_zolexora_org_id"),
         CheckConstraint("length(trim(organisation_type)) between 2 and 120", name="org_type_len_check"),
     )

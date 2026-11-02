@@ -15,6 +15,8 @@ export interface AuthMeResponse {
   permissions: string[];
   is_creator: boolean;
   is_commander: boolean;
+  zolexora_org_id?: string | null;
+  is_platform_admin?: boolean;
 }
 
 export interface OrganisationMember {

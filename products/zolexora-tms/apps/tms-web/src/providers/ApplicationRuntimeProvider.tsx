@@ -33,16 +33,16 @@ const defaultRuntimeConfig: RuntimeConfiguration = {
 const ApplicationRuntimeContext = createContext<RuntimeConfiguration>(defaultRuntimeConfig);
 
 export function ApplicationRuntimeProvider({ children }: { children: ReactNode }) {
-  const { session } = useAuth();
+  const { user } = useAuth();
   
   const { data: runtimeConfig, isLoading, error } = useQuery<RuntimeConfiguration>({
-    queryKey: ['application-runtime', session?.user?.uid],
+    queryKey: ['application-runtime', user?.uid],
     queryFn: () => apiClient<RuntimeConfiguration>('/api/v1/application/runtime'),
-    enabled: !!session, // Only fetch when authenticated
+    enabled: !!user, // Only fetch when authenticated
     staleTime: 1000 * 60 * 5, // Cache for 5 mins
   });
 
-  if (!session) {
+  if (!user) {
     return (
       <ApplicationRuntimeContext.Provider value={defaultRuntimeConfig}>
         {children}

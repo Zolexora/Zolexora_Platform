@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
+import { ZolexoraAuthProvider } from '@zolexora/auth-client/react';
 import { useAdminAuth } from './features/auth/useAdminAuth';
+import { AUTH_SERVICE_PUBLIC_URL, TURNSTILE_SITE_KEY } from './lib/runtime';
 import { LoginPage } from './features/auth/LoginPage';
 import { AdminLayout } from './layouts/AdminLayout';
 import { TenantsPage } from './features/tenants/TenantsPage';
@@ -36,14 +38,26 @@ function AdminPortal() {
 }
 
 export function App() {
+  const authUrl = AUTH_SERVICE_PUBLIC_URL();
+  if (!authUrl || !TURNSTILE_SITE_KEY()) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-brand-black px-4">
+        <p className="text-sm text-rose-300">
+          Sign-in is not configured: set AUTH_SERVICE_PUBLIC_URL and TURNSTILE_SITE_KEY in Infisical.
+        </p>
+      </div>
+    );
+  }
   return (
     <QueryClientProvider client={queryClient}>
+      <ZolexoraAuthProvider authUrl={authUrl} product="zolexora-tms-admin">
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<AdminPortal />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
+      </ZolexoraAuthProvider>
     </QueryClientProvider>
   );
 }

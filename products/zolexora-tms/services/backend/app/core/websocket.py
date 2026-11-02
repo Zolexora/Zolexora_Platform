@@ -13,7 +13,7 @@ class ConnectionManager:
         self.active_connections: Dict[uuid.UUID, List[WebSocket]] = {}
 
     async def connect(self, websocket: WebSocket, org_id: uuid.UUID):
-        await websocket.accept()
+        """Registers an already-accepted, authenticated socket."""
         if org_id not in self.active_connections:
             self.active_connections[org_id] = []
         self.active_connections[org_id].append(websocket)

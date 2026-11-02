@@ -1,11 +1,12 @@
 import uuid
 from typing import Optional
-from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import get_current_active_organisation, CurrentUserContext
 from app.db.session import get_db
-from app.modules.fleet.drivers.models import DriverStatus, DriverType
+from app.modules.fleet.drivers.models import Driver, DriverStatus, DriverType
 from app.modules.fleet.drivers.schemas import DriverCreate, DriverResponse, DriverUpdate
 from app.modules.fleet.drivers import service
 
@@ -45,6 +46,25 @@ async def list_drivers(
         skip=skip,
         limit=limit,
     )
+
+
+@router.get("/me", response_model=DriverResponse)
+async def get_my_driver(
+    ctx: CurrentUserContext = Depends(get_current_active_organisation),
+    db: AsyncSession = Depends(get_db),
+):
+    """The driver record of the signed-in employee (matched on their auth-service email)."""
+    if not ctx.email:
+        raise HTTPException(status_code=404, detail="Your account has no email to match a driver record")
+    driver = (await db.execute(
+        select(Driver).where(
+            Driver.organisation_id == ctx.organisation_id,
+            func.lower(Driver.email) == ctx.email.lower(),
+        ).limit(1)
+    )).scalar_one_or_none()
+    if not driver:
+        raise HTTPException(status_code=404, detail="No driver record in this organisation uses your email")
+    return driver
 
 
 @router.get("/{driver_id}", response_model=DriverResponse)

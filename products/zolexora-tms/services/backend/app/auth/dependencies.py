@@ -11,25 +11,26 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.tenant import TenantContext
 from app.core.config import settings
 from app.modules.core.platform.models import ProviderType
-from app.auth.jwks import verify_firebase_jwt
-from app.db.session import get_db, rls_bypass, set_tenant_context
+from app.auth.zolexora import AuthServiceError, InvalidToken, introspect
+from app.db.session import AsyncSessionLocal, get_db, rls_bypass, set_tenant_context
 
 logger = logging.getLogger(__name__)
 
 security = HTTPBearer(auto_error=False)
 
 class AuthenticatedIdentity(BaseModel):
+    """The caller as the Zolexora auth service knows them."""
     id: uuid.UUID
     email: Optional[str] = None
-    email_verified: bool = False
     full_name: Optional[str] = None
+    # ZX-ORG id for employee-track (org) logins; None for public users
+    zolexora_org_id: Optional[str] = None
+    is_platform_admin: bool = False
 
 class AuthenticatedUser(AuthenticatedIdentity):
     organisation_id: uuid.UUID
     is_creator: bool = False
     is_commander: bool = False
-    
-    # We will implement actual role systems in Prompt 07. For now, stub permissions.
     role_code: Optional[str] = None
     permissions: List[str] = []
 
@@ -44,116 +45,142 @@ class AuthenticatedUser(AuthenticatedIdentity):
 
 CurrentUserContext = AuthenticatedUser
 
-async def get_current_claims(
-    credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
-) -> Dict[str, Any]:
-    if not credentials:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization credentials were not provided",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+
+def _unauthorized(detail: str) -> HTTPException:
+    return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=detail, headers={"WWW-Authenticate": "Bearer"})
+
+
+async def identity_from_token(token: str) -> AuthenticatedIdentity:
     try:
-        claims = await verify_firebase_jwt(credentials.credentials)
-        return claims
-    except Exception as e:
+        user = await introspect(token)
+    except InvalidToken as e:
         logger.info(f"Rejected authorization token: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired authorization token",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise _unauthorized("Invalid or expired authorization token")
+    except AuthServiceError as e:
+        logger.error(f"Auth service unavailable: {e}")
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Authentication service unavailable")
+    try:
+        user_id = uuid.UUID(str(user["uid"]))
+    except ValueError:
+        raise _unauthorized("Invalid user id in token")
+    return AuthenticatedIdentity(
+        id=user_id,
+        email=user.get("email"),
+        full_name=user.get("name") or user.get("full_name"),
+        zolexora_org_id=user.get("org_id") or None,
+        is_platform_admin=user.get("is_platform_admin") is True,
+    )
+
 
 async def get_current_identity(
-    claims: Dict[str, Any] = Depends(get_current_claims),
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
 ) -> AuthenticatedIdentity:
-    sub = claims.get("sub") or claims.get("user_id")
-    if not sub:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token subject (sub) missing",
-        )
-    try:
-        user_uuid = uuid.UUID(sub)
-    except ValueError:
-        # Deterministically map Firebase string UID to UUID
-        user_uuid = uuid.uuid5(uuid.NAMESPACE_URL, f"firebase://{sub}")
+    if not credentials:
+        raise _unauthorized("Authorization credentials were not provided")
+    return await identity_from_token(credentials.credentials)
 
-    full_name = (
-        claims.get("name")
-        or claims.get("display_name")
-        or claims.get("user_metadata", {}).get("full_name")
-    )
-    return AuthenticatedIdentity(
-        id=user_uuid,
-        email=claims.get("email"),
-        email_verified=claims.get("email_verified") is True,
-        full_name=full_name,
-    )
+
+_known_profiles: set[uuid.UUID] = set()
+
+
+async def ensure_profile(identity: AuthenticatedIdentity) -> None:
+    """profiles.id is referenced by audit columns (verified_by, closed_by...): make sure the row
+    exists. Own committed session, so a failing request can't roll it back behind the cache."""
+    if identity.id in _known_profiles:
+        return
+    name = (identity.full_name or (identity.email or "").split("@")[0] or f"User {identity.id.hex[:8]}").strip()
+    if len(name) < 2:
+        name = f"User {identity.id.hex[:8]}"
+    async with AsyncSessionLocal() as db, db.begin(), rls_bypass(db):
+        await db.execute(
+            text("""
+                INSERT INTO public.profiles (id, full_name, created_at, updated_at)
+                VALUES (:id, :name, NOW(), NOW()) ON CONFLICT (id) DO NOTHING
+            """),
+            {"id": identity.id, "name": name[:160]},
+        )
+    _known_profiles.add(identity.id)
+
+
+_MEMBER_COLUMNS = "m.organisation_id, m.is_creator, m.is_commander"
+
+
+async def resolve_membership(
+    db: AsyncSession, identity: AuthenticatedIdentity, requested_org_id: Optional[uuid.UUID]
+) -> Optional[Dict[str, Any]]:
+    """The caller's ACTIVE membership, or None.
+
+    Employee logins (ZX-ORG in the token) belong to exactly the TMS organisation linked to
+    that ZX-ORG by a platform admin; the auth service vouches for org membership, so the
+    TMS membership is created on first login. X-Organization-Id is ignored for them.
+    Public users pick among their memberships with X-Organization-Id (default: oldest).
+    """
+    async with rls_bypass(db):
+        if identity.zolexora_org_id:
+            org = (await db.execute(
+                text("SELECT id FROM public.organisations WHERE zolexora_org_id = :z AND status = 'ACTIVE'"),
+                {"z": identity.zolexora_org_id},
+            )).scalar()
+            if not org:
+                return None
+            await db.execute(
+                text("""
+                    INSERT INTO public.organisation_members
+                        (id, organisation_id, user_id, status, is_creator, is_commander, created_at, updated_at)
+                    VALUES (:id, :o, :u, 'ACTIVE', false, false, NOW(), NOW())
+                    ON CONFLICT (organisation_id, user_id) DO NOTHING
+                """),
+                {"id": uuid.uuid4(), "o": org, "u": identity.id},
+            )
+            query, params = (
+                f"SELECT {_MEMBER_COLUMNS} FROM public.organisation_members m "
+                "WHERE m.user_id = :u AND m.organisation_id = :o AND m.status = 'ACTIVE'",
+                {"u": identity.id, "o": org},
+            )
+        elif requested_org_id:
+            query, params = (
+                f"SELECT {_MEMBER_COLUMNS} FROM public.organisation_members m "
+                "WHERE m.user_id = :u AND m.organisation_id = :o AND m.status = 'ACTIVE'",
+                {"u": identity.id, "o": requested_org_id},
+            )
+        else:
+            query, params = (
+                f"SELECT {_MEMBER_COLUMNS} FROM public.organisation_members m "
+                "WHERE m.user_id = :u AND m.status = 'ACTIVE' ORDER BY m.created_at ASC LIMIT 1",
+                {"u": identity.id},
+            )
+        row = (await db.execute(text(query), params)).mappings().first()
+    return dict(row) if row else None
+
+
+def requested_org(request: Request) -> Optional[uuid.UUID]:
+    raw = request.headers.get("X-Organization-Id")
+    if not raw:
+        return None
+    try:
+        return uuid.UUID(raw)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid X-Organization-Id header format")
+
 
 async def get_current_active_organisation(
     request: Request,
     identity: AuthenticatedIdentity = Depends(get_current_identity),
     db: AsyncSession = Depends(get_db),
 ) -> AuthenticatedUser:
-    """
-    Validates organization membership and establishes Tenant Context boundary.
-    Never trusts frontend implicitly.
-    """
-    requested_org_id_str = request.headers.get("X-Organization-Id")
-    
-    # Securely resolve organization based on explicit request + validation
-    if requested_org_id_str:
-        try:
-            requested_org_id = uuid.UUID(requested_org_id_str)
-        except ValueError:
-            raise HTTPException(status_code=400, detail="Invalid X-Organization-Id header format")
-            
-        query = text("""
-            SELECT 
-                m.organisation_id,
-                m.is_creator,
-                m.is_commander
-            FROM public.organisation_members m
-            WHERE m.user_id = :user_id AND m.organisation_id = :org_id AND m.status = 'ACTIVE'
-        """)
-        async with rls_bypass(db):
-            result = await db.execute(query, {"user_id": identity.id, "org_id": requested_org_id})
-        row = result.mappings().first()
-        
-        if not row:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Access denied: You do not belong to the requested organisation or your status is inactive."
-            )
-    else:
-        # Fallback for local dev or single-org users
-        query = text("""
-            SELECT 
-                m.organisation_id,
-                m.is_creator,
-                m.is_commander
-            FROM public.organisation_members m
-            WHERE m.user_id = :user_id AND m.status = 'ACTIVE'
-            ORDER BY m.created_at ASC
-            LIMIT 1
-        """)
-        async with rls_bypass(db):
-            result = await db.execute(query, {"user_id": identity.id})
-        row = result.mappings().first()
-        
-        if not row:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="User does not belong to any active organisation. Onboarding required."
-            )
+    """Validates organisation membership and sets the RLS tenant for this transaction."""
+    await ensure_profile(identity)
+    row = await resolve_membership(db, identity, requested_org(request))
+    if not row:
+        if identity.zolexora_org_id:
+            detail = "Your Zolexora organisation is not linked to a TMS workspace, or your access is suspended."
+        else:
+            detail = "Access denied: no active membership in the requested organisation. Onboarding required."
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=detail)
 
-    # Establish transaction-scoped PostgreSQL session context for Row-Level Security (RLS)
     await set_tenant_context(db, row["organisation_id"])
     return AuthenticatedUser(
-        id=identity.id,
-        email=identity.email,
-        full_name=identity.full_name,
+        **identity.model_dump(),
         organisation_id=row["organisation_id"],
         is_creator=row["is_creator"],
         is_commander=row["is_commander"],
@@ -243,40 +270,11 @@ async def get_tenant_context(
         permissions=[]
     )
 
-async def require_platform_admin(identity: AuthenticatedIdentity = Depends(get_current_identity), db: AsyncSession = Depends(get_db)) -> AuthenticatedIdentity:
-    """
-    Platform Admin relies ONLY on platform context, never on organization context.
-    Checks configured PLATFORM_ADMIN_EMAILS first (and auto-provisions), then checks platform_admins table.
-    """
-    admin_emails = getattr(settings, "PLATFORM_ADMIN_EMAILS", []) or []
-    # Only a Firebase-verified email may claim admin rights; otherwise anyone could
-    # register an unverified account with an admin address.
-    if identity.email and identity.email_verified and identity.email.lower() in [e.lower() for e in admin_emails]:
-        try:
-            await db.execute(
-                text("""
-                    INSERT INTO public.platform_admins (id, user_id, email, status, created_at, updated_at)
-                    VALUES (:id, :user_id, :email, 'ACTIVE', NOW(), NOW())
-                    ON CONFLICT (user_id) DO UPDATE SET status = 'ACTIVE', email = EXCLUDED.email
-                """),
-                {"id": uuid.uuid4(), "user_id": identity.id, "email": identity.email},
-            )
-            await db.commit()
-        except Exception:
-            await db.rollback()
-        return identity
-
-    try:
-        query = text("""
-            SELECT 1 FROM public.platform_admins WHERE user_id = :user_id AND status = 'ACTIVE'
-        """)
-        result = await db.execute(query, {"user_id": identity.id})
-        if result.scalar():
-            return identity
-    except Exception:
-        pass
-
-    raise HTTPException(
-        status_code=status.HTTP_403_FORBIDDEN,
-        detail="Only Platform Administrators can perform this action",
-    )
+async def require_platform_admin(identity: AuthenticatedIdentity = Depends(get_current_identity)) -> AuthenticatedIdentity:
+    """Platform admins are the auth service's is_platform_admin users; no organisation context."""
+    if not identity.is_platform_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only Platform Administrators can perform this action",
+        )
+    return identity

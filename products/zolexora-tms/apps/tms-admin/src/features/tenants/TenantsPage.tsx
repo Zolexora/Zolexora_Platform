@@ -30,6 +30,7 @@ interface Organisation {
   created_at: string;
   updated_at: string;
   member_count?: number;
+  zolexora_org_id?: string | null;
   quota?: Quota;
 }
 
@@ -91,6 +92,23 @@ export function TenantsPage() {
       setConfirmSuspendOrg(null);
     },
   });
+
+  // Employees of this Zolexora auth-service organisation (ZX-ORG) sign in to the workspace
+  const linkMutation = useMutation({
+    mutationFn: ({ id, zolexora_org_id }: { id: string; zolexora_org_id: string | null }) =>
+      apiClient(`/api/v1/admin/organisations/${id}/zolexora-org`, {
+        method: 'PUT',
+        body: JSON.stringify({ zolexora_org_id }),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-orgs'] }),
+    onError: (e: Error) => window.alert(e.message),
+  });
+
+  const editLink = (org: Organisation) => {
+    const value = window.prompt(`ZX-ORG id for ${org.name} (empty to unlink)`, org.zolexora_org_id ?? '');
+    if (value === null) return;
+    linkMutation.mutate({ id: org.id, zolexora_org_id: value.trim().toUpperCase() || null });
+  };
 
   const updateQuotaMutation = useMutation({
     mutationFn: ({ id, quota }: { id: string; quota: Quota }) =>
@@ -255,7 +273,9 @@ export function TenantsPage() {
                       </div>
                       <div>
                         <p className="font-medium text-white">{org.name}</p>
-                        <p className="text-[11px] text-silver-600 font-mono">{org.id.slice(0, 8)}…</p>
+                        <p className="text-[11px] text-silver-600 font-mono">
+                          {org.id.slice(0, 8)}…{org.zolexora_org_id ? ` · ${org.zolexora_org_id}` : ''}
+                        </p>
                       </div>
                     </div>
                   </td>
@@ -281,6 +301,15 @@ export function TenantsPage() {
                   </td>
                   <td className="px-5 py-3.5 text-right">
                     <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => editLink(org)}
+                        disabled={linkMutation.isPending}
+                        className="inline-flex items-center gap-1 rounded-lg border border-silver-800 bg-brand-near px-2.5 py-1.5 text-xs font-medium text-silver-400 hover:border-silver-700 hover:text-white transition"
+                        title="Link Zolexora organisation (employee sign-in)"
+                      >
+                        ZX-ORG
+                      </button>
+
                       {/* Quota Button */}
                       <button
                         onClick={() => openQuotaModal(org)}

@@ -1,59 +1,41 @@
-import Constants from 'expo-constants';
+import { config } from './config';
 import { storage } from './storage';
 
-export function getApiBaseUrl(): string {
-  const envUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
-  if (envUrl) {
-    return envUrl;
+export class ApiError extends Error {
+  constructor(message: string, public status: number) {
+    super(message);
   }
-  const extraUrl = Constants.expoConfig?.extra?.apiBaseUrl;
-  if (extraUrl) {
-    return String(extraUrl);
-  }
-  throw new Error('EXPO_PUBLIC_API_BASE_URL is not configured');
 }
 
-export async function apiClient<T>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
-  const token = await storage.getToken();
-  const org = await storage.getActiveOrg();
-  const baseUrl = getApiBaseUrl();
+let onUnauthorized: (() => void) | null = null;
+/** AuthProvider registers this so an expired/revoked session signs the user out. */
+export function setUnauthorizedHandler(handler: (() => void) | null) {
+  onUnauthorized = handler;
+}
 
+/** Calls the TMS backend with the Zolexora session token. */
+export async function apiClient<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  const token = await storage.getToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),
   };
+  if (token) headers.Authorization = `Bearer ${token}`;
 
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
+  const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const response = await fetch(`${config.apiBaseUrl()}${path}`, { ...options, headers });
 
-  if (org?.id) {
-    headers['X-Organization-Id'] = org.id;
-  }
-
-  const url = `${baseUrl}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
-
-  const response = await fetch(url, {
-    ...options,
-    headers,
-  });
-
+  if (response.status === 401) onUnauthorized?.();
   if (!response.ok) {
-    let errorDetail = `Request failed with status ${response.status}`;
+    let detail = `Request failed with status ${response.status}`;
     try {
-      const errorJson = await response.json();
-      errorDetail =
-        errorJson.error?.message ||
-        errorJson.detail ||
-        (typeof errorJson === 'string' ? errorJson : errorDetail);
+      const body = await response.json();
+      detail = body.error?.message || body.detail || detail;
     } catch {
-      // ignore
+      // non-JSON error body
     }
-    throw new Error(errorDetail);
+    throw new ApiError(detail, response.status);
   }
-
+  if (response.status === 204) return undefined as T;
   return response.json();
 }

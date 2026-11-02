@@ -2,9 +2,16 @@ from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
 import uuid
 from typing import List, Optional
-from sqlalchemy import text
 
-from app.auth.dependencies import AuthenticatedIdentity, get_current_identity, AuthenticatedUser, get_current_user
+from app.auth.dependencies import (
+    AuthenticatedIdentity,
+    AuthenticatedUser,
+    ensure_profile,
+    get_current_identity,
+    get_current_user,
+    requested_org,
+    resolve_membership,
+)
 from app.db.session import get_db, rls_bypass
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,20 +19,17 @@ router = APIRouter(prefix="/api/v1/auth", tags=["Auth"])
 
 
 class UserMeResponse(BaseModel):
-    """
-    Auth context returned after successful token verification.
-    Includes Commander flag and is_creator for the UI.
-    For full effective permissions, call /api/v1/organisations/me/effective-permissions.
-    """
+    """The caller, plus their active TMS membership if any (null organisation = onboarding needed).
+    Full effective permissions: /api/v1/organisations/me/effective-permissions."""
     id: uuid.UUID
-    # frontend uses user_id as alias
-    user_id: uuid.UUID
+    user_id: uuid.UUID  # alias used by the frontends
     email: Optional[str]
     full_name: Optional[str]
     organisation_id: Optional[uuid.UUID]
+    zolexora_org_id: Optional[str] = None
     is_creator: bool
     is_commander: bool
-    # role_code is null until roles are assigned (Prompt 07+)
+    is_platform_admin: bool = False
     role_code: Optional[str] = None
 
 
@@ -35,48 +39,23 @@ async def get_current_user_profile(
     identity: AuthenticatedIdentity = Depends(get_current_identity),
     db: AsyncSession = Depends(get_db),
 ):
-    requested_org_id_str = request.headers.get("X-Organization-Id")
-    row = None
-    if requested_org_id_str:
-        try:
-            requested_org_id = uuid.UUID(requested_org_id_str)
-            query = text("""
-                SELECT 
-                    m.organisation_id,
-                    m.is_creator,
-                    m.is_commander
-                FROM public.organisation_members m
-                WHERE m.user_id = :user_id AND m.organisation_id = :org_id AND m.status = 'ACTIVE'
-            """)
-            async with rls_bypass(db):
-                result = await db.execute(query, {"user_id": identity.id, "org_id": requested_org_id})
-            row = result.mappings().first()
-        except ValueError:
-            pass
-
-    if not row:
-        query = text("""
-            SELECT 
-                m.organisation_id,
-                m.is_creator,
-                m.is_commander
-            FROM public.organisation_members m
-            WHERE m.user_id = :user_id AND m.status = 'ACTIVE'
-            ORDER BY m.created_at ASC
-            LIMIT 1
-        """)
-        async with rls_bypass(db):
-            result = await db.execute(query, {"user_id": identity.id})
-        row = result.mappings().first()
-
+    await ensure_profile(identity)
+    row = await resolve_membership(db, identity, requested_org(request))
+    if row is None and not identity.zolexora_org_id and request.headers.get("X-Organization-Id"):
+        # A stale org selection should not lock the user out of their default workspace
+        row = await resolve_membership(db, identity, None)
+    await db.commit()
     return UserMeResponse(
         id=identity.id,
         user_id=identity.id,
         email=identity.email,
         full_name=identity.full_name,
         organisation_id=row["organisation_id"] if row else None,
+        zolexora_org_id=identity.zolexora_org_id,
         is_creator=row["is_creator"] if row else False,
         is_commander=row["is_commander"] if row else False,
+        is_platform_admin=identity.is_platform_admin,
+        role_code=("CREATOR" if row["is_creator"] else "MEMBER") if row else None,
     )
 
 

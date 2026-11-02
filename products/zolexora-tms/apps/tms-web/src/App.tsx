@@ -1,8 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ZolexoraAuthProvider } from '@zolexora/user-auth-firebase';
-import { AuthProvider } from '@zolexora/auth-client/react';
-import { auth } from './lib/firebase';
+import { ZolexoraAuthProvider } from '@zolexora/auth-client/react';
+import { AUTH_SERVICE_PUBLIC_URL, TURNSTILE_SITE_KEY } from './lib/runtime';
 import { AuthenticationForm } from './components/authentication-form';
 import { ProtectedRoute } from './routes/ProtectedRoute';
 import { DashboardLayout } from './layouts/DashboardLayout';
@@ -29,7 +28,6 @@ import { WorkspaceSettingsPage } from './features/organization/WorkspaceSettings
 import { RolesPage } from './features/organization/RolesPage';
 import { MembersPage } from './features/organization/MembersPage';
 import { OperatingUnitsPage } from './features/operations/OperatingUnitsPage';
-import { AuthCallback } from './features/auth/AuthCallback';
 import CompliancePage from './pages/compliance/CompliancePage';
 import { ApplicationRuntimeProvider } from './providers/ApplicationRuntimeProvider';
 import { LandingPage } from './pages/LandingPage';
@@ -52,10 +50,19 @@ function AuthPageWrapper({ children }: { children: React.ReactNode }) {
 }
 
 export function App() {
+  const authUrl = AUTH_SERVICE_PUBLIC_URL();
+  if (!authUrl || !TURNSTILE_SITE_KEY()) {
+    return (
+      <AuthPageWrapper>
+        <p className="text-sm text-rose-300">
+          Sign-in is not configured: set AUTH_SERVICE_PUBLIC_URL and TURNSTILE_SITE_KEY in Infisical.
+        </p>
+      </AuthPageWrapper>
+    );
+  }
   return (
     <QueryClientProvider client={queryClient}>
-      <ZolexoraAuthProvider>
-        <AuthProvider product="zolexora-tms" firebaseAuth={auth}>
+      <ZolexoraAuthProvider authUrl={authUrl} product="zolexora-tms">
           <BrowserRouter>
           <Routes>
             {/* Public Landing & Authentication */}
@@ -64,7 +71,6 @@ export function App() {
             <Route path="/login" element={<Navigate to="/authentication" replace />} />
             <Route path="/onboarding" element={<Navigate to="/authentication" replace />} />
             <Route path="/auth" element={<Navigate to="/authentication" replace />} />
-            <Route path="/auth/callback" element={<AuthCallback />} />
 
             {/* Protected Workspace Navigation */}
             <Route element={<ProtectedRoute />}>
@@ -103,7 +109,6 @@ export function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>
-        </AuthProvider>
       </ZolexoraAuthProvider>
     </QueryClientProvider>
   );

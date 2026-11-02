@@ -78,10 +78,7 @@ export interface DriverProfile {
   phone: string;
   email: string;
   license_number: string;
-  license_expiry: string;
-  is_on_duty: boolean;
-  active_duty_id?: string;
-  assigned_vehicle_reg?: string;
+  license_expiry: string | null;
 }
 
 export interface TenantContext {

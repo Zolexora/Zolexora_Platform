@@ -13,7 +13,7 @@ import {
   FileCheck2,
 } from 'lucide-react';
 import { apiClient, getApiBaseUrl } from '../../lib/api';
-import { getIdToken } from '../../lib/firebase';
+import { getSessionToken } from '../../lib/session';
 import type {
   DispatchBoardItem,
   DutyLifecycleStatus,
@@ -74,20 +74,27 @@ export function DispatchPage() {
         const authMe = await apiClient<{ organisation_id: string }>('/api/v1/auth/me');
         if (!authMe.organisation_id) return;
 
-        const token = await getIdToken();
+        const token = getSessionToken();
         if (!token) return;
-        // The backend verifies this token and org membership before accepting the socket
         const base = new URL(getApiBaseUrl() || window.location.origin, window.location.origin);
         base.protocol = base.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${base.origin}/ws/ops/${authMe.organisation_id}?token=${encodeURIComponent(token)}`;
+        ws = new WebSocket(`${base.origin}/ws/ops/${authMe.organisation_id}`);
 
-        ws = new WebSocket(wsUrl);
-
+        // The token goes in the first message (never the URL); the server answers auth_ok
         ws.onopen = () => {
-          setWsConnected(true);
+          ws?.send(JSON.stringify({ type: 'auth', token }));
         };
 
-        ws.onmessage = () => {
+        ws.onmessage = (event) => {
+          if (event.data === 'pong') return;
+          try {
+            if (JSON.parse(event.data)?.type === 'auth_ok') {
+              setWsConnected(true);
+              return;
+            }
+          } catch {
+            // non-JSON event: treat as an ops update
+          }
           // Reactively invalidate queries when ops events arrive
           queryClient.invalidateQueries({ queryKey: ['dispatch-board'] });
           queryClient.invalidateQueries({ queryKey: ['duties'] });

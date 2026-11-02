@@ -12,10 +12,10 @@ COPY products/zolexora-tms ./products/zolexora-tms
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
     pnpm config set store-dir /root/.local/share/pnpm/store && \
     pnpm config set ignore-scripts true && \
-    pnpm install --no-frozen-lockfile
+    pnpm install --frozen-lockfile
 
-RUN pnpm --filter "@zolexora/utils" build
-RUN pnpm --filter "./products/zolexora-tms/${APP_PATH}" build
+# Builds the app and every workspace package it depends on (auth-client, utils, ...)
+RUN pnpm --filter "{./products/zolexora-tms/${APP_PATH}}..." build
 
 FROM nginx:alpine
 ARG APP_PATH

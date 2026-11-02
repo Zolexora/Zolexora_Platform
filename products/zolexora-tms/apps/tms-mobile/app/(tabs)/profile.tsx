@@ -47,9 +47,8 @@ export default function ProfileScreen() {
 
   if (!user) return null;
 
-  const licenseExpiry = new Date(user.license_expiry);
   const isLicenseExpiringSoon =
-    licenseExpiry.getTime() - Date.now() < 90 * 24 * 60 * 60 * 1000;
+    !!user.license_expiry && new Date(user.license_expiry).getTime() - Date.now() < 90 * 24 * 60 * 60 * 1000;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -72,7 +71,7 @@ export default function ProfileScreen() {
         <Card style={styles.section}>
           <Text style={styles.sectionTitle}>Driver Details</Text>
           <InfoRow label="Phone" value={user.phone} />
-          <InfoRow label="Email" value={user.email} />
+          <InfoRow label="Email" value={user.email || '—'} />
           <InfoRow label="Driver ID" value={user.id} />
         </Card>
 
@@ -84,41 +83,15 @@ export default function ProfileScreen() {
           <InfoRow label="License No." value={user.license_number} />
           <InfoRow
             label="Expiry"
-            value={new Date(user.license_expiry).toLocaleDateString('en-IN', {
-              day: 'numeric',
-              month: 'long',
-              year: 'numeric',
-            })}
+            value={
+              user.license_expiry
+                ? new Date(user.license_expiry).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
+                : '—'
+            }
           />
           {isLicenseExpiringSoon && (
             <Text style={styles.warningText}>
               License expires within 90 days — contact your fleet manager for renewal.
-            </Text>
-          )}
-        </Card>
-
-        {/* Assigned Vehicle */}
-        {user.assigned_vehicle_reg && (
-          <Card style={styles.section}>
-            <Text style={styles.sectionTitle}>Assigned Vehicle</Text>
-            <View style={styles.vehicleReg}>
-              <Text style={styles.vehicleRegText}>{user.assigned_vehicle_reg}</Text>
-            </View>
-          </Card>
-        )}
-
-        {/* Duty Status */}
-        <Card style={styles.section}>
-          <Text style={styles.sectionTitle}>Current Status</Text>
-          <View style={styles.dutyStatusRow}>
-            <View style={[styles.statusDot, user.is_on_duty ? styles.dotActive : styles.dotInactive]} />
-            <Text style={styles.statusText}>
-              {user.is_on_duty ? 'On Duty' : 'Off Duty'}
-            </Text>
-          </View>
-          {user.active_duty_id && (
-            <Text style={styles.activeDutyRef}>
-              Active Duty: {user.active_duty_id}
             </Text>
           )}
         </Card>
@@ -173,15 +146,7 @@ const styles = StyleSheet.create({
 
   warningText: { fontSize: 12, color: theme.colors.warning, marginTop: theme.spacing.sm },
 
-  vehicleReg: { alignSelf: 'center', backgroundColor: theme.colors.surfaceSubtle, borderRadius: theme.radius.md, paddingHorizontal: theme.spacing.xl, paddingVertical: theme.spacing.md, borderWidth: 1, borderColor: theme.colors.border },
-  vehicleRegText: { fontSize: 20, fontWeight: '900', color: theme.colors.textPrimary, letterSpacing: 2 },
 
-  dutyStatusRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
-  statusDot: { width: 10, height: 10, borderRadius: 5 },
-  dotActive: { backgroundColor: theme.colors.success },
-  dotInactive: { backgroundColor: theme.colors.textMuted },
-  statusText: { fontSize: 15, fontWeight: '700', color: theme.colors.textPrimary },
-  activeDutyRef: { fontSize: 12, color: theme.colors.textMuted, marginTop: theme.spacing.xs },
 
   actions: { marginTop: theme.spacing.md },
   versionNote: { textAlign: 'center', fontSize: 11, color: theme.colors.textMuted, marginTop: theme.spacing.lg },

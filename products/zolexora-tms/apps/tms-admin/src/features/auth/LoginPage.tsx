@@ -2,6 +2,7 @@ import { useState, FormEvent } from 'react';
 import { ShieldCheck, Loader2, AlertCircle } from 'lucide-react';
 import { TurnstileWidget } from '@zolexora/auth-client/turnstile';
 import { useAdminAuth } from './useAdminAuth';
+import { TURNSTILE_SITE_KEY } from '../../lib/runtime';
 
 export function LoginPage() {
   const { signIn } = useAdminAuth();
@@ -18,14 +19,7 @@ export function LoginPage() {
     try {
       await signIn(email, password, turnstileToken);
     } catch (err: any) {
-      const msg: string = err.message ?? '';
-      if (msg.includes('invalid-credential') || msg.includes('wrong-password') || msg.includes('user-not-found')) {
-        setError('Invalid email or password.');
-      } else if (msg.includes('too-many-requests')) {
-        setError('Too many attempts. Please try again later.');
-      } else {
-        setError(msg || 'Sign-in failed.');
-      }
+      setError(err?.message || 'Sign-in failed.');
     } finally {
       setLoading(false);
     }
@@ -58,7 +52,6 @@ export function LoginPage() {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 className="w-full rounded-xl border border-silver-800 bg-brand-black px-3.5 py-2.5 text-sm text-white placeholder-silver-700 focus:border-navy-500 focus:outline-none focus:ring-1 focus:ring-navy-500"
-                placeholder="admin@zolexora.com"
               />
             </div>
             <div>
@@ -70,7 +63,6 @@ export function LoginPage() {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 className="w-full rounded-xl border border-silver-800 bg-brand-black px-3.5 py-2.5 text-sm text-white placeholder-silver-700 focus:border-navy-500 focus:outline-none focus:ring-1 focus:ring-navy-500"
-                placeholder="••••••••"
               />
             </div>
 
@@ -83,20 +75,17 @@ export function LoginPage() {
 
             <div className="pt-1 flex justify-center">
               <TurnstileWidget
-                siteKey={
-                  // @ts-ignore
-                  (typeof window !== 'undefined' && window.__ENV__?.VITE_TURNSTILE_SITE_KEY) ||
-                  import.meta.env.VITE_TURNSTILE_SITE_KEY ||
-                  '0x4AAAAAAAx_MockDevSiteKey'
-                }
+                siteKey={TURNSTILE_SITE_KEY()}
                 action="track3-admin-login"
+                theme="dark"
                 onVerify={(tok) => setTurnstileToken(tok)}
+                onExpire={() => setTurnstileToken('')}
               />
             </div>
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !turnstileToken}
               className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-navy-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-navy-500 disabled:opacity-60 transition"
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}

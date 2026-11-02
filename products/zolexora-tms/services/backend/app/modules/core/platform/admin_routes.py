@@ -2,7 +2,7 @@ import uuid
 from typing import List, Optional
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc
 
@@ -55,6 +55,7 @@ class AdminOrganisationResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     member_count: int = 0
+    zolexora_org_id: Optional[str] = None
     quota: Optional[QuotaSchema] = None
     members: Optional[List[MemberItem]] = None
 
@@ -162,12 +163,48 @@ async def list_admin_organisations(
                 created_at=org.created_at,
                 updated_at=org.updated_at,
                 member_count=counts_map.get(org.id, 0),
+                zolexora_org_id=org.zolexora_org_id,
                 quota=quota_data,
                 members=members_map.get(org.id) if include_members else None,
             )
         )
 
     return response
+
+
+class ZolexoraOrgLink(BaseModel):
+    # ZX-ORG id from the auth service; null unlinks
+    zolexora_org_id: Optional[str] = Field(None, min_length=3, max_length=64, pattern=r"^[A-Za-z0-9_-]+$")
+
+
+@router.put("/organisations/{organisation_id}/zolexora-org")
+async def link_zolexora_org(
+    organisation_id: uuid.UUID,
+    body: ZolexoraOrgLink,
+    db: AsyncSession = Depends(get_db),
+    admin: AuthenticatedIdentity = Depends(require_platform_admin),
+):
+    """Employees of the given auth-service organisation sign in to this TMS workspace."""
+    org = (await db.execute(select(Organisation).where(Organisation.id == organisation_id))).scalar_one_or_none()
+    if not org:
+        raise HTTPException(status_code=404, detail="Organisation not found")
+    if body.zolexora_org_id:
+        taken = (await db.execute(
+            select(Organisation.id).where(Organisation.zolexora_org_id == body.zolexora_org_id, Organisation.id != org.id)
+        )).scalar()
+        if taken:
+            raise HTTPException(status_code=409, detail="That Zolexora organisation is already linked to another workspace")
+    org.zolexora_org_id = body.zolexora_org_id
+    db.add(PlatformAuditLog(
+        user_id=admin.id,
+        organisation_id=org.id,
+        event_type="ORGANISATION_ZOLEXORA_LINKED",
+        entity_type="organisations",
+        entity_id=str(org.id),
+        payload=f"Linked '{org.name}' to Zolexora organisation {body.zolexora_org_id or '(none)'}",
+    ))
+    await db.commit()
+    return {"id": str(org.id), "zolexora_org_id": org.zolexora_org_id}
 
 
 @router.post("/organisations/{organisation_id}/suspend")

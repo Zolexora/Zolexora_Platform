@@ -1,33 +1,16 @@
-import { useState, useEffect } from 'react';
-import { onAuthStateChanged, type User } from 'firebase/auth';
-import { auth, webAuth } from '../../lib/firebase';
+import { useAuth } from '@zolexora/auth-client/react';
 
+/** Platform admins sign in through the Zolexora auth service (Track 3). */
 export function useAdminAuth() {
-  const [user, setUser] = useState<User | null>(auth.currentUser);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => {
-      setUser(u);
-      setIsLoading(false);
-    });
-    return unsub;
-  }, []);
-
-  const signIn = async (email: string, password: string, _turnstileToken?: string) => {
-    setError(null);
-    try {
-      await webAuth.signInWithEmail(auth, email, password);
-    } catch (e: any) {
-      setError(e.message ?? 'Sign-in failed');
-      throw e;
-    }
+  const { user, loading, error, adminSignIn, signOut } = useAuth();
+  const signIn = async (email: string, password: string, turnstileToken: string) => {
+    await adminSignIn({ email, password, turnstileToken });
   };
-
-  const signOut = async () => {
-    await webAuth.signOut(auth);
+  return {
+    user: user?.is_platform_admin ? user : null,
+    isLoading: loading,
+    error: error?.message ?? null,
+    signIn,
+    signOut,
   };
-
-  return { user, isLoading, error, signIn, signOut };
 }

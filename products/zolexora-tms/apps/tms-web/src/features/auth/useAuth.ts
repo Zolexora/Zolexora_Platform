@@ -1,33 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { onAuthStateChanged, type User } from 'firebase/auth';
-import { auth, webAuth } from '../../lib/firebase';
+import { useAuth as useZolexoraAuth } from '@zolexora/auth-client/react';
 import { apiClient } from '../../lib/api';
 import type { AuthMeResponse, Organisation, EffectivePermissionsResponse } from '../../types';
 
+/** Zolexora auth-service session + the caller's TMS workspace context. */
 export function useAuth() {
   const queryClient = useQueryClient();
-  const [user, setUser] = useState<User | null>(auth.currentUser);
-  const [token, setToken] = useState<string | null>(null);
-  const [isSessionLoading, setIsSessionLoading] = useState(true);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
-      if (currentUser) {
-        const idToken = await currentUser.getIdToken();
-        setToken(idToken);
-      } else {
-        setToken(null);
-      }
-      setIsSessionLoading(false);
-      queryClient.invalidateQueries({ queryKey: ['auth-me'] });
-      queryClient.invalidateQueries({ queryKey: ['organisation-me'] });
-      queryClient.invalidateQueries({ queryKey: ['effective-permissions'] });
-    });
-
-    return () => unsubscribe();
-  }, [queryClient]);
+  const { user, loading: isSessionLoading, signOut: zolexoraSignOut } = useZolexoraAuth();
+  const token = user ? user.uid : null; // query key: refetch when the signed-in user changes
 
   const {
     data: authMe,
@@ -69,7 +50,7 @@ export function useAuth() {
 
   const signOut = async () => {
     localStorage.removeItem('zolexora_active_org_id');
-    await webAuth.signOut(auth);
+    await zolexoraSignOut();
     queryClient.clear();
   };
 
@@ -82,13 +63,8 @@ export function useAuth() {
     return permissions.permissions.includes(requiredCap);
   };
 
-  // Provide session compatibility object for legacy consumers
-  const session = token ? { access_token: token, user } : null;
-
   return {
-    session,
     user,
-    token,
     authMe,
     organisation,
     permissions,

@@ -32,8 +32,11 @@ class Settings(BaseSettings):
     API_V1_PREFIX: str = "/api/v1"
     DEBUG: bool = False
 
-    # Platform Admins (comma-separated emails via PLATFORM_ADMIN_EMAILS env var)
-    PLATFORM_ADMIN_EMAILS: EnvList = Field(default=[], validation_alias="PLATFORM_ADMIN_EMAILS")
+    # Zolexora auth service: verifies every bearer token (/api/v1/auth/me). Platform admins
+    # are the auth service's is_platform_admin users; there is no local allowlist.
+    AUTH_SERVICE_URL: Optional[str] = Field(default=None, validation_alias="AUTH_SERVICE_URL")
+    # Set to 1 by compose so a localhost AUTH_SERVICE_URL is reached via host.docker.internal
+    TMS_IN_DOCKER: bool = Field(default=False, validation_alias="TMS_IN_DOCKER")
 
     # CORS (comma-separated origins via CORS_ORIGINS env var)
     CORS_ORIGINS: EnvList = Field(default=[], validation_alias="CORS_ORIGINS")
@@ -86,13 +89,7 @@ class Settings(BaseSettings):
             return url.replace("postgres://", "postgresql+asyncpg://", 1)
         return url
 
-    # Firebase Auth
-    FIREBASE_PROJECT_ID: str = Field(
-        default="",
-        validation_alias=AliasChoices("FIREBASE_PROJECT_ID", "NEXT_PUBLIC_FIREBASE_PROJECT_ID"),
-    )
-    # Comma-separated allowed Firebase audience project IDs
-    FIREBASE_ALLOWED_PROJECTS: EnvList = Field(default=[], validation_alias="FIREBASE_ALLOWED_PROJECTS")
+    # Test suite only: signs HS256 test tokens (ignored unless NODE_ENV=test)
     JWT_SECRET: Optional[str] = Field(default=None, validation_alias="JWT_SECRET")
 
     # Payment Gateway (Cashfree)

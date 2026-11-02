@@ -14,45 +14,62 @@ import { theme } from '../../src/lib/theme';
 import { Button } from '../../src/components/Button';
 import { Input } from '../../src/components/Input';
 import { Card } from '../../src/components/Card';
+import { TurnstileWebView } from '../../src/components/TurnstileWebView';
+import { config } from '../../src/lib/config';
+import { isValidZolexoraOrgId } from '@zolexora/utils/zolexora-id';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { login, loginDemo, isLoading } = useAuth();
-  const [identifier, setIdentifier] = useState('rajesh.kumar@zolexora-fleet.com');
-  const [orgId, setOrgId] = useState('org-demo-01');
-  const [password, setPassword] = useState('••••••••');
+  const { login, isLoading, error: sessionError } = useAuth();
+  const [orgId, setOrgId] = useState('');
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const [turnstileKey, setTurnstileKey] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
+  let siteKey = '';
+  let authUrl = '';
+  try {
+    siteKey = config.turnstileSiteKey();
+    authUrl = config.authServiceUrl();
+  } catch (e: any) {
+    return (
+      <View style={[styles.container, styles.scrollContent]}>
+        <Text style={styles.errorBanner}>{e.message}</Text>
+      </View>
+    );
+  }
+
   const handleLogin = async () => {
-    if (!identifier.trim()) {
-      setError('Please enter your mobile number or email');
+    if (!isValidZolexoraOrgId(orgId.trim().toUpperCase())) {
+      setError('Organisation ID must look like ZX-ORG-XXXX-XXXX-XXXX');
+      return;
+    }
+    if (!identifier.trim() || !password) {
+      setError('Enter your user ID or email and password');
       return;
     }
     setError(null);
     try {
-      await login(identifier, orgId);
+      await login({ orgId, userIdOrEmail: identifier, password, turnstileToken });
       router.replace('/(tabs)');
     } catch (err: any) {
-      setError(err?.message || 'Login failed. Please check credentials.');
+      setError(err?.message || 'Sign-in failed. Please check your details.');
+      // A Turnstile token is single-use: get a fresh one for the next attempt
+      setTurnstileToken('');
+      setTurnstileKey((k) => k + 1);
     }
   };
 
-  const handleDemoLogin = async () => {
-    setError(null);
-    try {
-      await loginDemo();
-      router.replace('/(tabs)');
-    } catch (err: any) {
-      setError(err?.message || 'Failed to start demo session');
-    }
-  };
+  const shownError = error || sessionError;
 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={styles.container}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <View style={styles.brandContainer}>
           <Image
             source={require('../../assets/images/icon.png')}
@@ -66,62 +83,56 @@ export default function LoginScreen() {
         <Card style={styles.card}>
           <Text style={styles.cardTitle}>Driver Sign In</Text>
           <Text style={styles.cardSubtitle}>
-            Access your assigned duties, trips, and vehicle logs
+            Use the Zolexora login your organisation gave you
           </Text>
 
-          {error && <Text style={styles.errorBanner}>{error}</Text>}
+          {shownError && <Text style={styles.errorBanner}>{shownError}</Text>}
 
           <Input
-            label="Email or Mobile Number"
-            placeholder="e.g. driver@zolexora.com"
+            label="Organisation ID"
+            placeholder="ZX-ORG-XXXX-XXXX-XXXX"
+            value={orgId}
+            onChangeText={(v) => setOrgId(v.toUpperCase())}
+            autoCapitalize="characters"
+            autoCorrect={false}
+          />
+
+          <Input
+            label="User ID or Email"
             value={identifier}
             onChangeText={setIdentifier}
             autoCapitalize="none"
+            autoCorrect={false}
             keyboardType="email-address"
           />
 
           <Input
-            label="Password / Access Code"
-            placeholder="Enter password"
+            label="Password"
             value={password}
             onChangeText={setPassword}
             secureTextEntry
           />
 
-          <Input
-            label="Organization ID"
-            placeholder="org-demo-01"
-            value={orgId}
-            onChangeText={setOrgId}
-            autoCapitalize="none"
+          <TurnstileWebView
+            key={turnstileKey}
+            siteKey={siteKey}
+            action="track2-employee-login"
+            baseUrl={authUrl}
+            onToken={setTurnstileToken}
           />
 
           <Button
-            title="Sign In to Fleet"
+            title="Sign In"
             onPress={handleLogin}
             loading={isLoading}
+            disabled={!turnstileToken}
             size="lg"
             style={styles.loginBtn}
-          />
-
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>OR QUICK DEMO</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          <Button
-            title="Test Drive as Demo Driver"
-            variant="outline"
-            onPress={handleDemoLogin}
-            disabled={isLoading}
-            size="md"
           />
         </Card>
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>Zolexora Transportation Management System</Text>
-          <Text style={styles.versionText}>v0.1.0 (Expo New Architecture)</Text>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -184,22 +195,6 @@ const styles = StyleSheet.create({
   loginBtn: {
     marginTop: theme.spacing.sm,
   },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: theme.spacing.lg,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: theme.colors.border,
-  },
-  dividerText: {
-    color: theme.colors.textMuted,
-    fontSize: 11,
-    fontWeight: '700',
-    marginHorizontal: theme.spacing.md,
-  },
   footer: {
     alignItems: 'center',
     marginTop: theme.spacing.xxl,
@@ -207,11 +202,5 @@ const styles = StyleSheet.create({
   footerText: {
     color: theme.colors.textMuted,
     fontSize: 12,
-  },
-  versionText: {
-    color: theme.colors.textMuted,
-    fontSize: 11,
-    marginTop: 2,
-    opacity: 0.7,
   },
 });

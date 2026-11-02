@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import (
     AuthenticatedIdentity,
+    ensure_profile,
     get_current_identity,
     AuthenticatedUser,
     get_current_user,
@@ -36,6 +37,12 @@ async def create_organisation_and_commander(
     user: AuthenticatedIdentity = Depends(get_current_identity),
     db: AsyncSession = Depends(get_db),
 ):
+    if user.zolexora_org_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Organisation logins use the workspace linked to their Zolexora organisation",
+        )
+    await ensure_profile(user)
     ip_addr = request.client.host if request.client else None
     user_agent = request.headers.get("User-Agent")
     return await complete_onboarding(
