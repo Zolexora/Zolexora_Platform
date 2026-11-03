@@ -123,7 +123,7 @@ export async function track1PublicRoutes(
     "/api/v1/auth/public/identify",
     { schema: { description: "Continue with email or phone: says whether to ask for a password or start sign-up", tags } },
     async (req) => {
-      await turnstile(req, "track1-public-identify");
+      await turnstile(req, "track1-public-continue");
       limitIp(req);
       const body = req.body ?? {};
 
@@ -147,7 +147,7 @@ export async function track1PublicRoutes(
     "/api/v1/auth/public/google",
     { schema: { description: "Exchange a Firebase Google sign-in ID token", tags } },
     async (req) => {
-      await turnstile(req, "track1-public-google");
+      await turnstile(req, "track1-public-continue");
       limitIp(req);
       const identity = await firebase.verifyIdToken(req.body?.id_token);
       if (identity.provider !== "google.com" || !identity.email || !identity.emailVerified) {

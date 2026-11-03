@@ -4,6 +4,9 @@ import { resolveAliases } from "./infisical.js";
 // Every value comes from Infisical (scripts/setup/with-infisical.sh). No defaults, no fallbacks.
 const str = z.string().trim().min(1);
 const int = z.coerce.number().int().positive();
+// An optional key left empty in Infisical counts as not set.
+const unsetIfEmpty = <T extends z.ZodTypeAny>(t: T) =>
+  z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? undefined : v), t.optional());
 const list = str.transform((v) => v.split(",").map((s) => s.trim()).filter(Boolean));
 
 const envSchema = z.object({
@@ -58,9 +61,9 @@ const envSchema = z.object({
   FIREBASE_AUTH_ISSUER: z.string().url(), // https://securetoken.google.com/<project-id>
   FIREBASE_AUTH_JWKS_URL: z.string().url(), // securetoken@system.gserviceaccount.com JWKS
   // Firebase Phone Number Verification (PNV). Optional as a group: unset = SMS code fallback only.
-  FIREBASE_PNV_JWKS_URL: z.string().url().optional(),
-  FIREBASE_PNV_ISSUER: str.optional(),
-  FIREBASE_PNV_AUDIENCE: str.optional(),
+  FIREBASE_PNV_JWKS_URL: unsetIfEmpty(z.string().url()),
+  FIREBASE_PNV_ISSUER: unsetIfEmpty(str),
+  FIREBASE_PNV_AUDIENCE: unsetIfEmpty(str),
   // "true": every new account must verify a phone number before it is created.
   MOBILE_OTP_VERIFICATION: z.enum(["true", "false"]).transform((v) => v === "true"),
   SIGNUP_TICKET_TTL_SECONDS: int,

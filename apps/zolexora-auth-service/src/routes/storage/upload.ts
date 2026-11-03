@@ -3,10 +3,8 @@ import { AppError } from "../../plugins/error-handler.js";
 import { CONSTANTS } from "../../config/constants.js";
 import { detectMimeFromBuffer } from "../../services/storage.service.js";
 
-// Crockford Base32 (no I, L, O, U)
-const C = "[0-9A-HJKMNP-TV-Z]{4}";
-export const USER_ID_RE = new RegExp(`^ZX-${C}-${C}-${C}$`);
-export const ORG_ID_RE = new RegExp(`^ZX-ORG-${C}-${C}-${C}$`);
+// The same patterns the IDs are generated and stored with.
+export { ZOLEXORA_ID_REGEX as USER_ID_RE, ZOLEXORA_ORG_ID_REGEX as ORG_ID_RE } from "@zolexora/utils";
 
 // Base64 JSON payloads: 10MB file + ~33% encoding overhead
 export const UPLOAD_BODY_LIMIT = 15 * 1024 * 1024;

@@ -106,6 +106,23 @@ describe("Milestone 4: Storage Media Unit Tests (Avatars & Logos)", () => {
       expect(data.format).toBe("png");
     });
 
+    it("MED-01b: Accepts every ID the generator can produce (letters L and U included)", async () => {
+      const zxId = "ZX-LUL2-U3LU-4LUL";
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/v1/storage/avatars/upload",
+        headers: {
+          authorization: `Bearer ${testTokens().signJwt({ uid: "usr_lu", zolexora_id: zxId })}`,
+          "x-zolexora-id": zxId,
+          "content-type": "application/json",
+        },
+        payload: {
+          file: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+        },
+      });
+      expect(res.statusCode).toBe(200);
+    });
+
     it("MED-02: Rejects invalid Crockford Base32 user ID with HTTP 400 AUTH_INVALID_ID_FORMAT", async () => {
       const res = await app.inject({
         method: "POST",
