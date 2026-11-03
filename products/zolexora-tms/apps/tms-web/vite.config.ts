@@ -14,7 +14,9 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
-    dedupe: ['react', 'react-dom'],
+    // One copy of Firebase: @zolexora/auth-client and this app otherwise get separate pnpm installs, and
+    // a GoogleAuthProvider from one copy is ignored by the other (popup opens without providerId).
+    dedupe: ['react', 'react-dom', 'firebase'],
   },
   optimizeDeps: {
     include: ['react', 'react-dom'],
