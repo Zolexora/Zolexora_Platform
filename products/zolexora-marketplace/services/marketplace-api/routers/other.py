@@ -3,7 +3,7 @@ from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Optional
-from core.deps import db_dep, current_user, admin_only
+from core.deps import db_dep, current_user, admin_only, require_permission
 from core.config import settings
 from core.payments import create_razorpay_order
 from models.documents import CoinTxDoc
@@ -150,7 +150,7 @@ async def admin_stats(
 
 @admin_router.get("/users")
 async def admin_users(
-    u=Depends(admin_only),
+    u=Depends(require_permission("users:read")),
     user_repo:UserRepository=Depends(get_user_repository),
 ):
     return await user_repo.list_users(limit=1000)
@@ -159,17 +159,18 @@ async def admin_users(
 async def admin_set_role(
     uid:str,
     role:str,
-    u=Depends(admin_only),
+    u=Depends(require_permission("users:write")),
     user_repo:UserRepository=Depends(get_user_repository),
 ):
-    if role not in ("admin","seller","buyer"): raise HTTPException(400,"Invalid role")
+    # Admins are managed in platform-admin (auth service), not granted here.
+    if role not in ("seller","buyer"): raise HTTPException(400,"Invalid role")
     if not await user_repo.set_role(uid, role): raise HTTPException(404,"User not found")
     return {"message":"Updated"}
 
 @admin_router.put("/users/{uid}/toggle")
 async def admin_toggle_user(
     uid:str,
-    u=Depends(admin_only),
+    u=Depends(require_permission("users:write")),
     user_repo:UserRepository=Depends(get_user_repository),
 ):
     doc = await user_repo.get_by_id(uid)
@@ -183,7 +184,7 @@ async def admin_products(u=Depends(admin_only), context: Optional[StorefrontCont
     return await db.storefront_listings.find(sf,{"_id":0}).sort("created_at",-1).to_list(500)
 
 @admin_router.put("/products/{pid}/toggle", include_in_schema=False)
-async def admin_toggle_product(pid:str,u=Depends(admin_only), context: Optional[StorefrontContext] = Depends(optional_storefront_context), db=Depends(db_dep)):
+async def admin_toggle_product(pid:str,u=Depends(require_permission("catalog:write")), context: Optional[StorefrontContext] = Depends(optional_storefront_context), db=Depends(db_dep)):
     sf = {"storefront_id": context.key.value} if context else {}
     p = await db.storefront_listings.find_one({"id":pid, **sf})
     if not p: raise HTTPException(404)
@@ -191,7 +192,7 @@ async def admin_toggle_product(pid:str,u=Depends(admin_only), context: Optional[
     return {"is_active":not p["is_active"]}
 
 @admin_router.delete("/products/{pid}", include_in_schema=False)
-async def admin_delete_product(pid:str,u=Depends(admin_only), context: Optional[StorefrontContext] = Depends(optional_storefront_context), db=Depends(db_dep)):
+async def admin_delete_product(pid:str,u=Depends(require_permission("catalog:write")), context: Optional[StorefrontContext] = Depends(optional_storefront_context), db=Depends(db_dep)):
     sf = {"storefront_id": context.key.value} if context else {}
     r = await db.storefront_listings.delete_one({"id":pid, **sf})
     if r.deleted_count == 0:
@@ -204,7 +205,7 @@ async def admin_reels(u=Depends(admin_only), context: Optional[StorefrontContext
     return await db.reels.find(sf,{"_id":0}).sort("created_at",-1).to_list(500)
 
 @admin_router.put("/reels/{rid}/toggle")
-async def admin_toggle_reel(rid:str,u=Depends(admin_only), context: Optional[StorefrontContext] = Depends(optional_storefront_context), db=Depends(db_dep)):
+async def admin_toggle_reel(rid:str,u=Depends(require_permission("content:write")), context: Optional[StorefrontContext] = Depends(optional_storefront_context), db=Depends(db_dep)):
     sf = {"storefront_id": context.key.value} if context else {}
     r = await db.reels.find_one({"id":rid, **sf})
     if not r: raise HTTPException(404)
@@ -212,7 +213,7 @@ async def admin_toggle_reel(rid:str,u=Depends(admin_only), context: Optional[Sto
     return {"is_active":not r["is_active"]}
 
 @admin_router.delete("/reels/{rid}")
-async def admin_delete_reel(rid:str,u=Depends(admin_only), context: Optional[StorefrontContext] = Depends(optional_storefront_context), db=Depends(db_dep)):
+async def admin_delete_reel(rid:str,u=Depends(require_permission("content:write")), context: Optional[StorefrontContext] = Depends(optional_storefront_context), db=Depends(db_dep)):
     sf = {"storefront_id": context.key.value} if context else {}
     await db.reels.delete_one({"id":rid, **sf}); return {"message":"Deleted"}
 
@@ -236,7 +237,7 @@ class UPIVerifyReq(BaseModel):
 async def verify_upi(
     order_id:str,
     req:UPIVerifyReq,
-    u=Depends(admin_only),
+    u=Depends(require_permission("orders:write")),
     context: Optional[StorefrontContext] = Depends(optional_storefront_context),
     db=Depends(db_dep),
     user_repo:UserRepository=Depends(get_user_repository),

@@ -64,6 +64,9 @@ async def current_user(
         user = await repo.sync_identity(identity)
         if not user["is_active"] or user.get("status", "active") != "active":
             raise HTTPException(403, "Account is suspended")
+        if user["role"] not in ("buyer", "seller"):
+            # Administrators are auth-service platform admins only; a local role never grants it.
+            user = {**user, "role": "buyer"}
     else:
         # Employee (Track 2) tokens and unverified accounts have no marketplace access.
         raise HTTPException(403, "This account cannot use the marketplace")
@@ -95,3 +98,19 @@ async def admin_only(user=Depends(current_user)):
     if user["role"] != "admin":
         raise HTTPException(403, "Admins only")
     return user
+
+
+def has_permission(admin: dict, permission: str) -> bool:
+    """Admin permissions come from the auth-service token (managed in platform-admin):
+    users:read, users:write, catalog:write, content:write, orders:write, sellers:write, audit:read."""
+    perms = admin.get("permissions") or []
+    return admin.get("admin_role") in {"superadmin", "super_admin"} or "*" in perms or permission in perms
+
+
+def require_permission(permission: str):
+    async def dependency(admin: dict = Depends(admin_only)) -> dict:
+        if not has_permission(admin, permission):
+            raise HTTPException(403, f"Missing administrator permission: {permission}")
+        return admin
+
+    return dependency

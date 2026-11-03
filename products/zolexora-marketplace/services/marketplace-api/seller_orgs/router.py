@@ -4,7 +4,7 @@ from typing import Any
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from core.deps import current_user, admin_only
+from core.deps import current_user, admin_only, require_permission
 from core.config import settings
 
 from .schemas import (
@@ -373,7 +373,7 @@ async def admin_get_seller_organization(
 async def admin_update_organization_verification(
     org_id: uuid.UUID,
     payload: AdminVerificationUpdate,
-    user: dict[str, Any] = Depends(admin_only),
+    user: dict[str, Any] = Depends(require_permission("sellers:write")),
     repo: PostgresSellerRepository = Depends(get_seller_repo),
 ):
     admin_id = user["id"]
@@ -403,7 +403,7 @@ async def admin_update_organization_verification(
 async def admin_update_organization_suspension(
     org_id: uuid.UUID,
     payload: AdminSuspensionUpdate,
-    user: dict[str, Any] = Depends(admin_only),
+    user: dict[str, Any] = Depends(require_permission("sellers:write")),
     repo: PostgresSellerRepository = Depends(get_seller_repo),
 ):
     admin_id = user["id"]
@@ -454,7 +454,7 @@ async def admin_list_storefront_grants(
 async def admin_decide_storefront_grant(
     grant_id: uuid.UUID,
     payload: StorefrontGrantDecision,
-    user: dict[str, Any] = Depends(admin_only),
+    user: dict[str, Any] = Depends(require_permission("sellers:write")),
     repo: PostgresSellerRepository = Depends(get_seller_repo),
 ):
     admin_id = user["id"]

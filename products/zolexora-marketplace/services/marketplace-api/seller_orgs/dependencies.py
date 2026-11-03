@@ -4,7 +4,7 @@ import asyncpg
 from fastapi import Depends, HTTPException, Request, status
 
 from core.deps import current_user
-from shared.database.postgres import pg_conn_dep
+from shared.database.postgres import connection, pg_conn_dep
 from storefronts.dependencies import require_storefront_context
 from storefronts.models import StorefrontContext
 from .repository import PostgresSellerRepository
@@ -103,3 +103,36 @@ async def require_storefront_grant(
         )
 
     return storefront_id
+
+
+async def assert_storefront_grants(user: dict[str, Any], storefront_keys) -> None:
+    """Sellers publish only on storefronts where an admin approved their organization
+    (seller_storefront_grant). Admins are not limited."""
+    if user.get("role") == "admin":
+        return
+    keys = sorted({str(getattr(k, "value", k)) for k in storefront_keys})
+    if not keys:
+        return
+    async with connection() as conn:
+        missing = await conn.fetch(
+            """
+            SELECT k.key FROM unnest($2::text[]) AS k(key)
+            WHERE NOT EXISTS (
+              SELECT 1
+              FROM seller_storefront_grant g
+              JOIN seller_organization o ON o.id = g.organization_id AND o.status = 'ACTIVE'
+              JOIN seller_org_member m ON m.organization_id = o.id AND m.status = 'ACTIVE'
+              JOIN storefront s ON s.id = g.storefront_id
+              WHERE m.user_id = $1 AND s.storefront_key = k.key
+                AND g.grant_status = 'APPROVED'
+                AND (g.effective_at IS NULL OR g.effective_at <= NOW())
+                AND (g.revoked_at IS NULL OR g.revoked_at > NOW()))
+            """,
+            uuid.UUID(str(user["id"])), keys,
+        )
+    if missing:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"No approved publishing grant for: {', '.join(r['key'] for r in missing)}",
+            headers={"X-Error-Code": "STOREFRONT_GRANT_REQUIRED"},
+        )

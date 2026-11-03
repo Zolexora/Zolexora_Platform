@@ -2,6 +2,7 @@ import asyncio
 import hashlib
 import json
 import time
+from seller_orgs.dependencies import assert_storefront_grants
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Request, Response
 from motor.motor_asyncio import AsyncIOMotorDatabase
@@ -445,6 +446,7 @@ async def create_product(data: ProductCreate, context: StorefrontContext | None 
     )
     
     target_storefronts = [context.key] if context else data.storefront_ids
+    await assert_storefront_grants(user, target_storefronts)
     
     listings = []
     for s_id in target_storefronts:
@@ -510,6 +512,7 @@ async def update_product(product_id: str, data: ProductUpdate, context: Storefro
         else:
             wanted_sids = set()
         
+        await assert_storefront_grants(user, wanted_sids - existing_sids)
         for sid in wanted_sids - existing_sids:
             new_l = StorefrontListingDoc(
                 storefront_id=sid,

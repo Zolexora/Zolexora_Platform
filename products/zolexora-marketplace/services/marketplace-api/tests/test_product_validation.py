@@ -50,8 +50,34 @@ def valid_product_payload(**overrides):
     return payload
 
 
+def _shop_context():
+    from storefronts.models import StorefrontContext, StorefrontDefinition, StorefrontContextSource, StorefrontKey
+    return StorefrontContext(storefront=StorefrontDefinition(id="sf_123", key=StorefrontKey.ZOLEXORA_SHOP, display_name="Shop", canonical_host="shop.zolexora.com", hosts=frozenset(), origins=frozenset(), currency="INR", locale="en-IN", enabled=True), source=StorefrontContextSource.HOST)
+
+
 @pytest.mark.asyncio
-async def test_create_product_valid_succeeds():
+async def test_create_product_without_a_storefront_grant_is_refused(monkeypatch):
+    from fastapi import HTTPException
+    import routers.products as products
+
+    async def no_grant(user, keys):
+        raise HTTPException(403, "No approved publishing grant")
+    monkeypatch.setattr(products, "assert_storefront_grants", no_grant)
+    db = FakeDB()
+    with pytest.raises(HTTPException) as exc:
+        await create_product(ProductCreate(**valid_product_payload()), context=_shop_context(), user=SELLER, db=db)
+    assert exc.value.status_code == 403
+    assert db.storefront_listings.docs == []
+
+
+@pytest.mark.asyncio
+async def test_create_product_valid_succeeds(monkeypatch):
+    import routers.products as products
+    granted = []
+
+    async def grant(user, keys):
+        granted.extend(keys)
+    monkeypatch.setattr(products, "assert_storefront_grants", grant)
     db = FakeDB()
 
     data = ProductCreate(**valid_product_payload())
@@ -59,6 +85,7 @@ async def test_create_product_valid_succeeds():
     def _mock_context(): return StorefrontContext(storefront=StorefrontDefinition(id="sf_123", key=StorefrontKey.ZOLEXORA_SHOP, display_name="Shop", canonical_host="shop.zolexora.com", hosts=frozenset(), origins=frozenset(), currency="INR", locale="en-IN", enabled=True), source=StorefrontContextSource.HOST)
     dummy_context = _mock_context()
     response = await create_product(data, context=dummy_context, user=SELLER, db=db)
+    assert [str(getattr(k, "value", k)) for k in granted] == ["zolexora-shop"]
 
     assert response.title == "A Valid Product"
     assert response.seller_id == "seller-1"

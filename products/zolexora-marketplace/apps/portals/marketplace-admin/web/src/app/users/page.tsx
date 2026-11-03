@@ -104,7 +104,6 @@ export default function UsersPage() {
                           className={`appearance-none text-[11px] font-semibold px-2.5 py-1 rounded-full border cursor-pointer focus:outline-none disabled:cursor-default ${rCfg.color}`}>
                           <option value="buyer">Buyer</option>
                           <option value="seller">Seller</option>
-                          <option value="admin">Admin</option>
                         </select>
                       </div>
                     </td>

@@ -1,11 +1,12 @@
 import json
+from seller_orgs.repository import PostgresSellerRepository
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from asyncpg import Connection
 
-from core.deps import admin_only, current_user
+from core.deps import admin_only, current_user, require_permission
 from shared.database.postgres import pg_conn_dep
 from models.portal_catalog import (
     AdminInventoryResponse,
@@ -187,6 +188,8 @@ async def create_seller_listing(
     sf_id = (await db.fetchval("SELECT id FROM storefront WHERE storefront_key = $1", context.key))
     if not sf_id:
         raise HTTPException(404, "Storefront not found")
+    if not await PostgresSellerRepository(db).has_active_grant(org_id, sf_id):
+        raise HTTPException(403, f"No approved publishing grant for {context.key}", headers={"X-Error-Code": "STOREFRONT_GRANT_REQUIRED"})
         
     _validate_currency(context, data.price, data.compare_at_price)
     
@@ -465,7 +468,7 @@ async def moderate_admin_listing(
     listing_id: str,
     data: AdminListingModerationRequest,
     context: StorefrontContext = Depends(require_storefront_context),
-    admin=Depends(admin_only),
+    admin=Depends(require_permission("catalog:write")),
     db: Connection = Depends(pg_conn_dep),
 ):
     sf_id = await db.fetchval("SELECT id FROM storefront WHERE storefront_key = $1", context.key)
