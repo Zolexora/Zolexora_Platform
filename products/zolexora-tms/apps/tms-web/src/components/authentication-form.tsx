@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth as useZolexoraAuth } from '@zolexora/auth-client/react';
 import { TurnstileWidget } from '@zolexora/auth-client/turnstile';
 import { isValidZolexoraOrgId, isPublicWebmailDomain } from '@zolexora/auth-client';
 import { usePublicSignIn } from '@zolexora/auth-client/public-sign-in';
-import { Building2, Users, ShieldAlert, Loader2 } from 'lucide-react';
+import { Building2, Users, ShieldAlert, Loader2, Plus, ChevronRight } from 'lucide-react';
 import { useAuth } from '../features/auth/useAuth';
 import { apiClient } from '../lib/api';
 import { AUTH_SERVICE_PUBLIC_URL, TURNSTILE_SITE_KEY } from '../lib/runtime';
@@ -94,7 +94,8 @@ function Card({ title, subtitle, children }: { title: string; subtitle: string; 
 /**
  * Zolexora TMS sign-in, all through the Zolexora auth service:
  * - Owner / Commander: Track 1 account — Continue with Google, email or phone (Firebase verifies
- *   Google and the phone; the auth service issues the session), then a TMS workspace is created.
+ *   Google and the phone; the auth service issues the session), then picks one of their organisations
+ *   (always listed, even if there is only one) or creates another.
  * - Staff & Drivers: Track 2 employee login with the ZX-ORG id.
  */
 export function AuthenticationForm() {
@@ -121,9 +122,24 @@ export function AuthenticationForm() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
+  const [creatingOrg, setCreatingOrg] = useState(false);
+  const isOwner = Boolean(user && authMe && !authMe.zolexora_org_id);
+  const myOrgs = useQuery({
+    queryKey: ['my-organisations', authMe?.user_id],
+    queryFn: () => apiClient<{ id: string; name: string; organisation_type?: string; is_commander: boolean }[]>('/api/v1/auth/my-organisations'),
+    enabled: isOwner,
+  });
+
+  // Staff land in their organisation's workspace; owners choose below.
   useEffect(() => {
-    if (!isLoading && user && authMe?.organisation_id) navigate('/dashboard', { replace: true });
+    if (!isLoading && user && authMe?.organisation_id && authMe.zolexora_org_id) navigate('/dashboard', { replace: true });
   }, [user, authMe, isLoading, navigate]);
+
+  const openOrganisation = async (orgId: string) => {
+    localStorage.setItem('zolexora_active_org_id', orgId);
+    await queryClient.invalidateQueries();
+    navigate('/dashboard', { replace: true });
+  };
 
   const run = async (action: () => Promise<void>) => {
     setError(null);
@@ -154,8 +170,8 @@ export function AuthenticationForm() {
     setTurnstileKey((k) => k + 1);
   };
 
-  // Signed in but no workspace yet
-  if (user && !isLoading && authMe && !authMe.organisation_id) {
+  // Signed in: owners always choose (or create) an organisation; staff without a linked workspace wait
+  if (user && !isLoading && authMe && (isOwner || !authMe.organisation_id)) {
     if (authMe.zolexora_org_id) {
       return (
         <Card title="Workspace not linked" subtitle={`Organisation ${authMe.zolexora_org_id}`}>
@@ -167,18 +183,44 @@ export function AuthenticationForm() {
         </Card>
       );
     }
+    if (myOrgs.isLoading) return <Loader2 className="h-8 w-8 animate-spin text-slate-400" />;
+    const orgs = myOrgs.data ?? [];
+    if (orgs.length > 0 && !creatingOrg) {
+      return (
+        <Card title="Choose an organisation" subtitle="Organisations connected to your Zolexora account">
+          <div className="space-y-2">
+            {orgs.map((o) => (
+              <button key={o.id} type="button" onClick={() => openOrganisation(o.id)}
+                className="w-full flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3 text-left hover:border-cyan-500">
+                <span>
+                  <span className="block text-sm font-semibold text-white">{o.name}</span>
+                  <span className="block text-[11px] text-slate-400">{[o.organisation_type, o.is_commander ? 'Commander' : 'Member'].filter(Boolean).join(' · ')}</span>
+                </span>
+                <ChevronRight className="w-4 h-4 text-slate-500" />
+              </button>
+            ))}
+          </div>
+          <button type="button" className={`${button} !bg-none border border-slate-700 bg-slate-900 hover:bg-slate-800`} onClick={() => setCreatingOrg(true)}>
+            <Plus className="w-4 h-4" /> Create another organisation
+          </button>
+          <button type="button" className={`${link} w-full`} onClick={() => signOut()}>Sign out</button>
+        </Card>
+      );
+    }
     return (
-      <Card title="Create your workspace" subtitle="You will be the Commander of this organisation">
+      <Card title={orgs.length ? 'Create another organisation' : 'Create your workspace'} subtitle="You will be the Commander of this organisation">
         <form
           className="space-y-4"
           onSubmit={(e) => {
             e.preventDefault();
             run(async () => {
-              await apiClient('/api/v1/onboarding', {
+              const created = await apiClient<{ organisation: { id: string } }>('/api/v1/onboarding', {
                 method: 'POST',
                 body: JSON.stringify({ name: orgName.trim(), organisation_type: orgType }),
               });
-              await refreshAuth();
+              setOrgName('');
+              setCreatingOrg(false);
+              await openOrganisation(created.organisation.id);
             });
           }}
         >
@@ -190,8 +232,10 @@ export function AuthenticationForm() {
             </select>
           </label>
           <ErrorBox message={error} />
-          <button className={button} disabled={busy}>{busy ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create workspace'}</button>
-          <button type="button" className={`${link} w-full`} onClick={() => signOut()}>Sign out</button>
+          <button className={button} disabled={busy}>{busy ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create organisation'}</button>
+          {orgs.length > 0
+            ? <button type="button" className={`${link} w-full`} onClick={() => setCreatingOrg(false)}>Back to my organisations</button>
+            : <button type="button" className={`${link} w-full`} onClick={() => signOut()}>Sign out</button>}
         </form>
       </Card>
     );
@@ -321,11 +365,12 @@ export function AuthenticationForm() {
       </Card>
     ),
     enter_phone: (
-      <Card title="Verify your mobile number" subtitle="We'll text you a verification code">
+      <Card title={flow.mobileVerificationRequired ? 'Verify your mobile number' : 'Your mobile number'}
+        subtitle={flow.mobileVerificationRequired ? "We'll text you a verification code" : 'Used to reach you about your account'}>
         <form className="space-y-4" onSubmit={submit(() => flow.sendPhoneCode(phone))}>
           <Field label="Phone (with country code)" type="tel" autoComplete="tel" placeholder="+91 98765 43210" value={phone} onChange={(e) => setPhone(e.target.value)} />
           {flowError}
-          <button className={button} disabled={flow.busy}>{flow.busy ? busyIcon : 'Send code'}</button>
+          <button className={button} disabled={flow.busy}>{flow.busy ? busyIcon : flow.mobileVerificationRequired ? 'Send code' : 'Continue'}</button>
           {startOver}
         </form>
       </Card>

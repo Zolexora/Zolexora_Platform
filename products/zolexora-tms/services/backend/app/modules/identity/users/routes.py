@@ -5,10 +5,8 @@ from typing import List, Optional
 
 from app.auth.dependencies import (
     AuthenticatedIdentity,
-    AuthenticatedUser,
     ensure_profile,
     get_current_identity,
-    get_current_user,
     requested_org,
     resolve_membership,
 )
@@ -67,15 +65,18 @@ from sqlalchemy import select
 class UserOrganisationResponse(BaseModel):
     id: uuid.UUID
     name: str
+    organisation_type: Optional[str] = None
     is_creator: bool
     is_commander: bool
 
 
 @router.get("/my-organisations", response_model=List[UserOrganisationResponse])
 async def get_my_organisations(
-    user: AuthenticatedUser = Depends(get_current_user),
+    user: AuthenticatedIdentity = Depends(get_current_identity),
     db: AsyncSession = Depends(get_db)
 ):
+    """Every organisation the caller is an active member of (empty before onboarding)."""
+    await ensure_profile(user)
     stmt = (
         select(Organisation, OrganisationMember)
         .join(OrganisationMember, OrganisationMember.organisation_id == Organisation.id)
@@ -83,6 +84,7 @@ async def get_my_organisations(
             OrganisationMember.user_id == user.id,
             OrganisationMember.status == MemberStatus.ACTIVE
         )
+        .order_by(OrganisationMember.created_at.asc())
     )
     async with rls_bypass(db):  # lists the caller's memberships across organisations
         res = await db.execute(stmt)
@@ -91,6 +93,7 @@ async def get_my_organisations(
         UserOrganisationResponse(
             id=org.id,
             name=org.name,
+            organisation_type=org.organisation_type,
             is_creator=member.is_creator,
             is_commander=member.is_commander,
         ) for org, member in rows

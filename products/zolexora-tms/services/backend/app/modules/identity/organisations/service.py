@@ -3,7 +3,7 @@ import uuid
 from fastapi import HTTPException, status
 from sqlalchemy import select
 from app.core.config import settings
-from app.db.session import rls_bypass, set_tenant_context
+from app.db.session import set_tenant_context
 
 from app.modules.core.platform.models import (
     TenantDatabaseRegistry,
@@ -39,32 +39,7 @@ async def complete_onboarding(
     ip_address: str | None = None,
     user_agent: str | None = None,
 ) -> OnboardingResponse:
-    # 1. Check if user is already an active member of an organisation
-    stmt = (
-        select(OrganisationMember)
-        .where(
-            OrganisationMember.user_id == user_id,
-            OrganisationMember.status == MemberStatus.ACTIVE,
-        )
-        .order_by(OrganisationMember.created_at.asc())
-    )
-    async with rls_bypass(db):  # no tenant yet: the caller's own memberships
-        res = await db.execute(stmt)
-        existing_membership = res.scalars().first()
-
-    if existing_membership:
-        await set_tenant_context(db, existing_membership.organisation_id)
-        org_stmt = select(Organisation).where(Organisation.id == existing_membership.organisation_id)
-        org_res = await db.execute(org_stmt)
-        org = org_res.scalars().first()
-        if org:
-            return OnboardingResponse(
-                organisation=OrganisationResponse.model_validate(org),
-                role_code="CREATOR" if existing_membership.is_creator else "MEMBER",
-                message="User already has an active workspace",
-            )
-
-
+    # A public (Track 1) user may own several organisations: every call creates a new one.
     org_id = uuid.uuid4()
     await set_tenant_context(db, org_id)  # every row below belongs to the new tenant
     
