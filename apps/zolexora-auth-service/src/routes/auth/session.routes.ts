@@ -3,6 +3,7 @@ import { IAuthRepository, RevocationType } from "../../repositories/types.js";
 import { TokenService } from "../../services/token.service.js";
 import { createAuthMiddleware } from "../../middleware/auth.middleware.js";
 import { forbidden } from "./request.js";
+import { AppError } from "../../plugins/error-handler.js";
 
 interface RevokeTokenBody {
   uid?: string;
@@ -49,6 +50,25 @@ export async function sessionRoutes(app: FastifyInstance, opts: { repo: IAuthRep
   app.get(
     "/api/v1/auth/me",
     { preHandler: [authenticate], schema: { description: "Introspect the active bearer token", tags: ["Session & Tokens"] } },
-    async (req, reply) => reply.status(200).send({ user: req.user, authenticated: true }),
+    async (req, reply) => {
+      // Public users: products also need the profile (name, phone) the auth service owns.
+      if (req.tokenPayload?.type !== "user" || !req.user?.email) {
+        return reply.status(200).send({ user: req.user, authenticated: true });
+      }
+      const record = await opts.repo.getGlobalUserByEmail(req.user.email);
+      if (!record || record.id !== req.user.uid || record.status !== "active") {
+        throw new AppError({ statusCode: 401, code: "AUTH_UNAUTHORIZED", message: "Account is not active." });
+      }
+      return reply.status(200).send({
+        user: {
+          ...req.user,
+          display_name: record.display_name ?? null,
+          email_verified: record.email_verified,
+          phone_number: record.phone_number ?? null,
+          phone_verified: record.phone_verified,
+        },
+        authenticated: true,
+      });
+    },
   );
 }

@@ -63,6 +63,7 @@ describe("Track 1 — Firebase sign-in", () => {
 
       const me = await app.inject({ method: "GET", url: "/api/v1/auth/me", headers: { authorization: `Bearer ${done.json().customToken}` } });
       expect(me.statusCode).toBe(200);
+      expect(me.json().user).toMatchObject({ display_name: "Asha Rao", phone_number: "+919800000001", phone_verified: true, email_verified: true });
       // Both identifiers now sign in with the password.
       expect((await post("/login", { phone_number: "+91 98000 00001", password: PASSWORD, ...TS })).statusCode).toBe(200);
       expect((await post("/identify", { phone_number: "+919800000001", ...TS })).json().next).toBe("password");
