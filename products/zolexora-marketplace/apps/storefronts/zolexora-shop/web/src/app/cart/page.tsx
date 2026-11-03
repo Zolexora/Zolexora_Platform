@@ -89,15 +89,11 @@ export default function CartPage() {
   const [verifiedEmails, setVerifiedEmails] = useState<string[]>([]);
   const [phoneMode,      setPhoneMode]      = useState<"select" | "custom">("select");
   const [emailMode,      setEmailMode]      = useState<"select" | "custom">("select");
-  const [sendingPhoneOtp, setSendingPhoneOtp] = useState(false);
   const [phoneOtpSent,   setPhoneOtpSent]   = useState(false);
   const [phoneVerified,  setPhoneVerified]  = useState(false);
-  const [verifyingPhone, setVerifyingPhone] = useState(false);
 
-  const [sendingEmailOtp, setSendingEmailOtp] = useState(false);
   const [emailOtpSent,   setEmailOtpSent]   = useState(false);
   const [emailVerified,  setEmailVerified]  = useState(false);
-  const [verifyingEmail, setVerifyingEmail] = useState(false);
 
   // Pincode Resolution State
   const [pincodeLoading, setPincodeLoading] = useState(false);
@@ -295,7 +291,7 @@ export default function CartPage() {
             document.body.appendChild(script);
           });
         }
-        const razorpayKey = res.key_id || process.env.NEXT_PUBLIC_RAZORPAY_KEY;
+        const razorpayKey = res.key_id;
         if (!razorpayKey) {
           toast.error("Razorpay Key ID is not configured on the backend.");
           return;
@@ -339,7 +335,7 @@ export default function CartPage() {
             document.body.appendChild(script);
           });
         }
-        const mode = (res.environment || process.env.NEXT_PUBLIC_CASHFREE_MODE || "sandbox").toLowerCase();
+        const mode = (res.environment || "sandbox").toLowerCase();
         const cashfree = (window as any).Cashfree({ mode: mode === "production" ? "production" : "sandbox" });
         cashfree.checkout({
           paymentSessionId: res.payment_session_id,
@@ -502,87 +498,6 @@ export default function CartPage() {
 
   /* ── ADDRESS ───────────────────────────────────────────────────── */
   if(step==="address") {
-    const handleSendPhoneOtp = async () => {
-      if (!newAddrForm.phone || newAddrForm.phone.length < 10) {
-        toast.error("Please enter a valid 10-digit phone number first");
-        return;
-      }
-      setSendingPhoneOtp(true);
-      try {
-        const res = await usersApi.sendAddressPhoneOtp(newAddrForm.phone);
-        setPhoneOtpSent(true);
-        toast.success(res.message || "OTP sent to phone");
-      } catch (err: any) {
-        toast.error(err?.response?.data?.detail || "Failed to send phone OTP");
-      } finally {
-        setSendingPhoneOtp(false);
-      }
-    };
-
-    const handleVerifyPhoneOtp = async () => {
-      if (!newAddrForm.phone_otp || newAddrForm.phone_otp.length < 6) {
-        toast.error("Enter 6-digit OTP");
-        return;
-      }
-      setVerifyingPhone(true);
-      try {
-        const res = await usersApi.verifyAddressPhoneOtp(newAddrForm.phone, newAddrForm.phone_otp);
-        setPhoneVerified(true);
-        toast.success(res.message || "Phone verified and saved to contacts! ✓");
-
-        // Auto-save to contacts list and select for this address
-        setVerifiedPhones(prev => Array.from(new Set([newAddrForm.phone, ...prev])));
-        setPhoneMode("select");
-        setPhoneOtpSent(false);
-      } catch (err: any) {
-        toast.error(err?.response?.data?.detail || "Invalid phone OTP");
-      } finally {
-        setVerifyingPhone(false);
-      }
-    };
-
-    const handleSendEmailOtp = async () => {
-      const targetEmail = newAddrForm.email || user?.email;
-      if (!targetEmail || !targetEmail.includes("@")) {
-        toast.error("Please enter a valid email address first");
-        return;
-      }
-      setSendingEmailOtp(true);
-      try {
-        const res = await usersApi.sendAddressEmailOtp(targetEmail);
-        setEmailOtpSent(true);
-        setEmailVerified(false);
-        toast.success(res.message || "Verification code sent to email");
-      } catch (err: any) {
-        toast.error(err?.response?.data?.detail || "Failed to send email code");
-      } finally {
-        setSendingEmailOtp(false);
-      }
-    };
-
-    const handleVerifyEmailOtp = async () => {
-      const targetEmail = newAddrForm.email || user?.email || "";
-      if (!newAddrForm.email_otp || newAddrForm.email_otp.length < 6) {
-        toast.error("Enter 6-digit code");
-        return;
-      }
-      setVerifyingEmail(true);
-      try {
-        const res = await usersApi.verifyAddressEmailOtp(targetEmail, newAddrForm.email_otp);
-        setEmailVerified(true);
-        toast.success(res.message || "Email verified and saved to contacts! ✓");
-
-        // Auto-save to contacts list and select for this address
-        setVerifiedEmails(prev => Array.from(new Set([targetEmail, ...prev])));
-        setEmailMode("select");
-        setEmailOtpSent(false);
-      } catch (err: any) {
-        toast.error(err?.response?.data?.detail || "Invalid email code");
-      } finally {
-        setVerifyingEmail(false);
-      }
-    };
-
     const handleSaveNewAddress = async (e: React.FormEvent) => {
       e.preventDefault();
       if(!newAddrForm.name.trim() || !newAddrForm.phone.trim() || !newAddrForm.house_no.trim() || !newAddrForm.village_town.trim() || !newAddrForm.pincode.trim()){
@@ -622,8 +537,6 @@ export default function CartPage() {
           city: newAddrForm.village_town || newAddrForm.district || "TOWN",
           pincode: newAddrForm.pincode,
           is_default: newAddrForm.is_default,
-          phone_otp: newAddrForm.phone_otp || undefined,
-          email_otp: newAddrForm.email_otp || undefined,
         });
         toast.success("Address saved and selected!");
         setSavedAddresses(prev => [saved, ...prev]);
@@ -988,40 +901,7 @@ export default function CartPage() {
                           }}
                           className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs focus:outline-none focus:border-gold bg-white"
                         />
-                        <button
-                          type="button"
-                          disabled={sendingPhoneOtp}
-                          onClick={handleSendPhoneOtp}
-                          className="px-2.5 h-10 text-[11px] font-bold bg-[#1C1C1C] text-[#FFB800] rounded-xl whitespace-nowrap hover:bg-black disabled:opacity-50 transition"
-                        >
-                          {sendingPhoneOtp ? "..." : phoneOtpSent ? "Resend" : "Send OTP"}
-                        </button>
                       </div>
-                      {phoneOtpSent && !phoneVerified && (
-                        <div className="mt-2 flex gap-2">
-                          <input
-                            type="text"
-                            maxLength={6}
-                            placeholder="6-digit Phone OTP"
-                            value={newAddrForm.phone_otp}
-                            onChange={e => setNewAddrForm({ ...newAddrForm, phone_otp: e.target.value })}
-                            className="w-full h-8 px-2.5 rounded-lg border border-blue-300 text-xs bg-blue-50/30 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                          />
-                          <button
-                            type="button"
-                            disabled={verifyingPhone || newAddrForm.phone_otp.length < 6}
-                            onClick={handleVerifyPhoneOtp}
-                            className="px-3.5 h-8 text-xs font-bold bg-green-600 hover:bg-green-700 text-white rounded-lg whitespace-nowrap disabled:opacity-50 transition shadow-sm"
-                          >
-                            {verifyingPhone ? "..." : "Verify"}
-                          </button>
-                        </div>
-                      )}
-                      {phoneVerified && (
-                        <div className="mt-2 flex items-center gap-1.5 text-xs font-bold text-green-700 bg-green-50 px-2.5 py-1.5 rounded-lg border border-green-200">
-                          <CheckCircle size={14} className="text-green-600" /> Phone number verified
-                        </div>
-                      )}
                     </div>
                   )}
                 </div>
@@ -1091,40 +971,7 @@ export default function CartPage() {
                           }}
                           className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs focus:outline-none focus:border-gold bg-white"
                         />
-                        <button
-                          type="button"
-                          disabled={sendingEmailOtp}
-                          onClick={handleSendEmailOtp}
-                          className="px-2.5 h-10 text-[11px] font-bold bg-[#1C1C1C] text-[#FFB800] rounded-xl whitespace-nowrap hover:bg-black disabled:opacity-50 transition"
-                        >
-                          {sendingEmailOtp ? "..." : emailOtpSent ? "Resend" : "Send Code"}
-                        </button>
                       </div>
-                      {emailOtpSent && !emailVerified && (
-                        <div className="mt-2 flex gap-2">
-                          <input
-                            type="text"
-                            maxLength={6}
-                            placeholder="6-digit Email Code"
-                            value={newAddrForm.email_otp}
-                            onChange={e => setNewAddrForm({ ...newAddrForm, email_otp: e.target.value })}
-                            className="w-full h-8 px-2.5 rounded-lg border border-blue-300 text-xs bg-blue-50/30 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                          />
-                          <button
-                            type="button"
-                            disabled={verifyingEmail || newAddrForm.email_otp.length < 6}
-                            onClick={handleVerifyEmailOtp}
-                            className="px-3.5 h-8 text-xs font-bold bg-green-600 hover:bg-green-700 text-white rounded-lg whitespace-nowrap disabled:opacity-50 transition shadow-sm"
-                          >
-                            {verifyingEmail ? "..." : "Verify"}
-                          </button>
-                        </div>
-                      )}
-                      {emailVerified && (
-                        <div className="mt-2 flex items-center gap-1.5 text-xs font-bold text-green-700 bg-green-50 px-2.5 py-1.5 rounded-lg border border-green-200">
-                          <CheckCircle size={14} className="text-green-600" /> Email address verified
-                        </div>
-                      )}
                     </div>
                   )}
                 </div>

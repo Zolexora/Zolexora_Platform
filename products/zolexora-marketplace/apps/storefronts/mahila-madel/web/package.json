@@ -5,6 +5,8 @@
   "dependencies": {
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
+    "@zolexora/auth-client": "workspace:*",
+    "@zolexora/marketplace-sign-in": "workspace:*",
     "axios": "^1.6.0",
     "firebase": "^12.17.1",
     "react": "^18.2.0",

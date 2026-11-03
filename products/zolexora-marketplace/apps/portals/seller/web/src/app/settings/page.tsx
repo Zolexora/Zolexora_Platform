@@ -1,7 +1,8 @@
 "use client";
 import { useState } from "react";
 import { useAuthStore } from "@/store";
-import { api } from "@/lib/api";
+import { useAuth } from "@zolexora/auth-client/react";
+import { authApi } from "@/lib/api";
 import { User, Mail, Coins, Shield, Save, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
@@ -9,19 +10,21 @@ import { useRouter } from "next/navigation";
 export default function SettingsPage() {
   const { user, logout } = useAuthStore();
   const router = useRouter();
+  const { signOut } = useAuth();
   const [name, setName] = useState(user?.name || "");
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      await api.put("/auth/me", { name });
+      await authApi.update({ name });
       toast.success("Profile updated");
     } catch { toast.error("Update failed"); }
     finally { setSaving(false); }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await signOut();
     logout();
     router.push("/auth");
     toast.success("Signed out");

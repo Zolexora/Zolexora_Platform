@@ -5,13 +5,15 @@ import { useRouter } from "next/navigation";
 import { ShoppingCart, Search, Package, Coins, LogOut, ChevronDown, Truck, User as UserIcon } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@zolexora/auth-client/react";
 import { useAuthStore, useCartStore } from "@/store";
 import { productsApi, type Product } from "@/lib/api";
 import toast from "react-hot-toast";
 
 export default function Navbar() {
   const router = useRouter();
-  const { user, logout } = useAuthStore();
+  const { user } = useAuthStore();
+  const { signOut } = useAuth();
   const { count, fetch: fetchCart } = useCartStore();
   const [search, setSearch] = useState("");
   const [userOpen, setUserOpen] = useState(false);
@@ -43,7 +45,7 @@ export default function Navbar() {
   };
 
   const handleLogout = () => {
-    logout();
+    void signOut();
     setUserOpen(false);
     router.push("/");
     toast.success("Logged out");

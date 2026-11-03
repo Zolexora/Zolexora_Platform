@@ -10,12 +10,13 @@ const required = new Map([
   ["@zolexora/marketplace-shop-mobile", "apps/storefronts/zolexora-shop/mobile"],
   ["@zolexora/marketplace-mahila-madel-web", "apps/storefronts/mahila-madel/web"],
   ["@zolexora/marketplace-mahila-madel-mobile", "apps/storefronts/mahila-madel/mobile"],
-  ["@zolexora/mahila-legacy-server", "apps/storefronts/mahila-madel/legacy-server"],
   ["@zolexora/marketplace-seller-web", "apps/portals/seller/web"],
   ["@zolexora/marketplace-seller-mobile", "apps/portals/seller/mobile"],
   ["@zolexora/marketplace-admin", "apps/portals/marketplace-admin/web"],
   ["@zolexora/marketplace-shared-api", "packages/shared-api"],
   ["@zolexora/marketplace-shared-config", "packages/shared-config"],
+  ["@zolexora/marketplace-sign-in", "packages/sign-in"],
+  ["@zolexora/marketplace-mobile-sign-in", "packages/mobile-sign-in"],
 ]);
 const stale = ["apps/ZolexoraShop", "apps/MahilaMadel", "apps/web-buyer", "apps/web-seller", "apps/web-admin", "apps/mobile", "backend"];
 
@@ -31,7 +32,11 @@ try {
 }
 
 const failures = [];
-const packages = inventory.filter(({ path }) => relative(root, path) !== "");
+// pnpm lists the whole monorepo; only this product's packages are checked.
+const packages = inventory.filter(({ path }) => {
+  const rel = relative(root, path);
+  return rel !== "" && !rel.startsWith("..");
+});
 for (const [name, path] of required) {
   const matches = packages.filter((item) => item.name === name);
   if (matches.length !== 1) failures.push(`${name}: expected once, found ${matches.length}`);

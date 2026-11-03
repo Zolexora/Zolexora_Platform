@@ -3,8 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { LayoutDashboard, Users, Package, Video, ShoppingBag, BarChart3, LogOut, ChevronRight, Menu, Truck } from "lucide-react";
-import { useAuthStore } from "@/store";
-import { authApi } from "@/lib/api";
+import { useAuth } from "@zolexora/auth-client/react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const NAV = [
@@ -26,25 +25,19 @@ const NAV = [
 export default function AdminShell({ children }:{ children:React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, login, logout } = useAuthStore();
-  const [loading, setLoading] = useState(true);
+  const { user: account, loading, signOut } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const isAuthRoute = pathname.startsWith("/auth");
+  // Only Zolexora platform admins may use this portal.
+  const user = account?.is_platform_admin ? { name: account.email } : null;
 
   useEffect(() => {
-    if (pathname.startsWith("/auth")) {
-      setLoading(false);
-      return;
-    }
-    authApi.me().then((u) => {
-      if (u.role !== "admin") { logout(); router.replace("/auth"); return; }
-      login(u);
-    }).catch(() => {
-      logout();
-      router.replace("/auth");
-    }).finally(() => setLoading(false));
-  }, [pathname]);
+    if (loading || isAuthRoute || user) return;
+    if (account) void signOut();
+    router.replace("/auth");
+  }, [loading, isAuthRoute, account]);
 
-  if (pathname.startsWith("/auth")) return <>{children}</>;
+  if (isAuthRoute) return <>{children}</>;
   if (loading) return <div className="flex items-center justify-center min-h-screen"><div className="w-8 h-8 border-2 border-gold border-t-transparent rounded-full animate-spin" /></div>;
   if (!user) return null;
 
@@ -75,7 +68,7 @@ export default function AdminShell({ children }:{ children:React.ReactNode }) {
           <div className="w-7 h-7 bg-gold rounded-full flex items-center justify-center text-xs font-bold text-ink">{user.name?.[0]?.toUpperCase()}</div>
           <div className="flex-1 min-w-0"><p className="text-white text-xs font-medium truncate">{user.name}</p><p className="text-white/30 text-[10px]">Administrator</p></div>
         </div>
-        <button onClick={() => { void authApi.logout().catch(() => {}); logout(); router.push("/auth"); }}
+        <button onClick={() => { void signOut(); router.push("/auth"); }}
           className="w-full flex items-center gap-3 px-3 py-2 text-white/30 hover:text-white hover:bg-white/5 rounded-xl text-sm transition-all">
           <LogOut size={14} /> Sign Out
         </button>

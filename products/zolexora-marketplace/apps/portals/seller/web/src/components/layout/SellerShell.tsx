@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { LayoutDashboard, Package, Video, ShoppingBag, BarChart3, Settings, LogOut, Coins, ChevronRight, Menu, X, Truck } from "lucide-react";
+import { useAuth } from "@zolexora/auth-client/react";
 import { useAuthStore } from "@/store";
 import { authApi, sellerOrgApi } from "@/lib/api";
 import { motion, AnimatePresence } from "framer-motion";
@@ -21,17 +22,18 @@ export default function SellerShell({ children }: { children: React.ReactNode })
   const router = useRouter();
   const pathname = usePathname();
   const { user, login, logout } = useAuthStore();
+  const { user: account, loading: sessionLoading, signOut } = useAuth();
   const [loading, setLoading] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
   const isPublicRoute = pathname === "/" || pathname.startsWith("/auth") || pathname.startsWith("/verification");
 
   useEffect(() => {
+    if (sessionLoading) return;
     setLoading(true);
-    // Public seller pages are reachable without a marketplace session. Do not
-    // probe /auth/me until the session marker exists, avoiding an expected 401
-    // in the browser console on the login page.
-    if (isPublicRoute && typeof document !== "undefined" && !document.cookie.includes("z_csrf=")) {
+    if (!account) {
+      logout();
       setLoading(false);
+      if (!isPublicRoute) router.replace("/auth");
       return;
     }
     authApi.me().then(async (u: any) => {
@@ -53,7 +55,7 @@ export default function SellerShell({ children }: { children: React.ReactNode })
       if (!isPublicRoute) router.replace("/auth"); 
     })
       .finally(() => setLoading(false));
-  }, [isPublicRoute, pathname]);
+  }, [isPublicRoute, pathname, account, sessionLoading]);
 
   if (isPublicRoute) return <>{children}</>;
 
@@ -103,7 +105,7 @@ export default function SellerShell({ children }: { children: React.ReactNode })
             <div className="flex items-center gap-1 text-gold text-xs"><Coins size={10} />{user.coin_balance}</div>
           </div>
         </div>
-        <button onClick={() => { void authApi.logout().catch(() => {}); logout(); router.push("/auth"); }}
+        <button onClick={() => { void signOut(); logout(); router.push("/auth"); }}
           className="w-full flex items-center gap-3 px-3 py-2 text-white/40 hover:text-white hover:bg-white/5 rounded-xl text-sm transition-all">
           <LogOut size={15} /> Sign Out
         </button>

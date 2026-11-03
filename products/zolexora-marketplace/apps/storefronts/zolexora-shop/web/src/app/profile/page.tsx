@@ -1,13 +1,16 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { usersApi, authApi, UserProfileDetails, Address } from "@/lib/api";
+import { usersApi, UserProfileDetails, Address } from "@/lib/api";
+import { useAuthStore } from "@/store";
+import { useAuth } from "@zolexora/auth-client/react";
 import { User, Mail, Phone, MapPin, Plus, CheckCircle, Shield, Trash2, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 export default function ProfilePage() {
   const router = useRouter();
+  const { signOut } = useAuth();
   const [profile, setProfile] = useState<UserProfileDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -37,8 +40,6 @@ export default function ProfilePage() {
     address_line: "",
     city: "",
     is_default: false,
-    phone_otp: "",
-    email_otp: "",
   });
 
   // Pincode Resolution State
@@ -48,18 +49,9 @@ export default function ProfilePage() {
   const [postOffices, setPostOffices] = useState<any[]>([]);
   const [serviceability, setServiceability] = useState<any>(null);
 
-  // OTP & Selection Mode States
+  // Contact selection modes (delivery contacts are not verified: the auth service owns account email/phone)
   const [phoneMode, setPhoneMode] = useState<"select" | "custom">("select");
   const [emailMode, setEmailMode] = useState<"select" | "custom">("select");
-  const [sendingPhoneOtp, setSendingPhoneOtp] = useState(false);
-  const [phoneOtpSent, setPhoneOtpSent] = useState(false);
-  const [phoneVerified, setPhoneVerified] = useState(false);
-  const [verifyingPhone, setVerifyingPhone] = useState(false);
-
-  const [sendingEmailOtp, setSendingEmailOtp] = useState(false);
-  const [emailOtpSent, setEmailOtpSent] = useState(false);
-  const [emailVerified, setEmailVerified] = useState(false);
-  const [verifyingEmail, setVerifyingEmail] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -127,18 +119,14 @@ export default function ProfilePage() {
       if (data.contacts.verified_phones.length > 0) {
         setPhoneMode("select");
         setFormData(prev => ({ ...prev, phone: data.contacts.verified_phones[0] }));
-        setPhoneVerified(true);
       } else {
         setPhoneMode("custom");
-        setPhoneVerified(false);
       }
       if (data.contacts.primary_email) {
         setEmailMode("select");
         setFormData(prev => ({ ...prev, email: data.contacts.primary_email }));
-        setEmailVerified(true);
       } else {
         setEmailMode("custom");
-        setEmailVerified(false);
       }
     } catch (err: any) {
       if (err?.response?.status === 401) {
@@ -148,112 +136,6 @@ export default function ProfilePage() {
       setError("Failed to load profile details");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleSendPhoneOtp = async () => {
-    if (!formData.phone || formData.phone.length < 10) {
-      setFormErr("Please enter a valid phone number first");
-      return;
-    }
-    setSendingPhoneOtp(true);
-    setFormErr("");
-    try {
-      const res = await usersApi.sendAddressPhoneOtp(formData.phone);
-      setPhoneOtpSent(true);
-      setPhoneVerified(false);
-      setFormMsg(res.message || "OTP sent to phone");
-    } catch (err: any) {
-      setFormErr(err?.response?.data?.detail || "Failed to send phone OTP");
-    } finally {
-      setSendingPhoneOtp(false);
-    }
-  };
-
-  const handleVerifyPhoneOtp = async () => {
-    if (!formData.phone_otp || formData.phone_otp.length < 6) {
-      setFormErr("Enter 6-digit OTP");
-      return;
-    }
-    setVerifyingPhone(true);
-    setFormErr("");
-    try {
-      const res = await usersApi.verifyAddressPhoneOtp(formData.phone, formData.phone_otp);
-      setPhoneVerified(true);
-      setFormMsg(res.message || "Phone verified successfully! ✓");
-
-      // Auto-save to contacts list and select for this address
-      if (profile) {
-        const updatedPhones = Array.from(new Set([formData.phone, ...profile.contacts.verified_phones]));
-        setProfile({
-          ...profile,
-          contacts: {
-            ...profile.contacts,
-            primary_phone: profile.contacts.primary_phone || formData.phone,
-            is_phone_verified: true,
-            verified_phones: updatedPhones,
-          },
-        });
-      }
-      setPhoneMode("select");
-      setPhoneOtpSent(false);
-    } catch (err: any) {
-      setFormErr(err?.response?.data?.detail || "Invalid phone OTP");
-    } finally {
-      setVerifyingPhone(false);
-    }
-  };
-
-  const handleSendEmailOtp = async () => {
-    const targetEmail = formData.email || profile?.contacts.primary_email;
-    if (!targetEmail || !targetEmail.includes("@")) {
-      setFormErr("Please enter a valid email address first");
-      return;
-    }
-    setSendingEmailOtp(true);
-    setFormErr("");
-    try {
-      const res = await usersApi.sendAddressEmailOtp(targetEmail);
-      setEmailOtpSent(true);
-      setEmailVerified(false);
-      setFormMsg(res.message || "Verification code sent to email");
-    } catch (err: any) {
-      setFormErr(err?.response?.data?.detail || "Failed to send email verification code");
-    } finally {
-      setSendingEmailOtp(false);
-    }
-  };
-
-  const handleVerifyEmailOtp = async () => {
-    const targetEmail = formData.email || profile?.contacts.primary_email || "";
-    if (!formData.email_otp || formData.email_otp.length < 6) {
-      setFormErr("Enter 6-digit code");
-      return;
-    }
-    setVerifyingEmail(true);
-    setFormErr("");
-    try {
-      const res = await usersApi.verifyAddressEmailOtp(targetEmail, formData.email_otp);
-      setEmailVerified(true);
-      setFormMsg(res.message || "Email verified successfully! ✓");
-
-      // Auto-save to contacts list and select for this address
-      if (profile) {
-        const updatedEmails = Array.from(new Set([targetEmail, ...profile.contacts.verified_emails]));
-        setProfile({
-          ...profile,
-          contacts: {
-            ...profile.contacts,
-            verified_emails: updatedEmails,
-          },
-        });
-      }
-      setEmailMode("select");
-      setEmailOtpSent(false);
-    } catch (err: any) {
-      setFormErr(err?.response?.data?.detail || "Invalid email code");
-    } finally {
-      setVerifyingEmail(false);
     }
   };
 
@@ -295,8 +177,6 @@ export default function ProfilePage() {
         city: formData.village_town || formData.district || "TOWN",
         pincode: formData.pincode,
         is_default: formData.is_default,
-        phone_otp: formData.phone_otp || undefined,
-        email_otp: formData.email_otp || undefined,
       });
 
       setShowAddForm(false);
@@ -319,14 +199,10 @@ export default function ProfilePage() {
         address_line: "",
         city: "",
         is_default: false,
-        phone_otp: "",
-        email_otp: "",
       });
       setPincodeResolved(null);
       setPostOffices([]);
       setServiceability(null);
-      setPhoneOtpSent(false);
-      setEmailOtpSent(false);
       await loadProfile();
     } catch (err: any) {
       setFormErr(err?.response?.data?.detail || "Failed to add address");
@@ -379,7 +255,7 @@ export default function ProfilePage() {
           </div>
 
           <button
-            onClick={() => authApi.logout().then(() => router.push("/"))}
+            onClick={() => useAuthStore.getState().logout().then(() => router.push("/"))}
             className="text-xs font-bold text-red-600 hover:text-red-700 px-3 py-1.5 border border-red-200 rounded-lg hover:bg-red-50 transition"
           >
             Sign Out
@@ -693,14 +569,11 @@ export default function ProfilePage() {
                           onClick={() => {
                             if (phoneMode === "select") {
                               setPhoneMode("custom");
-                              setFormData({ ...formData, phone: "", phone_otp: "" });
-                              setPhoneVerified(false);
+                              setFormData({ ...formData, phone: "" });
                             } else {
                               setPhoneMode("select");
-                              setFormData({ ...formData, phone: profile.contacts.verified_phones[0] || "", phone_otp: "" });
-                              setPhoneVerified(true);
+                              setFormData({ ...formData, phone: profile.contacts.verified_phones[0] || "" });
                             }
-                            setPhoneOtpSent(false);
                           }}
                           className="text-[11px] font-bold text-amber-700 hover:underline"
                         >
@@ -715,12 +588,9 @@ export default function ProfilePage() {
                         onChange={(e) => {
                           if (e.target.value === "__new__") {
                             setPhoneMode("custom");
-                            setFormData({ ...formData, phone: "", phone_otp: "" });
-                            setPhoneOtpSent(false);
-                            setPhoneVerified(false);
+                            setFormData({ ...formData, phone: "" });
                           } else {
-                            setFormData({ ...formData, phone: e.target.value, phone_otp: "" });
-                            setPhoneVerified(true);
+                            setFormData({ ...formData, phone: e.target.value });
                           }
                         }}
                         className="w-full text-xs p-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-black font-medium"
@@ -741,46 +611,11 @@ export default function ProfilePage() {
                             placeholder="10-digit Phone"
                             value={formData.phone}
                             onChange={(e) => {
-                              setFormData({ ...formData, phone: e.target.value, phone_otp: "" });
-                              setPhoneVerified(false);
-                              setPhoneOtpSent(false);
+                              setFormData({ ...formData, phone: e.target.value });
                             }}
                             className="w-full text-xs p-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-black"
                           />
-                          <button
-                            type="button"
-                            disabled={sendingPhoneOtp}
-                            onClick={handleSendPhoneOtp}
-                            className="px-2.5 py-1 text-[11px] font-bold bg-[#1C1C1C] text-[#FFB800] rounded-lg whitespace-nowrap hover:bg-black disabled:opacity-50"
-                          >
-                            {sendingPhoneOtp ? "Sending..." : phoneOtpSent ? "Resend" : "Send OTP"}
-                          </button>
                         </div>
-                        {phoneOtpSent && !phoneVerified && (
-                          <div className="mt-2 flex gap-2">
-                            <input
-                              type="text"
-                              maxLength={6}
-                              placeholder="6-digit Phone OTP"
-                              value={formData.phone_otp}
-                              onChange={(e) => setFormData({ ...formData, phone_otp: e.target.value })}
-                              className="w-full text-xs p-2 bg-white border border-blue-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
-                            />
-                            <button
-                              type="button"
-                              disabled={verifyingPhone || formData.phone_otp.length < 6}
-                              onClick={handleVerifyPhoneOtp}
-                              className="px-3.5 py-1 text-xs font-bold bg-green-600 hover:bg-green-700 text-white rounded-lg whitespace-nowrap disabled:opacity-50 transition shadow-sm"
-                            >
-                              {verifyingPhone ? "..." : "Verify"}
-                            </button>
-                          </div>
-                        )}
-                        {phoneVerified && (
-                          <div className="mt-2 flex items-center gap-1.5 text-xs font-bold text-green-700 bg-green-50 px-2.5 py-1.5 rounded-lg border border-green-200">
-                            <CheckCircle size={14} className="text-green-600" /> Phone number verified
-                          </div>
-                        )}
                       </div>
                     )}
                   </div>
@@ -797,13 +632,10 @@ export default function ProfilePage() {
                           onClick={() => {
                             if (emailMode === "select") {
                               setEmailMode("custom");
-                              setFormData({ ...formData, email: "", email_otp: "" });
-                              setEmailVerified(false);
-                              setEmailOtpSent(false);
+                              setFormData({ ...formData, email: "" });
                             } else {
                               setEmailMode("select");
-                              setFormData({ ...formData, email: profile.contacts.primary_email, email_otp: "" });
-                              setEmailVerified(true);
+                              setFormData({ ...formData, email: profile.contacts.primary_email });
                             }
                           }}
                           className="text-[11px] font-bold text-amber-700 hover:underline"
@@ -819,12 +651,9 @@ export default function ProfilePage() {
                         onChange={(e) => {
                           if (e.target.value === "__new__") {
                             setEmailMode("custom");
-                            setFormData({ ...formData, email: "", email_otp: "" });
-                            setEmailOtpSent(false);
-                            setEmailVerified(false);
+                            setFormData({ ...formData, email: "" });
                           } else {
-                            setFormData({ ...formData, email: e.target.value, email_otp: "" });
-                            setEmailVerified(true);
+                            setFormData({ ...formData, email: e.target.value });
                           }
                         }}
                         className="w-full text-xs p-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-black font-medium"
@@ -849,46 +678,11 @@ export default function ProfilePage() {
                             placeholder="New email address"
                             value={formData.email}
                             onChange={(e) => {
-                              setFormData({ ...formData, email: e.target.value, email_otp: "" });
-                              setEmailVerified(false);
-                              setEmailOtpSent(false);
+                              setFormData({ ...formData, email: e.target.value });
                             }}
                             className="w-full text-xs p-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-black"
                           />
-                          <button
-                            type="button"
-                            disabled={sendingEmailOtp}
-                            onClick={handleSendEmailOtp}
-                            className="px-2.5 py-1 text-[11px] font-bold bg-[#1C1C1C] text-[#FFB800] rounded-lg whitespace-nowrap hover:bg-black disabled:opacity-50"
-                          >
-                            {sendingEmailOtp ? "Sending..." : emailOtpSent ? "Resend" : "Send Code"}
-                          </button>
                         </div>
-                        {emailOtpSent && !emailVerified && (
-                          <div className="mt-2 flex gap-2">
-                            <input
-                              type="text"
-                              maxLength={6}
-                              placeholder="6-digit Email Code"
-                              value={formData.email_otp}
-                              onChange={(e) => setFormData({ ...formData, email_otp: e.target.value })}
-                              className="w-full text-xs p-2 bg-white border border-blue-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
-                            />
-                            <button
-                              type="button"
-                              disabled={verifyingEmail || formData.email_otp.length < 6}
-                              onClick={handleVerifyEmailOtp}
-                              className="px-3.5 py-1 text-xs font-bold bg-green-600 hover:bg-green-700 text-white rounded-lg whitespace-nowrap disabled:opacity-50 transition shadow-sm"
-                            >
-                              {verifyingEmail ? "..." : "Verify"}
-                            </button>
-                          </div>
-                        )}
-                        {emailVerified && (
-                          <div className="mt-2 flex items-center gap-1.5 text-xs font-bold text-green-700 bg-green-50 px-2.5 py-1.5 rounded-lg border border-green-200">
-                            <CheckCircle size={14} className="text-green-600" /> Email address verified
-                          </div>
-                        )}
                       </div>
                     )}
                   </div>

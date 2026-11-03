@@ -1,15 +1,13 @@
 import axios from 'axios';
+import { expireStoredSession, storedSessionToken } from '@zolexora/marketplace-sign-in';
+import { config as runtimeConfig } from './runtime';
 
-const API = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? 'https://api.zolexora.com/api' : `http://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:4100/api`),
-  withCredentials: true,
-});
+const API = axios.create();
 
 API.interceptors.request.use((config) => {
-  const csrf = document.cookie.match(/(?:^|; )z_csrf=([^;]*)/)?.[1];
-  if (csrf && !['GET', 'HEAD', 'OPTIONS'].includes(config.method?.toUpperCase())) {
-    config.headers['X-CSRF-Token'] = decodeURIComponent(csrf);
-  }
+  config.baseURL = runtimeConfig('MARKETPLACE_API_URL');
+  const token = storedSessionToken();
+  if (token) config.headers.Authorization = `Bearer ${token}`;
   config.headers['X-Storefront-Key'] = 'mahila-madel';
 
   if (process.env.NODE_ENV !== 'production') {
@@ -30,50 +28,26 @@ API.interceptors.response.use(
     if (process.env.NODE_ENV !== 'production') {
       console.warn(`%c[MM API Error] %c${err.config?.method?.toUpperCase()} ${err.config?.url} → ${err.response?.status || 'Network Error'}`, 'color: #B5445A; font-weight: bold;', 'color: #2C1520;', err.response?.data || err.message);
     }
-    if (err.response?.status === 401) {
-      localStorage.removeItem('shopkart_user');
-      // Let the caller handle the error instead of forcing a full page reload
-    }
+    if (err.response?.status === 401) expireStoredSession();
     return Promise.reject(err);
   }
 );
 
-export const registerUser = (data) => API.post('/auth/register', data);
-export const verifyRegister = (data) => API.post('/auth/verify-register', data);
-export const resendOtp = (email) => API.post('/auth/resend-otp', { email });
-export const loginUser = (data) => API.post('/auth/login', data);
-export const getProfile = () => API.get('/auth/me');
-export const updateProfile = (data) => API.put('/auth/me', data);
-export const logoutUser = () => API.post('/auth/logout');
+// Marketplace profile; sign-in itself is the Zolexora auth service.
+export const getProfile = () => API.get('/users/me');
+export const updateProfile = (data) => API.put('/users/me', data);
 export const addAddress = (data) => API.post('/users/me/addresses', data);
 export const getAddresses = () => API.get('/users/me/addresses');
 export const updateAddress = (id, data) => API.put(`/users/me/addresses/${id}`, data);
 export const deleteAddress = (id) => API.delete(`/users/me/addresses/${id}`);
 export const lookupPincode = (pincode) => API.get('/users/me/addresses/pincode-lookup', { params: { pincode } });
 export const checkServiceability = (pincode) => API.post('/users/me/addresses/check-serviceability', { pincode });
-export const sendAddressPhoneOtp = (phone) => API.post('/users/me/addresses/send-otp', { phone });
-export const verifyAddressPhoneOtp = (phone, otp) => API.post('/users/me/addresses/verify-phone-otp', { phone, otp });
-export const sendAddressEmailOtp = (email) => API.post('/users/me/addresses/send-email-otp', { email });
-export const verifyAddressEmailOtp = (email, otp) => API.post('/users/me/addresses/verify-email-otp', { email, otp });
 export const getUserProfile = () => API.get('/users/me/profile');
 export const getCoinBalance = () => API.get('/coins/balance');
 export const verifyRazorpay = (data) => API.post('/cart/checkout/verify-payment', data);
 export const verifyCashfree = (data) => API.post('/cart/checkout/verify-cashfree', data);
 export const verifyUpiPaid = (data) => API.post('/cart/checkout/upi-paid', data);
 
-// ── Unified Authentication Architecture Endpoints ────────────────────────────
-export const checkEmail = (email) => API.post('/auth/check-email', { email });
-export const checkPhone = (phone) => API.post('/auth/check-phone', { phone });
-export const sendLoginOtp = (data) => API.post('/auth/send-login-otp', data);
-export const verifyLoginOtp = (data) => API.post('/auth/verify-login-otp', data);
-export const googleAuth = (data) => API.post('/auth/google', data);
-export const firebaseAuth = (idToken, registrationName) => API.post('/auth/firebase', { id_token: idToken, registration_name: registrationName });
-export const sendPhoneOtp = (phone, purpose = 'registration') => API.post('/auth/send-phone-otp', { phone, purpose });
-export const verifyPhoneOtp = (phone, otp, purpose = 'registration') => API.post('/auth/verify-phone-otp', { phone, otp, purpose });
-export const sendEmailOtp = (email, purpose = 'registration') => API.post('/auth/send-email-otp', { email, purpose });
-export const verifyEmailOtp = (email, otp, purpose = 'registration') => API.post('/auth/verify-email-otp', { email, otp, purpose });
-export const completeUnifiedRegistration = (data) => API.post('/auth/complete-unified-registration', data);
-export const forgotPassword = (email) => API.post('/auth/forgot-password', { email });
 
 const mapProduct = (p) => ({
   ...p,

@@ -1,88 +1,50 @@
-import { createContext, useContext, useState, useCallback } from 'react';
-import { loginUser, registerUser, verifyRegister, resendOtp, getProfile, logoutUser } from '../utils/api';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { ZolexoraAuthProvider, useAuth as useAccount } from '@zolexora/auth-client/react';
+import { getProfile } from '../utils/api';
+import { config } from '../utils/runtime';
 
-const AuthContext = createContext();
+/**
+ * Sign-in belongs to the Zolexora auth service (ZolexoraAuthProvider holds the session).
+ * `user` is the marketplace profile of that account; platform admins have no profile.
+ */
+const AuthContext = createContext(null);
 
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('shopkart_user') || 'null'); }
-    catch { return null; }
-  });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  const saveUser = (u) => {
-    setUser(u);
-    localStorage.setItem('shopkart_user', JSON.stringify(u));
-  };
-
-  const login = async (email, password) => {
-    setLoading(true); setError(null);
-    try {
-      const { data } = await loginUser({ email, password });
-      saveUser(data.user);
-      return data;
-    } catch (e) {
-      const msg = e.response?.data?.detail || e.response?.data?.message || 'Login failed';
-      setError(msg); throw e;
-    } finally { setLoading(false); }
-  };
-
-  const register = async (name, email, password) => {
-    setLoading(true); setError(null);
-    try {
-      const { data } = await registerUser({ name, email, password });
-      return data;
-    } catch (e) {
-      const msg = e.response?.data?.detail || e.response?.data?.message || 'Registration failed';
-      setError(msg); throw e;
-    } finally { setLoading(false); }
-  };
-
-  const verifyOtp = async (email, otp) => {
-    setLoading(true); setError(null);
-    try {
-      const { data } = await verifyRegister({ email, otp });
-      if (data.user) {
-        saveUser(data.user);
-      }
-      return data;
-    } catch (e) {
-      const msg = e.response?.data?.detail || e.response?.data?.message || 'Verification failed';
-      setError(msg); throw e;
-    } finally { setLoading(false); }
-  };
-
-  const resendVerificationOtp = async (email) => {
-    setLoading(true); setError(null);
-    try {
-      const { data } = await resendOtp(email);
-      return data;
-    } catch (e) {
-      const msg = e.response?.data?.detail || e.response?.data?.message || 'Failed to resend code';
-      setError(msg); throw e;
-    } finally { setLoading(false); }
-  };
-
-  const logout = () => {
-    void logoutUser();
-    setUser(null);
-    localStorage.removeItem('shopkart_user');
-  };
+function ProfileProvider({ children }) {
+  const { user: account, loading: sessionLoading, signOut } = useAccount();
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const refreshProfile = useCallback(async () => {
-    if (!user) return;
-    try {
-      const { data } = await getProfile();
-      saveUser({ ...user, ...data });
-    } catch {}
-  }, [user]);
+    if (!account) return setUser(null);
+    if (account.is_platform_admin) {
+      return setUser({ id: account.uid, name: account.email, email: account.email, isAdmin: true });
+    }
+    const { data } = await getProfile();
+    setUser({ ...data, isAdmin: false });
+  }, [account]);
+
+  useEffect(() => {
+    if (sessionLoading) return;
+    setLoading(true);
+    refreshProfile().catch(() => setUser(null)).finally(() => setLoading(false));
+  }, [sessionLoading, refreshProfile]);
+
+  const logout = useCallback(async () => {
+    await signOut();
+    setUser(null);
+  }, [signOut]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, error, login, register, verifyOtp, resendVerificationOtp, logout, refreshProfile, setError, saveUser }}>
+    <AuthContext.Provider value={{ user, loading: sessionLoading || loading, logout, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );
-};
+}
+
+export const AuthProvider = ({ children }) => (
+  <ZolexoraAuthProvider authUrl={config('AUTH_SERVICE_PUBLIC_URL')} product="marketplace">
+    <ProfileProvider>{children}</ProfileProvider>
+  </ZolexoraAuthProvider>
+);
 
 export const useAuth = () => useContext(AuthContext);

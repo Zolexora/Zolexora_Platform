@@ -8,10 +8,6 @@ import {
   addAddress,
   lookupPincode,
   checkServiceability,
-  sendAddressPhoneOtp,
-  verifyAddressPhoneOtp,
-  sendAddressEmailOtp,
-  verifyAddressEmailOtp,
   getUserProfile,
   getCoinBalance,
   verifyCashfree,
@@ -55,14 +51,6 @@ export default function Checkout() {
   const [showNewForm, setShowNewForm] = useState(false);
 
   // Address Form State
-  const [phoneOtp, setPhoneOtp] = useState('');
-  const [phoneOtpSent, setPhoneOtpSent] = useState(false);
-  const [phoneVerified, setPhoneVerified] = useState(false);
-  const [emailOtp, setEmailOtp] = useState('');
-  const [emailOtpSent, setEmailOtpSent] = useState(false);
-  const [emailVerified, setEmailVerified] = useState(false);
-  const [, setVerifiedPhonesList] = useState([]);
-  const [verifiedEmailsList, setVerifiedEmailsList] = useState([]);
 
   const [addrForm, setAddrForm] = useState({
     digipin: '',
@@ -113,8 +101,6 @@ export default function Checkout() {
       const profile = profileRes.data;
       const phones = profile?.contacts?.verified_phones || Array.from(new Set(list.map((a) => a.phone).filter(Boolean)));
       const emails = profile?.contacts?.verified_emails || (user?.email ? [user.email] : []);
-      setVerifiedPhonesList(phones);
-      setVerifiedEmailsList(emails);
 
       if (phones.length > 0) {
         setAddrForm((prev) => ({ ...prev, phone: phones[0] }));
@@ -123,8 +109,6 @@ export default function Checkout() {
         setAddrForm((prev) => ({ ...prev, email: emails[0] }));
       }
 
-      setPhoneVerified(phones.length > 0);
-      setEmailVerified(emails.length > 0);
       if (list.length > 0) {
         const def = list.find((a) => a.is_default) || list[0];
         setSelectedAddrId(def.id);
@@ -199,57 +183,9 @@ export default function Checkout() {
     }
   };
 
-  const handleSendPhoneOtp = async () => {
-    if (!addrForm.phone || addrForm.phone.length < 10) return;
-    try {
-      setBusy(true);
-      await sendAddressPhoneOtp(addrForm.phone);
-      setPhoneOtpSent(true);
-      toast.success('Phone OTP sent');
-    } catch (e) {
-      toast.error('Failed to send Phone OTP');
-    } finally { setBusy(false); }
-  };
-
-  const handleVerifyPhoneOtp = async () => {
-    try {
-      setBusy(true);
-      await verifyAddressPhoneOtp(addrForm.phone, phoneOtp);
-      setPhoneVerified(true);
-      toast.success('Phone verified');
-    } catch (e) {
-      toast.error('Invalid Phone OTP');
-    } finally { setBusy(false); }
-  };
-
-  const handleSendEmailOtp = async () => {
-    if (!addrForm.email || !addrForm.email.includes('@')) return;
-    try {
-      setBusy(true);
-      await sendAddressEmailOtp(addrForm.email);
-      setEmailOtpSent(true);
-      toast.success('Email OTP sent');
-    } catch (e) {
-      toast.error('Failed to send Email OTP');
-    } finally { setBusy(false); }
-  };
-
-  const handleVerifyEmailOtp = async () => {
-    try {
-      setBusy(true);
-      await verifyAddressEmailOtp(addrForm.email, emailOtp);
-      setEmailVerified(true);
-      toast.success('Email verified');
-    } catch (e) {
-      toast.error('Invalid Email OTP');
-    } finally { setBusy(false); }
-  };
-
   const handleSaveNewAddress = async () => {
     if (!addrForm.name.trim()) { toast.error('Full Name is required'); return; }
     if (!addrForm.email || !addrForm.email.includes('@')) { toast.error('Valid email is required'); return; }
-    if (!phoneVerified) { toast.error('Please verify your phone number first'); return; }
-    if (!emailVerified) { toast.error('Please verify your email first'); return; }
     if (!addrForm.phone || addrForm.phone.length < 10) { toast.error('Valid 10-digit phone is required'); return; }
     if (!addrForm.pincode || addrForm.pincode.length !== 6) { toast.error('6-digit pincode is required'); return; }
     if (!addrForm.address_line.trim() && !addrForm.house_no.trim()) { toast.error('Address line is required'); return; }
@@ -506,32 +442,9 @@ export default function Checkout() {
                           type="email"
                           placeholder="e.g. user@example.com"
                           value={addrForm.email}
-                          list="verified-emails-list"
-                          onChange={(e) => { 
-                            const val = e.target.value;
-                            setAddrForm({ ...addrForm, email: val }); 
-                            if (verifiedEmailsList.includes(val)) {
-                                setEmailVerified(true);
-                            } else {
-                                setEmailVerified(false); 
-                                setEmailOtpSent(false); 
-                            }
-                          }}
-                          
+                          onChange={(e) => setAddrForm({ ...addrForm, email: e.target.value })}
                         />
-                        {!emailVerified && (
-                          <button type="button" onClick={handleSendEmailOtp} disabled={busy || emailOtpSent} className="mm-btn-inline">
-                            {emailOtpSent ? 'Sent' : 'Verify'}
-                          </button>
-                        )}
                       </div>
-                      {emailOtpSent && !emailVerified && (
-                        <div className="mm-input-wrap" style={{ marginTop: 8 }}>
-                          <input type="text" placeholder="Enter Email OTP" maxLength={6} value={emailOtp} onChange={e => setEmailOtp(e.target.value)} />
-                          <button type="button" onClick={handleVerifyEmailOtp} disabled={busy || emailOtp.length !== 6} className="mm-btn-inline">Confirm</button>
-                        </div>
-                      )}
-                      {emailVerified && <span className="mm-badge-success" style={{ fontSize: 11, marginTop: 4 }}>✓ Verified</span>}
                     </div>
 
                     <div className="mm-input-field">
@@ -543,22 +456,9 @@ export default function Checkout() {
                           maxLength={10}
                           placeholder="10-digit number"
                           value={addrForm.phone}
-                          onChange={(e) => { setAddrForm({ ...addrForm, phone: e.target.value.replace(/\D/g, '') }); setPhoneVerified(false); setPhoneOtpSent(false); }}
-                          
+                          onChange={(e) => { setAddrForm({ ...addrForm, phone: e.target.value.replace(/\D/g, '') }); }}
                         />
-                        {!phoneVerified && (
-                          <button type="button" onClick={handleSendPhoneOtp} disabled={busy || phoneOtpSent} className="mm-btn-inline">
-                            {phoneOtpSent ? 'Sent' : 'Verify'}
-                          </button>
-                        )}
                       </div>
-                      {phoneOtpSent && !phoneVerified && (
-                        <div className="mm-input-wrap" style={{ marginTop: 8 }}>
-                          <input type="text" placeholder="Enter Phone OTP" maxLength={6} value={phoneOtp} onChange={e => setPhoneOtp(e.target.value)} />
-                          <button type="button" onClick={handleVerifyPhoneOtp} disabled={busy || phoneOtp.length !== 6} className="mm-btn-inline">Confirm</button>
-                        </div>
-                      )}
-                      {phoneVerified && <span className="mm-badge-success" style={{ fontSize: 11, marginTop: 4 }}>✓ Verified</span>}
                     </div>
                   </div>
 

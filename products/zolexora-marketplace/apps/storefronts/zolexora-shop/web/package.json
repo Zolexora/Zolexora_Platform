@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3103",
+    "dev": "bash ../../../../../../scripts/setup/with-infisical.sh ../../../.. next dev -p 3103",
     "build": "next build",
-    "start": "next start",
+    "start": "bash ../../../../../../scripts/setup/with-infisical.sh ../../../.. next start",
     "lint": "next lint",
     "test": "vitest run",
     "type-check": "tsc --noEmit"
@@ -16,8 +16,9 @@
     "@radix-ui/react-select": "^2.1.2",
     "@radix-ui/react-slider": "^1.4.7",
     "@radix-ui/react-tooltip": "^1.2.16",
-    "@react-oauth/google": "^0.12.1",
+    "@zolexora/auth-client": "workspace:*",
     "@zolexora/marketplace-shared-api": "workspace:*",
+    "@zolexora/marketplace-sign-in": "workspace:*",
     "axios": "^1.7.0",
     "clsx": "^2.1.1",
     "firebase": "^12.17.1",

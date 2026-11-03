@@ -1,20 +1,11 @@
 import axios from "axios";
-import * as SecureStore from "expo-secure-store";
+import { clearSessionToken, mobileConfig, sessionToken } from "@zolexora/marketplace-mobile-sign-in";
 import { STOREFRONT_HEADER } from "@zolexora/marketplace-shared-api/storefront";
 import { STOREFRONT_KEY, validateStorefrontKey } from "../config/storefront";
 
 validateStorefrontKey();
 
-function resolveApiBaseUrl() {
-  const configured = process.env.EXPO_PUBLIC_API_URL?.trim();
-  if (configured) return configured;
-  if (__DEV__) return "http://localhost:4100/api";
-  throw new Error("EXPO_PUBLIC_API_URL is required for production builds.");
-}
-
-const BASE = resolveApiBaseUrl();
-
-export const api = axios.create({ baseURL: BASE, timeout: 20000, headers: { "X-Session-Transport": "native" } });
+export const api = axios.create({ timeout: 20000 });
 
 export function applyStorefrontHeader(headers: { set?: (name: string, value: string) => void; [key: string]: unknown }) {
   if (typeof headers.set === "function") headers.set(STOREFRONT_HEADER, STOREFRONT_KEY);
@@ -22,23 +13,27 @@ export function applyStorefrontHeader(headers: { set?: (name: string, value: str
   return headers;
 }
 
+// Every request carries the Zolexora auth-service session token; the API URL comes from Infisical.
 api.interceptors.request.use(async (config) => {
-  try {
-    const token = await SecureStore.getItemAsync("z_token");
-    if (token && config.headers) config.headers.Authorization = `Bearer ${token}`;
-  } catch {}
+  config.baseURL = mobileConfig().apiUrl;
+  const token = await sessionToken();
+  if (token && config.headers) config.headers.Authorization = `Bearer ${token}`;
   if (config.headers) applyStorefrontHeader(config.headers);
   return config;
 });
 
+api.interceptors.response.use(
+  (r) => r,
+  async (error) => {
+    if (error?.response?.status === 401) await clearSessionToken();
+    return Promise.reject(error);
+  },
+);
+
+/** Marketplace profile of the signed-in account; sign-in itself is the auth service. */
 export const authApi = {
-  register:       (d: any)                                  => api.post("/auth/register", d).then(r => r.data),
-  login:          (email: string, password: string)         => api.post("/auth/login", { email, password }).then(r => r.data),
-  verifyOtp:      (email: string, otp: string)               => api.post("/auth/verify-register", { email, otp }).then(r => r.data),
-  forgotPassword: (email: string)                           => api.post("/auth/forgot-password", { email }).then(r => r.data),
-  resetPassword:  (token: string, new_password: string)     => api.post("/auth/reset-password", { token, new_password }).then(r => r.data),
-  me:             ()                                        => api.get("/auth/me").then(r => r.data),
-  logout:         ()                                        => api.post("/auth/logout").then(r => r.data),
+  me:     () => api.get("/users/me").then(r => r.data),
+  update: (data: { name?: string }) => api.put("/users/me", data).then(r => r.data),
 };
 
 export const productsApi = {

@@ -1,4 +1,6 @@
 import axios from "axios";
+import { expireStoredSession, storedSessionToken } from "@zolexora/marketplace-sign-in";
+import { runtimeConfig } from "./runtime";
 import { STOREFRONT_HEADER, type StorefrontKey } from "@zolexora/marketplace-shared-api/storefront";
 
 export const STOREFRONT_KEY = "zolexora-shop" satisfies StorefrontKey;
@@ -9,33 +11,19 @@ export function applyStorefrontHeader(headers: { set?: (name: string, value: str
   return headers;
 }
 
-function resolveApiBaseUrl() {
-  const configured = process.env.NEXT_PUBLIC_API_URL?.trim();
-  if (configured) {
-    const trimmed = configured.replace(/\/+$/, "");
-    return trimmed.endsWith("/api") ? trimmed : `${trimmed}/api`;
-  }
-  if (process.env.NODE_ENV !== "production") {
-    const hostname = typeof window !== "undefined" ? window.location.hostname : "localhost";
-    if (hostname.endsWith(".github.dev") || hostname.endsWith(".app.github.dev")) {
-      const apiHost = hostname.replace(/-300[0-9]/, "-4100");
-      return `https://${apiHost}/api`;
-    }
-    return `http://${hostname}:4100/api`;
-  }
-  throw new Error("NEXT_PUBLIC_API_URL is required for production builds.");
-}
+// Base URL and token are resolved per request: the URL comes from the runtime config
+// (Infisical), the token is the Zolexora auth-service session.
+export const api = axios.create({ timeout: 20000 });
 
-const BASE = resolveApiBaseUrl();
-
-export const api = axios.create({ baseURL: BASE, timeout: 20000, withCredentials: true });
-
+/** Marketplace profile of the signed-in user (GET /users/me). */
 export interface User {
   id: string;
   email: string;
   name: string;
   role: string;
   coin_balance?: number;
+  phone_number?: string | null;
+  picture?: string | null;
 }
 
 export interface Money {
@@ -119,13 +107,6 @@ export interface DiscountCode {
   created_at: string;
 }
 
-export interface RegisterRequest {
-  email: string;
-  password: string;
-  name: string;
-  role?: string;
-}
-
 export interface CheckoutRequest {
   coins_to_use?: number;
   payment_method: string;
@@ -149,66 +130,24 @@ export type ProductListParams = {
 };
 
 api.interceptors.request.use((c) => {
-  const csrf = typeof document === "undefined" ? undefined : document.cookie.match(/(?:^|; )z_csrf=([^;]*)/)?.[1];
-  if (csrf && !["GET", "HEAD", "OPTIONS"].includes(c.method?.toUpperCase() || "")) c.headers.set("X-CSRF-Token", decodeURIComponent(csrf));
-  if (c.headers) applyStorefrontHeader(c.headers);
+  c.baseURL = runtimeConfig().apiUrl;
+  const token = storedSessionToken();
+  if (token) c.headers.set("Authorization", `Bearer ${token}`);
+  applyStorefrontHeader(c.headers);
   return c;
 });
 api.interceptors.response.use(
   (r) => r,
   (e) => {
-    if (e?.response?.status === 401 && typeof window !== "undefined") {
-      window.dispatchEvent(new Event("z:logout"));
-    }
+    if (e?.response?.status === 401 && typeof window !== "undefined") expireStoredSession();
     return Promise.reject(e);
   }
 );
 
+/** Sign-in, sign-up and passwords belong to the Zolexora auth service (see app/auth). */
 export const authApi = {
-  register:       (d: RegisterRequest)          => api.post("/auth/register", d).then(r => r.data),
-  resendOtp:      (email: string)               => api.post("/auth/resend-otp-body", { email }).then(r => r.data),
-  verifyOtp:      (email: string, otp: string)  => api.post("/auth/verify-register", { email, otp }).then(r => r.data),
-  login:          (email: string, pass: string) => api.post("/auth/login", { email, password: pass }).then(r => r.data),
-  loginPhone:      (phone: string, pass: string) => api.post("/auth/login-phone", { phone, password: pass }).then(r => r.data),
-  forgotPassword: (email: string)               => api.post("/auth/forgot-password", { email }).then(r => r.data),
-  resetPassword:  (token: string, new_password: string) => api.post("/auth/reset-password", { token, new_password }).then(r => r.data),
-  me:             ()                            => api.get<User>("/auth/me").then(r => r.data),
-  logout:         ()                            => api.post("/auth/logout").then(r => r.data),
-  firebase:       (idToken: string, registrationName?: string) => api.post("/auth/firebase", { id_token: idToken, registration_name: registrationName }).then(r => r.data),
-  enrollFirebaseEmail: (idToken: string) => api.post<{ user: User }>("/auth/enroll-firebase-email", { id_token: idToken }).then(r => r.data),
-
-  // Unified Multi-Platform Authentication (Web & Android)
-  checkEmail: (email: string) =>
-    api.post<{ exists: boolean; masked_phone?: string; auth_methods: string[] }>("/auth/check-email", { email }).then(r => r.data),
-  checkPhone: (phone: string) =>
-    api.post<{ exists: boolean; masked_phone?: string; masked_email?: string }>("/auth/check-phone", { phone }).then(r => r.data),
-  sendLoginOtp: (params: { email?: string; phone?: string; channel: "email" | "sms" }) =>
-    api.post<{ message: string }>("/auth/send-login-otp", params).then(r => r.data),
-  verifyLoginOtp: (params: { email?: string; phone?: string; otp: string }) =>
-    api.post<{ user: User }>("/auth/verify-login-otp", params).then(r => r.data),
-  googleAuth: (params: { id_token?: string; email: string; name?: string; google_id?: string }) =>
-    api.post<{ is_new_user: boolean; email: string; verified: boolean; user?: User }>("/auth/google", params).then(r => r.data),
-  sendPhoneOtp: (phone: string, purpose = "auth") =>
-    api.post<{ message: string }>("/auth/send-phone-otp", { phone, channel: "sms", purpose }).then(r => r.data),
-  verifyPhoneOtp: (phone: string, otp: string, purpose = "auth") =>
-    api.post<{ message: string }>("/auth/verify-phone-otp", { phone, otp, purpose }).then(r => r.data),
-  sendEmailOtp: (email: string, purpose = "auth") =>
-    api.post<{ message: string }>("/auth/send-email-otp", { email, channel: "email", purpose }).then(r => r.data),
-  verifyEmailOtp: (email: string, otp: string, purpose = "auth") =>
-    api.post<{ message: string }>("/auth/verify-email-otp", { email, otp, purpose }).then(r => r.data),
-  completeUnifiedRegistration: (data: {
-    email: string;
-    name: string;
-    password: string;
-    phone: string;
-    email_otp?: string;
-    phone_otp?: string;
-    google_verified?: boolean;
-    platform?: "web" | "android";
-    pnv_token?: string;
-    firebase_id_token?: string;
-  }) =>
-    api.post<{ user: User }>("/auth/complete-unified-registration", data).then(r => r.data),
+  me:     ()                                          => api.get<User>("/users/me").then(r => r.data),
+  update: (data: { name?: string; picture?: string }) => api.put<User>("/users/me", data).then(r => r.data),
 };
 
 export const productsApi = {
@@ -266,8 +205,6 @@ export interface Address {
   address_validation_status?: string;
   shipping_serviceability?: string;
   email?: string;
-  phone_otp?: string;
-  email_otp?: string;
   created_at: string;
 }
 
@@ -328,9 +265,5 @@ export const usersApi = {
   updateAddress: (id: string, data: Partial<Address>) => api.put<Address>(`/users/me/addresses/${id}`, data).then(r => r.data),
   lookupPincode: (pincode: string) => api.get<PincodeResult>(`/users/me/addresses/pincode-lookup?pincode=${pincode}`).then(r => r.data),
   checkServiceability: (pincode: string) => api.post<ShippingServiceabilityResult>("/users/me/addresses/check-serviceability", { pincode }).then(r => r.data),
-  sendAddressPhoneOtp: (phone: string) => api.post<{ message: string; phone: string }>("/users/me/addresses/send-otp", { phone }).then(r => r.data),
-  verifyAddressPhoneOtp: (phone: string, otp: string) => api.post<{ message: string; phone: string; verified: boolean }>("/users/me/addresses/verify-phone-otp", { phone, otp }).then(r => r.data),
-  sendAddressEmailOtp: (email: string) => api.post<{ message: string; email: string }>("/users/me/addresses/send-email-otp", { email }).then(r => r.data),
-  verifyAddressEmailOtp: (email: string, otp: string) => api.post<{ message: string; email: string; verified: boolean }>("/users/me/addresses/verify-email-otp", { email, otp }).then(r => r.data),
   deleteAddress: (id: string) => api.delete(`/users/me/addresses/${id}`).then(r => r.data),
 };

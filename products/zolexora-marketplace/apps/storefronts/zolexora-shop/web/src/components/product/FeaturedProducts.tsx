@@ -4,9 +4,10 @@ import { ArrowRight } from "lucide-react";
 import type { Product } from "@/lib/api";
 import { STOREFRONT_HEADER } from "@zolexora/marketplace-shared-api/storefront";
 import { STOREFRONT_KEY } from "@/lib/api";
+import { readRuntimeConfig } from "@/lib/runtime";
 
 async function getProducts(): Promise<Product[]> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+  const apiUrl = readRuntimeConfig().apiUrl;
   if (!apiUrl) return [];
 
   try {

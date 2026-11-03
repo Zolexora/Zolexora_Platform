@@ -1,53 +1,45 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 import { authApi, cartApi, type CartItem, type User } from "@/lib/api";
 
 // ── Auth Store ────────────────────────────────────────────────────────────────
+// The session is the Zolexora auth service's (ZolexoraAuthProvider); this store only holds the
+// marketplace profile for it (role, coins). Nothing is persisted here.
 interface AuthState {
   user: User | null;
   loading: boolean;
-  login: (user: User) => void;
-  logout: () => void;
   fetchMe: () => Promise<void>;
+  clear: () => void;
+  logout: () => Promise<void>;
+  setSignOut: (signOut: () => Promise<void>) => void;
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
-      user: null,
-      loading: false,
-      login: (user) => set({ user }),
-      logout: () => {
-        void authApi.logout().catch(() => {});
-        set({ user: null });
-        try {
-          useCartStore.getState().clear();
-        } catch {
-          // ignore
-        }
-      },
-      fetchMe: async () => {
-        // A logged-out browser has no CSRF cookie, so there cannot be a valid
-        // opaque session cookie either. Avoid an expected 401 request on every
-        // public page load (the API still protects /auth/me for direct calls).
-        if (typeof document !== "undefined" && !document.cookie.includes("z_csrf=")) {
-          set({ user: null, loading: false });
-          return;
-        }
-        set({ loading: true });
-        try {
-          const user = await authApi.me();
-          set({ user });
-        } catch {
-          set({ user: null });
-        } finally {
-          set({ loading: false });
-        }
-      },
-    }),
-    { name: "z_auth", partialize: (s) => ({ user: s.user }) }
-  )
-);
+let signOutSession: () => Promise<void> = async () => {};
+
+export const useAuthStore = create<AuthState>()((set) => ({
+  user: null,
+  loading: true,
+  fetchMe: async () => {
+    set({ loading: true });
+    try {
+      set({ user: await authApi.me() });
+    } catch {
+      set({ user: null });
+    } finally {
+      set({ loading: false });
+    }
+  },
+  clear: () => {
+    set({ user: null, loading: false });
+    useCartStore.getState().clear();
+  },
+  logout: async () => {
+    await signOutSession().catch(() => {});
+    useAuthStore.getState().clear();
+  },
+  setSignOut: (signOut) => {
+    signOutSession = signOut;
+  },
+}));
 
 // ── Cart Store ────────────────────────────────────────────────────────────────
 interface CartState {

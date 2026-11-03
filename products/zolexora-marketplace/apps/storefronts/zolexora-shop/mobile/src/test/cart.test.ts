@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { useCartStore, useAuthStore } from "../store";
-import * as SecureStore from "expo-secure-store";
+import { signOut } from "@zolexora/marketplace-mobile-sign-in";
 import { STOREFRONT_KEY, validateStorefrontKey } from "../config/storefront";
 import { STOREFRONT_HEADER } from "@zolexora/marketplace-shared-api/storefront";
 import { applyStorefrontHeader } from "../lib/api";
@@ -44,25 +44,18 @@ describe("Cart Store", () => {
 
 describe("Auth Store", () => {
   beforeEach(() => {
-    useAuthStore.setState({ token: null, user: null });
+    vi.clearAllMocks();
+    useAuthStore.setState({ user: { id: "1", name: "John Doe" } });
   });
 
-  it("should login and set token/user and call SecureStore", async () => {
-    const fakeToken = "test-token-123";
-    const fakeUser = { id: "1", name: "John Doe", role: "buyer" };
-
-    await useAuthStore.getState().login(fakeToken, fakeUser);
-
-    expect(useAuthStore.getState().token).toBe(fakeToken);
-    expect(useAuthStore.getState().user).toEqual(fakeUser);
-    expect(SecureStore.setItemAsync).toHaveBeenCalledWith("z_token", fakeToken);
-  });
-
-  it("should logout and clear token/user and call SecureStore", async () => {
-    await useAuthStore.getState().logout();
-
-    expect(useAuthStore.getState().token).toBeNull();
+  it("has no user without an auth-service session", async () => {
+    await useAuthStore.getState().fetchMe();
     expect(useAuthStore.getState().user).toBeNull();
-    expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith("z_token");
+  });
+
+  it("signs out at the auth service and clears the user", async () => {
+    await useAuthStore.getState().logout();
+    expect(signOut).toHaveBeenCalled();
+    expect(useAuthStore.getState().user).toBeNull();
   });
 });

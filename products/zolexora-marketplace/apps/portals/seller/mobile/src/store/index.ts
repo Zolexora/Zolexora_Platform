@@ -1,21 +1,18 @@
 import { create } from "zustand";
+import { signOut } from "@zolexora/marketplace-mobile-sign-in";
 
+/** Marketplace profile of the signed-in seller (GET /users/me); the session is the auth service's. */
 interface AuthState {
   user: any | null;
-  login: (user: any) => Promise<void>;
+  login: (user: any) => void;
   logout: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
-  login: async (user) => {
-    set({ user });
-  },
+  login: (user) => set({ user }),
   logout: async () => {
-    try {
-      const { authApi } = await import("../lib/api");
-      await authApi.logout();
-    } catch {}
+    await signOut();
     set({ user: null });
   },
 }));

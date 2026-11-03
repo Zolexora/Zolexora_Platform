@@ -1,6 +1,6 @@
 import {
   getApiClient,
-  auth,
+  profile,
   products,
   sellerOrg,
   sellerCatalog,
@@ -9,9 +9,10 @@ import {
   coins
 } from "@zolexora/marketplace-shared-api";
 
-export const api = getApiClient();
+/** Resolved per call: configureApi runs in app/_layout.tsx with values from Infisical. */
+const api = { post: (...args: Parameters<ReturnType<typeof getApiClient>["post"]>) => getApiClient().post(...args) };
 
-export const authApi = auth;
+export const authApi = profile;
 
 export const productsApi = {
   ...products,

@@ -1,21 +1,14 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 
+/** Marketplace profile of the signed-in seller (GET /users/me); the session is the auth service's. */
 interface AuthState {
   user: any | null;
   login: (user: any) => void;
   logout: () => void;
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
-      user: null,
-      login: (user) => set({ user }),
-      logout: () => {
-        set({ user: null });
-      },
-    }),
-    { name: "z_seller_auth" }
-  )
-);
+export const useAuthStore = create<AuthState>()((set) => ({
+  user: null,
+  login: (user) => set({ user }),
+  logout: () => set({ user: null }),
+}));

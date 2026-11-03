@@ -14,3 +14,10 @@ vi.mock("expo-secure-store", () => ({
     delete store[key];
   }),
 }));
+
+vi.mock("@zolexora/marketplace-mobile-sign-in", () => ({
+  mobileConfig: () => ({ apiUrl: "http://api.test", authServiceUrl: "http://auth.test", turnstileSiteKey: "test" }),
+  sessionToken: vi.fn(async () => null),
+  clearSessionToken: vi.fn(async () => {}),
+  signOut: vi.fn(async () => {}),
+}));

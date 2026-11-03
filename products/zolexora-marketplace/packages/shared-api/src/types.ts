@@ -1,18 +1,13 @@
 // ─── User ─────────────────────────────────────────────────────────────────────
 export type UserRole = "buyer" | "seller" | "admin";
 
+/** Marketplace profile of the signed-in user (GET /users/me). */
 export interface User {
   id: string; email: string; name: string; role: UserRole;
-  coin_balance: number; subscription_plan: string | null;
-  subscription_expires_at: string | null; is_active: boolean;
-  is_email_verified: boolean; auth_provider: string; picture: string | null;
-  created_at: string;
+  coin_balance: number; is_active: boolean; is_email_verified: boolean;
+  phone_number: string | null; is_phone_verified: boolean;
+  picture: string | null; created_at: string | null;
 }
-
-// ─── Auth ─────────────────────────────────────────────────────────────────────
-export interface AuthResponse { user: User; session_token?: string | null; }
-export interface RegisterRequest { email: string; password: string; name: string; }
-export interface LoginRequest { email: string; password: string; }
 
 // ─── Reel ─────────────────────────────────────────────────────────────────────
 export type ReelContentType = "organic" | "sponsored";

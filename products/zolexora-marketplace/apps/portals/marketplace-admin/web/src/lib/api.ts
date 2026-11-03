@@ -1,37 +1,21 @@
 import axios from "axios";
-function resolveApiBaseUrl() {
-  const configured = process.env.NEXT_PUBLIC_API_URL?.trim();
-  if (configured) return configured;
-  if (process.env.NODE_ENV !== "production") {
-    const host = typeof window !== "undefined" ? window.location.hostname : "localhost";
-    if (host.endsWith(".github.dev") || host.endsWith(".app.github.dev")) {
-      const apiHost = host.replace(/-300[0-9]/, "-4100");
-      return `https://${apiHost}/api`;
-    }
-    return `http://${host}:4100/api`;
-  }
-  throw new Error("NEXT_PUBLIC_API_URL is required for production builds.");
-}
+import { expireStoredSession, storedSessionToken } from "@zolexora/marketplace-sign-in";
+import { runtimeConfig } from "./runtime";
 
-const BASE = resolveApiBaseUrl();
-export const api = axios.create({ baseURL: BASE, timeout: 15000, withCredentials: true });
+export const api = axios.create({ timeout: 15000 });
 api.interceptors.request.use((c) => {
-  const csrf = typeof document === "undefined" ? undefined : document.cookie.match(/(?:^|; )z_csrf=([^;]*)/)?.[1];
-  if (csrf && !["GET", "HEAD", "OPTIONS"].includes(c.method?.toUpperCase() || "")) c.headers.set("X-CSRF-Token", decodeURIComponent(csrf));
+  c.baseURL = runtimeConfig().apiUrl;
+  const token = storedSessionToken();
+  if (token) c.headers.set("Authorization", `Bearer ${token}`);
   return c;
 });
 api.interceptors.response.use(
   (r) => r,
   (e) => {
+    if (e?.response?.status === 401) expireStoredSession();
     return Promise.reject(e);
   }
 );
-
-export const authApi = {
-  login: (email:string,password:string) => api.post("/auth/login",{email,password}).then(r=>r.data),
-  me:    () => api.get("/auth/me").then(r=>r.data),
-  logout: () => api.post("/auth/logout").then(r=>r.data),
-};
 
 export const adminApi = {
   stats:          () => api.get("/admin/stats").then(r=>r.data),
