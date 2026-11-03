@@ -5,7 +5,6 @@ from sqlalchemy import (
     Boolean,
     CheckConstraint,
     Column,
-    Computed,
     DateTime,
     ForeignKey,
     ForeignKeyConstraint,
@@ -27,7 +26,6 @@ from sqlalchemy import Enum as SAEnum
 from .naming import metadata
 
 MAX_SAFE_INTEGER = 9_007_199_254_740_991
-LISTING_STATUSES = "'draft','active','paused','rejected','archived'"
 ORDER_STATUSES = "'draft','placed','payment_pending','paid','processing','partially_fulfilled','fulfilled','completed','cancelled','partially_cancelled','returned','partially_returned'"
 PAYMENT_STATUSES = "'created','requires_action','processing','authorized','captured','failed','cancelled','partially_refunded','refunded'"
 FULFILLMENT_STATUSES = "'unfulfilled','allocated','processing','shipped','out_for_delivery','delivered','failed_delivery','returned_to_origin','cancelled'"
@@ -129,85 +127,11 @@ Index(
     unique=True, postgresql_where=(storefront_domain.c.is_active.is_(True) & (storefront_domain.c.domain_role == "primary")),
 )
 
-product = Table(
-    "product", metadata, id_column(),
-    Column("seller_id", Uuid, ForeignKey("users.id", ondelete="RESTRICT"), nullable=False),
-    Column("title", String(200), nullable=False), Column("description", Text, nullable=False),
-    Column("category", String(100), nullable=False), Column("brand", String(100)),
-    Column("is_active", Boolean, nullable=False, server_default=text("true")),
-    created_column(), updated_column(),
-    UniqueConstraint("id", "seller_id", name="uq_product_id_seller"),
-)
-Index("ix_product_seller_id_id", product.c.seller_id, product.c.id)
-
-listing = Table(
-    "listing", metadata, id_column(),
-    Column("storefront_id", Uuid, ForeignKey("storefront.id", ondelete="RESTRICT"), nullable=False),
-    Column("product_id", Uuid, nullable=False), Column("seller_id", Uuid, nullable=False),
-    Column("price_minor", BigInteger, nullable=False), Column("compare_at_minor", BigInteger),
-    Column("currency", String(3), nullable=False), Column("status", String(24), nullable=False, server_default="draft"),
-    Column("title_override", String(200)), Column("description_override", Text),
-    Column("moderated_by", Uuid, ForeignKey("users.id", ondelete="RESTRICT")),
-    Column("moderated_at", DateTime(timezone=True)), Column("moderation_reason", String(500)),
-    created_column(), updated_column(),
-    ForeignKeyConstraint(["product_id", "seller_id"], ["product.id", "product.seller_id"], ondelete="RESTRICT", name="fk_listing_product_owner"),
-    UniqueConstraint("id", "storefront_id", name="uq_listing_id_storefront"),
-    UniqueConstraint("id", "storefront_id", "seller_id", name="uq_listing_id_storefront_seller"),
-    UniqueConstraint("storefront_id", "seller_id", "product_id", name="uq_listing_storefront_seller_product"),
-    CheckConstraint(f"status IN ({LISTING_STATUSES})", name="listing_status_values"),
-    CheckConstraint(f"price_minor BETWEEN 0 AND {MAX_SAFE_INTEGER}", name="listing_price_bounds"),
-    CheckConstraint(f"compare_at_minor IS NULL OR compare_at_minor BETWEEN price_minor AND {MAX_SAFE_INTEGER}", name="listing_compare_at_bounds"),
-    CheckConstraint("currency = upper(currency) AND length(currency) = 3", name="listing_currency_shape"),
-)
-Index("ix_listing_storefront_seller_id", listing.c.storefront_id, listing.c.seller_id, listing.c.id)
-Index("ix_listing_storefront_product", listing.c.storefront_id, listing.c.product_id)
-
-inventory_balance = Table(
-    "inventory_balance", metadata, id_column(),
-    Column("product_id", Uuid, nullable=False), Column("seller_id", Uuid, nullable=False),
-    Column("on_hand_quantity", BigInteger, nullable=False, server_default="0"),
-    Column("reserved_quantity", BigInteger, nullable=False, server_default="0"),
-    Column("available_quantity", BigInteger, Computed("on_hand_quantity - reserved_quantity", persisted=True)),
-    created_column(), updated_column(),
-    ForeignKeyConstraint(["product_id", "seller_id"], ["product.id", "product.seller_id"], ondelete="RESTRICT", name="fk_inventory_product_owner"),
-    UniqueConstraint("product_id", "seller_id", name="uq_inventory_product_seller"),
-    CheckConstraint(f"on_hand_quantity BETWEEN 0 AND {MAX_SAFE_INTEGER}", name="inventory_on_hand_bounds"),
-    CheckConstraint(f"reserved_quantity BETWEEN 0 AND {MAX_SAFE_INTEGER}", name="inventory_reserved_bounds"),
-    CheckConstraint("reserved_quantity <= on_hand_quantity", name="inventory_reservation_available"),
-)
-Index("ix_inventory_seller_product", inventory_balance.c.seller_id, inventory_balance.c.product_id)
-
-cart = Table(
-    "cart", metadata, id_column(),
-    Column("storefront_id", Uuid, ForeignKey("storefront.id", ondelete="RESTRICT"), nullable=False),
-    Column("buyer_id", Uuid, ForeignKey("users.id", ondelete="RESTRICT")), Column("anonymous_key", String(128)),
-    Column("currency", String(3), nullable=False), Column("status", String(16), nullable=False, server_default="active"),
-    Column("version", Integer, nullable=False, server_default="1"), Column("expires_at", DateTime(timezone=True)),
-    created_column(), updated_column(),
-    UniqueConstraint("id", "storefront_id", name="uq_cart_id_storefront"),
-    CheckConstraint("(buyer_id IS NULL) <> (anonymous_key IS NULL)", name="cart_single_owner"),
-    CheckConstraint("status IN ('active','converted','abandoned','expired')", name="cart_status_values"),
-    CheckConstraint("currency = upper(currency) AND length(currency) = 3", name="cart_currency_shape"),
-)
-Index("uq_cart_active_buyer", cart.c.storefront_id, cart.c.buyer_id, unique=True, postgresql_where=(cart.c.status == "active") & cart.c.buyer_id.is_not(None))
-Index("uq_cart_active_anonymous", cart.c.storefront_id, cart.c.anonymous_key, unique=True, postgresql_where=(cart.c.status == "active") & cart.c.anonymous_key.is_not(None))
-
-cart_item = Table(
-    "cart_item", metadata, id_column(),
-    Column("cart_id", Uuid, nullable=False), Column("storefront_id", Uuid, nullable=False),
-    Column("listing_id", Uuid, nullable=False), Column("quantity", BigInteger, nullable=False),
-    created_column(), updated_column(),
-    ForeignKeyConstraint(["cart_id", "storefront_id"], ["cart.id", "cart.storefront_id"], ondelete="CASCADE", name="fk_cart_item_cart_storefront"),
-    ForeignKeyConstraint(["listing_id", "storefront_id"], ["listing.id", "listing.storefront_id"], ondelete="RESTRICT", name="fk_cart_item_listing_storefront"),
-    UniqueConstraint("cart_id", "listing_id", name="uq_cart_item_listing"),
-    CheckConstraint(f"quantity BETWEEN 1 AND {MAX_SAFE_INTEGER}", name="cart_item_quantity_bounds"),
-)
-
 marketplace_order = Table(
     "marketplace_order", metadata, id_column(),
     Column("storefront_id", Uuid, ForeignKey("storefront.id", ondelete="RESTRICT"), nullable=False),
     Column("buyer_id", Uuid, ForeignKey("users.id", ondelete="RESTRICT"), nullable=False),
-    Column("seller_id", Uuid, ForeignKey("users.id", ondelete="RESTRICT"), nullable=False),
+    Column("organization_id", Uuid, ForeignKey("seller_organization.id", ondelete="RESTRICT"), nullable=False),
     Column("public_order_number", String(64), nullable=False), Column("currency", String(3), nullable=False),
     Column("subtotal_minor", BigInteger, nullable=False), Column("discount_minor", BigInteger, nullable=False, server_default="0"),
     Column("tax_minor", BigInteger, nullable=False, server_default="0"), Column("shipping_minor", BigInteger, nullable=False, server_default="0"),
@@ -225,20 +149,23 @@ marketplace_order = Table(
     CheckConstraint("currency = upper(currency) AND length(currency) = 3", name="order_currency_shape"),
 )
 Index("ix_order_storefront_buyer_created", marketplace_order.c.storefront_id, marketplace_order.c.buyer_id, marketplace_order.c.created_at)
-Index("ix_order_storefront_seller_created", marketplace_order.c.storefront_id, marketplace_order.c.seller_id, marketplace_order.c.created_at)
+Index("ix_order_storefront_org_created", marketplace_order.c.storefront_id, marketplace_order.c.organization_id, marketplace_order.c.created_at)
 
 order_item = Table(
     "order_item", metadata, id_column(),
     Column("order_id", Uuid, nullable=False), Column("storefront_id", Uuid, nullable=False),
-    Column("listing_id", Uuid, nullable=False), Column("product_id", Uuid, nullable=False),
-    Column("seller_id", Uuid, nullable=False), Column("title", String(300), nullable=False),
+    Column("storefront_listing_id", Uuid, nullable=False),
+    Column("product_id", Uuid, ForeignKey("master_product.id", ondelete="RESTRICT"), nullable=False),
+    Column("variant_id", Uuid, ForeignKey("product_variant.id", ondelete="RESTRICT"), nullable=False),
+    Column("organization_id", Uuid, nullable=False), Column("title", String(300), nullable=False),
     Column("unit_price_minor", BigInteger, nullable=False), Column("quantity", BigInteger, nullable=False),
     Column("line_total_minor", BigInteger, nullable=False), Column("snapshot", JSON, nullable=False), created_column(),
     ForeignKeyConstraint(["order_id", "storefront_id"], ["marketplace_order.id", "marketplace_order.storefront_id"], ondelete="RESTRICT", name="fk_order_item_order_storefront"),
-    ForeignKeyConstraint(["listing_id", "storefront_id", "seller_id"], ["listing.id", "listing.storefront_id", "listing.seller_id"], ondelete="RESTRICT", name="fk_order_item_listing_scope"),
+    ForeignKeyConstraint(["storefront_listing_id", "storefront_id", "organization_id"], ["storefront_listing.id", "storefront_listing.storefront_id", "storefront_listing.organization_id"], ondelete="RESTRICT", name="fk_order_item_listing_scope"),
     CheckConstraint(f"unit_price_minor BETWEEN 0 AND {MAX_SAFE_INTEGER} AND line_total_minor BETWEEN 0 AND {MAX_SAFE_INTEGER}", name="order_item_money_bounds"),
     CheckConstraint(f"quantity BETWEEN 1 AND {MAX_SAFE_INTEGER}", name="order_item_quantity_bounds"),
 )
+Index("ix_order_item_org_order", order_item.c.organization_id, order_item.c.order_id)
 
 payment_record = Table(
     "payment_record", metadata, id_column(),
@@ -271,13 +198,13 @@ refund_record = Table(
 shipment = Table(
     "shipment", metadata, id_column(),
     Column("order_id", Uuid, nullable=False), Column("storefront_id", Uuid, nullable=False),
-    Column("seller_id", Uuid, ForeignKey("users.id", ondelete="RESTRICT"), nullable=False),
+    Column("organization_id", Uuid, ForeignKey("seller_organization.id", ondelete="RESTRICT"), nullable=False),
     Column("status", String(32), nullable=False, server_default="unfulfilled"),
     Column("external_reference", String(256)), Column("service_code", String(128)), created_column(), updated_column(),
     ForeignKeyConstraint(["order_id", "storefront_id"], ["marketplace_order.id", "marketplace_order.storefront_id"], ondelete="RESTRICT", name="fk_shipment_order_storefront"),
     CheckConstraint(f"status IN ({FULFILLMENT_STATUSES})", name="shipment_status_values"),
 )
-Index("ix_shipment_storefront_seller_order", shipment.c.storefront_id, shipment.c.seller_id, shipment.c.order_id)
+Index("ix_shipment_storefront_org_order", shipment.c.storefront_id, shipment.c.organization_id, shipment.c.order_id)
 
 idempotency_record = Table(
     "idempotency_record", metadata, id_column(),
@@ -480,6 +407,7 @@ storefront_listing = Table(
     Column("listing_content", JSON),
     created_column(), updated_column(),
     UniqueConstraint("storefront_id", "product_id", name="uq_storefront_listing_storefront_product"),
+    UniqueConstraint("id", "storefront_id", "organization_id", name="uq_storefront_listing_scope"),
     CheckConstraint("publication_state IN ('DRAFT','PUBLISHED','HIDDEN','SUSPENDED')", name="ck_storefront_listing_publication_state_values"),
 )
 Index("ix_storefront_listing_org_store", storefront_listing.c.organization_id, storefront_listing.c.storefront_id, storefront_listing.c.publication_state)

@@ -33,43 +33,27 @@ from routers.portal_catalog import (
     update_seller_listing,
 )
 from storefronts.models import StorefrontContext, StorefrontContextSource, StorefrontDefinition, StorefrontKey
+from tests.pg import ensure_database
 
 
 NOW = datetime(2026, 8, 1, 12, 0, tzinfo=timezone.utc)
-SELLER = {"id": str(uuid.uuid4()), "name": "Seller One", "role": "seller"}
-OTHER_SELLER = {"id": str(uuid.uuid4()), "name": "Seller Two", "role": "seller"}
+SELLER = {"id": str(uuid.uuid4()), "name": "Seller One"}
+OTHER_SELLER = {"id": str(uuid.uuid4()), "name": "Seller Two"}
 ADMIN = {"id": str(uuid.uuid4()), "name": "Admin One", "is_admin": True}
 
 SF_SHOP_ID = "60000000-0000-4000-4100-000000000001"
 SF_MAHILA_ID = "60000000-0000-4000-4100-000000000002"
 ORG_SELLER_ID = str(uuid.uuid4())
 ORG_OTHER_SELLER_ID = str(uuid.uuid4())
+# Route handlers get the user after seller_member resolved their organisation.
+SELLER["seller_org_id"] = ORG_SELLER_ID
+OTHER_SELLER["seller_org_id"] = ORG_OTHER_SELLER_ID
 
 
-TEST_URL = "postgresql://marketplace_local:marketplace-local-only@127.0.0.1:5432/marketplace_local"
 
 @pytest.fixture
 async def pg_conn():
-    import os
-    import subprocess
-    try:
-        conn = await asyncpg.connect(TEST_URL)
-        rev = await conn.fetchval("SELECT version_num FROM alembic_version")
-        if rev != "0010_erp_outbox_inbox":
-            raise ValueError("Database not at head revision")
-    except Exception:
-        subprocess.run(
-            ["docker", "compose", "-f", "infrastructure/docker/postgres-test.compose.yml", "up", "-d", "--wait"],
-            cwd="../..",
-            check=True,
-        )
-        subprocess.run(
-            ["alembic", "upgrade", "head"],
-            cwd=".",
-            env={**os.environ, "DATABASE_URL": "postgresql+asyncpg://marketplace_local:marketplace-local-only@127.0.0.1:5432/marketplace_local"},
-            check=True,
-        )
-        conn = await asyncpg.connect(TEST_URL)
+    conn = await asyncpg.connect(ensure_database())
 
     transaction = conn.transaction()
     await transaction.start()
@@ -112,6 +96,12 @@ async def setup_base_data(conn: asyncpg.Connection):
 
     await conn.execute("INSERT INTO seller_organization (id, name, slug, status) VALUES ($1, $2, $3, 'ACTIVE') ON CONFLICT DO NOTHING", uuid.UUID(ORG_OTHER_SELLER_ID), OTHER_SELLER["name"], "seller-two-slug")
     await conn.execute("INSERT INTO seller_org_member (id, organization_id, user_id, role, status) VALUES ($1, $2, $3, 'OWNER', 'ACTIVE') ON CONFLICT DO NOTHING", uuid.uuid4(), uuid.UUID(ORG_OTHER_SELLER_ID), uuid.UUID(OTHER_SELLER["id"]))
+    # Both organisations may publish on the shop (an admin-approved grant).
+    for org in (ORG_SELLER_ID, ORG_OTHER_SELLER_ID):
+        await conn.execute(
+            "INSERT INTO seller_storefront_grant (id, organization_id, storefront_id, grant_status) VALUES ($1, $2, $3, 'APPROVED') ON CONFLICT DO NOTHING",
+            uuid.uuid4(), uuid.UUID(org), uuid.UUID(SF_SHOP_ID),
+        )
 
 async def seed_product(conn: asyncpg.Connection, product_id: str, seller_user: dict, active: bool = True):
     org_id = ORG_SELLER_ID if seller_user["id"] == SELLER["id"] else ORG_OTHER_SELLER_ID
@@ -119,13 +109,13 @@ async def seed_product(conn: asyncpg.Connection, product_id: str, seller_user: d
         "INSERT INTO master_product (id, organization_id, slug, name, description, lifecycle_status) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING",
         uuid.UUID(product_id), uuid.UUID(org_id), f"prod-{product_id}", f"Product {product_id}", "Canonical product description", "ACTIVE" if active else "DRAFT"
     )
-    await conn.execute(
-        "INSERT INTO product (id, seller_id, title, description, category, is_active) VALUES ($1, $2, $3, $4, 'test-cat', true) ON CONFLICT DO NOTHING",
-        uuid.UUID(product_id), uuid.UUID(org_id), f"Product {product_id}", "Canonical product description"
+    variant_id = await conn.fetchval(
+        "INSERT INTO product_variant (id, product_id, sku) VALUES ($1, $2, 'SKU-1') ON CONFLICT (product_id, sku) DO UPDATE SET sku = EXCLUDED.sku RETURNING id",
+        uuid.uuid4(), uuid.UUID(product_id),
     )
     await conn.execute(
-        "INSERT INTO inventory_balance (id, product_id, seller_id, on_hand_quantity, reserved_quantity, updated_at) VALUES ($1, $2, $3, 10, 2, $4) ON CONFLICT DO NOTHING",
-        uuid.uuid4(), uuid.UUID(product_id), uuid.UUID(org_id), NOW
+        "INSERT INTO inventory_ledger (id, variant_id, organization_id, on_hand_quantity, reserved_quantity, updated_at) VALUES ($1, $2, $3, 10, 2, $4) ON CONFLICT DO NOTHING",
+        uuid.uuid4(), variant_id, uuid.UUID(org_id), NOW
     )
 
 async def seed_listing(
@@ -386,7 +376,7 @@ async def test_seller_and_admin_http_authentication_boundaries(pg_conn):
             )
             assert non_seller.status_code == 200
 
-            app.dependency_overrides[current_user] = lambda: {"id": str(uuid.uuid4()), "role": "viewer"}
+            app.dependency_overrides[current_user] = lambda: {"id": str(uuid.uuid4())}
             forbidden_seller = await client.get(
                 "/api/seller/catalog/listings", headers={"X-Storefront-Key": "zolexora-shop"}
             )

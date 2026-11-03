@@ -40,6 +40,23 @@ async def get_seller_org(user, db: Connection) -> UUID:
     """The organisation seller_member resolved for this request."""
     return UUID(user["seller_org_id"])
 
+_STOCK = """
+    SELECT count(v.id) AS variants, (array_agg(v.id))[1] AS variant_id,
+           COALESCE(SUM(l.on_hand_quantity), 0)::bigint AS on_hand_quantity,
+           COALESCE(SUM(l.reserved_quantity), 0)::bigint AS reserved_quantity,
+           MAX(l.updated_at) AS updated_at
+    FROM product_variant v
+    LEFT JOIN inventory_ledger l ON l.variant_id = v.id AND l.organization_id = $2 AND l.status = 'ACTIVE'
+    WHERE v.product_id = $1 AND v.is_active
+"""
+
+
+async def _stock(db: Connection, product_id, org_id):
+    """A product's stock for its organisation: the sum over its active variants (inventory_ledger)."""
+    row = await db.fetchrow(_STOCK, product_id, org_id)
+    return row if row and row["variants"] else None
+
+
 def map_status_to_db(status: str) -> str:
     if status == ListingStatus.ACTIVE: return "PUBLISHED"
     if status == ListingStatus.PAUSED: return "HIDDEN"
@@ -60,12 +77,7 @@ async def _listing_response(
     """
     master = await db.fetchrow(master_query, listing["product_id"], listing["organization_id"])
     
-    inventory_query = """
-        SELECT available_quantity, reserved_quantity, on_hand_quantity
-        FROM inventory_balance
-        WHERE product_id = $1 AND seller_id = $2
-    """
-    inventory = await db.fetchrow(inventory_query, listing["product_id"], listing["organization_id"])
+    inventory = await _stock(db, listing["product_id"], listing["organization_id"])
     
     if not master or not inventory:
         raise HTTPException(404, "Listing not found")
@@ -104,10 +116,7 @@ async def _inventory_response(
     *,
     admin: bool = False,
 ) -> SellerInventoryResponse | AdminInventoryResponse:
-    inventory = await db.fetchrow(
-        "SELECT on_hand_quantity, reserved_quantity, updated_at FROM inventory_balance WHERE product_id = $1 AND seller_id = $2",
-        listing["product_id"], listing["organization_id"]
-    )
+    inventory = await _stock(db, listing["product_id"], listing["organization_id"])
     if not inventory:
         raise HTTPException(404, "Inventory not found")
 
@@ -123,7 +132,7 @@ async def _inventory_response(
         "on_hand_quantity": on_hand,
         "reserved_quantity": reserved,
         "available_quantity": max(on_hand - reserved, 0),
-        "updated_at": inventory["updated_at"],
+        "updated_at": inventory["updated_at"] or listing.get("updated_at") or listing["created_at"],
     }
     model = AdminInventoryResponse if admin else SellerInventoryResponse
     return model.model_validate(response)
@@ -181,7 +190,7 @@ async def create_seller_listing(
     _validate_currency(context, data.price, data.compare_at_price)
     
     master = await db.fetchrow("SELECT id FROM master_product WHERE id = $1 AND organization_id = $2 AND lifecycle_status = 'ACTIVE'", UUID(str(data.product_id)), org_id)
-    inventory = await db.fetchrow("SELECT product_id FROM inventory_balance WHERE product_id = $1 AND seller_id = $2", UUID(str(data.product_id)), org_id)
+    inventory = await _stock(db, UUID(str(data.product_id)), org_id)
     
     if not master or not inventory:
         raise HTTPException(404, "Eligible product not found")
@@ -321,24 +330,26 @@ async def update_seller_inventory(
     if not listing:
         raise HTTPException(404, "Listing not found")
         
-    await db.execute(
-        "UPDATE inventory_balance SET on_hand_quantity = $1, updated_at = $2 WHERE product_id = $3 AND seller_id = $4",
-        data.quantity + (await db.fetchval("SELECT reserved_quantity FROM inventory_balance WHERE product_id=$1 AND seller_id=$2", listing["product_id"], org_id) or 0), 
-        datetime.now(timezone.utc), listing["product_id"], org_id
-    ) # Wait, API expects on_hand_quantity to be updated. But the input data.quantity is available_quantity?
-    # data.quantity in SellerInventoryUpdate is quantity.
-    # The original mongo code was: {"$set": {"available_quantity": data.quantity, "updated_at": datetime.now(timezone.utc)}}
-    # Since in Postgres available_quantity is computed as on_hand_quantity - reserved_quantity,
-    # To set available_quantity = X, we must set on_hand_quantity = X + reserved_quantity.
-    # Actually wait. Let me do this carefully.
-    reserved = await db.fetchval("SELECT reserved_quantity FROM inventory_balance WHERE product_id=$1 AND seller_id=$2", listing["product_id"], org_id)
-    if reserved is None:
+    stock = await _stock(db, listing["product_id"], org_id)
+    if not stock:
         raise HTTPException(404, "Inventory not found")
-    
-    await db.execute(
-        "UPDATE inventory_balance SET on_hand_quantity = $1, updated_at = $2 WHERE product_id = $3 AND seller_id = $4",
-        data.quantity + reserved, datetime.now(timezone.utc), listing["product_id"], org_id
-    )
+    if stock["variants"] > 1:
+        raise HTTPException(409, "This product has several variants; set stock per variant")
+    # quantity is what can be sold: on hand = quantity + what is already reserved.
+    async with db.transaction():
+        row = await db.fetchrow(
+            """INSERT INTO inventory_ledger (id, variant_id, organization_id, on_hand_quantity, reserved_quantity)
+               VALUES ($1, $2, $3, $4, 0)
+               ON CONFLICT (variant_id, organization_id) DO UPDATE
+               SET on_hand_quantity = $4 + inventory_ledger.reserved_quantity, updated_at = now()
+               RETURNING on_hand_quantity""",
+            uuid4(), stock["variant_id"], org_id, data.quantity,
+        )
+        await db.execute(
+            """INSERT INTO inventory_audit_log (id, variant_id, organization_id, change_quantity, reason, reference_id)
+               VALUES ($1, $2, $3, $4, 'seller_set_available', $5)""",
+            uuid4(), stock["variant_id"], org_id, row["on_hand_quantity"] - stock["on_hand_quantity"], str(listing["id"]),
+        )
     return await _inventory_response(db, dict(listing))
 
 

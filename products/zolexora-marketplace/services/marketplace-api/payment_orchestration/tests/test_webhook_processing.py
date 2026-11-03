@@ -5,9 +5,7 @@ import asyncio
 from payment_orchestration.service import PaymentOrchestrationService
 from payment_orchestration.ports import PaymentProviderAdapter
 
-import os
-
-TEST_URL = os.environ.get("DATABASE_URL", "postgresql://marketplace_local:marketplace-local-only@postgres:5432/marketplace_local")
+from tests.pg import ensure_database
 
 @pytest.fixture(scope="session")
 def event_loop():
@@ -17,7 +15,7 @@ def event_loop():
 
 @pytest.fixture
 async def db_connection():
-    connection = await asyncpg.connect(TEST_URL)
+    connection = await asyncpg.connect(ensure_database())
     transaction = connection.transaction()
     await transaction.start()
     try:
@@ -64,12 +62,12 @@ async def test_process_webhook_capture_lifecycle(db_connection: asyncpg.Connecti
     storefront_id = uuid.uuid4()
     
     await db_connection.execute("INSERT INTO users (id, email) VALUES ($1, $2)", buyer_id, "buyer@t.com")
-    await db_connection.execute("INSERT INTO users (id, email) VALUES ($1, $2)", seller_id, "seller@t.com")
+    await db_connection.execute("INSERT INTO seller_organization (id, name, slug, status) VALUES ($1, 'Seller', $2, 'ACTIVE')", seller_id, f"org-{seller_id.hex}")
     await db_connection.execute("INSERT INTO storefront (id, storefront_key, display_name, currency, locale) VALUES ($1, $2, $3, $4, $5)", storefront_id, "s1", "s1", "USD", "en-US")
     
     order_id = uuid.uuid4()
     await db_connection.execute("""
-        INSERT INTO marketplace_order (id, storefront_id, buyer_id, seller_id, public_order_number, currency, subtotal_minor, total_minor, status, payment_status, fulfillment_status, address_snapshot)
+        INSERT INTO marketplace_order (id, storefront_id, buyer_id, organization_id, public_order_number, currency, subtotal_minor, total_minor, status, payment_status, fulfillment_status, address_snapshot)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
     """, order_id, storefront_id, buyer_id, seller_id, "O1", "USD", 1000, 1000, "placed", "pending", "unfulfilled", "{}")
     

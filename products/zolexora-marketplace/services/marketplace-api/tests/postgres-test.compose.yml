@@ -1,0 +1,17 @@
+# Throwaway PostgreSQL for the marketplace API tests (test-only credentials, no secrets).
+# Host port per docs/ports.md; never 5432.
+name: zolexora-marketplace-test
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: marketplace_local
+      POSTGRES_PASSWORD: marketplace-local-only
+      POSTGRES_DB: marketplace_local
+    ports: ["127.0.0.1:${MARKETPLACE_TEST_POSTGRES_PORT:-5434}:5432"]
+    tmpfs: [/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U marketplace_local -d marketplace_local"]
+      interval: 2s
+      timeout: 3s
+      retries: 30

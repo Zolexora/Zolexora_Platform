@@ -1,4 +1,3 @@
-import os
 import uuid
 import asyncpg
 import pytest
@@ -8,12 +7,11 @@ from main import app as marketplace_app
 from shared.database.postgres import pg_conn_dep
 from core.deps import current_user
 
-# Use DATABASE_URL environment variable set by CI workflow, fallback for local development
-TEST_URL = os.environ.get("DATABASE_URL", "postgresql://marketplace_local:marketplace-local-only@localhost:5432/marketplace_local")
+from tests.pg import ensure_database
 
 @pytest.fixture
 async def pg_conn():
-    conn = await asyncpg.connect(TEST_URL)
+    conn = await asyncpg.connect(ensure_database())
     transaction = conn.transaction()
     await transaction.start()
     try:

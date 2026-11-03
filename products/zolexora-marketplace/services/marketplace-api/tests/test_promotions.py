@@ -8,14 +8,11 @@ import pytest
 from promotions.service import PromotionService
 from promotions.repository import PromotionRepository
 
-TEST_URL = "postgresql://marketplace_local:marketplace-local-only@127.0.0.1:5432/marketplace_local"
+from tests.pg import ensure_database
 
 @pytest.fixture
 async def pg_conn():
-    conn = await asyncpg.connect(TEST_URL)
-    rev = await conn.fetchval("SELECT version_num FROM alembic_version")
-    if rev != "0010_erp_outbox_inbox":
-        raise ValueError("Database not at head revision")
+    conn = await asyncpg.connect(ensure_database())
     
     transaction = conn.transaction()
     await transaction.start()
@@ -27,7 +24,7 @@ async def pg_conn():
 
 @pytest.fixture
 async def pg_pool():
-    pool = await asyncpg.create_pool(TEST_URL, min_size=5, max_size=10)
+    pool = await asyncpg.create_pool(ensure_database(), min_size=5, max_size=10)
     try:
         yield pool
     finally:
@@ -67,7 +64,7 @@ async def test_promotion_eligibility_and_cross_store_rejection(pg_conn):
     
     user_id = uuid.uuid4()
     await pg_conn.execute(
-        "INSERT INTO users (id, email, password_hash) VALUES ($1, $2, 'hash')",
+        "INSERT INTO users (id, email) VALUES ($1, $2)",
         user_id, str(uuid.uuid4())
     )
     
@@ -115,7 +112,7 @@ async def test_promotion_concurrency_and_budget_exhaustion(pg_pool):
         for i in range(5):
             uid = uuid.uuid4()
             await conn.execute(
-                "INSERT INTO users (id, email, password_hash) VALUES ($1, $2, 'hash')",
+                "INSERT INTO users (id, email) VALUES ($1, $2)",
                 uid, f'user{i}-{uuid.uuid4()}@test.com'
             )
             user_ids.append(uid)

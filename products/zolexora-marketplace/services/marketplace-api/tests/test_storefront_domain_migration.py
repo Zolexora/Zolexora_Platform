@@ -1,6 +1,5 @@
 import asyncio
 import os
-import subprocess
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
@@ -8,12 +7,12 @@ from pathlib import Path
 import asyncpg
 import pytest
 from alembic import command
+from database.engine import schema_head
 from alembic.config import Config
+from tests.pg import TEST_URL, reset_marker, start_database
 
 ROOT = Path(__file__).parents[3]
 API = ROOT / "services/marketplace-api"
-COMPOSE = ROOT / "infrastructure/docker/postgres-test.compose.yml"
-TEST_URL = "postgresql://marketplace_local:marketplace-local-only@127.0.0.1:5432/marketplace_local"
 
 
 @dataclass(frozen=True)
@@ -85,9 +84,10 @@ async def _schema_fingerprint() -> tuple:
 
 @pytest.fixture(scope="module")
 def migration_step_database() -> StepMigrationEvidence:
-    subprocess.run(["docker", "compose", "-f", str(COMPOSE), "up", "-d", "--wait"], check=True, cwd=ROOT)
+    start_database()
     os.environ["DATABASE_URL"] = TEST_URL
     asyncio.run(_reset_database())
+    reset_marker()
     config = Config(str(API / "alembic.ini"))
 
     # Step 1: Upgrade to 0001
@@ -149,7 +149,7 @@ def test_empty_database_direct_upgrade_to_head():
         config = Config(str(API / "alembic.ini"))
         command.upgrade(config, "head")
         fingerprint = asyncio.run(_schema_fingerprint())
-        assert fingerprint[3] == "0010_erp_outbox_inbox"
+        assert fingerprint[3] == schema_head()
 
     finally:
         asyncio.run(_reset_database())
@@ -194,23 +194,24 @@ async def test_storefront_domain_storefront_id_immutability_trigger(db_connectio
 
 @pytest.mark.asyncio
 async def test_order_storefront_id_immutability_trigger(db_connection):
-    seller_id = uuid.uuid4()
+    org_id = uuid.uuid4()
     buyer_id = uuid.uuid4()
     order_id = uuid.uuid4()
     storefront_id = uuid.UUID("60000000-0000-4000-4100-000000000001")
     other_storefront_id = uuid.UUID("60000000-0000-4000-4100-000000000002")
 
     await _insert_user(db_connection, buyer_id, "buyer-test@example.com", "Buyer Test")
-    await _insert_user(db_connection, seller_id, "seller-test@example.com", "Seller Test")
-
+    await db_connection.execute(
+        "INSERT INTO seller_organization (id, name, slug, status) VALUES ($1, 'Seller Test', $2, 'ACTIVE')", org_id, f"org-{org_id.hex}",
+    )
     await db_connection.execute(
         """
         INSERT INTO marketplace_order (
-            id, storefront_id, buyer_id, seller_id, public_order_number,
+            id, storefront_id, buyer_id, organization_id, public_order_number,
             currency, subtotal_minor, total_minor, status, address_snapshot
         ) VALUES ($1, $2, $3, $4, 'ORD-TEST-001', 'INR', 1000, 1000, 'placed', '{}')
         """,
-        order_id, storefront_id, buyer_id, seller_id,
+        order_id, storefront_id, buyer_id, org_id,
     )
 
     with pytest.raises(asyncpg.CheckViolationError):
@@ -230,14 +231,14 @@ async def test_cart_storefront_id_immutability_trigger(db_connection):
 
     await _insert_user(db_connection, buyer_id, "buyer-cart-test@example.com", "Buyer Cart Test")
     await db_connection.execute(
-        "INSERT INTO cart (id, storefront_id, buyer_id, currency) VALUES ($1, $2, $3, 'INR')",
+        "INSERT INTO shopping_cart (id, storefront_id, buyer_id, currency) VALUES ($1, $2, $3, 'INR')",
         cart_id, storefront_id, buyer_id,
     )
 
     with pytest.raises(asyncpg.CheckViolationError):
         async with db_connection.transaction():
             await db_connection.execute(
-                "UPDATE cart SET storefront_id = $1 WHERE id = $2",
+                "UPDATE shopping_cart SET storefront_id = $1 WHERE id = $2",
                 other_storefront_id, cart_id,
             )
 

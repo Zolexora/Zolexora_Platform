@@ -10,31 +10,12 @@ from core.deps import current_user, admin_only
 from shared.database.postgres import pg_conn_dep
 
 
-TEST_URL = "postgresql://marketplace_local:marketplace-local-only@127.0.0.1:5432/marketplace_local"
+from tests.pg import ensure_database
 
 
 @pytest.fixture
 async def pg_conn():
-    import os
-    import subprocess
-    try:
-        conn = await asyncpg.connect(TEST_URL)
-        rev = await conn.fetchval("SELECT version_num FROM alembic_version")
-        if rev != "0010_erp_outbox_inbox":
-            raise ValueError("Database not at head revision")
-    except Exception:
-        subprocess.run(
-            ["docker", "compose", "-f", "infrastructure/docker/postgres-test.compose.yml", "up", "-d", "--wait"],
-            cwd="../..",
-            check=True,
-        )
-        subprocess.run(
-            ["alembic", "upgrade", "head"],
-            cwd=".",
-            env={**os.environ, "DATABASE_URL": "postgresql+asyncpg://marketplace_local:marketplace-local-only@127.0.0.1:5432/marketplace_local"},
-            check=True,
-        )
-        conn = await asyncpg.connect(TEST_URL)
+    conn = await asyncpg.connect(ensure_database())
 
     transaction = conn.transaction()
     await transaction.start()

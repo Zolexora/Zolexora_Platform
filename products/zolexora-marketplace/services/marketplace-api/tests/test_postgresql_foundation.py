@@ -1,6 +1,5 @@
 import asyncio
 import os
-import subprocess
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
@@ -13,18 +12,15 @@ from httpx import ASGITransport, AsyncClient
 
 from database.config import DatabaseConfig
 from database.engine import check_readiness, schema_head
-from database.repositories.catalog import PostgresCatalogRepository
 from database.repositories.storefronts import PostgresStorefrontRepository, bootstrap_storefronts
 from main import app as marketplace_app
 from storefronts.models import StorefrontKey
+from tests.pg import TEST_URL, reset_marker, start_database
 
 ROOT = Path(__file__).parents[3]
 API = ROOT / "services/marketplace-api"
-COMPOSE = ROOT / "infrastructure/docker/postgres-test.compose.yml"
-TEST_URL = "postgresql://marketplace_local:marketplace-local-only@127.0.0.1:5432/marketplace_local"
 REQUIRED_TABLES = {
-    "users", "buyer_address", "storefront", "storefront_domain", "product", "listing",
-    "inventory_balance", "cart", "cart_item", "marketplace_order", "order_item",
+    "users", "admin_audit_logs", "buyer_address", "storefront", "storefront_domain", "marketplace_order", "order_item",
     "payment_record", "refund_record", "shipment", "idempotency_record",
     "integration_outbox", "external_reference", "audit_event", "alembic_version",
     "user_profile",
@@ -74,9 +70,10 @@ async def _schema_fingerprint() -> tuple:
 
 @pytest.fixture(scope="module")
 def postgres_database() -> MigrationEvidence:
-    subprocess.run(["docker", "compose", "-f", str(COMPOSE), "up", "-d", "--wait"], check=True, cwd=ROOT)
+    start_database()
     os.environ["DATABASE_URL"] = TEST_URL
     asyncio.run(_reset_database())
+    reset_marker()
     config = Config(str(API / "alembic.ini"))
     command.upgrade(config, "head")
     first = asyncio.run(_schema_fingerprint())
@@ -85,7 +82,7 @@ def postgres_database() -> MigrationEvidence:
     try:
         yield MigrationEvidence(first, second, first[3])
     finally:
-        subprocess.run(["docker", "compose", "-f", str(COMPOSE), "down", "--volumes"], check=True, cwd=ROOT)
+        reset_marker()
 
 
 @pytest.fixture
@@ -132,62 +129,71 @@ def test_second_upgrade_to_head_is_schema_noop(postgres_database):
 
 def test_required_constraints_and_indexes_exist(postgres_database):
     constraints, indexes = set(postgres_database.first[1]), set(postgres_database.first[2])
-    assert {"fk_listing_product_owner", "fk_cart_item_listing_storefront", "fk_order_item_listing_scope", "ck_inventory_balance_inventory_on_hand_bounds"} <= constraints
-    assert {"ix_listing_storefront_seller_id", "ix_order_storefront_buyer_created", "uq_idempotency_scope_key", "ix_outbox_claim"} <= indexes | constraints
+    assert {"fk_order_item_listing_scope", "fk_order_item_variant_id", "fk_marketplace_order_organization_id", "fk_shipment_organization_id", "ck_inventory_ledger_ck_inventory_ledger_on_hand_bounds"} <= constraints
+    assert {"ix_order_storefront_org_created", "ix_order_storefront_buyer_created", "uq_idempotency_scope_key", "ix_outbox_claim"} <= indexes | constraints
 
 
 def test_active_migration_chain_has_one_postgresql_head(postgres_database):
     config = Config(str(API / "alembic.ini"))
     heads = command.heads(config)
-    assert heads is None and postgres_database.revision == "0010_erp_outbox_inbox"
+    assert heads is None and postgres_database.revision == schema_head()
 
 
 
 async def _seed_catalog(connection):
-    seller_a, seller_b, buyer = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
+    """Two seller organisations, a buyer, two storefronts, and org A's product listed on store A."""
+    org_a, org_b, buyer = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
     store_a, store_b = uuid.uuid4(), uuid.uuid4()
-    product_id, listing_id, inventory_id = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
+    product_id, variant_id, listing_id = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
+    await connection.execute("INSERT INTO users (id,email) VALUES ($1,$2)", buyer, f"{buyer}@example.test")
+    await connection.execute("INSERT INTO user_profile (id,user_id,name) VALUES ($1,$1,'Buyer')", buyer)
     await connection.executemany(
-        "INSERT INTO users (id,email) VALUES ($1,$2)",
-        [(seller_a, f"{seller_a}@example.test"), (seller_b, f"{seller_b}@example.test"), (buyer, f"{buyer}@example.test")],
-    )
-    await connection.executemany(
-        "INSERT INTO user_profile (id,user_id,name) VALUES ($1,$1,$2)",
-        [(seller_a, "Seller A"), (seller_b, "Seller B"), (buyer, "Buyer")],
+        "INSERT INTO seller_organization (id,name,slug,status) VALUES ($1,$2,$3,'ACTIVE')",
+        [(org_a, "Org A", f"org-{org_a.hex}"), (org_b, "Org B", f"org-{org_b.hex}")],
     )
     await connection.executemany(
         "INSERT INTO storefront (id,storefront_key,display_name,currency,locale) VALUES ($1,$2,$3,'INR','en-IN')",
         [(store_a, f"store-{store_a.hex}", "Store A"), (store_b, f"store-{store_b.hex}", "Store B")],
     )
     await connection.execute(
-        "INSERT INTO product (id,seller_id,title,description,category) VALUES ($1,$2,'Product','Description','Other')",
-        product_id, seller_a,
+        "INSERT INTO master_product (id,organization_id,slug,name,lifecycle_status) VALUES ($1,$2,$3,'Product','ACTIVE')",
+        product_id, org_a, f"product-{product_id.hex}",
+    )
+    await connection.execute("INSERT INTO product_variant (id,product_id,sku) VALUES ($1,$2,'SKU-1')", variant_id, product_id)
+    await connection.execute(
+        "INSERT INTO storefront_listing (id,storefront_id,organization_id,product_id,publication_state) VALUES ($1,$2,$3,$4,'PUBLISHED')",
+        listing_id, store_a, org_a, product_id,
     )
     await connection.execute(
-        "INSERT INTO listing (id,storefront_id,product_id,seller_id,price_minor,currency,status) VALUES ($1,$2,$3,$4,1000,'INR','active')",
-        listing_id, store_a, product_id, seller_a,
+        "INSERT INTO inventory_ledger (id,variant_id,organization_id,on_hand_quantity) VALUES ($1,$2,$3,10)",
+        uuid.uuid4(), variant_id, org_a,
     )
+    return org_a, org_b, buyer, store_a, store_b, product_id, listing_id, variant_id
+
+
+async def _order(connection, store, buyer, org):
+    order = uuid.uuid4()
     await connection.execute(
-        "INSERT INTO inventory_balance (id,product_id,seller_id,on_hand_quantity,reserved_quantity) VALUES ($1,$2,$3,10,0)",
-        inventory_id, product_id, seller_a,
+        "INSERT INTO marketplace_order (id,storefront_id,buyer_id,organization_id,public_order_number,currency,subtotal_minor,total_minor,status,address_snapshot) VALUES ($1,$2,$3,$4,$5,'INR',100,100,'placed','{}')",
+        order, store, buyer, org, str(order),
     )
-    return seller_a, seller_b, buyer, store_a, store_b, product_id, listing_id
+    return order
 
 
 @pytest.mark.asyncio
 async def test_database_populates_utc_timestamps(db_connection):
-    seller, *_ = await _seed_catalog(db_connection)
-    created = await db_connection.fetchval("SELECT created_at FROM users WHERE id=$1", seller)
+    _, _, buyer, *_ = await _seed_catalog(db_connection)
+    created = await db_connection.fetchval("SELECT created_at FROM users WHERE id=$1", buyer)
     timezone_name = await db_connection.fetchval("SHOW timezone")
     assert created.tzinfo is not None and created.utcoffset().total_seconds() == 0 and timezone_name in ("UTC", "Etc/UTC")
 
 
 @pytest.mark.asyncio
 async def test_updated_at_is_server_controlled(db_connection):
-    seller, *_ = await _seed_catalog(db_connection)
-    before = await db_connection.fetchval("SELECT updated_at FROM user_profile WHERE user_id=$1", seller)
-    await db_connection.execute("UPDATE user_profile SET name='Changed' WHERE user_id=$1", seller)
-    after = await db_connection.fetchval("SELECT updated_at FROM user_profile WHERE user_id=$1", seller)
+    _, _, buyer, *_ = await _seed_catalog(db_connection)
+    before = await db_connection.fetchval("SELECT updated_at FROM user_profile WHERE user_id=$1", buyer)
+    await db_connection.execute("UPDATE user_profile SET name='Changed' WHERE user_id=$1", buyer)
+    after = await db_connection.fetchval("SELECT updated_at FROM user_profile WHERE user_id=$1", buyer)
     assert after >= before
 
 
@@ -214,63 +220,74 @@ async def test_invalid_foreign_key_fails(db_connection):
     with pytest.raises(asyncpg.ForeignKeyViolationError):
         async with db_connection.transaction():
             await db_connection.execute(
-                "INSERT INTO product (id,seller_id,title,description,category) VALUES ($1,$2,'x','x','x')",
+                "INSERT INTO master_product (id,organization_id,slug,name) VALUES ($1,$2,'x','x')",
                 uuid.uuid4(), uuid.uuid4(),
             )
 
 
 @pytest.mark.asyncio
 async def test_duplicate_scoped_listing_fails(db_connection):
-    seller, _, _, store, _, product, _ = await _seed_catalog(db_connection)
+    org, _, _, store, _, product, _, _ = await _seed_catalog(db_connection)
     with pytest.raises(asyncpg.UniqueViolationError):
         async with db_connection.transaction():
             await db_connection.execute(
-                "INSERT INTO listing (id,storefront_id,product_id,seller_id,price_minor,currency,status) VALUES ($1,$2,$3,$4,1000,'INR','draft')",
-                uuid.uuid4(), store, product, seller,
+                "INSERT INTO storefront_listing (id,storefront_id,organization_id,product_id) VALUES ($1,$2,$3,$4)",
+                uuid.uuid4(), store, org, product,
+            )
+
+
+@pytest.mark.parametrize("scope", ["other_storefront", "other_organization"])
+@pytest.mark.asyncio
+async def test_order_line_must_match_listing_storefront_and_organization(db_connection, scope):
+    org_a, org_b, buyer, store_a, store_b, product, listing, variant = await _seed_catalog(db_connection)
+    store, org = (store_b, org_a) if scope == "other_storefront" else (store_a, org_b)
+    order = await _order(db_connection, store, buyer, org)
+    with pytest.raises(asyncpg.ForeignKeyViolationError):
+        async with db_connection.transaction():
+            await db_connection.execute(
+                """INSERT INTO order_item (id,order_id,storefront_id,storefront_listing_id,product_id,variant_id,organization_id,
+                                           title,unit_price_minor,quantity,line_total_minor,snapshot)
+                   VALUES ($1,$2,$3,$4,$5,$6,$7,'x',100,1,100,'{}')""",
+                uuid.uuid4(), order, store, listing, product, variant, org,
             )
 
 
 @pytest.mark.asyncio
-async def test_cross_storefront_cart_relationship_fails(db_connection):
-    seller, _, buyer, store_a, store_b, _, listing = await _seed_catalog(db_connection)
-    cart_id = uuid.uuid4()
-    await db_connection.execute("INSERT INTO cart (id,storefront_id,buyer_id,currency) VALUES ($1,$2,$3,'INR')", cart_id, store_b, buyer)
-    with pytest.raises(asyncpg.ForeignKeyViolationError):
-        async with db_connection.transaction():
-            await db_connection.execute(
-                "INSERT INTO cart_item (id,cart_id,storefront_id,listing_id,quantity) VALUES ($1,$2,$3,$4,1)",
-                uuid.uuid4(), cart_id, store_b, listing,
-            )
-    assert seller
+async def test_order_line_for_its_own_listing_is_accepted(db_connection):
+    org, _, buyer, store, _, product, listing, variant = await _seed_catalog(db_connection)
+    order = await _order(db_connection, store, buyer, org)
+    await db_connection.execute(
+        """INSERT INTO order_item (id,order_id,storefront_id,storefront_listing_id,product_id,variant_id,organization_id,
+                                   title,unit_price_minor,quantity,line_total_minor,snapshot)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,'x',100,1,100,'{}')""",
+        uuid.uuid4(), order, store, listing, product, variant, org,
+    )
+    assert await db_connection.fetchval("SELECT count(*) FROM order_item WHERE order_id=$1", order) == 1
 
 
 @pytest.mark.parametrize("quantity", [-1, 9_007_199_254_740_992])
 @pytest.mark.asyncio
 async def test_inventory_bounds_fail(db_connection, quantity):
-    seller, *_rest, product, _listing = await _seed_catalog(db_connection)
+    org, *_rest, variant = await _seed_catalog(db_connection)
     with pytest.raises(asyncpg.CheckViolationError):
         async with db_connection.transaction():
             await db_connection.execute(
-                "UPDATE inventory_balance SET on_hand_quantity=$1 WHERE product_id=$2 AND seller_id=$3",
-                quantity, product, seller,
+                "UPDATE inventory_ledger SET on_hand_quantity=$1 WHERE variant_id=$2 AND organization_id=$3",
+                quantity, variant, org,
             )
 
 
 @pytest.mark.parametrize(
     ("table", "column", "value"),
-    [("listing", "status", "approved"), ("marketplace_order", "status", "unknown"), ("payment_record", "status", "paid")],
+    [("storefront_listing", "publication_state", "approved"), ("marketplace_order", "status", "unknown"), ("payment_record", "status", "paid")],
 )
 @pytest.mark.asyncio
 async def test_invalid_lifecycle_values_fail(db_connection, table, column, value):
-    seller, _, buyer, store, _, product, listing = await _seed_catalog(db_connection)
-    if table == "listing":
-        query, args = f"UPDATE listing SET {column}=$1 WHERE id=$2", (value, listing)
+    org, _, buyer, store, _, _product, listing, _variant = await _seed_catalog(db_connection)
+    if table == "storefront_listing":
+        query, args = f"UPDATE storefront_listing SET {column}=$1 WHERE id=$2", (value, listing)
     else:
-        order = uuid.uuid4()
-        await db_connection.execute(
-            "INSERT INTO marketplace_order (id,storefront_id,buyer_id,seller_id,public_order_number,currency,subtotal_minor,total_minor,status,address_snapshot) VALUES ($1,$2,$3,$4,$5,'INR',100,100,'placed','{}')",
-            order, store, buyer, seller, str(order),
-        )
+        order = await _order(db_connection, store, buyer, org)
         if table == "marketplace_order":
             query, args = f"UPDATE marketplace_order SET {column}=$1 WHERE id=$2", (value, order)
         else:
@@ -278,17 +295,16 @@ async def test_invalid_lifecycle_values_fail(db_connection, table, column, value
     with pytest.raises(asyncpg.CheckViolationError):
         async with db_connection.transaction():
             await db_connection.execute(query, *args)
-    assert product
 
 
 @pytest.mark.parametrize("amount", [-1, 9_007_199_254_740_992])
 @pytest.mark.asyncio
 async def test_money_bounds_fail(db_connection, amount):
-    seller, _, _, store, _, product, listing = await _seed_catalog(db_connection)
+    org, _, buyer, store, *_ = await _seed_catalog(db_connection)
+    order = await _order(db_connection, store, buyer, org)
     with pytest.raises(asyncpg.CheckViolationError):
         async with db_connection.transaction():
-            await db_connection.execute("UPDATE listing SET price_minor=$1 WHERE id=$2 AND storefront_id=$3 AND seller_id=$4", amount, listing, store, seller)
-    assert product
+            await db_connection.execute("UPDATE marketplace_order SET total_minor=$1 WHERE id=$2", amount, order)
 
 
 @pytest.mark.asyncio
@@ -331,48 +347,6 @@ async def test_explicit_rollback_leaves_no_partial_rows_and_connection_reusable(
         assert await connection.fetchval("SELECT 1") == 1
     finally:
         await connection.close()
-
-
-@pytest.mark.asyncio
-async def test_scoped_repository_lookup_and_deterministic_pagination(db_connection):
-    seller, _, _, store, _, product, listing = await _seed_catalog(db_connection)
-    second = uuid.uuid4()
-    second_product = uuid.uuid4()
-    await db_connection.execute("INSERT INTO product (id,seller_id,title,description,category) VALUES ($1,$2,'Second','Description','Other')", second_product, seller)
-    await db_connection.execute("INSERT INTO listing (id,storefront_id,product_id,seller_id,price_minor,currency,status) VALUES ($1,$2,$3,$4,2000,'INR','draft')", second, store, second_product, seller)
-    repository = PostgresCatalogRepository(db_connection)
-    owned = await repository.get_seller_listing(storefront_id=store, seller_id=seller, listing_id=listing)
-    page = await repository.list_seller_listings(storefront_id=store, seller_id=seller, limit=1, offset=0)
-    page_again = await repository.list_seller_listings(storefront_id=store, seller_id=seller, limit=1, offset=0)
-    assert owned and owned["product_id"] == product and page == page_again
-
-
-@pytest.mark.asyncio
-async def test_scoped_repository_cross_storefront_and_seller_return_not_found(db_connection):
-    seller, other_seller, _, store, other_store, _, listing = await _seed_catalog(db_connection)
-    repository = PostgresCatalogRepository(db_connection)
-    assert await repository.get_seller_listing(storefront_id=other_store, seller_id=seller, listing_id=listing) is None
-    assert await repository.get_seller_listing(storefront_id=store, seller_id=other_seller, listing_id=listing) is None
-
-
-@pytest.mark.asyncio
-async def test_rejected_scoped_inventory_mutation_has_no_side_effect(db_connection):
-    seller, other_seller, _, store, _, product, listing = await _seed_catalog(db_connection)
-    repository = PostgresCatalogRepository(db_connection)
-    before = await db_connection.fetchval("SELECT on_hand_quantity FROM inventory_balance WHERE product_id=$1", product)
-    result = await repository.set_owned_inventory(storefront_id=store, seller_id=other_seller, listing_id=listing, quantity=99)
-    after = await db_connection.fetchval("SELECT on_hand_quantity FROM inventory_balance WHERE product_id=$1", product)
-    assert result is None and before == after == 10 and seller != other_seller
-
-
-@pytest.mark.asyncio
-async def test_owned_inventory_mutation_uses_compound_scope(db_connection):
-    seller, _, _, store, _, product, listing = await _seed_catalog(db_connection)
-    result = await PostgresCatalogRepository(db_connection).set_owned_inventory(
-        storefront_id=store, seller_id=seller, listing_id=listing, quantity=0,
-    )
-    assert result and result["on_hand_quantity"] == 0 and result["available_quantity"] == 0
-    assert result["product_id"] == product
 
 
 @pytest.mark.asyncio
@@ -420,9 +394,6 @@ def test_no_active_oracle_runtime_dependency():
 
 
 def test_legacy_import_artifacts_are_offline(postgres_database):
-    doc_path = ROOT / "project/docs/legacy-data-import-postgresql.md"
-    if not doc_path.exists():
-        doc_path = ROOT / "docs/legacy-data-import-postgresql.md"
-    design = doc_path.read_text()
+    design = (ROOT / "docs/legacy/legacy-data-import-postgresql.md").read_text()
     assert "UNIMPLEMENTED" in design and "dry-run" in design and "MongoDB" in design and "Supabase" in design
 

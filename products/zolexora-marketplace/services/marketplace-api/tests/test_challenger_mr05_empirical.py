@@ -13,7 +13,7 @@ from shared.database.postgres import pg_conn_dep
 from storefronts.dependencies import storefront_repository
 from storefronts.models import StorefrontDefinition, StorefrontKey
 
-TEST_URL = "postgresql://marketplace_local:marketplace-local-only@127.0.0.1:5432/marketplace_local"
+from tests.pg import TEST_URL, ensure_database
 
 # Dummy test router simulating a storefront publishing route guarded by require_storefront_grant
 test_publish_router = APIRouter()
@@ -72,26 +72,7 @@ class MockStorefrontRepository:
 
 @pytest.fixture
 async def pg_conn():
-    import os
-    import subprocess
-    try:
-        conn = await asyncpg.connect(TEST_URL)
-        rev = await conn.fetchval("SELECT version_num FROM alembic_version")
-        if rev != "0010_erp_outbox_inbox":
-            raise ValueError("Database not at head revision")
-    except Exception:
-        subprocess.run(
-            ["docker", "compose", "-f", "infrastructure/docker/postgres-test.compose.yml", "up", "-d", "--wait"],
-            cwd="../..",
-            check=True,
-        )
-        subprocess.run(
-            ["alembic", "upgrade", "head"],
-            cwd=".",
-            env={**os.environ, "DATABASE_URL": "postgresql+asyncpg://marketplace_local:marketplace-local-only@127.0.0.1:5432/marketplace_local"},
-            check=True,
-        )
-        conn = await asyncpg.connect(TEST_URL)
+    conn = await asyncpg.connect(ensure_database())
 
     transaction = conn.transaction()
     await transaction.start()
@@ -279,7 +260,7 @@ async def test_revoked_grant_immediately_blocks_publishing(pg_conn, repo, seed_d
     await repo.update_grant_status(grant_id=grant_id, decision="APPROVE", admin_user_id=admin_id)
 
     user_payload = {"id": str(s1_id), "email": "seller1@example.com", "role": "seller"}
-    admin_payload = {"id": str(admin_id), "email": "admin@example.com", "is_admin": True}
+    admin_payload = {"id": str(admin_id), "email": "admin@example.com", "is_admin": True, "permissions": ["sellers:write"]}
     mock_sf_repo = MockStorefrontRepository(shop_sf_id, mahila_sf_id)
 
     marketplace_app.dependency_overrides[pg_conn_dep] = lambda: pg_conn

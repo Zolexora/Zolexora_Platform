@@ -18,6 +18,7 @@ Source of truth: the `ports:` entries in each `compose.yaml` (verified 2026-10-3
 | Rento Easy | `3076` | — | — | — | `products/zolexora-rentoeasy/compose.yaml` |
 | Zolexora Engage | `3077` | — | — | — | `products/zolexora-engage/compose.yaml` |
 | Zolexora Marketplace | `3079` | — | — | — | `products/zolexora-marketplace/compose.yaml` |
+| Zolexora Marketplace (API tests) | — | — | `5434` (`MARKETPLACE_TEST_POSTGRES_PORT`, 127.0.0.1, throwaway) | — | `products/zolexora-marketplace/services/marketplace-api/tests/postgres-test.compose.yml` |
 | The Textile Care | `3080` | — | — | — | `products/zolexora-textile-care/compose.yaml` |
 | Auth Service | — | `3081` (`AUTH_SERVICE_PORT`) | — (Supabase) | — | `apps/zolexora-auth-service/compose.yaml` |
 | Zolexora TMS | `3090` (`TMS_PORT`) | `4031` (`TMS_BACKEND_PORT`) | — | — | `products/zolexora-tms/compose.yaml` |
@@ -36,4 +37,4 @@ Gateways not listed expose no other host ports; their APIs and databases are rea
 
 ## Free gateway ports
 
-`3082`–`3089`, `3093`, `3094`, `3096`–`3099`. Postgres `5433`–`5449` and `5451` are free.
+`3082`–`3089`, `3093`, `3094`, `3096`–`3099`. Postgres `5433`, `5435`–`5449` and `5451` are free.

@@ -20,7 +20,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from core.auth_service import AuthServiceError, InvalidToken, introspect
 from core.database import get_db
-from shared.database.postgres import connection
+from shared.database.postgres import connection, pg_conn_dep
 from users.repositories import UserRepository, get_user_repository
 
 logger = logging.getLogger("zolexora.auth")
@@ -124,7 +124,7 @@ def is_admin(user: dict | None) -> bool:
     return bool(user) and user.get("is_admin") is True
 
 
-async def seller_member(user=Depends(current_user)) -> dict:
+async def seller_member(user=Depends(current_user), db=Depends(pg_conn_dep)) -> dict:
     """The user acting for a seller organisation they are an active member of: staff for their
     linked one, owners for X-Organization-Id or else their oldest (same rule as TMS)."""
     wanted = user.get("seller_org_id") or user.get("requested_org_id")
@@ -135,15 +135,14 @@ async def seller_member(user=Depends(current_user)) -> dict:
         wanted_id = user_id = None
     org_id = None
     if user_id and not is_admin(user):
-        async with connection() as conn:
-            org_id = await conn.fetchval(
-                """SELECT m.organization_id FROM seller_org_member m
-                   JOIN seller_organization o ON o.id = m.organization_id
-                   WHERE m.user_id = $1 AND m.status = 'ACTIVE' AND o.status = 'ACTIVE'
-                     AND ($2::uuid IS NULL OR m.organization_id = $2)
-                   ORDER BY m.created_at ASC LIMIT 1""",
-                user_id, wanted_id,
-            )
+        org_id = await db.fetchval(
+            """SELECT m.organization_id FROM seller_org_member m
+               JOIN seller_organization o ON o.id = m.organization_id
+               WHERE m.user_id = $1 AND m.status = 'ACTIVE' AND o.status = 'ACTIVE'
+                 AND ($2::uuid IS NULL OR m.organization_id = $2)
+               ORDER BY m.created_at ASC LIMIT 1""",
+            user_id, wanted_id,
+        )
     if not org_id:
         raise HTTPException(
             403, "Create or choose a seller organisation first",
@@ -152,9 +151,9 @@ async def seller_member(user=Depends(current_user)) -> dict:
     return {**user, "seller_org_id": str(org_id)}
 
 
-async def seller_only(user=Depends(current_user)) -> dict:
+async def seller_only(user=Depends(current_user), db=Depends(pg_conn_dep)) -> dict:
     """Seller endpoints: a seller organisation member, or a platform admin."""
-    return user if is_admin(user) else await seller_member(user)
+    return user if is_admin(user) else await seller_member(user, db)
 
 
 async def admin_only(user=Depends(current_user)):
