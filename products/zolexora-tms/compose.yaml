@@ -28,9 +28,10 @@ services:
       - CORS_ORIGINS=${CORS_ORIGINS:?CORS_ORIGINS missing - run via scripts/setup/with-infisical.sh}
       - OPERATIONS_TIMEZONE
       - REDIS_URL
-      - REDIS_HOST
-      - REDIS_PORT
-      - REDIS_PASSWORD
+      - REDIS_DATABASE_R1_HOST
+      - REDIS_DATABASE_R1_PORT
+      - REDIS_DATABASE_R1_USERNAME
+      - REDIS_DATABASE_R1_PASSWORD
       - REDIS_DB
       - REDIS_USE_SSL
       - SENTRY_DSN

@@ -116,10 +116,11 @@ class Settings(BaseSettings):
 
     # Background Tasks (Redis & Dramatiq)
     REDIS_URL_OVERRIDE: Optional[str] = Field(default=None, validation_alias="REDIS_URL")
-    # Individual parts as stored in Infisical (Cache_And_Async/Redis)
-    REDIS_HOST: Optional[str] = Field(default=None, validation_alias="REDIS_HOST")
-    REDIS_PORT: int = Field(default=6379, validation_alias="REDIS_PORT")
-    REDIS_PASSWORD: Optional[str] = Field(default=None, validation_alias="REDIS_PASSWORD")
+    # Individual parts as stored in Infisical (Cache_And_Async: REDIS_DATABASE_R1_*)
+    REDIS_HOST: Optional[str] = Field(default=None, validation_alias=AliasChoices("REDIS_DATABASE_R1_HOST", "REDIS_HOST"))
+    REDIS_PORT: int = Field(default=6379, validation_alias=AliasChoices("REDIS_DATABASE_R1_PORT", "REDIS_PORT"))
+    REDIS_USERNAME: Optional[str] = Field(default=None, validation_alias=AliasChoices("REDIS_DATABASE_R1_USERNAME", "REDIS_USERNAME"))
+    REDIS_PASSWORD: Optional[str] = Field(default=None, validation_alias=AliasChoices("REDIS_DATABASE_R1_PASSWORD", "REDIS_PASSWORD"))
     REDIS_DB: int = Field(default=0, validation_alias="REDIS_DB")
     REDIS_USE_SSL: bool = Field(default=False, validation_alias="REDIS_USE_SSL")
 
@@ -131,7 +132,8 @@ class Settings(BaseSettings):
         if not self.REDIS_HOST:
             return None
         scheme = "rediss" if self.REDIS_USE_SSL else "redis"
-        auth = f":{quote_plus(self.REDIS_PASSWORD)}@" if self.REDIS_PASSWORD else ""
+        user = quote_plus(self.REDIS_USERNAME or "")
+        auth = f"{user}:{quote_plus(self.REDIS_PASSWORD)}@" if self.REDIS_PASSWORD else ""
         return f"{scheme}://{auth}{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
 
     # IANA timezone for operational dates without an offset (e.g. R1 CSV imports), e.g. Asia/Kolkata
