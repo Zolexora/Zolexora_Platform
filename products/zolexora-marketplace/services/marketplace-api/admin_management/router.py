@@ -62,12 +62,9 @@ async def list_managed_users(
             f"""SELECT u.id, u.email, u.phone_number, u.full_name, p.name, p.coin_balance,
                        u.status::text AS status, u.is_active, u.is_email_verified,
                        u.is_phone_verified,
-                       u.created_at, u.last_login_at,
-                       COALESCE(r.role_key, 'buyer') AS role
+                       u.created_at, u.last_login_at
                 FROM public.users u
                 LEFT JOIN public.user_profile p ON p.user_id=u.id
-                LEFT JOIN public.user_role ur ON ur.user_id=u.id
-                LEFT JOIN public.role r ON r.id=ur.role_id
                 {where}
                 ORDER BY u.created_at DESC, u.id
                 LIMIT ${len(args)-1} OFFSET ${len(args)}""",
@@ -96,8 +93,8 @@ async def update_user_status(
         await _audit(conn, admin, request, "USER_STATUS_CHANGED", user_id, {"from": current["status"], "to": patch.status, "reason": patch.reason})
         row = await conn.fetchrow("""SELECT u.id,u.email,u.phone_number,u.full_name,p.name,p.coin_balance,u.status::text AS status,
             u.is_active,u.is_email_verified,u.is_phone_verified,
-            u.created_at,u.last_login_at,
-            COALESCE(r.role_key,'buyer') AS role FROM users u LEFT JOIN user_profile p ON p.user_id=u.id LEFT JOIN user_role ur ON ur.user_id=u.id LEFT JOIN role r ON r.id=ur.role_id WHERE u.id=$1""", target)
+            u.created_at,u.last_login_at
+            FROM users u LEFT JOIN user_profile p ON p.user_id=u.id WHERE u.id=$1""", target)
     return _user_from_row(row)
 
 

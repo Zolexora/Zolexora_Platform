@@ -268,8 +268,8 @@ async def test_unauthorized_admin_cannot_approve_grants(repo, seed_data):
     assert exc.value.status_code == 403
 
     # Real admin passes admin_only
-    admin_user = await admin_only(user={"id": str(seed_data["admin_id"]), "role": "admin"})
-    assert admin_user["role"] == "admin"
+    admin_user = await admin_only(user={"id": str(seed_data["admin_id"]), "is_admin": True})
+    assert admin_user["is_admin"] is True
 
 
 # ── 7. Mandatory Audit Attribution ─────────────────────────────────────────────────

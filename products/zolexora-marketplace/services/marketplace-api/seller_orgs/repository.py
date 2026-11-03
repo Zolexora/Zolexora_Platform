@@ -47,20 +47,6 @@ class PostgresSellerRepository:
                 member_id, org_id, owner_user_id
             )
 
-            # Ensure seller role in user_role
-            seller_role = await self.connection.fetchrow(
-                "SELECT id FROM role WHERE role_key = 'seller'"
-            )
-            if seller_role:
-                await self.connection.execute(
-                    """
-                    INSERT INTO user_role (id, user_id, role_id)
-                    VALUES ($1, $2, $3)
-                    ON CONFLICT (user_id) DO NOTHING
-                    """,
-                    uuid.uuid4(), owner_user_id, seller_role["id"]
-                )
-
             await self.connection.execute(
                 """
                 INSERT INTO seller_audit_log (id, organization_id, actor_user_id, action, resource_type, resource_id, payload)

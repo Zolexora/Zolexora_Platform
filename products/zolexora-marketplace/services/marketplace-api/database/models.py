@@ -91,40 +91,6 @@ Index("idx_admin_audit_target", admin_audit_logs.c.target_user_id)
 Index("idx_admin_audit_created", admin_audit_logs.c.created_at.desc())
 Index("idx_admin_audit_action", admin_audit_logs.c.action_type, admin_audit_logs.c.created_at.desc())
 
-role = Table(
-    "role", metadata, id_column(),
-    Column("role_key", String(32), nullable=False), Column("display_name", String(64), nullable=False),
-    created_column(), updated_column(),
-    UniqueConstraint("role_key", name="uq_role_key"),
-    CheckConstraint("role_key IN ('buyer','seller','admin')", name="role_key_values"),
-)
-
-permission = Table(
-    "permission", metadata, id_column(),
-    Column("permission_key", String(64), nullable=False), Column("description", String(200), nullable=False),
-    created_column(), updated_column(),
-    UniqueConstraint("permission_key", name="uq_permission_key"),
-)
-
-user_role = Table(
-    "user_role", metadata, id_column(),
-    Column("user_id", Uuid, ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
-    Column("role_id", Uuid, ForeignKey("role.id", ondelete="RESTRICT"), nullable=False),
-    created_column(), updated_column(),
-    UniqueConstraint("user_id", name="uq_user_role_user"),
-    UniqueConstraint("user_id", "role_id", name="uq_user_role_assignment"),
-)
-Index("ix_user_role_role_user", user_role.c.role_id, user_role.c.user_id)
-
-role_permission = Table(
-    "role_permission", metadata, id_column(),
-    Column("role_id", Uuid, ForeignKey("role.id", ondelete="CASCADE"), nullable=False),
-    Column("permission_id", Uuid, ForeignKey("permission.id", ondelete="CASCADE"), nullable=False),
-    created_column(),
-    UniqueConstraint("role_id", "permission_id", name="uq_role_permission_assignment"),
-)
-Index("ix_role_permission_permission_role", role_permission.c.permission_id, role_permission.c.role_id)
-
 buyer_address = Table(
     "buyer_address", metadata, id_column(),
     Column("buyer_id", Uuid, ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
@@ -365,6 +331,8 @@ seller_organization = Table(
     Column("verification_status", String(32), nullable=False, server_default="UNVERIFIED"),
     Column("onboarding_state", String(32), nullable=False, server_default="DRAFT"),
     Column("metadata", JSON),
+    # ZX-ORG id of the linked auth-service organisation (staff sign in with Track 2).
+    Column("zolexora_org_id", String(64)),
     created_column(), updated_column(),
     UniqueConstraint("slug", name="uq_seller_organization_slug"),
     CheckConstraint("status IN ('ACTIVE','SUSPENDED','PENDING_VERIFICATION','REJECTED','INACTIVE')", name="ck_seller_organization_seller_org_status_values"),
@@ -373,6 +341,8 @@ seller_organization = Table(
     CheckConstraint("slug = lower(trim(slug)) AND length(slug) >= 2", name="ck_seller_organization_slug_shape"),
 )
 Index("ix_seller_organization_status", seller_organization.c.status, seller_organization.c.verification_status)
+Index("uq_seller_organization_zolexora_org_id", seller_organization.c.zolexora_org_id, unique=True,
+      postgresql_where=seller_organization.c.zolexora_org_id.is_not(None))
 
 seller_org_member = Table(
     "seller_org_member", metadata, id_column(),

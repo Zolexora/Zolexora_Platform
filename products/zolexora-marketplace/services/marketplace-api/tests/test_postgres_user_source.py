@@ -3,9 +3,8 @@ import pytest
 from fastapi import HTTPException
 from starlette.requests import Request
 
-import core.deps as deps
 from core.deps import admin_only
-from routers.other import DiscountReq, admin_set_role, admin_stats, admin_users, coin_balance, generate_discount
+from routers.other import DiscountReq, admin_stats, admin_users, coin_balance, generate_discount
 from storefronts.models import StorefrontContext, StorefrontKey, StorefrontContextSource, StorefrontDefinition
 
 def _mock_context() -> StorefrontContext:
@@ -111,22 +110,18 @@ class FakeUserRepo:
     def __init__(self, users=None):
         self.users = users or {}
         self.adjustments = []
-        self.roles = []
         self.active_updates = []
 
     async def get_by_id(self, user_id, *, internal=False):
         user = self.users.get(user_id)
         return user.copy() if user else None
 
-    async def list_users(self, limit=50, offset=0, role=None):
+    async def list_users(self, limit=50, offset=0):
         users = list(self.users.values())
-        if role:
-            role = "buyer" if role == "viewer" else role
-            users = [user for user in users if user.get("role") == role]
         return [user.copy() for user in users[offset:offset + limit]]
 
-    async def count_users(self, role=None, created_since=None):
-        users = await self.list_users(role=role)
+    async def count_users(self, created_since=None):
+        users = await self.list_users()
         return len(users)
 
     async def adjust_coin_balance(self, user_id, delta):
@@ -135,10 +130,6 @@ class FakeUserRepo:
         if self.users[user_id]["coin_balance"] < 0:
             raise AssertionError("test attempted an overdraw")
         return self.users[user_id]["coin_balance"]
-
-    async def set_role(self, user_id, role):
-        self.roles.append((user_id, role))
-        return user_id in self.users
 
     async def set_active(self, user_id, active):
         self.active_updates.append((user_id, active))
@@ -198,18 +189,8 @@ async def test_generate_discount_rejects_insufficient_postgres_coin_balance():
 
 
 @pytest.mark.asyncio
-async def test_admin_set_role_updates_postgres_profile():
-    repo = FakeUserRepo({"user-1": {"coin_balance": 0}})
-
-    assert await admin_set_role("user-1", "seller", u={"id": "admin-1"}, user_repo=repo) == {
-        "message": "Updated"
-    }
-    assert repo.roles == [("user-1", "seller")]
-
-
-@pytest.mark.asyncio
 async def test_admin_only_allows_admin_profile():
-    user = await admin_only(user={"id": "admin-1", "role": "admin"})
+    user = await admin_only(user={"id": "admin-1", "is_admin": True})
 
     assert user["id"] == "admin-1"
 
@@ -217,7 +198,7 @@ async def test_admin_only_allows_admin_profile():
 @pytest.mark.asyncio
 async def test_admin_only_rejects_non_admin_profile():
     with pytest.raises(HTTPException) as exc:
-        await admin_only(user={"id": "buyer-1", "role": "buyer"})
+        await admin_only(user={"id": "buyer-1"})
 
     assert exc.value.status_code == 403
 
@@ -231,20 +212,18 @@ async def test_admin_stats_and_users_read_postgres_profiles():
     ]
     db.orders.docs = [{"id": "order-1", "payment_status": "paid", "storefront_id": "zolexora-shop"}, {"id": "order-2", "status": "pending", "storefront_id": "zolexora-shop"}]
     repo = FakeUserRepo({
-        "admin-1": {"id": "admin-1", "role": "admin"},
-        "seller-1": {"id": "seller-1", "role": "seller"},
-        "buyer-1": {"id": "buyer-1", "role": "buyer"},
+        "admin-1": {"id": "admin-1", "is_admin": True},
+        "seller-1": {"id": "seller-1"},
+        "buyer-1": {"id": "buyer-1"},
     })
     dummy_context = StorefrontContext(
         storefront=StorefrontDefinition("id", StorefrontKey.ZOLEXORA_SHOP, "Name", "host", frozenset(), frozenset(), "INR", "en", True),
         source=StorefrontContextSource.CLIENT_HINT
     )
-    stats = await admin_stats(u={"id": "admin-1", "role": "admin"}, context=dummy_context, db=db, user_repo=repo)
-    users = await admin_users(u={"id": "admin-1", "role": "admin"}, user_repo=repo)
+    stats = await admin_stats(u={"id": "admin-1", "is_admin": True}, context=dummy_context, db=db, user_repo=repo)
+    users = await admin_users(u={"id": "admin-1", "is_admin": True}, user_repo=repo)
 
     assert stats["total_users"] == 3
-    assert stats["viewers"] == 1
-    assert stats["sellers"] == 1
     assert stats["total_products"] == 2
     assert [u["id"] for u in users] == ["admin-1", "seller-1", "buyer-1"]
 

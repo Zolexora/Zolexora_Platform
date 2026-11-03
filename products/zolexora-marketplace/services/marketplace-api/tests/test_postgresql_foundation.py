@@ -27,7 +27,7 @@ REQUIRED_TABLES = {
     "inventory_balance", "cart", "cart_item", "marketplace_order", "order_item",
     "payment_record", "refund_record", "shipment", "idempotency_record",
     "integration_outbox", "external_reference", "audit_event", "alembic_version",
-    "user_profile", "role", "permission", "user_role", "role_permission",
+    "user_profile",
     "seller_organization", "seller_org_member", "seller_storefront_grant",
     "seller_audit_log", "seller_verification_history",
     "category", "brand", "master_product", "product_attribute", "product_attribute_value",

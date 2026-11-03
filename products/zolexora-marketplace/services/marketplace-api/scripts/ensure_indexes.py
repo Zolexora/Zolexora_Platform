@@ -11,7 +11,6 @@ async def ensure_indexes(db: AsyncIOMotorDatabase):
 
     # Users
     await db.users.create_index("email", unique=True)
-    await db.users.create_index("role")
 
     # Products
     await db.products.create_index("category")

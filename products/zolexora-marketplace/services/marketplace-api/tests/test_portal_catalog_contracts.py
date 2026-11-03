@@ -38,7 +38,7 @@ from storefronts.models import StorefrontContext, StorefrontContextSource, Store
 NOW = datetime(2026, 8, 1, 12, 0, tzinfo=timezone.utc)
 SELLER = {"id": str(uuid.uuid4()), "name": "Seller One", "role": "seller"}
 OTHER_SELLER = {"id": str(uuid.uuid4()), "name": "Seller Two", "role": "seller"}
-ADMIN = {"id": str(uuid.uuid4()), "name": "Admin One", "role": "admin"}
+ADMIN = {"id": str(uuid.uuid4()), "name": "Admin One", "is_admin": True}
 
 SF_SHOP_ID = "60000000-0000-4000-4100-000000000001"
 SF_MAHILA_ID = "60000000-0000-4000-4100-000000000002"

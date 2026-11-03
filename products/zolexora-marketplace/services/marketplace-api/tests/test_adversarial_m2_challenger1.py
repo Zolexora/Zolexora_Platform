@@ -51,7 +51,7 @@ buyer_a = {"id": "buyer-a", "role": "viewer", "full_name": "Buyer A"}
 buyer_b = {"id": "buyer-b", "role": "viewer", "full_name": "Buyer B"}
 seller_x = {"id": "sel-1", "role": "seller", "name": "Seller X"}
 seller_y = {"id": "sel-2", "role": "seller", "name": "Seller Y"}
-admin_user = {"id": "admin-1", "role": "admin", "full_name": "Admin User"}
+admin_user = {"id": "admin-1", "is_admin": True, "full_name": "Admin User"}
 
 
 @pytest.fixture(autouse=True)

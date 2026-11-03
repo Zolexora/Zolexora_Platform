@@ -9,7 +9,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from pydantic import BaseModel, Field, StrictInt, field_validator, model_validator
 
 from core.config import settings
-from core.deps import db_dep, current_user, seller_only
+from core.deps import db_dep, current_user, is_admin, seller_only
 from storefronts.dependencies import require_storefront_context, optional_storefront_context
 from storefronts.models import StorefrontContext
 from models.catalog import MasterProductDoc, StorefrontListingDoc, InventoryBalanceDoc, ProductListingResponse
@@ -482,7 +482,7 @@ async def create_product(data: ProductCreate, context: StorefrontContext | None 
 @router.put("/{product_id}")
 async def update_product(product_id: str, data: ProductUpdate, context: StorefrontContext | None = Depends(optional_storefront_context),
                          user=Depends(current_user), db: AsyncIOMotorDatabase=Depends(db_dep)):
-    fq = {"id": product_id} if user["role"] == "admin" else {"id": product_id, "seller_id": user["id"]}
+    fq = {"id": product_id} if is_admin(user) else {"id": product_id, "seller_id": user["id"]}
     if context:
         fq["storefront_id"] = context.key
     listing = await db.storefront_listings.find_one(fq)
@@ -551,12 +551,12 @@ async def update_product(product_id: str, data: ProductUpdate, context: Storefro
 @router.delete("/{product_id}")
 async def delete_product(product_id: str, context: StorefrontContext | None = Depends(optional_storefront_context),
                          user=Depends(current_user), db: AsyncIOMotorDatabase=Depends(db_dep)):
-    fq = {"id": product_id} if user["role"] == "admin" else {"id": product_id, "seller_id": user["id"]}
+    fq = {"id": product_id} if is_admin(user) else {"id": product_id, "seller_id": user["id"]}
     if context:
         fq["storefront_id"] = context.key
     listing = await db.storefront_listings.find_one(fq)
     if not listing:
-        raise HTTPException(404, "Product not found" if user["role"] == "admin" else "Product not found or not yours")
+        raise HTTPException(404, "Product not found" if is_admin(user) else "Product not found or not yours")
     
     await db.storefront_listings.delete_one(fq)
     _invalidate_catalog_cache()
@@ -566,7 +566,7 @@ async def delete_product(product_id: str, context: StorefrontContext | None = De
 @router.post("/{product_id}/upload-image")
 async def upload_image(product_id: str, file: UploadFile=File(...), context: StorefrontContext | None = Depends(optional_storefront_context),
                        user=Depends(current_user), db: AsyncIOMotorDatabase=Depends(db_dep)):
-    fq = {"id": product_id} if user["role"] == "admin" else {"id": product_id, "seller_id": user["id"]}
+    fq = {"id": product_id} if is_admin(user) else {"id": product_id, "seller_id": user["id"]}
     if context:
         fq["storefront_id"] = context.key
     listing = await db.storefront_listings.find_one(fq)

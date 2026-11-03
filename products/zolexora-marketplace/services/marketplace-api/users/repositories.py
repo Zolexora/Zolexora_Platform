@@ -1,4 +1,4 @@
-"""Canonical PostgreSQL identity/profile/RBAC repository."""
+"""Canonical PostgreSQL identity/profile repository (access comes from the auth service)."""
 
 import uuid
 from datetime import datetime
@@ -8,15 +8,13 @@ from fastapi import HTTPException
 from shared.database.postgres import connection, is_pool_ready, transaction
 
 _PUBLIC_SELECT = """
-SELECT u.id, u.auth_user_id, u.email, p.name, r.role_key AS role, p.coin_balance,
+SELECT u.id, u.auth_user_id, u.email, p.name, p.coin_balance,
        u.phone_number, COALESCE(NULLIF(u.full_name, ''), p.name) AS full_name,
        u.status::text AS status, u.is_phone_verified,
        u.last_login_at, u.metadata, u.is_active, u.is_email_verified,
        p.picture, u.created_at
 FROM users u
 JOIN user_profile p ON p.user_id = u.id
-JOIN user_role ur ON ur.user_id = u.id
-JOIN role r ON r.id = ur.role_id
 """
 
 
@@ -85,7 +83,6 @@ class UserRepository:
                     await conn.execute("UPDATE users SET auth_user_id = $2 WHERE id = $1", user_id, auth_id)
                 else:
                     user_id = auth_id
-                    role_id = await conn.fetchval("SELECT id FROM role WHERE role_key = 'buyer'")
                     name = _default_name(identity)
                     await conn.execute(
                         "INSERT INTO users (id, auth_user_id, email, is_email_verified, full_name) VALUES ($1, $1, $2, TRUE, $3)",
@@ -94,7 +91,6 @@ class UserRepository:
                     await conn.execute(
                         "INSERT INTO user_profile (id, user_id, name, coin_balance) VALUES ($1, $1, $2, 20)", user_id, name,
                     )
-                    await conn.execute("INSERT INTO user_role (id, user_id, role_id) VALUES ($1, $1, $2)", user_id, role_id)
             if phone:
                 # A phone belongs to one auth-service account; drop it from any stale profile.
                 await conn.execute(
@@ -111,36 +107,48 @@ class UserRepository:
         assert result is not None
         return result
 
-    async def list_users(self, limit: int = 50, offset: int = 0, role: str | None = None) -> list[dict]:
+    async def sync_employee(self, identity: dict, organization_id, member_role: str) -> dict:
+        """The marketplace user for an auth-service employee (Track 2) of a linked seller
+        organisation, with an active membership in it. Employees never adopt an existing
+        profile by email: their email is set by the organisation, not verified by them."""
         _require_pool()
-        args: list = []
-        where = ""
-        if role:
-            args.append("buyer" if role == "viewer" else role)
-            where = "WHERE r.role_key = $1"
-        args.extend((limit, offset))
-        async with connection() as conn:
-            rows = await conn.fetch(
-                f"{_PUBLIC_SELECT} {where} ORDER BY u.created_at DESC, u.id LIMIT ${len(args)-1} OFFSET ${len(args)}",
-                *args,
+        auth_id = _as_uuid(identity["uid"])
+        email = (identity.get("email") or "").strip().lower()
+        async with transaction() as conn:
+            user_id = await conn.fetchval("SELECT id FROM users WHERE auth_user_id = $1", auth_id)
+            if user_id is None:
+                if await conn.fetchval("SELECT 1 FROM users WHERE email = $1", email):
+                    raise HTTPException(409, "This email already has a marketplace account; use a different staff email")
+                user_id = auth_id
+                name = _default_name(identity)
+                await conn.execute(
+                    "INSERT INTO users (id, auth_user_id, email, is_email_verified, full_name) VALUES ($1, $1, $2, TRUE, $3)",
+                    user_id, email, name,
+                )
+                await conn.execute("INSERT INTO user_profile (id, user_id, name, coin_balance) VALUES ($1, $1, $2, 0)", user_id, name)
+            # Joins on first sign-in; a membership the organisation removed or suspended stays so.
+            await conn.execute(
+                """INSERT INTO seller_org_member (id, organization_id, user_id, role, status)
+                   VALUES (gen_random_uuid(), $1, $2, $3, 'ACTIVE')
+                   ON CONFLICT (organization_id, user_id) DO NOTHING""",
+                organization_id, user_id, member_role,
             )
+            await conn.execute("UPDATE users SET last_login_at = NOW(), updated_at = NOW() WHERE id = $1", user_id)
+        result = await self.get_by_id(str(user_id))
+        assert result is not None
+        return result
+
+    async def list_users(self, limit: int = 50, offset: int = 0) -> list[dict]:
+        _require_pool()
+        async with connection() as conn:
+            rows = await conn.fetch(f"{_PUBLIC_SELECT} ORDER BY u.created_at DESC, u.id LIMIT $1 OFFSET $2", limit, offset)
         return [_row(value) for value in rows]
 
-    async def count_users(self, role: str | None = None, created_since: datetime | None = None) -> int:
+    async def count_users(self, created_since: datetime | None = None) -> int:
         _require_pool()
-        clauses: list[str] = []
-        values: list = []
-        if role:
-            values.append("buyer" if role == "viewer" else role)
-            clauses.append(f"r.role_key = ${len(values)}")
-        if created_since:
-            values.append(created_since)
-            clauses.append(f"u.created_at >= ${len(values)}")
-        where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
         async with connection() as conn:
             return await conn.fetchval(
-                f"SELECT count(*) FROM users u JOIN user_role ur ON ur.user_id=u.id JOIN role r ON r.id=ur.role_id {where}",
-                *values,
+                "SELECT count(*) FROM users u WHERE $1::timestamptz IS NULL OR u.created_at >= $1", created_since,
             )
 
     async def update_fields(self, user_id: str, fields: dict) -> bool:
@@ -162,17 +170,6 @@ class UserRepository:
         async with connection() as conn:
             result = await conn.execute(
                 "UPDATE users SET is_active=$2, status=CASE WHEN $2 THEN 'active'::user_status ELSE 'suspended'::user_status END, updated_at=NOW() WHERE id=$1", _as_uuid(user_id), active,
-            )
-        return result != "UPDATE 0"
-
-    async def set_role(self, user_id: str, role: str) -> bool:
-        role = "buyer" if role == "viewer" else role
-        async with transaction() as conn:
-            role_id = await conn.fetchval("SELECT id FROM role WHERE role_key=$1", role)
-            if role_id is None:
-                raise HTTPException(400, "Invalid role")
-            result = await conn.execute(
-                "UPDATE user_role SET role_id=$2 WHERE user_id=$1", _as_uuid(user_id), role_id,
             )
         return result != "UPDATE 0"
 

@@ -2,9 +2,10 @@ import uuid
 import re
 from typing import Any
 import httpx
+from pydantic import BaseModel, Field
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from core.deps import current_user, admin_only, require_permission
+from core.deps import current_user, admin_only, is_admin, require_permission
 from core.config import settings
 
 from .schemas import (
@@ -105,6 +106,9 @@ async def create_seller_organization(
     user: dict[str, Any] = Depends(current_user),
     repo: PostgresSellerRepository = Depends(get_seller_repo),
 ):
+    # Organisations belong to a Track 1 Zolexora account (like TMS); staff and admins can't own one.
+    if user.get("zolexora_org_id") or is_admin(user):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Sign in with your own Zolexora account to create an organisation")
     user_id = user["id"]
     if isinstance(user_id, str):
         user_id = uuid.UUID(user_id)
@@ -487,3 +491,33 @@ async def admin_get_verification_history(
     repo: PostgresSellerRepository = Depends(get_seller_repo),
 ):
     return await repo.list_verification_history(org_id)
+
+
+class ZolexoraOrgLink(BaseModel):
+    """ZX-ORG id of the auth-service organisation whose employees are this seller's staff; null unlinks."""
+    zolexora_org_id: str | None = Field(default=None, pattern=r"^ZX-ORG-[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{4}$")
+
+
+@router.put(
+    "/admin/seller-organizations/{org_id}/zolexora-org",
+    summary="Link the seller organisation to a Zolexora (auth-service) organisation",
+)
+async def admin_link_zolexora_org(
+    org_id: uuid.UUID,
+    payload: ZolexoraOrgLink,
+    _admin: dict[str, Any] = Depends(require_permission("sellers:write")),
+):
+    from asyncpg import UniqueViolationError
+    from shared.database.postgres import connection
+
+    try:
+        async with connection() as conn:
+            done = await conn.fetchval(
+                "UPDATE seller_organization SET zolexora_org_id = $2, updated_at = NOW() WHERE id = $1 RETURNING id",
+                org_id, payload.zolexora_org_id,
+            )
+    except UniqueViolationError as exc:
+        raise HTTPException(409, "That Zolexora organisation is already linked to another seller") from exc
+    if not done:
+        raise HTTPException(404, "Seller organization not found")
+    return {"id": str(org_id), "zolexora_org_id": payload.zolexora_org_id}

@@ -124,7 +124,7 @@ async def test_admin_delete_success():
         "is_active": True,
     })
 
-    response = await delete_product("prod-789", context=dummy_context, user={"id": "admin-1", "role": "admin"}, db=db)
+    response = await delete_product("prod-789", context=dummy_context, user={"id": "admin-1", "is_admin": True}, db=db)
 
     assert response == {"message": "Deleted"}
     assert await db.storefront_listings.find_one({"id": "prod-789"}) is None
@@ -141,7 +141,7 @@ async def test_admin_delete_via_admin_route_success():
         "is_active": True,
     })
 
-    response = await admin_delete_product("prod-789", u={"id": "admin-1", "role": "admin"}, context=dummy_context, db=db)
+    response = await admin_delete_product("prod-789", u={"id": "admin-1", "is_admin": True}, context=dummy_context, db=db)
 
     assert response == {"message": "Deleted"}
     assert await db.storefront_listings.find_one({"id": "prod-789"}) is None
@@ -152,7 +152,7 @@ async def test_admin_delete_via_admin_route_missing_returns_404():
     db = FakeDB()
 
     with pytest.raises(HTTPException) as exc:
-        await admin_delete_product("non-existent", u={"id": "admin-1", "role": "admin"}, context=dummy_context, db=db)
+        await admin_delete_product("non-existent", u={"id": "admin-1", "is_admin": True}, context=dummy_context, db=db)
 
     assert exc.value.status_code == 404
     assert "Product not found" in exc.value.detail

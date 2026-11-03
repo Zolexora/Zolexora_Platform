@@ -3,7 +3,7 @@ from typing import Callable, Any
 import asyncpg
 from fastapi import Depends, HTTPException, Request, status
 
-from core.deps import current_user
+from core.deps import current_user, is_admin
 from shared.database.postgres import connection, pg_conn_dep
 from storefronts.dependencies import require_storefront_context
 from storefronts.models import StorefrontContext
@@ -42,7 +42,7 @@ async def get_current_seller_org_member(
     user: dict[str, Any] = Depends(current_user),
     repo: PostgresSellerRepository = Depends(get_seller_repo),
 ) -> dict[str, Any]:
-    if user.get("role") == "admin":
+    if is_admin(user):
         return {
             "id": uuid.uuid4(),
             "organization_id": org_id,
@@ -72,7 +72,7 @@ def require_seller_org_role(allowed_roles: list[str]) -> Callable[..., dict[str,
         member: dict[str, Any] = Depends(get_current_seller_org_member),
         user: dict[str, Any] = Depends(current_user),
     ) -> dict[str, Any]:
-        if user.get("role") == "admin":
+        if is_admin(user):
             return member
 
         if member.get("role") not in allowed_roles:
@@ -106,9 +106,9 @@ async def require_storefront_grant(
 
 
 async def assert_storefront_grants(user: dict[str, Any], storefront_keys) -> None:
-    """Sellers publish only on storefronts where an admin approved their organization
-    (seller_storefront_grant). Admins are not limited."""
-    if user.get("role") == "admin":
+    """Sellers publish only on storefronts where an admin approved the organisation they act
+    for (seller_member sets seller_org_id). Admins are not limited."""
+    if is_admin(user):
         return
     keys = sorted({str(getattr(k, "value", k)) for k in storefront_keys})
     if not keys:
@@ -121,14 +121,13 @@ async def assert_storefront_grants(user: dict[str, Any], storefront_keys) -> Non
               SELECT 1
               FROM seller_storefront_grant g
               JOIN seller_organization o ON o.id = g.organization_id AND o.status = 'ACTIVE'
-              JOIN seller_org_member m ON m.organization_id = o.id AND m.status = 'ACTIVE'
               JOIN storefront s ON s.id = g.storefront_id
-              WHERE m.user_id = $1 AND s.storefront_key = k.key
+              WHERE g.organization_id = $1 AND s.storefront_key = k.key
                 AND g.grant_status = 'APPROVED'
                 AND (g.effective_at IS NULL OR g.effective_at <= NOW())
                 AND (g.revoked_at IS NULL OR g.revoked_at > NOW()))
             """,
-            uuid.UUID(str(user["id"])), keys,
+            uuid.UUID(str(user["seller_org_id"])), keys,
         )
     if missing:
         raise HTTPException(

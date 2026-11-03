@@ -17,7 +17,6 @@ class AdminUserItem(BaseModel):
     is_active: bool
     is_email_verified: bool
     is_phone_verified: bool
-    role: str
     created_at: datetime
     last_login_at: datetime | None = None
 

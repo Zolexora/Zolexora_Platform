@@ -279,7 +279,7 @@ async def test_revoked_grant_immediately_blocks_publishing(pg_conn, repo, seed_d
     await repo.update_grant_status(grant_id=grant_id, decision="APPROVE", admin_user_id=admin_id)
 
     user_payload = {"id": str(s1_id), "email": "seller1@example.com", "role": "seller"}
-    admin_payload = {"id": str(admin_id), "email": "admin@example.com", "role": "admin"}
+    admin_payload = {"id": str(admin_id), "email": "admin@example.com", "is_admin": True}
     mock_sf_repo = MockStorefrontRepository(shop_sf_id, mahila_sf_id)
 
     marketplace_app.dependency_overrides[pg_conn_dep] = lambda: pg_conn

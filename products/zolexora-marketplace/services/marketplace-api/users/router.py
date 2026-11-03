@@ -24,7 +24,7 @@ from typing import Optional
 from pydantic import BaseModel, Field
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 
-from core.deps import current_user, admin_only
+from core.deps import current_user, admin_only, is_admin
 from users.models import (
     AddressCreate,
     AddressResponse,
@@ -62,7 +62,7 @@ class ServiceabilityRequest(BaseModel):
 
 @router.get("/me", response_model=UserProfile)
 async def get_me(user: dict = Depends(current_user)) -> UserProfile:
-    """The signed-in user's marketplace profile (role, coins, picture)."""
+    """The signed-in user's marketplace profile (coins, picture)."""
     return UserProfile(**user)
 
 
@@ -72,7 +72,7 @@ async def update_me(
     user: dict = Depends(current_user),
     repo: UserRepository = Depends(get_user_repository),
 ) -> UserProfile:
-    if user["role"] == "admin":
+    if is_admin(user):
         raise HTTPException(400, "Administrator profiles are managed in the auth service")
     await repo.update_fields(user["id"], data.model_dump(exclude_none=True))
     return UserProfile(**(await repo.get_by_id(user["id"])))
@@ -84,7 +84,7 @@ async def upload_avatar(
     user: dict = Depends(current_user),
     repo: UserRepository = Depends(get_user_repository),
 ) -> dict:
-    if user["role"] == "admin":
+    if is_admin(user):
         raise HTTPException(400, "Administrator profiles are managed in the auth service")
     if file.content_type not in {"image/jpeg", "image/png", "image/webp"}:
         raise HTTPException(400, "Invalid image format. Allowed formats: JPEG, PNG, WebP")
@@ -141,7 +141,6 @@ async def get_my_profile_details(
     return UserProfileDetails(
         id=profile["id"],
         name=profile["name"],
-        role=profile["role"],
         picture=profile.get("picture"),
         coin_balance=profile.get("coin_balance", 0),
         created_at=profile["created_at"],
@@ -162,13 +161,12 @@ async def get_user_profile(
     profile = await repo.get_by_id(user_id)
     if not profile:
         raise HTTPException(404, "User not found")
-    is_self_or_admin = str(user.get("id")) == str(user_id) or user.get("role") == "admin"
+    is_self_or_admin = str(user.get("id")) == str(user_id) or is_admin(user)
     if is_self_or_admin:
         return UserProfile(**profile)
     return PublicUserProfile(
         id=profile["id"],
         name=profile["name"],
-        role=profile["role"],
         picture=profile.get("picture"),
         created_at=profile["created_at"],
     )
@@ -178,12 +176,11 @@ async def get_user_profile(
 async def list_users(
     limit: int = Query(50, ge=1, le=100),
     offset: int = Query(0, ge=0),
-    role: Optional[str] = None,
     _: dict = Depends(admin_only),
     repo: UserRepository = Depends(get_user_repository),
 ) -> list[UserProfile]:
     """List all users (admin only)."""
-    users = await repo.list_users(limit=limit, offset=offset, role=role)
+    users = await repo.list_users(limit=limit, offset=offset)
     return [UserProfile(**u) for u in users]
 
 

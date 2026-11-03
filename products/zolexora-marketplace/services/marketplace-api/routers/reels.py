@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from pydantic import BaseModel
 
-from core.deps import db_dep, current_user, optional_user
+from core.deps import db_dep, current_user, is_admin, optional_user
 from core.config import settings
 from models.documents import ReelDoc, CoinTxDoc
 from users.repositories import UserRepository, get_user_repository
@@ -109,7 +109,7 @@ async def view_reel(
 @router.put("/{reel_id}")
 async def update_reel(reel_id:str, data:dict, context: StorefrontContext | None = Depends(optional_storefront_context), user=Depends(current_user), db:AsyncIOMotorDatabase=Depends(db_dep)):
     allowed = {"title","description","linked_product_id","sponsor_data","is_active"}
-    fq = {"id": reel_id} if user["role"] == "admin" else {"id": reel_id, "creator_id": user["id"]}
+    fq = {"id": reel_id} if is_admin(user) else {"id": reel_id, "creator_id": user["id"]}
     if context:
         fq["storefront_id"] = context.key
     await db.reels.update_one(fq,{"$set":{k:v for k,v in data.items() if k in allowed}})
@@ -118,7 +118,7 @@ async def update_reel(reel_id:str, data:dict, context: StorefrontContext | None 
 
 @router.delete("/{reel_id}")
 async def delete_reel(reel_id:str, context: StorefrontContext | None = Depends(optional_storefront_context), user=Depends(current_user), db:AsyncIOMotorDatabase=Depends(db_dep)):
-    fq = {"id": reel_id} if user["role"] == "admin" else {"id": reel_id, "creator_id": user["id"]}
+    fq = {"id": reel_id} if is_admin(user) else {"id": reel_id, "creator_id": user["id"]}
     if context:
         fq["storefront_id"] = context.key
     await db.reels.delete_one(fq)

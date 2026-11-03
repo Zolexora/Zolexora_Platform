@@ -3,6 +3,7 @@
 import json
 import re
 
+from core.deps import is_admin
 from shared.database.postgres import connection
 
 _UUID_RE = re.compile(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}")
@@ -11,7 +12,7 @@ _UUID_RE = re.compile(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abA
 async def audit_admin_mutation(request, response, user: dict) -> None:
     if getattr(request.state, "admin_audit_recorded", False):
         return
-    if user.get("role") != "admin" or request.method in {"GET", "HEAD", "OPTIONS"}:
+    if not is_admin(user) or request.method in {"GET", "HEAD", "OPTIONS"}:
         return
     target = next((m.group(0) for m in _UUID_RE.finditer(request.url.path)), None)
     action = f"{request.method}_{request.url.path.strip('/').replace('/', '_')}"[:100]

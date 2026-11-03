@@ -8,7 +8,7 @@ from core.deps import has_permission, require_permission
 
 
 def admin(role="", perms=()):
-    return {"id": "a1", "role": "admin", "admin_role": role, "permissions": list(perms)}
+    return {"id": "a1", "is_admin": True, "admin_role": role, "permissions": list(perms)}
 
 
 def test_permission_rules():
@@ -28,29 +28,41 @@ async def test_require_permission_rejects_admins_without_it():
 
 
 @pytest.mark.asyncio
-async def test_local_admin_role_is_treated_as_buyer(monkeypatch):
+async def test_a_local_profile_is_never_an_admin(monkeypatch):
     async def introspect(token):
         return {"uid": "u1", "email": "a@b.c", "email_verified": True, "is_platform_admin": False}
 
     class Repo:
         async def sync_identity(self, identity):
-            return {"id": "u1", "role": "admin", "is_active": True, "status": "active"}
+            return {"id": "u1", "is_admin": True, "is_active": True, "status": "active"}
 
     class Req:
+        headers = {}
+
         class state:
             pass
 
     monkeypatch.setattr(deps, "introspect", introspect)
     creds = type("C", (), {"credentials": "t"})()
     user = await deps.current_user(Req(), creds, Repo())
-    assert user["role"] == "buyer"
+    assert not deps.is_admin(user)
     with pytest.raises(HTTPException):
         await deps.admin_only(user)
 
 
+def test_marketplace_has_no_role_endpoint():
+    from main import app
+    assert not [r for r in app.routes if "/users/" in getattr(r, "path", "") and r.path.endswith("/role")]
+
+
 @pytest.mark.asyncio
-async def test_admins_cannot_hand_out_the_admin_role():
-    from routers.other import admin_set_role
+@pytest.mark.parametrize("user", [
+    {"id": "s1", "zolexora_org_id": "ZX-ORG-AAAA-BBBB-CCCC", "seller_org_id": "o1"},
+    {"id": "a1", "is_admin": True},
+])
+async def test_staff_and_admins_cannot_create_seller_organisations(user):
+    from seller_orgs.router import create_seller_organization
+    from seller_orgs.schemas import SellerOrgCreate
     with pytest.raises(HTTPException) as exc:
-        await admin_set_role("u1", "admin", u=admin(perms=["*"]), user_repo=None)
-    assert exc.value.status_code == 400
+        await create_seller_organization(SellerOrgCreate(name="Shop", slug="shop"), user=user, repo=None)
+    assert exc.value.status_code == 403

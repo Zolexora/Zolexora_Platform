@@ -46,7 +46,7 @@ buyer_1 = {"id": "buyer-1", "role": "viewer", "full_name": "Alice Buyer"}
 buyer_2 = {"id": "buyer-2", "role": "viewer", "full_name": "Bob Buyer"}
 seller_1 = {"id": "sel-1", "role": "seller", "name": "Seller One"}
 seller_2 = {"id": "sel-2", "role": "seller", "name": "Seller Two"}
-admin_user = {"id": "admin-1", "role": "admin", "full_name": "Admin User"}
+admin_user = {"id": "admin-1", "is_admin": True, "full_name": "Admin User"}
 
 
 class EnhancedFakeDB:

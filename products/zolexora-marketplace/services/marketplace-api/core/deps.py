@@ -1,12 +1,18 @@
 """Authentication and authorization dependencies.
 
 Sign-in belongs to the Zolexora auth service. Every request carries its bearer token,
-which core.auth_service checks with the auth service. Buyers and sellers are public
-(Track 1) users with a local marketplace profile; administrators are auth-service
-platform admins (Track 3) and have no local profile.
+which core.auth_service checks with the auth service. Access follows only from how the
+person signed in; the marketplace keeps no roles of its own:
+
+- Track 1 (public): shoppers. In the seller portal they act for a seller organisation they
+  are an active member of (X-Organization-Id, else their oldest), or create one.
+- Track 2 (employee): staff of a Zolexora organisation linked to a seller organisation; they
+  act only for that organisation.
+- Track 3 (platform admin): administrators, with the permissions in their token.
 """
 
 import logging
+import uuid
 
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -14,6 +20,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from core.auth_service import AuthServiceError, InvalidToken, introspect
 from core.database import get_db
+from shared.database.postgres import connection
 from users.repositories import UserRepository, get_user_repository
 
 logger = logging.getLogger("zolexora.auth")
@@ -34,7 +41,7 @@ def _admin(identity: dict) -> dict:
         "email": identity.get("email") or "",
         "name": identity.get("email") or "Administrator",
         "full_name": identity.get("email") or "Administrator",
-        "role": "admin",
+        "is_admin": True,
         "admin_role": identity.get("role") or "",
         "permissions": list(identity.get("permissions") or []),
         "coin_balance": 0,
@@ -60,19 +67,43 @@ async def current_user(
 
     if identity.get("is_platform_admin") is True:
         user = _admin(identity)
+    elif identity.get("org_id"):
+        user = await _employee(identity, repo)
     elif identity.get("email") and identity.get("email_verified") is True:
         user = await repo.sync_identity(identity)
         if not user["is_active"] or user.get("status", "active") != "active":
             raise HTTPException(403, "Account is suspended")
-        if user["role"] not in ("buyer", "seller"):
-            # Administrators are auth-service platform admins only; a local role never grants it.
-            user = {**user, "role": "buyer"}
     else:
-        # Employee (Track 2) tokens and unverified accounts have no marketplace access.
+        # Unverified accounts have no marketplace access.
         raise HTTPException(403, "This account cannot use the marketplace")
 
+    if identity.get("is_platform_admin") is not True:
+        # Only a platform-admin token administers; nothing stored locally can grant it.
+        user = {**user, "is_admin": False}
+    if "seller_org_id" not in user and request.headers.get("X-Organization-Id"):
+        # Owners choose among their seller organisations (checked against membership where used).
+        user = {**user, "requested_org_id": request.headers["X-Organization-Id"]}
     request.state.authenticated_user = user
     return user
+
+
+# Auth-service employee roles → seller organisation roles (OWNER stays with the Track 1 owner).
+_EMPLOYEE_MEMBER_ROLES = {"owner": "ADMIN", "admin": "ADMIN", "manager": "MANAGER"}
+
+
+async def _employee(identity: dict, repo: UserRepository) -> dict:
+    async with connection() as conn:
+        org = await conn.fetchrow(
+            "SELECT id, status FROM seller_organization WHERE zolexora_org_id = $1", identity["org_id"],
+        )
+    if not org or org["status"] in ("SUSPENDED", "REJECTED", "INACTIVE"):
+        raise HTTPException(403, "Your organisation is not linked to a marketplace seller account, or it is suspended")
+    member_role = _EMPLOYEE_MEMBER_ROLES.get(str(identity.get("role") or "").lower(), "MEMBER")
+    user = await repo.sync_employee(identity, org["id"], member_role)
+    if not user["is_active"] or user.get("status", "active") != "active":
+        raise HTTPException(403, "Account is suspended")
+    # Staff act only for their own organisation.
+    return {**user, "seller_org_id": str(org["id"]), "zolexora_org_id": identity["org_id"]}
 
 
 async def optional_user(
@@ -88,14 +119,46 @@ async def optional_user(
         return None
 
 
-async def seller_only(user=Depends(current_user)):
-    if user["role"] not in ("seller", "admin"):
-        raise HTTPException(403, "Sellers only")
-    return user
+def is_admin(user: dict | None) -> bool:
+    """A platform admin (Track 3) token."""
+    return bool(user) and user.get("is_admin") is True
+
+
+async def seller_member(user=Depends(current_user)) -> dict:
+    """The user acting for a seller organisation they are an active member of: staff for their
+    linked one, owners for X-Organization-Id or else their oldest (same rule as TMS)."""
+    wanted = user.get("seller_org_id") or user.get("requested_org_id")
+    try:
+        wanted_id = uuid.UUID(str(wanted)) if wanted else None
+        user_id = uuid.UUID(str(user["id"]))
+    except ValueError:
+        wanted_id = user_id = None
+    org_id = None
+    if user_id and not is_admin(user):
+        async with connection() as conn:
+            org_id = await conn.fetchval(
+                """SELECT m.organization_id FROM seller_org_member m
+                   JOIN seller_organization o ON o.id = m.organization_id
+                   WHERE m.user_id = $1 AND m.status = 'ACTIVE' AND o.status = 'ACTIVE'
+                     AND ($2::uuid IS NULL OR m.organization_id = $2)
+                   ORDER BY m.created_at ASC LIMIT 1""",
+                user_id, wanted_id,
+            )
+    if not org_id:
+        raise HTTPException(
+            403, "Create or choose a seller organisation first",
+            headers={"X-Error-Code": "SELLER_ORGANIZATION_REQUIRED"},
+        )
+    return {**user, "seller_org_id": str(org_id)}
+
+
+async def seller_only(user=Depends(current_user)) -> dict:
+    """Seller endpoints: a seller organisation member, or a platform admin."""
+    return user if is_admin(user) else await seller_member(user)
 
 
 async def admin_only(user=Depends(current_user)):
-    if user["role"] != "admin":
+    if not is_admin(user):
         raise HTTPException(403, "Admins only")
     return user
 

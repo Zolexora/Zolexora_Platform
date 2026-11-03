@@ -30,7 +30,7 @@ class Repo:
 
     async def sync_identity(self, identity: dict) -> dict:
         self.synced.append(identity)
-        return {"id": identity["uid"], "email": identity["email"], "role": "buyer",
+        return {"id": identity["uid"], "email": identity["email"],
                 "is_active": self.status == "active", "status": self.status}
 
 
@@ -72,7 +72,7 @@ async def test_public_user_gets_marketplace_profile(monkeypatch):
     _identity(monkeypatch, BUYER)
     repo = Repo()
     user = await deps.current_user(_request(), _bearer(), repo)
-    assert user["id"] == BUYER["uid"] and user["role"] == "buyer"
+    assert user["id"] == BUYER["uid"] and not deps.is_admin(user)
     assert repo.synced == [BUYER]
 
 
@@ -90,16 +90,15 @@ async def test_platform_admin_is_marketplace_admin_without_profile(monkeypatch):
                             "role": "admin", "permissions": ["users:read"]})
     repo = Repo()
     user = await deps.current_user(_request(), _bearer(), repo)
-    assert user["role"] == "admin" and user["permissions"] == ["users:read"]
+    assert deps.is_admin(user) and user["permissions"] == ["users:read"]
     assert repo.synced == []
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("identity", [
-    {"uid": "e-1", "email": "staff@acme.com", "org_id": "ZX-ORG-1"},  # employee token: no profile fields
     {**BUYER, "email_verified": False},
 ])
-async def test_employees_and_unverified_accounts_are_refused(monkeypatch, identity):
+async def test_unverified_accounts_are_refused(monkeypatch, identity):
     _identity(monkeypatch, identity)
     with pytest.raises(HTTPException) as exc:
         await deps.current_user(_request(), _bearer(), Repo())
@@ -157,3 +156,22 @@ def test_docker_swaps_localhost(monkeypatch):
     monkeypatch.setattr(settings, "AUTH_SERVICE_URL", "http://localhost:4000")
     monkeypatch.setattr(settings, "MARKETPLACE_IN_DOCKER", True)
     assert auth_service.auth_service_url() == "http://host.docker.internal:4000"
+
+
+@pytest.mark.asyncio
+async def test_employee_tokens_act_only_for_their_linked_seller_organisation(monkeypatch):
+    """Track 2 staff: the auth service vouches for the ZX-ORG; the seller org is the one linked to it."""
+    seen = {}
+
+    async def employee(identity, repo):
+        seen["org"] = identity["org_id"]
+        return {"id": "e-1", "role": "seller", "seller_org_id": "org-a"}
+
+    async def introspect(token):
+        return {"uid": "e-1", "email": "staff@acme.com", "org_id": "ZX-ORG-AAAA-BBBB-CCCC", "role": "member"}
+
+    monkeypatch.setattr(deps, "introspect", introspect)
+    monkeypatch.setattr(deps, "_employee", employee)
+    user = await deps.current_user(_request(), _bearer(), Repo())
+    assert seen["org"] == "ZX-ORG-AAAA-BBBB-CCCC"
+    assert user["seller_org_id"] == "org-a" and "requested_org_id" not in user

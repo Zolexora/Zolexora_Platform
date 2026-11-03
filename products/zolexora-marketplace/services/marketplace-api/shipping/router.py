@@ -3,7 +3,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from typing import Optional
 from pydantic import BaseModel
 
-from core.deps import db_dep, current_user, seller_only, admin_only
+from core.deps import db_dep, current_user, seller_only, admin_only, is_admin
 from shipping.service import ShippingService
 from shipping.schemas import (
     PickupLocationCreate, PickupLocationDoc,
@@ -18,7 +18,7 @@ def get_service(db: AsyncIOMotorDatabase = Depends(db_dep)) -> ShippingService:
 
 
 def _is_admin(user: dict) -> bool:
-    return user["role"] == "admin"
+    return is_admin(user)
 
 
 async def _owned_order(db: AsyncIOMotorDatabase, order_id: str, user: dict) -> dict:
@@ -43,7 +43,7 @@ async def _owned_shipment(db: AsyncIOMotorDatabase, shipment_id: str, user: dict
 
 @router.get("/pickup-locations")
 async def list_pickup_locations(user=Depends(current_user), db: AsyncIOMotorDatabase = Depends(db_dep)):
-    seller_id = user["id"] if user["role"] != "admin" else None
+    seller_id = None if is_admin(user) else user["id"]
     q = {"seller_id": seller_id} if seller_id else {}
     return await db.seller_pickup_locations.find(q, {"_id": 0}).to_list(50)
 
@@ -76,7 +76,7 @@ async def update_pickup_location(loc_id: str, data: dict = Body(...), user=Depen
 
 @router.delete("/pickup-locations/{loc_id}")
 async def delete_pickup_location(loc_id: str, user=Depends(seller_only), db: AsyncIOMotorDatabase = Depends(db_dep)):
-    fq = {"id": loc_id} if user["role"] == "admin" else {"id": loc_id, "seller_id": user["id"]}
+    fq = {"id": loc_id} if is_admin(user) else {"id": loc_id, "seller_id": user["id"]}
     await db.seller_pickup_locations.delete_one(fq)
     return {"message": "Deleted"}
 
@@ -157,7 +157,7 @@ async def manual_book(order_id: str, req: ManualBookRequest, user=Depends(seller
 @router.get("/shipments/{shipment_id}")
 async def get_shipment(shipment_id: str, user=Depends(current_user), db: AsyncIOMotorDatabase = Depends(db_dep)):
     fq = {"id": shipment_id}
-    if user["role"] not in ["admin"]:
+    if not is_admin(user):
         fq["$or"] = [{"seller_id": user["id"]}, {"buyer_id": user["id"]}]
     s = await db.shipments.find_one(fq, {"_id": 0})
     if not s:

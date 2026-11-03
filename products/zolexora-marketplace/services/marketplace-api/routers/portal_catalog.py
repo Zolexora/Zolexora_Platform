@@ -6,7 +6,7 @@ from uuid import UUID, uuid4
 from fastapi import APIRouter, Depends, HTTPException, Query
 from asyncpg import Connection
 
-from core.deps import admin_only, current_user, require_permission
+from core.deps import admin_only, require_permission, seller_member
 from shared.database.postgres import pg_conn_dep
 from models.portal_catalog import (
     AdminInventoryResponse,
@@ -33,25 +33,12 @@ from storefronts.models import StorefrontContext
 seller_catalog_router = APIRouter(prefix="/seller/catalog", tags=["seller-catalog"])
 admin_catalog_router = APIRouter(prefix="/admin/catalog", tags=["admin-catalog"])
 
-async def seller_actor(user=Depends(current_user)):
-    if user.get("role") != "seller":
-        raise HTTPException(403, "Sellers only")
-    return user
+seller_actor = seller_member
+
 
 async def get_seller_org(user, db: Connection) -> UUID:
-    org_id = await db.fetchval(
-        """
-        SELECT m.organization_id 
-        FROM seller_org_member m
-        JOIN seller_organization o ON m.organization_id = o.id
-        WHERE m.user_id = $1 AND m.status = 'ACTIVE' AND o.status = 'ACTIVE'
-        LIMIT 1
-        """,
-        UUID(user["id"])
-    )
-    if not org_id:
-        raise HTTPException(403, "Seller organization not found")
-    return org_id
+    """The organisation seller_member resolved for this request."""
+    return UUID(user["seller_org_id"])
 
 def map_status_to_db(status: str) -> str:
     if status == ListingStatus.ACTIVE: return "PUBLISHED"

@@ -13,7 +13,7 @@ export interface paths {
         };
         /**
          * Get Me
-         * @description The signed-in user's marketplace profile (role, coins, picture).
+         * @description The signed-in user's marketplace profile (coins, picture).
          */
         get: operations["get_me_api_users_me_get"];
         /** Update Me */
@@ -532,6 +532,23 @@ export interface paths {
         /** Admin view organization verification history */
         get: operations["admin_get_verification_history_api_admin_seller_organizations__org_id__verification_history_get"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/seller-organizations/{org_id}/zolexora-org": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Link the seller organisation to a Zolexora (auth-service) organisation */
+        put: operations["admin_link_zolexora_org_api_admin_seller_organizations__org_id__zolexora_org_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1556,23 +1573,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/admin/users/{uid}/role": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Admin Set Role */
-        put: operations["admin_set_role_api_admin_users__uid__role_put"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/admin/users/{uid}/toggle": {
         parameters: {
             query?: never;
@@ -2111,7 +2111,7 @@ export interface paths {
         };
         /**
          * Get Me
-         * @description The signed-in user's marketplace profile (role, coins, picture).
+         * @description The signed-in user's marketplace profile (coins, picture).
          */
         get: operations["get_me_users_me_get"];
         /** Update Me */
@@ -2630,6 +2630,23 @@ export interface paths {
         /** Admin view organization verification history */
         get: operations["admin_get_verification_history_admin_seller_organizations__org_id__verification_history_get"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/seller-organizations/{org_id}/zolexora-org": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Link the seller organisation to a Zolexora (auth-service) organisation */
+        put: operations["admin_link_zolexora_org_admin_seller_organizations__org_id__zolexora_org_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -3654,23 +3671,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/admin/users/{uid}/role": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Admin Set Role */
-        put: operations["admin_set_role_admin_users__uid__role_put"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/admin/users/{uid}/toggle": {
         parameters: {
             query?: never;
@@ -4623,8 +4623,6 @@ export interface components {
             is_email_verified: boolean;
             /** Is Phone Verified */
             is_phone_verified: boolean;
-            /** Role */
-            role: string;
             /**
              * Created At
              * Format: date-time
@@ -5448,8 +5446,6 @@ export interface components {
             id: string;
             /** Name */
             name: string;
-            /** Role */
-            role: string;
             /** Picture */
             picture?: string | null;
             /** Created At */
@@ -6197,8 +6193,6 @@ export interface components {
             email: string;
             /** Name */
             name: string;
-            /** Role */
-            role: string;
             /** Coin Balance */
             coin_balance: number;
             /** Is Active */
@@ -6219,6 +6213,8 @@ export interface components {
             picture?: string | null;
             /** Created At */
             created_at?: string | null;
+            /** Zolexora Org Id */
+            zolexora_org_id?: string | null;
         };
         /**
          * UserProfileDetails
@@ -6229,8 +6225,6 @@ export interface components {
             id: string;
             /** Name */
             name: string;
-            /** Role */
-            role: string;
             /** Picture */
             picture?: string | null;
             /**
@@ -6276,6 +6270,14 @@ export interface components {
             razorpay_payment_id: string;
             /** Razorpay Signature */
             razorpay_signature: string;
+        };
+        /**
+         * ZolexoraOrgLink
+         * @description ZX-ORG id of the auth-service organisation whose employees are this seller's staff; null unlinks.
+         */
+        ZolexoraOrgLink: {
+            /** Zolexora Org Id */
+            zolexora_org_id?: string | null;
         };
     };
     responses: never;
@@ -6430,7 +6432,6 @@ export interface operations {
             query?: {
                 limit?: number;
                 offset?: number;
-                role?: string | null;
             };
             header?: never;
             path?: never;
@@ -7288,6 +7289,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SellerVerificationHistoryResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_link_zolexora_org_api_admin_seller_organizations__org_id__zolexora_org_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ZolexoraOrgLink"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -9344,39 +9380,6 @@ export interface operations {
             };
         };
     };
-    admin_set_role_api_admin_users__uid__role_put: {
-        parameters: {
-            query: {
-                role: string;
-            };
-            header?: never;
-            path: {
-                uid: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     admin_toggle_user_api_admin_users__uid__toggle_put: {
         parameters: {
             query?: never;
@@ -10392,7 +10395,6 @@ export interface operations {
             query?: {
                 limit?: number;
                 offset?: number;
-                role?: string | null;
             };
             header?: never;
             path?: never;
@@ -11250,6 +11252,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SellerVerificationHistoryResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_link_zolexora_org_admin_seller_organizations__org_id__zolexora_org_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ZolexoraOrgLink"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -13302,39 +13339,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
-                };
-            };
-        };
-    };
-    admin_set_role_admin_users__uid__role_put: {
-        parameters: {
-            query: {
-                role: string;
-            };
-            header?: never;
-            path: {
-                uid: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

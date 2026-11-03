@@ -12,7 +12,7 @@
           "users"
         ],
         "summary": "Get Me",
-        "description": "The signed-in user's marketplace profile (role, coins, picture).",
+        "description": "The signed-in user's marketplace profile (coins, picture).",
         "operationId": "get_me_api_users_me_get",
         "responses": {
           "200": {
@@ -243,22 +243,6 @@
               "minimum": 0,
               "default": 0,
               "title": "Offset"
-            }
-          },
-          {
-            "name": "role",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Role"
             }
           }
         ],
@@ -1655,6 +1639,62 @@
                   },
                   "title": "Response Admin Get Verification History Api Admin Seller Organizations  Org Id  Verification History Get"
                 }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/seller-organizations/{org_id}/zolexora-org": {
+      "put": {
+        "tags": [
+          "seller-organizations"
+        ],
+        "summary": "Link the seller organisation to a Zolexora (auth-service) organisation",
+        "operationId": "admin_link_zolexora_org_api_admin_seller_organizations__org_id__zolexora_org_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Org Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ZolexoraOrgLink"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           },
@@ -4760,60 +4800,6 @@
         ]
       }
     },
-    "/api/admin/users/{uid}/role": {
-      "put": {
-        "tags": [
-          "admin"
-        ],
-        "summary": "Admin Set Role",
-        "operationId": "admin_set_role_api_admin_users__uid__role_put",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "uid",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Uid"
-            }
-          },
-          {
-            "name": "role",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Role"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/admin/users/{uid}/toggle": {
       "put": {
         "tags": [
@@ -5976,7 +5962,7 @@
           "users"
         ],
         "summary": "Get Me",
-        "description": "The signed-in user's marketplace profile (role, coins, picture).",
+        "description": "The signed-in user's marketplace profile (coins, picture).",
         "operationId": "get_me_users_me_get",
         "responses": {
           "200": {
@@ -6207,22 +6193,6 @@
               "minimum": 0,
               "default": 0,
               "title": "Offset"
-            }
-          },
-          {
-            "name": "role",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Role"
             }
           }
         ],
@@ -7619,6 +7589,62 @@
                   },
                   "title": "Response Admin Get Verification History Admin Seller Organizations  Org Id  Verification History Get"
                 }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/seller-organizations/{org_id}/zolexora-org": {
+      "put": {
+        "tags": [
+          "seller-organizations"
+        ],
+        "summary": "Link the seller organisation to a Zolexora (auth-service) organisation",
+        "operationId": "admin_link_zolexora_org_admin_seller_organizations__org_id__zolexora_org_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Org Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ZolexoraOrgLink"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           },
@@ -10724,60 +10750,6 @@
         ]
       }
     },
-    "/admin/users/{uid}/role": {
-      "put": {
-        "tags": [
-          "admin"
-        ],
-        "summary": "Admin Set Role",
-        "operationId": "admin_set_role_admin_users__uid__role_put",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "uid",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Uid"
-            }
-          },
-          {
-            "name": "role",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Role"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/admin/users/{uid}/toggle": {
       "put": {
         "tags": [
@@ -13045,10 +13017,6 @@
             "type": "boolean",
             "title": "Is Phone Verified"
           },
-          "role": {
-            "type": "string",
-            "title": "Role"
-          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -13076,7 +13044,6 @@
           "is_active",
           "is_email_verified",
           "is_phone_verified",
-          "role",
           "created_at"
         ],
         "title": "AdminUserItem"
@@ -15158,10 +15125,6 @@
             "type": "string",
             "title": "Name"
           },
-          "role": {
-            "type": "string",
-            "title": "Role"
-          },
           "picture": {
             "anyOf": [
               {
@@ -15182,7 +15145,6 @@
         "required": [
           "id",
           "name",
-          "role",
           "created_at"
         ],
         "title": "PublicUserProfile",
@@ -17080,10 +17042,6 @@
             "type": "string",
             "title": "Name"
           },
-          "role": {
-            "type": "string",
-            "title": "Role"
-          },
           "coin_balance": {
             "type": "integer",
             "title": "Coin Balance"
@@ -17134,6 +17092,17 @@
               }
             ],
             "title": "Created At"
+          },
+          "zolexora_org_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Zolexora Org Id"
           }
         },
         "type": "object",
@@ -17141,7 +17110,6 @@
           "id",
           "email",
           "name",
-          "role",
           "coin_balance",
           "is_active"
         ],
@@ -17157,10 +17125,6 @@
           "name": {
             "type": "string",
             "title": "Name"
-          },
-          "role": {
-            "type": "string",
-            "title": "Role"
           },
           "picture": {
             "anyOf": [
@@ -17197,7 +17161,6 @@
         "required": [
           "id",
           "name",
-          "role",
           "created_at",
           "contacts"
         ],
@@ -17303,6 +17266,25 @@
           "razorpay_signature"
         ],
         "title": "VerifyPaymentRequest"
+      },
+      "ZolexoraOrgLink": {
+        "properties": {
+          "zolexora_org_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^ZX-ORG-[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{4}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Zolexora Org Id"
+          }
+        },
+        "type": "object",
+        "title": "ZolexoraOrgLink",
+        "description": "ZX-ORG id of the auth-service organisation whose employees are this seller's staff; null unlinks."
       }
     },
     "securitySchemes": {

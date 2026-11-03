@@ -13,7 +13,6 @@ class UserProfile(BaseModel):
     id: str
     email: str
     name: str
-    role: str
     coin_balance: int
     is_active: bool
     is_email_verified: bool = True
@@ -21,6 +20,8 @@ class UserProfile(BaseModel):
     is_phone_verified: bool = False
     picture: Optional[str] = None
     created_at: Optional[str] = None
+    # Set for Track 2 staff: the Zolexora organisation they signed in to.
+    zolexora_org_id: Optional[str] = None
 
 
 class ProfileUpdate(BaseModel):
@@ -34,7 +35,6 @@ class PublicUserProfile(BaseModel):
     """Public user profile — safe to serialize and return to third-party authenticated users."""
     id: str
     name: str
-    role: str
     picture: Optional[str] = None
     created_at: str
 
@@ -84,7 +84,6 @@ class UserProfileDetails(BaseModel):
     """Rich user profile response containing dedicated Contacts and Addresses sections."""
     id: str
     name: str
-    role: str
     picture: Optional[str] = None
     coin_balance: int = 0
     created_at: str

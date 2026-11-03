@@ -11,7 +11,7 @@ from shipping.service import ShippingService
 seller = {"id": "seller-1", "role": "seller"}
 other_seller = {"id": "seller-2", "role": "seller"}
 buyer = {"id": "buyer-1", "role": "buyer"}
-admin = {"id": "admin-1", "role": "admin"}
+admin = {"id": "admin-1", "is_admin": True}
 
 
 @pytest.fixture

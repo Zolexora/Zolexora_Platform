@@ -3,7 +3,7 @@ from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Optional
-from core.deps import db_dep, current_user, admin_only, require_permission
+from core.deps import db_dep, current_user, admin_only, is_admin, require_permission, seller_only
 from core.config import settings
 from core.payments import create_razorpay_order
 from models.documents import CoinTxDoc
@@ -20,16 +20,15 @@ async def my_orders(user=Depends(current_user), context: StorefrontContext=Depen
     return await db.orders.find({"buyer_id":user["id"], "storefront_id": context.key},{"_id":0}).sort("created_at",-1).to_list(100)
 
 @orders_router.get("/seller")
-async def seller_orders(user=Depends(current_user), context: StorefrontContext=Depends(require_storefront_context), db=Depends(db_dep)):
-    if user["role"] not in ("seller","admin"): raise HTTPException(403,"Sellers only")
-    q = {"storefront_id": context.key} if user["role"]=="admin" else {"seller_id":user["id"], "storefront_id": context.key}
+async def seller_orders(user=Depends(seller_only), context: StorefrontContext=Depends(require_storefront_context), db=Depends(db_dep)):
+    q = {"storefront_id": context.key} if is_admin(user) else {"seller_id":user["id"], "storefront_id": context.key}
     return await db.orders.find(q,{"_id":0}).sort("created_at",-1).to_list(200)
 
 @orders_router.get("/{order_id}")
 async def get_order(order_id:str, user=Depends(current_user), context: StorefrontContext=Depends(require_storefront_context), db=Depends(db_dep)):
     order = await db.orders.find_one({"id":order_id, "storefront_id": context.key},{"_id":0})
     if not order: raise HTTPException(404,"Order not found")
-    if user["role"]!="admin" and order["buyer_id"]!=user["id"] and order.get("seller_id")!=user["id"]:
+    if not is_admin(user) and order["buyer_id"]!=user["id"] and order.get("seller_id")!=user["id"]:
         raise HTTPException(403,"Not your order")
     
     # If order is pending and has a cashfree order id, auto-sync payment status
@@ -53,7 +52,7 @@ async def get_order(order_id:str, user=Depends(current_user), context: Storefron
 async def update_order_status(order_id:str,status:str,user=Depends(current_user), context: StorefrontContext=Depends(require_storefront_context), db=Depends(db_dep)):
     if status not in ("processing","shipped","delivered","cancelled"):
         raise HTTPException(400,"Invalid status")
-    fq = {"id":order_id, "storefront_id": context.key} if user["role"]=="admin" else {"id":order_id,"seller_id":user["id"], "storefront_id": context.key}
+    fq = {"id":order_id, "storefront_id": context.key} if is_admin(user) else {"id":order_id,"seller_id":user["id"], "storefront_id": context.key}
     r = await db.orders.update_one(fq,{"$set":{"status":status,"updated_at":datetime.now(timezone.utc).isoformat()}})
     if r.matched_count==0: raise HTTPException(404,"Order not found or access denied")
     return {"message":"Status updated"}
@@ -135,8 +134,6 @@ async def admin_stats(
     sf = {"storefront_id": context.key.value} if context else {}
     return {
         "total_users":              await user_repo.count_users(),
-        "viewers":                  await user_repo.count_users(role="viewer"),
-        "sellers":                  await user_repo.count_users(role="seller"),
         "total_products":           await db.storefront_listings.count_documents(sf),
         "active_products":          await db.storefront_listings.count_documents({**sf, "is_active":True}),
         "total_reels":              await db.reels.count_documents(sf),
@@ -154,18 +151,6 @@ async def admin_users(
     user_repo:UserRepository=Depends(get_user_repository),
 ):
     return await user_repo.list_users(limit=1000)
-
-@admin_router.put("/users/{uid}/role")
-async def admin_set_role(
-    uid:str,
-    role:str,
-    u=Depends(require_permission("users:write")),
-    user_repo:UserRepository=Depends(get_user_repository),
-):
-    # Admins are managed in platform-admin (auth service), not granted here.
-    if role not in ("seller","buyer"): raise HTTPException(400,"Invalid role")
-    if not await user_repo.set_role(uid, role): raise HTTPException(404,"User not found")
-    return {"message":"Updated"}
 
 @admin_router.put("/users/{uid}/toggle")
 async def admin_toggle_user(

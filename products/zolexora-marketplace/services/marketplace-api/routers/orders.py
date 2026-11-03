@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
-from core.deps import db_dep, current_user, seller_only
+from core.deps import db_dep, current_user, is_admin, seller_only
 from shared.database.postgres import pg_conn_dep
 from integrations.zolexora_erp.outbox import sync_to_erp_outbox
 from storefronts.dependencies import require_storefront_context, optional_storefront_context
@@ -800,9 +800,9 @@ async def legacy_get_order(
     )
     if not doc:
         raise HTTPException(404, "Order not found")
-    if user["role"] != "admin" and doc["buyer_id"] != user["id"] and doc.get("seller_id") != user["id"]:
+    if not is_admin(user) and doc["buyer_id"] != user["id"] and doc.get("seller_id") != user["id"]:
         raise HTTPException(403, "Not your order")
 
-    if user["role"] == "seller" and doc.get("seller_id") == user["id"]:
+    if doc.get("seller_id") == user["id"]:
         return await get_seller_order_detail(order_id, context, user, db)
     return await get_buyer_order_detail(order_id, context, user, db)
