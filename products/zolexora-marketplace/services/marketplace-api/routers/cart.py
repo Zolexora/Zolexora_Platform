@@ -1,7 +1,6 @@
 import uuid
 import os
 import time
-import asyncio
 import hmac
 import hashlib
 import json
@@ -12,6 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from pydantic import BaseModel, Field, StrictInt
 
+from catalog import store as catalog_store
 from core.deps import db_dep, current_user
 from core.config import settings
 from storefronts.dependencies import require_storefront_context
@@ -67,13 +67,9 @@ class CheckoutQuote(BaseModel):
 # ── Internal Helpers ──────────────────────────────────────────────────────────
 
 async def _get_active_product(db: AsyncIOMotorDatabase, product_id: str, storefront_id: str):
-    from routers.products import _fetch_product_listing
+    """The buyable listing (PostgreSQL catalog) for this storefront, or None."""
     sf_str = str(storefront_id.value if hasattr(storefront_id, "value") else storefront_id)
-    listing = await db.storefront_listings.find_one({"id": product_id, "storefront_id": sf_str, "status": "active"})
-    if not listing:
-        return None
-    product_obj = await _fetch_product_listing(db, listing)
-    return product_obj
+    return await catalog_store.public_listing(product_id, sf_str)
 
 def _validate_cart_quantity(quantity: int, stock: int):
     max_quantity = settings.MAX_CART_QUANTITY
@@ -124,90 +120,35 @@ async def _resolve_cart(db: AsyncIOMotorDatabase, buyer_id: str, storefront_id: 
             _CART_CACHE[cache_key] = (now, res)
         return res
         
-    product_ids = [item["product_id"] for item in items]
-    
-    # 1. Batch fetch all active storefront listings in 1 query (with fallback for unit test mocks)
-    listings = []
-    try:
-        res = db.storefront_listings.find({
-            "id": {"$in": product_ids},
-            "storefront_id": sf_str,
-            "status": "active"
-        })
-        listings = await res.to_list(None) if hasattr(res, "to_list") else await res
-    except Exception:
-        listings = []
+    listings = await catalog_store.public_listings([item["product_id"] for item in items], sf_str)
 
-    if not listings and hasattr(db.storefront_listings, "find_one"):
-        for pid in product_ids:
-            l = await db.storefront_listings.find_one({"id": pid, "storefront_id": sf_str, "status": "active"})
-            if l:
-                listings.append(l)
-    
-    listing_by_id = {l["id"]: l for l in listings}
-    master_ids = [l["product_id"] for l in listings]
-    
-    # 2. Batch fetch master products and inventory concurrently (with fallback for unit test mocks)
-    masters, invs = [], []
-    try:
-        masters_coro = db.master_products.find({"id": {"$in": master_ids}}).to_list(None)
-        invs_coro = db.inventory_balances.find({"product_id": {"$in": master_ids}}).to_list(None)
-        masters, invs = await asyncio.gather(masters_coro, invs_coro)
-    except Exception:
-        masters, invs = [], []
-
-    if not masters and hasattr(db.master_products, "find_one"):
-        for mid in master_ids:
-            m = await db.master_products.find_one({"id": mid})
-            if m:
-                masters.append(m)
-    
-    master_by_id = {m["id"]: m for m in masters}
-    
     lines = []
     subtotal_minor = 0
     item_count = 0
-    
+
     for item in items:
-        pid = item["product_id"]
-        listing = listing_by_id.get(pid)
+        listing = listings.get(item["product_id"])
         if not listing:
             continue
-            
-        master = master_by_id.get(listing["product_id"]) or {}
         quantity = item["quantity"]
-        
-        raw_price = listing.get("price")
-        if isinstance(raw_price, dict):
-            unit_price = raw_price["amount_minor"]
-            line_currency = raw_price.get("currency", "INR")
-        else:
-            unit_price = getattr(raw_price, "amount_minor", 0)
-            line_currency = getattr(raw_price, "currency", "INR")
-            
+        unit_price, line_currency = listing.price.amount_minor, listing.price.currency
         if lines and line_currency != currency:
             raise HTTPException(400, "Cross-currency lines are not supported")
-            
         currency = line_currency
         line_subtotal = unit_price * quantity
-        
-        images = listing.get("images_override") or master.get("images", [])
-        title = listing.get("title_override") or master.get("title", "Product")
-        seller_name = master.get("seller_name", "Seller")
-        
         lines.append(CartLine(
-            product_id=listing["id"],
-            product_title=title,
-            image=images[0] if images else None,
-            seller_id=listing["seller_id"],
-            seller_name=seller_name,
+            product_id=listing.id,
+            product_title=listing.title,
+            image=listing.images[0] if listing.images else None,
+            seller_id=listing.seller_id,
+            seller_name=listing.seller_name,
             quantity=quantity,
             unit_price=Money(amount_minor=unit_price, currency=currency),
             subtotal=Money(amount_minor=line_subtotal, currency=currency)
         ))
         subtotal_minor += line_subtotal
         item_count += quantity
-        
+
     res = CartResponse(
         storefront_id=storefront_id,
         buyer_id=buyer_id,

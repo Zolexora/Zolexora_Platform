@@ -1,6 +1,6 @@
 from .base import APIModel
 from .primitives import EntityId, Money, UTCDateTime, PageCursor, PageResultMeta, PaginatedResponse
-from .catalog import MasterProductDoc, StorefrontListingDoc, InventoryBalanceDoc, ProductListingResponse
+from .catalog import ProductListingResponse
 from .payments import PaymentMethodType, PaymentIntentStatus, NextActionType, NextAction, RefundSummary, PaymentIntent, InternalProviderMetadata
 from .orders import (
     OrderStatus,
@@ -37,9 +37,6 @@ __all__ = [
     "PageCursor",
     "PageResultMeta",
     "PaginatedResponse",
-    "MasterProductDoc",
-    "StorefrontListingDoc",
-    "InventoryBalanceDoc",
     "ProductListingResponse",
     "PaymentMethodType",
     "PaymentIntentStatus",

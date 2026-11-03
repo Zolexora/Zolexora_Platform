@@ -112,20 +112,13 @@ async def _create_order_from_quote_impl(
         unit_price_minor = line_item["unit_price"]
 
         p_obj = await _get_active_product(db, pid, context.key)
-        if p_obj:
-            master_pid = getattr(p_obj, "master_product_id", pid) or pid
-            seller_id = p_obj.seller_id or "seller_default"
-            seller_name = p_obj.seller_name or "Seller"
-            title = p_obj.title or "Product"
-            image_url = p_obj.images[0] if p_obj.images else None
-        else:
-            listing_doc = await db.storefront_listings.find_one({"id": pid}, {"_id": 0}) or {}
-            master_pid = listing_doc.get("product_id") or pid
-            seller_id = listing_doc.get("seller_id") or "seller_default"
-            seller_name = listing_doc.get("seller_name") or "Seller"
-            title = listing_doc.get("title") or "Product"
-            images = listing_doc.get("images") or []
-            image_url = images[0] if images else None
+        if not p_obj:
+            raise HTTPException(409, "A product in your cart is no longer available; review your cart")
+        master_pid = pid
+        seller_id = p_obj.seller_id
+        seller_name = p_obj.seller_name or "Seller"
+        title = p_obj.title or "Product"
+        image_url = p_obj.images[0] if p_obj.images else None
 
         line_subtotal_minor = unit_price_minor * qty
         snapshot = OrderLineSnapshot(

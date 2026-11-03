@@ -105,7 +105,7 @@ async def require_storefront_grant(
     return storefront_id
 
 
-async def assert_storefront_grants(user: dict[str, Any], storefront_keys) -> None:
+async def assert_storefront_grants(user: dict[str, Any], storefront_keys, conn=None) -> None:
     """Sellers publish only on storefronts where an admin approved the organisation they act
     for (seller_member sets seller_org_id). Admins are not limited."""
     if is_admin(user):
@@ -113,8 +113,8 @@ async def assert_storefront_grants(user: dict[str, Any], storefront_keys) -> Non
     keys = sorted({str(getattr(k, "value", k)) for k in storefront_keys})
     if not keys:
         return
-    async with connection() as conn:
-        missing = await conn.fetch(
+    async def query(db):
+        return await db.fetch(
             """
             SELECT k.key FROM unnest($2::text[]) AS k(key)
             WHERE NOT EXISTS (
@@ -129,6 +129,11 @@ async def assert_storefront_grants(user: dict[str, Any], storefront_keys) -> Non
             """,
             uuid.UUID(str(user["seller_org_id"])), keys,
         )
+    if conn is not None:
+        missing = await query(conn)
+    else:
+        async with connection() as db:
+            missing = await query(db)
     if missing:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

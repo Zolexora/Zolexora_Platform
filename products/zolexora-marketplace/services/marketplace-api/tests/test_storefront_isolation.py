@@ -1,12 +1,8 @@
 import pytest
-from fastapi import HTTPException, UploadFile
-from io import BytesIO
+from fastapi import HTTPException
 
-from routers.products import update_product, delete_product, upload_image, ProductUpdate
 from routers.other import my_orders, seller_orders, get_order, update_order_status
 from storefronts.models import StorefrontContext, StorefrontDefinition, StorefrontContextSource, StorefrontKey
-from tests.test_product_delete import FakeDB as DeleteFakeDB
-from tests.test_product_validation import FakeDB as ValFakeDB
 
 def create_context(key_str: str) -> StorefrontContext:
     key = StorefrontKey(key_str)
@@ -29,61 +25,7 @@ admin = {"id": "admin-1", "is_admin": True}
 buyer_1 = {"id": "buyer-1", "role": "viewer"}
 buyer_2 = {"id": "buyer-2", "role": "viewer"}
 
-@pytest.mark.asyncio
-async def test_seller_cannot_update_cross_storefront():
-    db = ValFakeDB()
-    await db.storefront_listings.insert_one({
-        "id": "prod-1",
-        "seller_id": "seller-1",
-        "storefront_id": "zolexora-shop",
-        "price": {"amount_minor": 100, "currency": "INR"}
-    })
-    
-    with pytest.raises(HTTPException) as exc:
-        await update_product("prod-1", ProductUpdate(title="Hacked"), context=ctx_mah, user=seller, db=db)
-    assert exc.value.status_code == 404
-
-@pytest.mark.asyncio
-async def test_admin_cannot_update_cross_storefront_via_scoped_route():
-    db = ValFakeDB()
-    await db.storefront_listings.insert_one({
-        "id": "prod-1",
-        "seller_id": "seller-1",
-        "storefront_id": "zolexora-shop",
-        "price": {"amount_minor": 100, "currency": "INR"}
-    })
-    
-    with pytest.raises(HTTPException) as exc:
-        await update_product("prod-1", ProductUpdate(title="Admin Hack"), context=ctx_mah, user=admin, db=db)
-    assert exc.value.status_code == 404
-
-@pytest.mark.asyncio
-async def test_cross_storefront_delete_fails():
-    db = DeleteFakeDB()
-    await db.storefront_listings.insert_one({
-        "id": "prod-1",
-        "seller_id": "seller-1",
-        "storefront_id": "zolexora-shop"
-    })
-    
-    with pytest.raises(HTTPException) as exc:
-        await delete_product("prod-1", context=ctx_mah, user=seller, db=db)
-    assert exc.value.status_code == 404
-    assert await db.storefront_listings.find_one({"id": "prod-1"}) is not None
-
-@pytest.mark.asyncio
-async def test_cross_storefront_image_upload_fails():
-    db = DeleteFakeDB()
-    await db.storefront_listings.insert_one({
-        "id": "prod-1",
-        "seller_id": "seller-1",
-        "storefront_id": "zolexora-shop"
-    })
-    
-    file = UploadFile(filename="test.png", file=BytesIO(b"dummy image"))
-    with pytest.raises(HTTPException) as exc:
-        await upload_image("prod-1", file=file, context=ctx_mah, user=seller, db=db)
-    assert exc.value.status_code == 404
+# Product (catalog) storefront isolation: tests/test_catalog_store.py
 
 class OrderFakeDB:
     class OrderCollection:

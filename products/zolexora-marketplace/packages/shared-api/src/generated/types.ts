@@ -5396,6 +5396,41 @@ export interface components {
              */
             storefront_ids: string[];
         };
+        /** ProductListingResponse */
+        ProductListingResponse: {
+            /** Id */
+            id: string;
+            /** Storefront Id */
+            storefront_id: string;
+            /** Storefront Ids */
+            storefront_ids?: string[] | null;
+            /** Seller Id */
+            seller_id: string;
+            /** Seller Name */
+            seller_name: string;
+            /** Title */
+            title: string;
+            /** Description */
+            description: string;
+            price: components["schemas"]["Money"];
+            original_price?: components["schemas"]["Money"] | null;
+            /** Discount Percent */
+            discount_percent?: number | null;
+            /** Category */
+            category: string;
+            /** Images */
+            images: string[];
+            /** Stock */
+            stock: number;
+            /** Is Active */
+            is_active: boolean;
+            /** Rating */
+            rating: number;
+            /** Reviews Count */
+            reviews_count: number;
+            /** Created At */
+            created_at: string;
+        };
         /** ProductUpdate */
         ProductUpdate: {
             /** Title */
@@ -7534,7 +7569,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ProductListingResponse"][];
                 };
             };
             /** @description Validation Error */
@@ -7567,7 +7602,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ProductListingResponse"];
                 };
             };
             /** @description Validation Error */
@@ -7596,7 +7631,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ProductListingResponse"][];
                 };
             };
         };
@@ -7616,7 +7651,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ProductListingResponse"][];
                 };
             };
         };
@@ -7658,7 +7693,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ProductListingResponse"];
                 };
             };
             /** @description Validation Error */
@@ -11497,7 +11532,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ProductListingResponse"][];
                 };
             };
             /** @description Validation Error */
@@ -11530,7 +11565,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ProductListingResponse"];
                 };
             };
             /** @description Validation Error */
@@ -11559,7 +11594,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ProductListingResponse"][];
                 };
             };
         };
@@ -11579,7 +11614,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ProductListingResponse"][];
                 };
             };
         };
@@ -11621,7 +11656,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ProductListingResponse"];
                 };
             };
             /** @description Validation Error */

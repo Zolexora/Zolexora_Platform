@@ -6,6 +6,7 @@ from routers.cart import (
     get_cart, add_to_cart, update_cart_item, remove_cart_item, clear_cart,
     CartItemCreate, CartItemQuantityUpdate
 )
+from tests import fake_catalog
 from storefronts.models import StorefrontContext, StorefrontDefinition, StorefrontContextSource, StorefrontKey
 
 def create_context(key_str: str) -> StorefrontContext:
@@ -64,6 +65,7 @@ class FakeDB:
             return len([d for d in self.docs if all(d.get(k) == v for k, v in query.items())])
 
     def __init__(self):
+        fake_catalog.use(self)
         self.cart = self.Collection()
         self.storefront_listings = self.Collection()
         self.master_products = self.Collection()

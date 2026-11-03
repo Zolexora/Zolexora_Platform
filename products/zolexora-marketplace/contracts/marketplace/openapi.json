@@ -2114,7 +2114,13 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProductListingResponse"
+                  },
+                  "title": "Response List Products Api Products Get"
+                }
               }
             }
           },
@@ -2156,7 +2162,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ProductListingResponse"
+                }
               }
             }
           },
@@ -2185,7 +2193,13 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProductListingResponse"
+                  },
+                  "type": "array",
+                  "title": "Response My Products Api Products My Get"
+                }
               }
             }
           }
@@ -2209,7 +2223,13 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProductListingResponse"
+                  },
+                  "type": "array",
+                  "title": "Response Get Featured Products Api Products Featured Get"
+                }
               }
             }
           }
@@ -2264,7 +2284,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ProductListingResponse"
+                }
               }
             }
           },
@@ -8064,7 +8086,13 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProductListingResponse"
+                  },
+                  "title": "Response List Products Products Get"
+                }
               }
             }
           },
@@ -8106,7 +8134,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ProductListingResponse"
+                }
               }
             }
           },
@@ -8135,7 +8165,13 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProductListingResponse"
+                  },
+                  "type": "array",
+                  "title": "Response My Products Products My Get"
+                }
               }
             }
           }
@@ -8159,7 +8195,13 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProductListingResponse"
+                  },
+                  "type": "array",
+                  "title": "Response Get Featured Products Products Featured Get"
+                }
               }
             }
           }
@@ -8214,7 +8256,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ProductListingResponse"
+                }
               }
             }
           },
@@ -14939,6 +14983,121 @@
           "price"
         ],
         "title": "ProductCreate"
+      },
+      "ProductListingResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "storefront_id": {
+            "type": "string",
+            "title": "Storefront Id"
+          },
+          "storefront_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Storefront Ids"
+          },
+          "seller_id": {
+            "type": "string",
+            "title": "Seller Id"
+          },
+          "seller_name": {
+            "type": "string",
+            "title": "Seller Name"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "price": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "original_price": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Money"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "discount_percent": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discount Percent"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "images": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Images"
+          },
+          "stock": {
+            "type": "integer",
+            "title": "Stock"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          },
+          "rating": {
+            "type": "number",
+            "title": "Rating"
+          },
+          "reviews_count": {
+            "type": "integer",
+            "title": "Reviews Count"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "storefront_id",
+          "seller_id",
+          "seller_name",
+          "title",
+          "description",
+          "price",
+          "category",
+          "images",
+          "stock",
+          "is_active",
+          "rating",
+          "reviews_count",
+          "created_at"
+        ],
+        "title": "ProductListingResponse"
       },
       "ProductUpdate": {
         "properties": {

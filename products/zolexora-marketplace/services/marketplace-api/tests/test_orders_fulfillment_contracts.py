@@ -23,6 +23,7 @@ from routers.orders import (
 )
 from routers.admin_orders import list_admin_orders, get_admin_order_detail
 from storefronts.models import StorefrontContext, StorefrontDefinition, StorefrontContextSource, StorefrontKey
+from tests import fake_catalog
 
 
 def create_context(key_str: str) -> StorefrontContext:
@@ -139,6 +140,7 @@ class EnhancedFakeDB:
 
     def __init__(self):
         self.cart = self.Collection()
+        fake_catalog.use(self)
         self.storefront_listings = self.Collection()
         self.master_products = self.Collection()
         self.inventory_balances = self.Collection()

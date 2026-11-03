@@ -1,8 +1,8 @@
-from typing import Optional, List
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
+from catalog import store as catalog_store
 from core.deps import db_dep, current_user
 from storefronts.dependencies import require_storefront_context
 from storefronts.models import StorefrontContext
@@ -29,20 +29,9 @@ async def get_wishlist(
     if not product_ids:
         return []
 
-    products = await db.products.find(
-        {"id": {"$in": product_ids}, "storefront_id": sf_key},
-        {"_id": 0}
-    ).to_list(len(product_ids))
-
-    product_map = {p["id"]: p for p in products}
-    # Return mapped products in the order added
-    resolved = []
-    for entry in wishlist_entries:
-        pid = entry.get("product_id")
-        if pid and pid in product_map:
-            resolved.append(product_map[pid])
-        elif entry:
-            resolved.append(entry)
+    product_map = await catalog_store.public_listings(product_ids, sf_key)
+    # Products in the order added; ones no longer for sale are left out
+    resolved = [product_map[pid] for pid in product_ids if pid in product_map]
 
     return resolved
 
@@ -86,12 +75,7 @@ async def toggle_wishlist_item(
     updated_entries = await cursor.sort("created_at", -1).to_list(200)
 
     product_ids = [entry["product_id"] for entry in updated_entries if "product_id" in entry]
-    products = await db.products.find(
-        {"id": {"$in": product_ids}, "storefront_id": sf_key},
-        {"_id": 0}
-    ).to_list(len(product_ids)) if product_ids else []
-
-    product_map = {p["id"]: p for p in products}
+    product_map = await catalog_store.public_listings(product_ids, sf_key)
     resolved = [product_map[e["product_id"]] for e in updated_entries if e.get("product_id") in product_map]
 
     return {

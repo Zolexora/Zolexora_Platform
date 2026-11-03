@@ -220,11 +220,16 @@ async def test_admin_stats_and_users_read_postgres_profiles():
         storefront=StorefrontDefinition("id", StorefrontKey.ZOLEXORA_SHOP, "Name", "host", frozenset(), frozenset(), "INR", "en", True),
         source=StorefrontContextSource.CLIENT_HINT
     )
-    stats = await admin_stats(u={"id": "admin-1", "is_admin": True}, context=dummy_context, db=db, user_repo=repo)
+    class Catalog:  # the PostgreSQL listing counts
+        async def fetchrow(self, sql, key):
+            assert key == "zolexora-shop"
+            return {"total": 2, "active": 1}
+
+    stats = await admin_stats(u={"id": "admin-1", "is_admin": True}, context=dummy_context, db=db, user_repo=repo, pg=Catalog())
     users = await admin_users(u={"id": "admin-1", "is_admin": True}, user_repo=repo)
 
     assert stats["total_users"] == 3
-    assert stats["total_products"] == 2
+    assert stats["total_products"] == 2 and stats["active_products"] == 1
     assert [u["id"] for u in users] == ["admin-1", "seller-1", "buyer-1"]
 
 

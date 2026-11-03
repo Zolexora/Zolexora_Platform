@@ -3,6 +3,9 @@ from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Optional
+from catalog import store as catalog_store
+from routers.products import _invalidate_catalog_cache
+from shared.database.postgres import pg_conn_dep
 from core.deps import db_dep, current_user, admin_only, is_admin, require_permission, seller_only
 from core.config import settings
 from core.payments import create_razorpay_order
@@ -130,12 +133,12 @@ async def admin_stats(
     context: Optional[StorefrontContext] = Depends(optional_storefront_context),
     db=Depends(db_dep),
     user_repo:UserRepository=Depends(get_user_repository),
+    pg=Depends(pg_conn_dep),
 ):
     sf = {"storefront_id": context.key.value} if context else {}
     return {
         "total_users":              await user_repo.count_users(),
-        "total_products":           await db.storefront_listings.count_documents(sf),
-        "active_products":          await db.storefront_listings.count_documents({**sf, "is_active":True}),
+        **await catalog_store.listing_counts(pg, context.key.value if context else None),
         "total_reels":              await db.reels.count_documents(sf),
         "sponsored_reels":          await db.reels.count_documents({**sf, "content_type":"sponsored"}),
         "total_orders":             await db.orders.count_documents(sf),
@@ -164,24 +167,32 @@ async def admin_toggle_user(
     return {"is_active":not doc["is_active"]}
 
 @admin_router.get("/products", include_in_schema=False)
-async def admin_products(u=Depends(admin_only), context: Optional[StorefrontContext] = Depends(optional_storefront_context), db=Depends(db_dep)):
-    sf = {"storefront_id": context.key.value} if context else {}
-    return await db.storefront_listings.find(sf,{"_id":0}).sort("created_at",-1).to_list(500)
+async def admin_products(u=Depends(admin_only), context: Optional[StorefrontContext] = Depends(optional_storefront_context),
+                         pg=Depends(pg_conn_dep)):
+    return await catalog_store.all_listings(pg, context.key.value if context else None)
 
 @admin_router.put("/products/{pid}/toggle", include_in_schema=False)
-async def admin_toggle_product(pid:str,u=Depends(require_permission("catalog:write")), context: Optional[StorefrontContext] = Depends(optional_storefront_context), db=Depends(db_dep)):
-    sf = {"storefront_id": context.key.value} if context else {}
-    p = await db.storefront_listings.find_one({"id":pid, **sf})
-    if not p: raise HTTPException(404)
-    await db.storefront_listings.update_one({"id":pid, **sf},{"$set":{"is_active":not p["is_active"]}})
-    return {"is_active":not p["is_active"]}
+async def admin_toggle_product(pid:str,u=Depends(require_permission("catalog:write")), context: Optional[StorefrontContext] = Depends(optional_storefront_context),
+                               pg=Depends(pg_conn_dep)):
+    state = await pg.fetchval(
+        """UPDATE storefront_listing l SET publication_state = CASE WHEN l.publication_state = 'PUBLISHED' THEN 'HIDDEN' ELSE 'PUBLISHED' END,
+                  updated_at = now()
+           FROM storefront s WHERE s.id = l.storefront_id AND l.id = $1 AND ($2::text IS NULL OR s.storefront_key = $2)
+           RETURNING l.publication_state""",
+        catalog_store._uuid(pid), context.key.value if context else None,
+    ) if catalog_store._uuid(pid) else None
+    if not state: raise HTTPException(404)
+    _invalidate_catalog_cache()
+    return {"is_active": state == "PUBLISHED"}
 
 @admin_router.delete("/products/{pid}", include_in_schema=False)
-async def admin_delete_product(pid:str,u=Depends(require_permission("catalog:write")), context: Optional[StorefrontContext] = Depends(optional_storefront_context), db=Depends(db_dep)):
-    sf = {"storefront_id": context.key.value} if context else {}
-    r = await db.storefront_listings.delete_one({"id":pid, **sf})
-    if r.deleted_count == 0:
+async def admin_delete_product(pid:str,u=Depends(require_permission("catalog:write")), context: Optional[StorefrontContext] = Depends(optional_storefront_context),
+                               pg=Depends(pg_conn_dep)):
+    listing = await catalog_store.find_listing(pg, pid, None, context.key.value if context else None)
+    if not listing or str(listing["id"]) != pid:
         raise HTTPException(404, "Product not found")
+    await catalog_store.remove_listing(pg, listing["id"])
+    _invalidate_catalog_cache()
     return {"message":"Deleted"}
 
 @admin_router.get("/reels")
@@ -226,6 +237,7 @@ async def verify_upi(
     context: Optional[StorefrontContext] = Depends(optional_storefront_context),
     db=Depends(db_dep),
     user_repo:UserRepository=Depends(get_user_repository),
+    pg=Depends(pg_conn_dep),
 ):
     sf = {"storefront_id": context.key.value} if context else {}
     order = await db.orders.find_one({"id":order_id, **sf})
@@ -261,6 +273,7 @@ async def admin_analytics(
     context: Optional[StorefrontContext] = Depends(optional_storefront_context),
     db=Depends(db_dep),
     user_repo:UserRepository=Depends(get_user_repository),
+    pg=Depends(pg_conn_dep),
 ):
     sf = {"storefront_id": context.key.value} if context else {}
     now=datetime.now(timezone.utc)

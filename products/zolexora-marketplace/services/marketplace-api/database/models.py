@@ -356,8 +356,10 @@ master_product = Table(
     Column("description", Text),
     Column("tax_class", String(64)),
     Column("lifecycle_status", String(32), nullable=False, server_default="DRAFT"),
+    Column("images", JSONB, nullable=False, server_default=text("'[]'::jsonb")),
     created_column(), updated_column(),
     UniqueConstraint("slug", name="uq_master_product_slug"),
+    CheckConstraint("jsonb_typeof(images) = 'array' AND jsonb_array_length(images) <= 10", name="images_array"),
     CheckConstraint("lifecycle_status IN ('DRAFT','ACTIVE','ARCHIVED')", name="ck_master_product_lifecycle_status_values"),
 )
 Index("ix_master_product_org_status", master_product.c.organization_id, master_product.c.lifecycle_status)

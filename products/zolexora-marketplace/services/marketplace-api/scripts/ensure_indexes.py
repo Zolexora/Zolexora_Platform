@@ -12,25 +12,7 @@ async def ensure_indexes(db: AsyncIOMotorDatabase):
     # Users
     await db.users.create_index("email", unique=True)
 
-    # Products
-    await db.products.create_index("category")
-    await db.products.create_index([("title", "text"), ("description", "text")])
-    await db.products.create_index("price")
-
-    # Catalog: Storefront Listings
-    await db.storefront_listings.create_index([("storefront_id", 1), ("is_active", 1), ("created_at", -1)])
-    await db.storefront_listings.create_index([("id", 1), ("storefront_id", 1)], unique=True)
-    await db.storefront_listings.create_index([("product_id", 1), ("seller_id", 1)])
-    await db.storefront_listings.create_index("seller_id")
-    await db.storefront_listings.create_index("category")
-
-    # Catalog: Master Products
-    await db.master_products.create_index("id", unique=True)
-    await db.master_products.create_index("seller_id")
-
-    # Catalog: Inventory Balances
-    await db.inventory_balances.create_index("product_id", unique=True)
-    await db.inventory_balances.create_index("seller_id")
+    # The catalog lives in PostgreSQL (catalog.store).
 
     # Reels
     await db.reels.create_index("created_at")

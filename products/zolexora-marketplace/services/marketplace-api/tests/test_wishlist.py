@@ -1,6 +1,7 @@
 import pytest
 from httpx import AsyncClient, ASGITransport
 from main import app
+from catalog import store as catalog_store
 from core.deps import current_user, db_dep
 from storefronts.dependencies import require_storefront_context
 from storefronts.models import StorefrontContext, StorefrontDefinition, StorefrontKey, StorefrontContextSource
@@ -8,7 +9,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 
 @pytest.mark.asyncio
-async def test_wishlist_endpoints():
+async def test_wishlist_endpoints(monkeypatch):
     mock_db = MagicMock()
     mock_cursor = MagicMock()
     mock_cursor.sort.return_value = mock_cursor
@@ -17,11 +18,11 @@ async def test_wishlist_endpoints():
     ])
     mock_db.wishlist.find = MagicMock(return_value=mock_cursor)
     
-    mock_products_cursor = MagicMock()
-    mock_products_cursor.to_list = AsyncMock(return_value=[
-        {"id": "prod_1", "title": "Silk Saree", "price": 1999}
-    ])
-    mock_db.products.find = MagicMock(return_value=mock_products_cursor)
+    async def public_listings(ids, storefront_key, conn=None):  # the PostgreSQL catalog
+        assert storefront_key == "mahila-madel"
+        return {"prod_1": {"id": "prod_1", "title": "Silk Saree"}} if "prod_1" in ids else {}
+
+    monkeypatch.setattr(catalog_store, "public_listings", public_listings)
     mock_db.wishlist.find_one = AsyncMock(return_value=None)
     mock_db.wishlist.insert_one = AsyncMock(return_value=AsyncMock(inserted_id="w_1"))
     mock_db.wishlist.delete_one = AsyncMock(return_value=MagicMock(deleted_count=1))
