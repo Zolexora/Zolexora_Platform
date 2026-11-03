@@ -33,6 +33,14 @@ Object.assign(process.env, {
   RESEND_API_KEY: "test-resend-key",
   RESEND_API_URL: "https://mail.test/emails",
   AUTH_FROM_EMAIL: "Zolexora Test <auth@zolexora.test>",
+  FIREBASE_PROJECT_ID: "zolexora-test",
+  FIREBASE_AUTH_ISSUER: "https://securetoken.test/zolexora-test",
+  FIREBASE_AUTH_JWKS_URL: "https://firebase.test/jwks",
+  FIREBASE_PNV_JWKS_URL: "https://pnv.test/jwks",
+  FIREBASE_PNV_ISSUER: "https://pnv.test/projects/123",
+  FIREBASE_PNV_AUDIENCE: "projects/123",
+  MOBILE_OTP_VERIFICATION: "true",
+  SIGNUP_TICKET_TTL_SECONDS: "1800",
 });
 
 /** Objects stored by the fake S3 endpoint, keyed by URL path. */

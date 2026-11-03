@@ -58,38 +58,6 @@ describe("apps/zolexora-auth-service integration tests", () => {
     expect(body.openapi).toBe("3.1.0");
   });
 
-  it("POST /api/v1/auth/public/signup with missing turnstile token returns 400", async () => {
-    const res = await app.inject({
-      method: "POST",
-      url: "/api/v1/auth/public/signup",
-      payload: {
-        email: "test@example.com",
-        phoneNumber: "+919876543210",
-        password: "CorporateSecurePass123!",
-      },
-    });
-    expect(res.statusCode).toBe(400);
-    const body = res.json();
-    expect(body.code).toBe("AUTH_TURNSTILE_REQUIRED");
-    expect(body.error.code).toBe("AUTH_TURNSTILE_REQUIRED");
-    expect(body.success).toBe(false);
-  });
-
-  it("POST /api/v1/auth/public/signup with short password returns 400 AUTH_PASSWORD_POLICY_VIOLATION", async () => {
-    const res = await app.inject({
-      method: "POST",
-      url: "/api/v1/auth/public/signup",
-      payload: {
-        email: "test@example.com",
-        phoneNumber: "+919876543210",
-        password: "Short1!",
-        turnstile_token: TURNSTILE.VALID_TOKEN,
-      },
-    });
-    expect(res.statusCode).toBe(400);
-    const body = res.json();
-    expect(body.code).toBe("AUTH_PASSWORD_POLICY_VIOLATION");
-  });
 
   it("POST /api/v1/auth/employee/login with invalid org format returns 400 AUTH_INVALID_ORG_ID_FORMAT", async () => {
     const res = await app.inject({

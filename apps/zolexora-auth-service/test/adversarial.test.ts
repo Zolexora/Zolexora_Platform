@@ -24,15 +24,11 @@ describe("Adversarial Security & Stress Suite (Milestone 2 Challenge)", () => {
   // ===========================================================================
   describe("1. Cloudflare Turnstile Bot Defense", () => {
     it("1.1 Rejects missing tokens with HTTP 400 across all protected endpoints", async () => {
-      // 1.1a Public Signup
+      // 1.1a Continue with Email (sign-up entry point)
       const resSignup = await app.inject({
         method: "POST",
-        url: "/api/v1/auth/public/signup",
-        payload: {
-          email: "challenger_turnstile1@zolexora.com",
-          phoneNumber: "+919876543210",
-          password: "CorporateSecurePass123!",
-        },
+        url: "/api/v1/auth/public/identify",
+        payload: { email: "challenger_turnstile1@zolexora.com" },
       });
       expect(resSignup.statusCode).toBe(400);
       expect(resSignup.json().code).toBe("AUTH_TURNSTILE_REQUIRED");
@@ -481,70 +477,6 @@ describe("Adversarial Security & Stress Suite (Milestone 2 Challenge)", () => {
   // 3. PASSWORD BOUNDARY ENFORCEMENT STRESS
   // ===========================================================================
   describe("3. Password Boundary Enforcement (12 min to 1024 bytes max)", () => {
-    it("3.1 Rejects length 11 with 400 AUTH_PASSWORD_POLICY_VIOLATION", async () => {
-      const res = await app.inject({
-        method: "POST",
-        url: "/api/v1/auth/public/signup",
-        payload: {
-          email: "pass_11@zolexora.com",
-          phoneNumber: "+919876543210",
-          password: "A".repeat(11),
-          turnstile_token: TURNSTILE.VALID_TOKEN,
-        },
-      });
-      expect(res.statusCode).toBe(400);
-      expect(res.json().code).toBe("AUTH_PASSWORD_POLICY_VIOLATION");
-    });
-
-    it("3.2 Accepts length 12 characters (exact min boundary)", async () => {
-      const res = await app.inject({
-        method: "POST",
-        url: "/api/v1/auth/public/signup",
-        payload: {
-          email: "pass_12@zolexora.com",
-          phoneNumber: "+919876543210",
-          password: "A".repeat(12),
-          turnstile_token: TURNSTILE.VALID_TOKEN,
-        },
-      });
-      expect(res.statusCode).toBe(201);
-      expect(res.json().success).toBe(true);
-    });
-
-    it("3.3 Accepts length 1024 bytes (exact max boundary)", async () => {
-      const res = await app.inject({
-        method: "POST",
-        url: "/api/v1/auth/public/signup",
-        payload: {
-          email: "pass_1024@zolexora.com",
-          phoneNumber: "+919876543210",
-          password: "A".repeat(1024),
-          turnstile_token: TURNSTILE.VALID_TOKEN,
-        },
-      });
-      expect(res.statusCode).toBe(201);
-      expect(res.json().success).toBe(true);
-    });
-
-    it("3.4 Rejects length 1025 bytes before executing hash computation", async () => {
-      const start = performance.now();
-      const res = await app.inject({
-        method: "POST",
-        url: "/api/v1/auth/public/signup",
-        payload: {
-          email: "pass_1025@zolexora.com",
-          phoneNumber: "+919876543210",
-          password: "A".repeat(1025),
-          turnstile_token: TURNSTILE.VALID_TOKEN,
-        },
-      });
-      const elapsed = performance.now() - start;
-
-      expect(res.statusCode).toBe(400);
-      expect(res.json().code).toBe("AUTH_PASSWORD_POLICY_VIOLATION");
-      expect(elapsed).toBeLessThan(50); // Immediate rejection without expensive Argon2id
-    });
-
     it("3.5 Multibyte UTF-8 password boundaries (byte count vs char count)", () => {
       // 'é' is 2 bytes in UTF-8
       const exact1024Bytes = "é".repeat(512);

@@ -52,7 +52,23 @@ const envSchema = z.object({
   RESEND_API_KEY: str,
   RESEND_API_URL: z.string().url(),
   AUTH_FROM_EMAIL: str,
-});
+
+  // Track 1 sign-in through Firebase Authentication (Google, phone SMS code).
+  FIREBASE_PROJECT_ID: str, // ID token audience
+  FIREBASE_AUTH_ISSUER: z.string().url(), // https://securetoken.google.com/<project-id>
+  FIREBASE_AUTH_JWKS_URL: z.string().url(), // securetoken@system.gserviceaccount.com JWKS
+  // Firebase Phone Number Verification (PNV). Optional as a group: unset = SMS code fallback only.
+  FIREBASE_PNV_JWKS_URL: z.string().url().optional(),
+  FIREBASE_PNV_ISSUER: str.optional(),
+  FIREBASE_PNV_AUDIENCE: str.optional(),
+  // "true": every new account must verify a phone number before it is created.
+  MOBILE_OTP_VERIFICATION: z.enum(["true", "false"]).transform((v) => v === "true"),
+  SIGNUP_TICKET_TTL_SECONDS: int,
+}).refine(
+  (e) => [e.FIREBASE_PNV_JWKS_URL, e.FIREBASE_PNV_ISSUER, e.FIREBASE_PNV_AUDIENCE].every((v) => v === undefined) ||
+    [e.FIREBASE_PNV_JWKS_URL, e.FIREBASE_PNV_ISSUER, e.FIREBASE_PNV_AUDIENCE].every((v) => v !== undefined),
+  { message: "Set all of FIREBASE_PNV_JWKS_URL, FIREBASE_PNV_ISSUER, FIREBASE_PNV_AUDIENCE, or none", path: ["FIREBASE_PNV_JWKS_URL"] },
+);
 
 export type EnvConfig = z.infer<typeof envSchema>;
 

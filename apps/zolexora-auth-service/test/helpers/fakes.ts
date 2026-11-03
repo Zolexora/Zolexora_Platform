@@ -1,10 +1,12 @@
 // TEST ONLY fakes for external services. These fixtures used to live in src/ — they must never ship.
 import { AwsClient } from "aws4fetch";
+import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT } from "jose";
 import { buildApp } from "../../src/app.js";
 import { env } from "../../src/config/env.js";
 import { AppError } from "../../src/plugins/error-handler.js";
 import { MailService } from "../../src/services/mail.service.js";
 import { TokenService } from "../../src/services/token.service.js";
+import { FirebaseService } from "../../src/services/firebase.service.js";
 import { TurnstileService, VerifyTurnstileOptions } from "../../src/services/turnstile.service.js";
 import { InMemoryAuthRepository } from "./in-memory-auth.repository.js";
 
@@ -58,8 +60,71 @@ export class FakeMail extends MailService {
 
 export const testTokens = () => new TokenService(env.SESSION_SECRET, env.TOKEN_TTL_SECONDS);
 
-export async function buildTestApp(repo = new InMemoryAuthRepository(), mail = new FakeMail()) {
-  const app = await buildApp({ repo, mail, turnstile: new FakeTurnstile(), logger: false });
+// Local stand-ins for Google's Firebase signing keys: real signatures, verified by the real FirebaseService.
+const authKey = await generateKeyPair("RS256");
+const pnvKey = await generateKeyPair("ES256");
+const jwkSet = async (key: CryptoKey, alg: string) => createLocalJWKSet({ keys: [{ ...(await exportJWK(key)), kid: alg, alg }] });
+const authJwks = await jwkSet(authKey.publicKey, "RS256");
+const pnvJwks = await jwkSet(pnvKey.publicKey, "ES256");
+
+export const testFirebase = (withPnv = true) =>
+  new FirebaseService(
+    {
+      projectId: env.FIREBASE_PROJECT_ID,
+      authIssuer: env.FIREBASE_AUTH_ISSUER,
+      authJwksUrl: env.FIREBASE_AUTH_JWKS_URL,
+      pnv: withPnv ? { jwksUrl: env.FIREBASE_PNV_JWKS_URL!, issuer: env.FIREBASE_PNV_ISSUER!, audience: env.FIREBASE_PNV_AUDIENCE! } : undefined,
+    },
+    { auth: authJwks, pnv: withPnv ? pnvJwks : undefined },
+  );
+
+interface IdTokenOptions {
+  uid?: string;
+  provider?: "google.com" | "phone" | "password";
+  email?: string;
+  emailVerified?: boolean;
+  phoneNumber?: string;
+  name?: string;
+  issuer?: string;
+  audience?: string;
+  issuedAt?: number;
+}
+
+/** A Firebase Auth ID token, as returned by `user.getIdToken()` on the client. */
+export function firebaseIdToken(o: IdTokenOptions = {}): Promise<string> {
+  const now = Math.floor(Date.now() / 1000);
+  const claims: Record<string, unknown> = { firebase: { sign_in_provider: o.provider ?? "google.com" } };
+  if (o.email) Object.assign(claims, { email: o.email, email_verified: o.emailVerified ?? true });
+  if (o.phoneNumber) claims.phone_number = o.phoneNumber;
+  if (o.name) claims.name = o.name;
+  return new SignJWT(claims)
+    .setProtectedHeader({ alg: "RS256", kid: "RS256" })
+    .setIssuer(o.issuer ?? env.FIREBASE_AUTH_ISSUER)
+    .setAudience(o.audience ?? env.FIREBASE_PROJECT_ID)
+    .setSubject(o.uid ?? `fb_${Math.random().toString(36).slice(2)}`)
+    .setIssuedAt(o.issuedAt ?? now)
+    .setExpirationTime((o.issuedAt ?? now) + 3600)
+    .sign(authKey.privateKey);
+}
+
+/** A Firebase Phone Number Verification token whose subject is the verified number. */
+export function pnvToken(phoneNumber: string): Promise<string> {
+  return new SignJWT({})
+    .setProtectedHeader({ alg: "ES256", kid: "ES256" })
+    .setIssuer(env.FIREBASE_PNV_ISSUER!)
+    .setAudience(env.FIREBASE_PNV_AUDIENCE!)
+    .setSubject(phoneNumber)
+    .setIssuedAt()
+    .setExpirationTime("1h")
+    .sign(pnvKey.privateKey);
+}
+
+export async function buildTestApp(
+  repo = new InMemoryAuthRepository(),
+  mail = new FakeMail(),
+  extra: { mobileVerificationRequired?: boolean; firebase?: FirebaseService } = {},
+) {
+  const app = await buildApp({ repo, mail, turnstile: new FakeTurnstile(), firebase: extra.firebase ?? testFirebase(), mobileVerificationRequired: extra.mobileVerificationRequired, logger: false });
   await app.ready();
   return Object.assign(app, { mail });
 }

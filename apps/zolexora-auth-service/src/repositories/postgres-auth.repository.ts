@@ -19,7 +19,7 @@ const { Pool } = pg;
 const iso = (v: unknown) => (v instanceof Date ? v.toISOString() : String(v));
 const isUniqueViolation = (err: any) => err?.code === "23505";
 
-const USER_COLUMNS = `id, zolexora_id, email, phone_number, password_hash, status,
+const USER_COLUMNS = `id, zolexora_id, email, phone_number, display_name, firebase_uid, password_hash, status,
   (email_verified_at IS NOT NULL) AS email_verified, (phone_verified_at IS NOT NULL) AS phone_verified`;
 const KYC_COLUMNS = "document_id, user_id, owner_id, org_id, document_type, storage_key, file_size, mime_type, created_at";
 
@@ -29,6 +29,8 @@ function toUser(row: any): GlobalUserRecord {
     zolexora_id: row.zolexora_id,
     email: row.email,
     phone_number: row.phone_number,
+    display_name: row.display_name,
+    firebase_uid: row.firebase_uid,
     password_hash: row.password_hash,
     status: row.status,
     email_verified: Boolean(row.email_verified),
@@ -115,15 +117,34 @@ export class PostgresAuthRepository implements IAuthRepository {
     return res.rows[0] ? toUser(res.rows[0]) : null;
   }
 
+  public async getGlobalUserByPhone(phoneNumber: string): Promise<GlobalUserRecord | null> {
+    const res = await this.authPool.query(`SELECT ${USER_COLUMNS} FROM zolexora_auth_users WHERE phone_number = $1`, [phoneNumber]);
+    return res.rows[0] ? toUser(res.rows[0]) : null;
+  }
+
+  public async getGlobalUserByFirebaseUid(firebaseUid: string): Promise<GlobalUserRecord | null> {
+    const res = await this.authPool.query(`SELECT ${USER_COLUMNS} FROM zolexora_auth_users WHERE firebase_uid = $1`, [firebaseUid]);
+    return res.rows[0] ? toUser(res.rows[0]) : null;
+  }
+
+  public async linkFirebaseUid(userId: string, firebaseUid: string): Promise<void> {
+    await this.authPool.query("UPDATE zolexora_auth_users SET firebase_uid = $2 WHERE id = $1 AND firebase_uid IS NULL", [
+      userId,
+      firebaseUid,
+    ]);
+  }
+
   public async createGlobalUser(data: NewGlobalUser): Promise<GlobalUserRecord | null> {
     try {
       const res = await this.authPool.query(
-        `INSERT INTO zolexora_auth_users (zolexora_id, email, phone_number, password_hash, email_verified_at)
-         VALUES ($1, $2, $3, $4, now())
+        `INSERT INTO zolexora_auth_users
+           (zolexora_id, email, phone_number, display_name, firebase_uid, password_hash, email_verified_at, phone_verified_at)
+         VALUES ($1, $2, $3, $4, $5, $6, now(), CASE WHEN $3::text IS NULL THEN NULL ELSE now() END)
          RETURNING ${USER_COLUMNS}`,
-        [data.zolexora_id, data.email.toLowerCase().trim(), data.phone_number, data.password_hash],
+        [data.zolexora_id, data.email.toLowerCase().trim(), data.phone_number ?? null, data.display_name,
+         data.firebase_uid ?? null, data.password_hash],
       );
-      return { ...toUser(res.rows[0]), display_name: data.display_name };
+      return toUser(res.rows[0]);
     } catch (err) {
       if (isUniqueViolation(err)) return null;
       throw err;

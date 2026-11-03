@@ -10,6 +10,8 @@ import { StorageService } from "./services/storage.service.js";
 import { KycStorageService } from "./services/kyc-storage.service.js";
 import { OtpService } from "./services/otp.service.js";
 import { MailService } from "./services/mail.service.js";
+import { FirebaseService } from "./services/firebase.service.js";
+import { SignupTicketService } from "./services/signup-ticket.service.js";
 import { env } from "./config/env.js";
 import { healthRoutes } from "./routes/health.routes.js";
 import { track1PublicRoutes } from "./routes/auth/track1-public.routes.js";
@@ -23,6 +25,9 @@ export interface BuildAppOptions {
   repo?: IAuthRepository;
   turnstile?: TurnstileService;
   mail?: MailService;
+  firebase?: FirebaseService;
+  /** Overrides MOBILE_OTP_VERIFICATION (tests). */
+  mobileVerificationRequired?: boolean;
   logger?: boolean;
 }
 
@@ -82,8 +87,21 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
     defaultSignedUrlTtl: env.KYC_SIGNED_URL_DEFAULT_TTL,
   });
 
+  const firebase = opts.firebase ?? new FirebaseService({
+    projectId: env.FIREBASE_PROJECT_ID,
+    authIssuer: env.FIREBASE_AUTH_ISSUER,
+    authJwksUrl: env.FIREBASE_AUTH_JWKS_URL,
+    pnv: env.FIREBASE_PNV_JWKS_URL
+      ? { jwksUrl: env.FIREBASE_PNV_JWKS_URL, issuer: env.FIREBASE_PNV_ISSUER!, audience: env.FIREBASE_PNV_AUDIENCE! }
+      : undefined,
+  });
+  const tickets = new SignupTicketService(env.SESSION_SECRET, env.SIGNUP_TICKET_TTL_SECONDS);
+  const mobileVerificationRequired = opts.mobileVerificationRequired ?? env.MOBILE_OTP_VERIFICATION;
+
   await app.register(healthRoutes, { repo });
-  await app.register(track1PublicRoutes, { repo, turnstile, rateLimiter, tokenService, otp, mail });
+  await app.register(track1PublicRoutes, {
+    repo, turnstile, rateLimiter, tokenService, otp, mail, firebase, tickets, mobileVerificationRequired,
+  });
   await app.register(track2EmployeeRoutes, { repo, turnstile, rateLimiter, tokenService });
   await app.register(track3AdminRoutes, { repo, turnstile, rateLimiter, tokenService });
   await app.register(sessionRoutes, { repo, tokenService });

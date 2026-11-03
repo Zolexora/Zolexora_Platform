@@ -22,4 +22,9 @@ export const CONSTANTS = {
   TOKEN: {
     CLOCK_SKEW_TOLERANCE_SECONDS: 300,
   },
+
+  // A Firebase ID / PNV token must have been issued within this window to be exchanged.
+  FIREBASE: {
+    MAX_TOKEN_AGE_SECONDS: 300,
+  },
 } as const;

@@ -60,6 +60,15 @@ services:
       - ZOLEXORA_RESEND_API_KEY
       - AUTH_FROM_EMAIL
       - ZOLEXORA_AUTH_FROM_EMAIL
+      - FIREBASE_PROJECT_ID
+      - ZOLEXORA_FIREBASE_PROJECT_ID
+      - FIREBASE_AUTH_ISSUER
+      - FIREBASE_AUTH_JWKS_URL
+      - FIREBASE_PNV_JWKS_URL
+      - FIREBASE_PNV_ISSUER
+      - FIREBASE_PNV_AUDIENCE
+      - MOBILE_OTP_VERIFICATION
+      - SIGNUP_TICKET_TTL_SECONDS
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- \"http://localhost:$$PORT/health\" || exit 1"]
       interval: 15s

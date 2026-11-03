@@ -27,6 +27,7 @@ export interface GlobalUserRecord {
   email: string;
   phone_number?: string | null;
   display_name?: string | null;
+  firebase_uid?: string | null;
   password_hash: string;
   status: AccountStatus;
   email_verified: boolean;
@@ -73,9 +74,10 @@ export type RevocationType = "user_all_tokens" | "single_token";
 
 export interface NewGlobalUser {
   zolexora_id: string;
-  email: string;
-  phone_number?: string;
-  display_name?: string;
+  email: string; // already verified
+  phone_number?: string; // already verified when present
+  display_name: string;
+  firebase_uid?: string;
   password_hash: string;
 }
 
@@ -100,7 +102,11 @@ export interface IAuthRepository {
 
   // Track 1: Public Identity
   getGlobalUserByEmail(email: string): Promise<GlobalUserRecord | null>;
-  /** Returns null when the email is already registered (never overwrites). */
+  getGlobalUserByPhone(phoneNumber: string): Promise<GlobalUserRecord | null>;
+  getGlobalUserByFirebaseUid(firebaseUid: string): Promise<GlobalUserRecord | null>;
+  /** Links a Google (Firebase) identity to an account that has none yet. */
+  linkFirebaseUid(userId: string, firebaseUid: string): Promise<void>;
+  /** Returns null when the email, phone or Firebase UID is already registered (never overwrites). */
   createGlobalUser(data: NewGlobalUser): Promise<GlobalUserRecord | null>;
   updateGlobalUserPassword(email: string, passwordHash: string): Promise<GlobalUserRecord | null>;
 

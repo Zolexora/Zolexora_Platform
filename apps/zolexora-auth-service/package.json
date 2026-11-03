@@ -19,6 +19,7 @@
     "@zolexora/utils": "workspace:*",
     "aws4fetch": "^1.0.20",
     "fastify": "^5.2.1",
+    "jose": "^6",
     "pg": "^8.13.3",
     "pino": "^9.6.0",
     "pino-pretty": "^13.0.0",

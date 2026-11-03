@@ -79,43 +79,35 @@ describe("Security regressions", () => {
   });
 
   describe("#4 signup / OTP", () => {
-    const signup = (email: string, password = TEST_PASSWORDS.standard) =>
-      app.inject({
-        method: "POST",
-        url: "/api/v1/auth/public/signup",
-        payload: { email, phoneNumber: "+919800000000", password, turnstile_token: TURNSTILE.VALID_TOKEN },
-      });
+    const identify = (email: string) =>
+      app.inject({ method: "POST", url: "/api/v1/auth/public/identify", payload: { email, turnstile_token: TURNSTILE.VALID_TOKEN } });
+    const verify = (email: string, otp: string | undefined) =>
+      app.inject({ method: "POST", url: "/api/v1/auth/public/signup/email/verify", payload: { email, otp } });
 
     it("codes are random and emailed; the old fixed codes do not work", async () => {
-      expect((await signup("fresh@example.com")).statusCode).toBe(201);
+      expect((await identify("fresh@example.com")).statusCode).toBe(200);
       const code = app.mail.lastCode("fresh@example.com");
       expect(code).toMatch(/^\d{6}$/);
       for (const fixed of ["123456", "000000"].filter((c) => c !== code)) {
-        const res = await app.inject({ method: "POST", url: "/api/v1/auth/public/verify-email-otp", payload: { email: "fresh@example.com", otp: fixed } });
-        expect(res.statusCode).toBe(400);
+        expect((await verify("fresh@example.com", fixed)).statusCode).toBe(400);
       }
-      const ok = await app.inject({ method: "POST", url: "/api/v1/auth/public/verify-email-otp", payload: { email: "fresh@example.com", otp: code } });
-      expect(ok.statusCode).toBe(200);
+      expect((await verify("fresh@example.com", code)).statusCode).toBe(200);
       // Single use
-      const again = await app.inject({ method: "POST", url: "/api/v1/auth/public/verify-email-otp", payload: { email: "fresh@example.com", otp: code } });
-      expect(again.statusCode).toBe(400);
+      expect((await verify("fresh@example.com", code)).statusCode).toBe(400);
     });
 
     it("locks the code after OTP_MAX_ATTEMPTS wrong guesses", async () => {
-      await signup("brute@example.com");
+      await identify("brute@example.com");
       const code = app.mail.lastCode("brute@example.com")!;
       const wrong = code === "111111" ? "222222" : "111111";
-      for (let i = 0; i < 5; i++) {
-        await app.inject({ method: "POST", url: "/api/v1/auth/public/verify-email-otp", payload: { email: "brute@example.com", otp: wrong } });
-      }
-      const res = await app.inject({ method: "POST", url: "/api/v1/auth/public/verify-email-otp", payload: { email: "brute@example.com", otp: code } });
-      expect(res.statusCode).toBe(400);
+      for (let i = 0; i < 5; i++) await verify("brute@example.com", wrong);
+      expect((await verify("brute@example.com", code)).statusCode).toBe(400);
     });
 
-    it("signing up with an existing email cannot replace that account's password", async () => {
-      const res = await signup("consumer@clarityfi.app", "AttackerChosenPass123!");
-      expect(res.statusCode).toBe(201); // indistinguishable response (no enumeration)
-      expect(app.mail.lastCode("consumer@clarityfi.app")).toBeUndefined(); // nothing issued
+    it("an existing email gets the password step: no code, no way to replace the password", async () => {
+      const res = await identify("consumer@clarityfi.app");
+      expect(res.json()).toMatchObject({ exists: true, next: "password" });
+      expect(app.mail.lastCode("consumer@clarityfi.app")).toBeUndefined();
       const user = await repo.getGlobalUserByEmail("consumer@clarityfi.app");
       expect(await verifyPassword(TEST_PASSWORDS.standard, user!.password_hash)).toBe(true);
     });

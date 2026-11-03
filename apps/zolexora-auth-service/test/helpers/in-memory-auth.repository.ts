@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 // TEST ONLY. Never imported by src/ — production always uses PostgresAuthRepository.
 import { generateZolexoraId, normalizeZolexoraOrgId } from "@zolexora/utils";
 import {
@@ -113,13 +114,28 @@ export class InMemoryAuthRepository implements IAuthRepository {
 
   public async getGlobalUserByEmail(email: string) { return this.globalUsers.get(email.toLowerCase().trim()) ?? null; }
 
+  public async getGlobalUserByPhone(phone: string) {
+    return [...this.globalUsers.values()].find((u) => u.phone_number === phone) ?? null;
+  }
+
+  public async getGlobalUserByFirebaseUid(uid: string) {
+    return [...this.globalUsers.values()].find((u) => u.firebase_uid === uid) ?? null;
+  }
+
+  public async linkFirebaseUid(userId: string, uid: string) {
+    const user = [...this.globalUsers.values()].find((u) => u.id === userId);
+    if (user && !user.firebase_uid) user.firebase_uid = uid;
+  }
+
   public async createGlobalUser(data: NewGlobalUser) {
     const email = data.email.toLowerCase().trim();
     if (this.globalUsers.has(email)) return null;
+    if (data.phone_number && (await this.getGlobalUserByPhone(data.phone_number))) return null;
+    if (data.firebase_uid && (await this.getGlobalUserByFirebaseUid(data.firebase_uid))) return null;
     const user: GlobalUserRecord = {
-      id: `usr_${Date.now()}`, zolexora_id: data.zolexora_id, email, phone_number: data.phone_number,
-      display_name: data.display_name, password_hash: data.password_hash, status: "active",
-      email_verified: true, phone_verified: false,
+      id: `usr_${randomUUID()}`, zolexora_id: data.zolexora_id, email, phone_number: data.phone_number ?? null,
+      display_name: data.display_name, firebase_uid: data.firebase_uid ?? null, password_hash: data.password_hash,
+      status: "active", email_verified: true, phone_verified: Boolean(data.phone_number),
     };
     this.globalUsers.set(email, user);
     return user;
