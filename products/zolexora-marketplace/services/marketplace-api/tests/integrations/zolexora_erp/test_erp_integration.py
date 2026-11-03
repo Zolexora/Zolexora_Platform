@@ -8,6 +8,13 @@ import uuid
 from integrations.zolexora_erp.outbox import sync_to_erp_outbox
 from integrations.zolexora_erp.adapter import SignedWebhookReceiver
 
+
+@pytest.fixture(autouse=True)
+def erp_secret(monkeypatch):
+    """The receiver reads ERP_WEBHOOK_SECRET from Infisical; tests use a fixed one."""
+    from routers import erp_webhooks
+    monkeypatch.setattr(erp_webhooks.webhook_receiver, "secret", "erp_secret_key")
+
 @pytest.mark.asyncio
 async def test_sync_to_erp_outbox_atomicity(postgres_database, db_connection):
     """Test outbox insertion is atomic and commits properly."""
@@ -101,3 +108,22 @@ async def test_duplicate_inbox_events_idempotency():
     # Process second time (should be no-op)
     await receiver.process(event)
     assert len(receiver.processed_events) == 1
+
+
+def test_webhook_receiver_rejects_everything_without_a_secret():
+    import hashlib
+    import hmac
+    from integrations.zolexora_erp.adapter import SignedWebhookReceiver
+    forged = hmac.new(b"", b"{}", hashlib.sha256).hexdigest()
+    assert SignedWebhookReceiver(secret="").verify_signature(b"{}", forged) is False
+
+
+def test_erp_webhook_is_off_until_its_secret_is_configured(monkeypatch):
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from routers import erp_webhooks
+    monkeypatch.setattr(erp_webhooks.webhook_receiver, "secret", "")
+    app = FastAPI()
+    app.include_router(erp_webhooks.router)
+    res = TestClient(app).post("/erp/webhooks", content=b"{}", headers={"x-erp-signature": "x"})
+    assert res.status_code == 503

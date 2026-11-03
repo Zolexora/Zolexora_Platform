@@ -255,17 +255,18 @@ async def verify_upi(
             "payment_status":"paid","status":"processing",
             "upi_verified_by":u["id"],"upi_verified_at":now,
             "admin_note":req.admin_note,"updated_at":now}})
-        coins_used = sum(o.get("coins_used",0) for o in checkout_orders)
-        if coins_used > 0:
-            await user_repo.adjust_coin_balance(order["buyer_id"], -coins_used)
-            await db.coin_transactions.insert_one(CoinTxDoc(
-                user_id=order["buyer_id"],amount=-coins_used,type="spent",
-                description=f"Checkout #{order.get('checkout_id', order_id)[:8]} (UPI verified)",ref_id=order.get("checkout_id", order_id)).model_dump())
         return {"message":"Payment approved ✓","order_id":order_id,"status":"processing"}
     else:
         await db.orders.update_many(checkout_filter,{"$set":{
             "payment_status":"failed","status":"cancelled",
             "admin_note":req.admin_note or "Payment not verified","updated_at":now}})
+        # Coins were spent when the order was placed; a rejected payment gives them back.
+        coins_used = sum(o.get("coins_used",0) for o in checkout_orders)
+        if coins_used > 0:
+            await user_repo.adjust_coin_balance(order["buyer_id"], coins_used)
+            await db.coin_transactions.insert_one(CoinTxDoc(
+                user_id=order["buyer_id"],amount=coins_used,type="refund",
+                description=f"Order {order.get('order_number', order_id)} payment rejected",ref_id=order_id).model_dump())
         return {"message":"Payment rejected ✗","order_id":order_id,"status":"cancelled"}
 
 @admin_router.get("/analytics")

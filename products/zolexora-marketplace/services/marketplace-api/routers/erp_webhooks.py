@@ -1,14 +1,17 @@
 from fastapi import APIRouter, Request, HTTPException
+from core.config import settings
 from integrations.zolexora_erp.adapter import SignedWebhookReceiver
 from integrations.zolexora_erp.contracts import EventEnvelope
 
 router = APIRouter(prefix="/erp", tags=["ERP Webhooks"])
 
-# In a real system, this would be injected or loaded from config/secrets
-webhook_receiver = SignedWebhookReceiver(secret="erp_secret_key")
+# The HMAC secret comes from Infisical (ERP_WEBHOOK_SECRET); without it the endpoint is off.
+webhook_receiver = SignedWebhookReceiver(secret=settings.ERP_WEBHOOK_SECRET)
 
 @router.post("/webhooks")
 async def process_erp_webhook(request: Request):
+    if not webhook_receiver.secret:
+        raise HTTPException(status_code=503, detail="ERP webhooks are not configured")
     payload = await request.body()
     signature = request.headers.get("x-erp-signature")
     

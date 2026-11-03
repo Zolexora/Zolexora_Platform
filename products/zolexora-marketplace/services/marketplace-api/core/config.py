@@ -68,6 +68,8 @@ class Settings:
     # ── Razorpay
     RAZORPAY_KEY_ID:        str = os.environ.get("RAZORPAY_KEY_ID", "")
     RAZORPAY_KEY_SECRET:    str = os.environ.get("RAZORPAY_KEY_SECRET", "")
+    # ERP webhooks are refused (503) until this is set in Infisical.
+    ERP_WEBHOOK_SECRET:     str = os.environ.get("ERP_WEBHOOK_SECRET", "")
     RAZORPAY_WEBHOOK_SECRET: str = os.environ.get("RAZORPAY_WEBHOOK_SECRET", "")
 
     # ── Cashfree

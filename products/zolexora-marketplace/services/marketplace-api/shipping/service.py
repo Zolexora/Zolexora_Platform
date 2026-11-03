@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Tuple
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
@@ -160,11 +160,18 @@ class ShippingService:
         Try booking providers in ranked order until one succeeds.
         Returns True if booking succeeded.
         """
-        await self.db.shipments.update_one(
-            {"id": shipment_id},
+        # Claim the shipment so a double click or a retry can't buy a second AWB. A claim older
+        # than 10 minutes is treated as abandoned (the process died mid-booking).
+        stale = (datetime.now(timezone.utc) - timedelta(minutes=10)).isoformat()
+        claim = await self.db.shipments.update_one(
+            {"id": shipment_id, "awb": None,
+             "$or": [{"current_status": {"$ne": ShipmentStatus.BOOKING}}, {"auto_booking_attempted_at": {"$lt": stale}}]},
             {"$set": {"current_status": ShipmentStatus.BOOKING,
                        "auto_booking_attempted_at": now_iso(), "updated_at": now_iso()}}
         )
+        if claim.matched_count == 0:
+            logger.warning(f"Shipment {shipment_id} is already booked or being booked")
+            return False
 
         attempt_number = 0
         for opt in valid_options:
@@ -263,7 +270,7 @@ class ShippingService:
         Main entry point. Called when seller marks order as ready_to_ship.
         Discovers options and auto-books the best one.
         """
-        order = await self.db.orders.find_one({"id": order_id}, {"_id": 0})
+        order = await self.db.orders.find_one({"id": order_id, "seller_id": seller_id}, {"_id": 0})
         if not order:
             return {"error": "Order not found"}
 
@@ -276,6 +283,8 @@ class ShippingService:
             return {"error": "Could not create shipment"}
 
         shipment_id = shipment["id"]
+        if shipment.get("awb"):
+            return {"status": "booked", "shipment": shipment}
 
         # Get pickup location
         if pickup_location_id:

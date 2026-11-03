@@ -17,6 +17,28 @@ def get_service(db: AsyncIOMotorDatabase = Depends(db_dep)) -> ShippingService:
     return ShippingService(db)
 
 
+def _is_admin(user: dict) -> bool:
+    return user["role"] == "admin"
+
+
+async def _owned_order(db: AsyncIOMotorDatabase, order_id: str, user: dict) -> dict:
+    """The order, if the caller is its seller (or an admin). 404 otherwise, so ids don't leak."""
+    q = {"id": order_id} if _is_admin(user) else {"id": order_id, "seller_id": user["id"]}
+    order = await db.orders.find_one(q, {"_id": 0})
+    if not order:
+        raise HTTPException(404, "Order not found")
+    return order
+
+
+async def _owned_shipment(db: AsyncIOMotorDatabase, shipment_id: str, user: dict) -> dict:
+    """The shipment, if the caller is its seller (or an admin)."""
+    q = {"id": shipment_id} if _is_admin(user) else {"id": shipment_id, "seller_id": user["id"]}
+    shipment = await db.shipments.find_one(q, {"_id": 0})
+    if not shipment:
+        raise HTTPException(404, "Shipment not found")
+    return shipment
+
+
 # ── Pickup Locations ──────────────────────────────────────────────────────────
 
 @router.get("/pickup-locations")
@@ -37,18 +59,23 @@ async def create_pickup_location(data: PickupLocationCreate, user=Depends(seller
 
 
 @router.put("/pickup-locations/{loc_id}")
-async def update_pickup_location(loc_id: str, data: dict = Body(...), user=Depends(current_user), db: AsyncIOMotorDatabase = Depends(db_dep)):
-    fq = {"id": loc_id} if user["role"] == "admin" else {"id": loc_id, "seller_id": user["id"]}
-    if data.get("is_default"):
-        await db.seller_pickup_locations.update_many({"seller_id": user["id"]}, {"$set": {"is_default": False}})
+async def update_pickup_location(loc_id: str, data: dict = Body(...), user=Depends(seller_only), db: AsyncIOMotorDatabase = Depends(db_dep)):
+    fq = {"id": loc_id} if _is_admin(user) else {"id": loc_id, "seller_id": user["id"]}
+    loc = await db.seller_pickup_locations.find_one(fq, {"_id": 0})
+    if not loc:
+        raise HTTPException(404, "Pickup location not found")
+    # Only address fields may change; id and seller_id stay as they are.
+    changes = {k: v for k, v in data.items() if k in PickupLocationCreate.model_fields}
+    if changes.get("is_default"):
+        await db.seller_pickup_locations.update_many({"seller_id": loc["seller_id"]}, {"$set": {"is_default": False}})
     from shipping.schemas import now_iso
-    data["updated_at"] = now_iso()
-    await db.seller_pickup_locations.update_one(fq, {"$set": data})
+    changes["updated_at"] = now_iso()
+    await db.seller_pickup_locations.update_one({"id": loc_id}, {"$set": changes})
     return {"message": "Updated"}
 
 
 @router.delete("/pickup-locations/{loc_id}")
-async def delete_pickup_location(loc_id: str, user=Depends(current_user), db: AsyncIOMotorDatabase = Depends(db_dep)):
+async def delete_pickup_location(loc_id: str, user=Depends(seller_only), db: AsyncIOMotorDatabase = Depends(db_dep)):
     fq = {"id": loc_id} if user["role"] == "admin" else {"id": loc_id, "seller_id": user["id"]}
     await db.seller_pickup_locations.delete_one(fq)
     return {"message": "Deleted"}
@@ -65,9 +92,10 @@ class ReadyToShipRequest(BaseModel):
 
 
 @router.post("/orders/{order_id}/ready-to-ship")
-async def ready_to_ship(order_id: str, req: ReadyToShipRequest, user=Depends(seller_only), svc: ShippingService = Depends(get_service)):
+async def ready_to_ship(order_id: str, req: ReadyToShipRequest, user=Depends(seller_only), svc: ShippingService = Depends(get_service), db: AsyncIOMotorDatabase = Depends(db_dep)):
+    order = await _owned_order(db, order_id, user)
     result = await svc.trigger_ready_to_ship(
-        order_id=order_id, seller_id=user["id"],
+        order_id=order_id, seller_id=order["seller_id"],
         pickup_location_id=req.pickup_location_id,
         package_details={"weight_kg": req.weight_kg, "length_cm": req.length_cm, "breadth_cm": req.breadth_cm, "height_cm": req.height_cm},
     )
@@ -79,18 +107,18 @@ async def ready_to_ship(order_id: str, req: ReadyToShipRequest, user=Depends(sel
 # ── Option discovery ──────────────────────────────────────────────────────────
 
 @router.post("/orders/{order_id}/discover-options")
-async def discover_options(order_id: str, req: DiscoverOptionsRequest, user=Depends(current_user), svc: ShippingService = Depends(get_service), db: AsyncIOMotorDatabase = Depends(db_dep)):
+async def discover_options(order_id: str, req: DiscoverOptionsRequest, user=Depends(seller_only), svc: ShippingService = Depends(get_service), db: AsyncIOMotorDatabase = Depends(db_dep)):
+    order = await _owned_order(db, order_id, user)
     shipment = await svc.get_or_create_shipment(order_id)
     if not shipment:
         raise HTTPException(404, "Order not found")
     pickup = None
     if req.pickup_location_id:
-        pickup = await db.seller_pickup_locations.find_one({"id": req.pickup_location_id}, {"_id": 0})
+        pickup = await db.seller_pickup_locations.find_one({"id": req.pickup_location_id, "seller_id": order["seller_id"]}, {"_id": 0})
     if not pickup:
-        pickup = await svc.get_default_pickup(user["id"])
+        pickup = await svc.get_default_pickup(order["seller_id"])
     if not pickup:
         raise HTTPException(400, "No pickup location configured")
-    order = await db.orders.find_one({"id": order_id}, {"_id": 0})
     valid, rejected = await svc.discover_options(
         shipment_id=shipment["id"],
         pickup_pincode=pickup["pincode"],
@@ -101,7 +129,8 @@ async def discover_options(order_id: str, req: DiscoverOptionsRequest, user=Depe
 
 
 @router.get("/orders/{order_id}/options")
-async def get_options(order_id: str, user=Depends(current_user), db: AsyncIOMotorDatabase = Depends(db_dep)):
+async def get_options(order_id: str, user=Depends(seller_only), db: AsyncIOMotorDatabase = Depends(db_dep)):
+    await _owned_order(db, order_id, user)
     shipment = await db.shipments.find_one({"order_id": order_id}, {"_id": 0})
     if not shipment:
         raise HTTPException(404, "No shipment found for this order")
@@ -112,7 +141,8 @@ async def get_options(order_id: str, user=Depends(current_user), db: AsyncIOMoto
 # ── Manual booking ────────────────────────────────────────────────────────────
 
 @router.post("/orders/{order_id}/manual-book")
-async def manual_book(order_id: str, req: ManualBookRequest, user=Depends(current_user), svc: ShippingService = Depends(get_service), db: AsyncIOMotorDatabase = Depends(db_dep)):
+async def manual_book(order_id: str, req: ManualBookRequest, user=Depends(seller_only), svc: ShippingService = Depends(get_service), db: AsyncIOMotorDatabase = Depends(db_dep)):
+    await _owned_order(db, order_id, user)
     shipment = await db.shipments.find_one({"order_id": order_id}, {"_id": 0})
     if not shipment:
         raise HTTPException(404, "No shipment found")
@@ -140,7 +170,10 @@ async def get_shipment(shipment_id: str, user=Depends(current_user), db: AsyncIO
 
 @router.get("/track/{awb}")
 async def track_by_awb(awb: str, user=Depends(current_user), db: AsyncIOMotorDatabase = Depends(db_dep)):
-    shipment = await db.shipments.find_one({"awb": awb}, {"_id": 0})
+    fq = {"awb": awb}
+    if not _is_admin(user):
+        fq["$or"] = [{"seller_id": user["id"]}, {"buyer_id": user["id"]}]
+    shipment = await db.shipments.find_one(fq, {"_id": 0})
     if not shipment:
         raise HTTPException(404, "AWB not found")
     from shipping.service import get_provider
@@ -152,9 +185,9 @@ async def track_by_awb(awb: str, user=Depends(current_user), db: AsyncIOMotorDat
 
 
 @router.post("/shipments/{shipment_id}/request-pickup")
-async def request_pickup(shipment_id: str, user=Depends(current_user), db: AsyncIOMotorDatabase = Depends(db_dep)):
-    s = await db.shipments.find_one({"id": shipment_id}, {"_id": 0})
-    if not s or not s.get("awb"):
+async def request_pickup(shipment_id: str, user=Depends(seller_only), db: AsyncIOMotorDatabase = Depends(db_dep)):
+    s = await _owned_shipment(db, shipment_id, user)
+    if not s.get("awb"):
         raise HTTPException(400, "Shipment not booked yet")
     from shipping.service import get_provider
     provider = get_provider(s.get("selected_provider", ""))
@@ -167,9 +200,9 @@ async def request_pickup(shipment_id: str, user=Depends(current_user), db: Async
 
 
 @router.post("/shipments/{shipment_id}/cancel")
-async def cancel_shipment(shipment_id: str, user=Depends(current_user), db: AsyncIOMotorDatabase = Depends(db_dep)):
-    s = await db.shipments.find_one({"id": shipment_id}, {"_id": 0})
-    if not s or not s.get("awb"):
+async def cancel_shipment(shipment_id: str, user=Depends(seller_only), db: AsyncIOMotorDatabase = Depends(db_dep)):
+    s = await _owned_shipment(db, shipment_id, user)
+    if not s.get("awb"):
         raise HTTPException(400, "No AWB to cancel")
     from shipping.service import get_provider
     provider = get_provider(s.get("selected_provider", ""))
@@ -179,10 +212,8 @@ async def cancel_shipment(shipment_id: str, user=Depends(current_user), db: Asyn
 
 
 @router.post("/shipments/{shipment_id}/retry-booking")
-async def retry_booking(shipment_id: str, user=Depends(current_user), svc: ShippingService = Depends(get_service), db: AsyncIOMotorDatabase = Depends(db_dep)):
-    s = await db.shipments.find_one({"id": shipment_id}, {"_id": 0})
-    if not s:
-        raise HTTPException(404, "Shipment not found")
+async def retry_booking(shipment_id: str, user=Depends(seller_only), svc: ShippingService = Depends(get_service), db: AsyncIOMotorDatabase = Depends(db_dep)):
+    s = await _owned_shipment(db, shipment_id, user)
     # Re-run discovery and booking
     options = await db.shipment_options.find({"shipment_id": shipment_id, "rejected_reason": None}, {"_id": 0}).sort("ranking_position", 1).to_list(20)
     from shipping.schemas import CourierOption
@@ -195,7 +226,12 @@ async def retry_booking(shipment_id: str, user=Depends(current_user), svc: Shipp
 
 
 @router.post("/sync/{shipment_id}")
-async def sync_tracking(shipment_id: str, user=Depends(current_user), svc: ShippingService = Depends(get_service)):
+async def sync_tracking(shipment_id: str, user=Depends(current_user), svc: ShippingService = Depends(get_service), db: AsyncIOMotorDatabase = Depends(db_dep)):
+    fq = {"id": shipment_id}
+    if not _is_admin(user):
+        fq["$or"] = [{"seller_id": user["id"]}, {"buyer_id": user["id"]}]
+    if not await db.shipments.find_one(fq, {"_id": 0}):
+        raise HTTPException(404, "Shipment not found")
     return await svc.sync_tracking(shipment_id)
 
 

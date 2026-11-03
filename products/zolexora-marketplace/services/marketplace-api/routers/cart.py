@@ -17,6 +17,8 @@ from core.config import settings
 from storefronts.dependencies import require_storefront_context
 from storefronts.models import StorefrontContext, StorefrontKey
 from models.primitives import Money, UTCDateTime, EntityId
+from models.documents import CoinTxDoc
+from users.repositories import UserRepository, get_user_repository
 
 router = APIRouter(tags=["cart"])
 
@@ -442,7 +444,7 @@ async def checkout_quote(context: StorefrontContext=Depends(require_storefront_c
 class CheckoutRequest(BaseModel):
     payment_method: str
     delivery_address: dict = {}
-    coins_to_use: int = 0
+    coins_to_use: int = Field(default=0, ge=0)
 
 @router.post("/cart/checkout")
 async def checkout_stub(
@@ -450,7 +452,8 @@ async def checkout_stub(
     request: Request,
     context: StorefrontContext = Depends(require_storefront_context),
     user=Depends(current_user),
-    db: AsyncIOMotorDatabase = Depends(db_dep)
+    db: AsyncIOMotorDatabase = Depends(db_dep),
+    user_repo: UserRepository = Depends(get_user_repository),
 ):
     cart = await _resolve_cart(db, user["id"], context.key)
     if not cart.lines:
@@ -460,9 +463,15 @@ async def checkout_stub(
     # Delivery fee logic from frontend: 0 if >= 499 else 49
     delivery_minor = 0 if subtotal_minor >= 49900 else 4900
     tax_minor = int(subtotal_minor * 0.18)
-    discount_minor = req.coins_to_use * int(settings.COIN_VALUE * 100)
-    
-    grand_total_minor = max(0, subtotal_minor + tax_minor + delivery_minor - discount_minor)
+    # Coins can cover at most the order total and at most what the buyer holds; they are
+    # deducted atomically when the order is placed (place_order), never just trusted.
+    coin_minor = round(settings.COIN_VALUE * 100)
+    payable_minor = subtotal_minor + tax_minor + delivery_minor
+    coins_used = min(req.coins_to_use, payable_minor // coin_minor if coin_minor > 0 else 0)
+    if coins_used > int(user.get("coin_balance") or 0):
+        raise HTTPException(400, "Insufficient coin balance")
+    discount_minor = coins_used * coin_minor
+    grand_total_minor = payable_minor - discount_minor
     
     order_id = str(uuid.uuid4())
     order_doc = {
@@ -485,6 +494,7 @@ async def checkout_stub(
         "shipping_total": {"amount_minor": delivery_minor, "currency": cart.currency},
         "tax_total": {"amount_minor": tax_minor, "currency": cart.currency},
         "discount_total": {"amount_minor": discount_minor, "currency": cart.currency},
+        "coins_used": coins_used,
         "grand_total": {"amount_minor": grand_total_minor, "currency": cart.currency},
         "shipments": [],
         "cancellations": [],
@@ -492,6 +502,21 @@ async def checkout_stub(
         "created_at": datetime.now(timezone.utc).isoformat(),
         "updated_at": datetime.now(timezone.utc).isoformat()
     }
+
+    async def place_order() -> None:
+        """Spends the coins (fails if the balance no longer covers them), then stores the order."""
+        if coins_used:
+            await user_repo.adjust_coin_balance(user["id"], -coins_used)
+        try:
+            await db.orders.insert_one(order_doc)
+        except Exception:
+            if coins_used:
+                await user_repo.adjust_coin_balance(user["id"], coins_used)
+            raise
+        if coins_used:
+            await db.coin_transactions.insert_one(CoinTxDoc(
+                user_id=user["id"], amount=-coins_used, type="spent",
+                description=f"Order {order_doc['order_number']}", ref_id=order_id).model_dump())
 
     # Dynamically select gateway based on storefront config
     raw_provider = (
@@ -550,7 +575,7 @@ async def checkout_stub(
             
             order_doc["cashfree_order_id"] = cf_order["order_id"]
             order_doc["payment_session_id"] = cf_order.get("payment_session_id")
-            await db.orders.insert_one(order_doc)
+            await place_order()
             await db.cart.delete_many({"user_id": user["id"], "storefront_id": context.key})
             return {
                 "type": "cashfree",
@@ -573,7 +598,7 @@ async def checkout_stub(
                 raise HTTPException(500, f"Razorpay API Error: Check your backend credentials or connection. ({e})")
             
             order_doc["razorpay_order_id"] = rzp_order["id"]
-            await db.orders.insert_one(order_doc)
+            await place_order()
             return {
                 "type": "razorpay",
                 "amount": grand_total_minor / 100,
@@ -584,12 +609,12 @@ async def checkout_stub(
     
     elif req.payment_method == "coins" and grand_total_minor == 0:
         order_doc["payment_status"] = "paid"
-        await db.orders.insert_one(order_doc)
+        await place_order()
         await db.cart.delete_many({"user_id": user["id"], "storefront_id": context.key})
         return {"type": "coins", "order_id": order_id}
 
     elif req.payment_method == "upi":
-        await db.orders.insert_one(order_doc)
+        await place_order()
         await db.cart.delete_many({"user_id": user["id"], "storefront_id": context.key})
         return {"type": "upi", "order_id": order_id}
 
@@ -607,9 +632,8 @@ async def verify_payment_stub(
     user=Depends(current_user),
     db: AsyncIOMotorDatabase = Depends(db_dep)
 ):
-    import hmac
-    import hashlib
-    
+    if not settings.RAZORPAY_KEY_SECRET:
+        raise HTTPException(503, "Razorpay is not configured")
     msg = f"{req.razorpay_order_id}|{req.razorpay_payment_id}"
     expected_sig = hmac.new(
         settings.RAZORPAY_KEY_SECRET.encode('utf-8'),
@@ -620,10 +644,14 @@ async def verify_payment_stub(
     if not hmac.compare_digest(expected_sig, req.razorpay_signature):
         raise HTTPException(400, "Signature verification failed")
     
-    await db.orders.update_one(
-        {"razorpay_order_id": req.razorpay_order_id},
-        {"$set": {"payment_status": "paid", "updated_at": datetime.now(timezone.utc).isoformat()}}
+    res = await db.orders.update_one(
+        {"razorpay_order_id": req.razorpay_order_id, "buyer_id": user["id"],
+         "storefront_id": context.key, "payment_status": "pending"},
+        {"$set": {"payment_status": "paid", "razorpay_payment_id": req.razorpay_payment_id,
+                  "updated_at": datetime.now(timezone.utc).isoformat()}}
     )
+    if res.matched_count == 0:
+        raise HTTPException(404, "Pending order not found")
     await db.cart.delete_many({"user_id": user["id"], "storefront_id": context.key})
     _invalidate_cart_cache(user["id"], context.key)
     return {"status": "ok"}
@@ -647,7 +675,7 @@ async def verify_cashfree_stub(
     order_status = cf_info.get("order_status")
     if order_status == "PAID":
         await db.orders.update_one(
-            {"id": req.order_id, "storefront_id": context.key},
+            {"id": req.order_id, "storefront_id": context.key, "buyer_id": user["id"], "payment_status": "pending"},
             {"$set": {"payment_status": "paid", "updated_at": datetime.now(timezone.utc).isoformat()}}
         )
         return {"status": "paid", "order_status": order_status}
@@ -655,7 +683,7 @@ async def verify_cashfree_stub(
 
 class UpiPaidRequest(BaseModel):
     order_id: str
-    upi_transaction_ref: str
+    upi_transaction_ref: str = Field(min_length=6, max_length=64, pattern=r"^[A-Za-z0-9]+$")
 
 @router.post("/cart/checkout/upi-paid")
 async def upi_paid_stub(
@@ -664,11 +692,13 @@ async def upi_paid_stub(
     user=Depends(current_user),
     db: AsyncIOMotorDatabase = Depends(db_dep)
 ):
+    # The buyer's UTR is a claim, not proof: an admin checks it (PUT /admin/orders/{id}/verify-upi).
     res = await db.orders.update_one(
-        {"id": req.order_id, "buyer_id": user["id"]},
-        {"$set": {"payment_status": "paid", "upi_transaction_ref": req.upi_transaction_ref, "updated_at": datetime.now(timezone.utc).isoformat()}}
+        {"id": req.order_id, "buyer_id": user["id"], "storefront_id": context.key,
+         "payment_method": "upi", "payment_status": "pending"},
+        {"$set": {"payment_status": "awaiting_verification", "upi_transaction_ref": req.upi_transaction_ref, "updated_at": datetime.now(timezone.utc).isoformat()}}
     )
     if res.matched_count == 0:
-        raise HTTPException(404, "Order not found")
-    return {"status": "ok"}
+        raise HTTPException(404, "Pending UPI order not found")
+    return {"status": "awaiting_verification"}
 

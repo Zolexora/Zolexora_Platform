@@ -13895,6 +13895,7 @@
           },
           "coins_to_use": {
             "type": "integer",
+            "minimum": 0.0,
             "title": "Coins To Use",
             "default": 0
           }
@@ -17003,6 +17004,9 @@
           },
           "upi_transaction_ref": {
             "type": "string",
+            "maxLength": 64,
+            "minLength": 6,
+            "pattern": "^[A-Za-z0-9]+$",
             "title": "Upi Transaction Ref"
           }
         },

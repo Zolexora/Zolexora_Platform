@@ -32,8 +32,10 @@ class SignedWebhookReceiver(ERPWebhookProcessorPort):
         self.processed_events = set()
 
     def verify_signature(self, payload: bytes, signature: str) -> bool:
+        if not self.secret:
+            return False
         expected = hmac.new(self.secret.encode(), payload, hashlib.sha256).hexdigest()
-        return expected == signature
+        return hmac.compare_digest(expected, signature)
 
     async def process(self, event: EventEnvelope) -> None:
         if event.idempotency_key in self.processed_events:

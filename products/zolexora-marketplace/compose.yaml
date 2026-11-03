@@ -71,6 +71,7 @@ services:
     - CASHFREE_CLIENT_ID
     - CASHFREE_CLIENT_SECRET
     - SHIPPING_WEBHOOK_SECRET
+    - ERP_WEBHOOK_SECRET
     - UPI_ID
     - SENTRY_DSN
     extra_hosts:
