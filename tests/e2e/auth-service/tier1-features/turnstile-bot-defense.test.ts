@@ -13,9 +13,7 @@ describe("Tier 1: Feature 4 — Cloudflare Turnstile Bot Defense", () => {
     await harness.teardown();
   });
 
-  beforeEach(() => {
-    harness.resetState();
-  });
+  beforeEach(() => harness.resetState());
 
   it("T1.4.01: Request with valid Turnstile token is accepted", async () => {
     const res = await fetch(`${harness.baseUrl}/api/v1/auth/public/login`, {

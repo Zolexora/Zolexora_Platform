@@ -13,9 +13,7 @@ describe("Tier 1: Feature 5 — Brute-Force Rate Limiting (5 Attempts in 15 Minu
     await harness.teardown();
   });
 
-  beforeEach(() => {
-    harness.resetState();
-  });
+  beforeEach(() => harness.resetState());
 
   it("T1.5.01: First 5 failed login attempts return HTTP 401 and increment failure count", async () => {
     for (let i = 1; i <= 5; i++) {

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
 import { TestHarness } from "../helpers/http-client";
 import { FIXTURES } from "../helpers/fixtures";
+import { pdfDataUrl, pngDataUrl } from "../helpers/files";
 
 describe("Tier 1: Feature 8 — Cloudinary Media & Private KYC Document Security", () => {
   let harness: TestHarness;
@@ -13,18 +14,17 @@ describe("Tier 1: Feature 8 — Cloudinary Media & Private KYC Document Security
     await harness.teardown();
   });
 
-  beforeEach(() => {
-    harness.resetState();
-  });
+  beforeEach(() => harness.resetState());
 
   it("T1.8.01: Public avatar upload to Cloudinary returns optimized f_auto,q_auto URL at users/avatars/{zx_id}", async () => {
     const res = await fetch(`${harness.baseUrl}/api/v1/storage/avatars/upload`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...harness.userAuth(),
         "X-Zolexora-ID": FIXTURES.ids.validUser,
       },
-      body: JSON.stringify({ file: "data:image/jpeg;base64,/9j/4AAQSkZJRg==" }),
+      body: JSON.stringify({ file: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ==" }),
     });
 
     expect(res.status).toBe(200);
@@ -38,9 +38,10 @@ describe("Tier 1: Feature 8 — Cloudinary Media & Private KYC Document Security
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...harness.orgAdminAuth(),
         "X-Organisation-ID": FIXTURES.ids.validOrg,
       },
-      body: JSON.stringify({ file: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUg==" }),
+      body: JSON.stringify({ file: pngDataUrl() }),
     });
 
     expect(res.status).toBe(200);
@@ -97,14 +98,10 @@ describe("Tier 1: Feature 8 — Cloudinary Media & Private KYC Document Security
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-File-Mime": "application/pdf",
-        "X-File-Size": "2048",
+        ...harness.userAuth(),
+        "X-Organisation-ID": FIXTURES.ids.validOrg,
       },
-      body: JSON.stringify({
-        document_type: "incorporation",
-        mime_type: "application/pdf",
-        file_size: 2048,
-      }),
+      body: JSON.stringify({ document_type: "incorporation", file: pdfDataUrl(2048) }),
     });
     expect(uploadRes.status).toBe(201);
     const uploadData = await uploadRes.json();
@@ -112,7 +109,7 @@ describe("Tier 1: Feature 8 — Cloudinary Media & Private KYC Document Security
     // 2. Request signed URL with default expiry (600s = 10 min)
     const signRes = await fetch(`${harness.baseUrl}/api/v1/storage/kyc/signed-url`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...harness.userAuth() },
       body: JSON.stringify({
         document_id: uploadData.document_id,
         expiry_seconds: 600,

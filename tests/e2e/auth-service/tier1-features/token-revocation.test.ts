@@ -12,14 +12,12 @@ describe("Tier 1: Feature 7 — Immediate Token Revocation & Timestamp Validatio
     await harness.teardown();
   });
 
-  beforeEach(() => {
-    harness.resetState();
-  });
+  beforeEach(() => harness.resetState());
 
   it("T1.7.01: Revocation endpoint POST /api/v1/auth/tokens/revoke returns HTTP 200 with revoked_at", async () => {
     const res = await fetch(`${harness.baseUrl}/api/v1/auth/tokens/revoke`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...harness.bearer({ uid: "adm_101", is_platform_admin: true, role: "superadmin", permissions: ["*"] }) },
       body: JSON.stringify({
         uid: "emp_compromised_01",
         reason: "Employee termination",
@@ -37,7 +35,7 @@ describe("Tier 1: Feature 7 — Immediate Token Revocation & Timestamp Validatio
     const res = await fetch(`${harness.baseUrl}/api/v1/auth/me`, {
       method: "GET",
       headers: {
-        Authorization: "Bearer active_valid_token_uid_101",
+        ...harness.bearer({ uid: "usr_active_101" }),
       },
     });
 
@@ -48,11 +46,12 @@ describe("Tier 1: Feature 7 — Immediate Token Revocation & Timestamp Validatio
 
   it("T1.7.03: Token for revoked user is immediately rejected with HTTP 401 AUTH_TOKEN_REVOKED", async () => {
     const targetUid = "emp_suspended_99";
+    const victimToken = harness.service.token({ uid: targetUid });
 
     // 1. Revoke the user's tokens
     await fetch(`${harness.baseUrl}/api/v1/auth/tokens/revoke`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...harness.bearer({ uid: "adm_101", is_platform_admin: true, role: "superadmin", permissions: ["*"] }) },
       body: JSON.stringify({ uid: targetUid }),
     });
 
@@ -60,7 +59,7 @@ describe("Tier 1: Feature 7 — Immediate Token Revocation & Timestamp Validatio
     const res = await fetch(`${harness.baseUrl}/api/v1/auth/me`, {
       method: "GET",
       headers: {
-        Authorization: `Bearer token_belonging_to_${targetUid}`,
+        Authorization: `Bearer ${victimToken}`,
       },
     });
 
@@ -71,7 +70,7 @@ describe("Tier 1: Feature 7 — Immediate Token Revocation & Timestamp Validatio
 
   it("T1.7.04: Revocation takes effect in seconds without waiting for JWT TTL expiration", async () => {
     const targetUid = "emp_rapid_revoke_55";
-    const token = `bearer_token_${targetUid}`;
+    const token = harness.service.token({ uid: targetUid });
 
     // Token works before revocation
     const beforeRes = await fetch(`${harness.baseUrl}/api/v1/auth/me`, {
@@ -83,7 +82,7 @@ describe("Tier 1: Feature 7 — Immediate Token Revocation & Timestamp Validatio
     // Call revoke
     await fetch(`${harness.baseUrl}/api/v1/auth/tokens/revoke`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...harness.bearer({ uid: "adm_101", is_platform_admin: true, role: "superadmin", permissions: ["*"] }) },
       body: JSON.stringify({ uid: targetUid }),
     });
 

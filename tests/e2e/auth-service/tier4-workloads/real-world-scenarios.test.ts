@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
 import { TestHarness, createTestZolexoraFetch } from "../helpers/http-client";
 import { FIXTURES } from "../helpers/fixtures";
+import { pdfDataUrl, pngDataUrl } from "../helpers/files";
 import { isValidZolexoraId, isValidZolexoraOrgId } from "../helpers/crypto";
 
 describe("Tier 4: Real-World Workload Scenarios (5 Comprehensive Workloads)", () => {
@@ -14,9 +15,7 @@ describe("Tier 4: Real-World Workload Scenarios (5 Comprehensive Workloads)", ()
     await harness.teardown();
   });
 
-  beforeEach(() => {
-    harness.resetState();
-  });
+  beforeEach(() => harness.resetState());
 
   // =========================================================================
   // Scenario 1: Complete Consumer User Lifecycle Journey
@@ -24,32 +23,27 @@ describe("Tier 4: Real-World Workload Scenarios (5 Comprehensive Workloads)", ()
   it("T4.01: Scenario 1 — End-to-end consumer registration, OTP verify, direct routing, avatar upload", async () => {
     const consumerEmail = "sarah.consumer@clarityfi.app";
 
-    // Step 1: Public dual-verification registration
-    const signupRes = await fetch(`${harness.baseUrl}/api/v1/auth/public/signup`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email: consumerEmail,
-        phoneNumber: "+919812345678",
-        password: FIXTURES.passwords.standard,
-        displayName: "Sarah Connor",
-        turnstile_token: FIXTURES.turnstile.valid,
-      }),
-    });
-    expect(signupRes.status).toBe(201);
-    const signupData = await signupRes.json();
-    expect(signupData.status).toBe("contact_verification");
+    // Step 1: Continue with Email → emailed code
+    const post = (path: string, body: Record<string, unknown>) =>
+      fetch(`${harness.baseUrl}/api/v1/auth/public${path}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      }).then(async (r) => ({ status: r.status, data: await r.json() }));
+    const identify = await post("/identify", { email: consumerEmail, turnstile_token: FIXTURES.turnstile.valid });
+    expect(identify.data.next).toBe("verify_email");
+    const afterEmail = await post("/signup/email/verify", { email: consumerEmail, otp: harness.service.lastCode(consumerEmail) });
 
-    // Step 2: Email OTP verification
-    const otpRes = await fetch(`${harness.baseUrl}/api/v1/auth/public/verify-email-otp`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email: consumerEmail,
-        otp: "123456",
-      }),
+    // Step 2: Phone verified by Firebase (SMS code), then name + password
+    const firebase_id_token = await harness.service.firebaseIdToken({ provider: "phone", phoneNumber: "+919812345678" });
+    const afterPhone = await post("/signup/phone", { firebase_id_token, signup_token: afterEmail.data.signup_token });
+    expect(afterPhone.data.next).toBe("profile");
+    const created = await post("/signup/complete", {
+      signup_token: afterPhone.data.signup_token,
+      display_name: "Sarah Connor",
+      password: FIXTURES.passwords.standard,
     });
-    expect(otpRes.status).toBe(200);
+    expect(created.status).toBe(201);
 
     // Step 3: Consumer login to ClarityFi
     const loginRes = await fetch(`${harness.baseUrl}/api/v1/auth/public/login`, {
@@ -72,14 +66,15 @@ describe("Tier 4: Real-World Workload Scenarios (5 Comprehensive Workloads)", ()
 
     const zxId = loginData.user.zolexora_id;
 
-    // Step 4: Upload public avatar to Cloudinary
+    // Step 4: Upload public avatar to Cloudinary with the session token
     const avatarRes = await fetch(`${harness.baseUrl}/api/v1/storage/avatars/upload`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${loginData.customToken}`,
         "X-Zolexora-ID": zxId,
       },
-      body: JSON.stringify({ file: "data:image/jpeg;base64,/9j/4AAQSkZJRg==" }),
+      body: JSON.stringify({ file: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ==" }),
     });
     expect(avatarRes.status).toBe(200);
     const avatarData = await avatarRes.json();
@@ -97,7 +92,7 @@ describe("Tier 4: Real-World Workload Scenarios (5 Comprehensive Workloads)", ()
     // Step 1: Attempt to create employee with public webmail -> REJECTED
     const webmailRes = await fetch(`${harness.baseUrl}/api/v1/auth/employee/create`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...harness.orgAdminAuth() },
       body: JSON.stringify({
         org_id: orgId,
         email: "driver.bob@yahoo.com",
@@ -112,7 +107,7 @@ describe("Tier 4: Real-World Workload Scenarios (5 Comprehensive Workloads)", ()
     const corporateEmail = "driver.bob@speedy-freight.com";
     const createRes = await fetch(`${harness.baseUrl}/api/v1/auth/employee/create`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...harness.orgAdminAuth() },
       body: JSON.stringify({
         org_id: orgId,
         email: corporateEmail,
@@ -149,9 +144,10 @@ describe("Tier 4: Real-World Workload Scenarios (5 Comprehensive Workloads)", ()
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...harness.orgAdminAuth(),
         "X-Organisation-ID": orgId,
       },
-      body: JSON.stringify({ file: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUg==" }),
+      body: JSON.stringify({ file: pngDataUrl() }),
     });
     expect(logoRes.status).toBe(200);
     const logoData = await logoRes.json();
@@ -180,12 +176,12 @@ describe("Tier 4: Real-World Workload Scenarios (5 Comprehensive Workloads)", ()
 
     // Step 2: An employee session is active
     const compromisedUid = "emp_compromised_404";
-    const employeeToken = `valid_jwt_token_for_${compromisedUid}`;
+    const employeeToken = harness.service.token({ uid: compromisedUid, org_id: FIXTURES.ids.validOrg, role: "member" });
 
     // Step 3: Platform admin revokes compromised employee token
     const revokeRes = await fetch(`${harness.baseUrl}/api/v1/auth/tokens/revoke`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${adminData.customToken}` },
       body: JSON.stringify({
         uid: compromisedUid,
         reason: "Credential leaked in public forum",
@@ -217,6 +213,7 @@ describe("Tier 4: Real-World Workload Scenarios (5 Comprehensive Workloads)", ()
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...harness.userAuth(),
         "X-File-Mime": "application/pdf",
         "X-File-Size": String(15 * 1024 * 1024), // 15MB
       },
@@ -233,16 +230,8 @@ describe("Tier 4: Real-World Workload Scenarios (5 Comprehensive Workloads)", ()
     // Step 2: Valid 2MB incorporation deed upload
     const validUploadRes = await fetch(`${harness.baseUrl}/api/v1/storage/kyc/upload`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-File-Mime": "application/pdf",
-        "X-File-Size": String(2 * 1024 * 1024),
-      },
-      body: JSON.stringify({
-        document_type: "incorporation",
-        mime_type: "application/pdf",
-        file_size: 2 * 1024 * 1024,
-      }),
+      headers: { "Content-Type": "application/json", ...harness.userAuth(), "X-Organisation-ID": FIXTURES.ids.validOrg },
+      body: JSON.stringify({ document_type: "incorporation", file: pdfDataUrl(2 * 1024 * 1024) }),
     });
     expect(validUploadRes.status).toBe(201);
     const validData = await validUploadRes.json();
@@ -251,7 +240,7 @@ describe("Tier 4: Real-World Workload Scenarios (5 Comprehensive Workloads)", ()
     // Step 3: Compliance auditor requests 15-minute signed URL
     const signedRes = await fetch(`${harness.baseUrl}/api/v1/storage/kyc/signed-url`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...harness.userAuth() },
       body: JSON.stringify({
         document_id: validData.document_id,
         expiry_seconds: 900, // 15 minutes
@@ -259,7 +248,7 @@ describe("Tier 4: Real-World Workload Scenarios (5 Comprehensive Workloads)", ()
     });
     expect(signedRes.status).toBe(200);
     const signedData = await signedRes.json();
-    expect(signedData.signed_url).toContain("sig=");
+    expect(signedData.signed_url).toContain("X-Amz-Signature=");
     expect(signedData.expires_in_seconds).toBe(900);
   });
 

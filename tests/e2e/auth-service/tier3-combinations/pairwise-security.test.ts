@@ -13,9 +13,7 @@ describe("Tier 3: Cross-Feature Pairwise Security Combinations (8 Tests)", () =>
     await harness.teardown();
   });
 
-  beforeEach(() => {
-    harness.resetState();
-  });
+  beforeEach(() => harness.resetState());
 
   it("T3.01: Turnstile failure preempts rate limiter tracking on the targeted account", async () => {
     const ip = "198.51.100.91";
@@ -101,10 +99,10 @@ describe("Tier 3: Cross-Feature Pairwise Security Combinations (8 Tests)", () =>
     });
     expect(verifyBefore.status).toBe(200);
 
-    // 3. Organization admin revokes employee session
+    // 3. A platform admin revokes the employee's sessions
     const revokeRes = await fetch(`${harness.baseUrl}/api/v1/auth/tokens/revoke`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...harness.bearer({ uid: "adm_101", is_platform_admin: true, role: "superadmin", permissions: ["*"] }) },
       body: JSON.stringify({ uid: employeeUid, reason: "Security incident" }),
     });
     expect(revokeRes.status).toBe(200);
@@ -120,7 +118,7 @@ describe("Tier 3: Cross-Feature Pairwise Security Combinations (8 Tests)", () =>
     // Attempting to provision employee with @gmail.com but providing a valid Turnstile token
     const res = await fetch(`${harness.baseUrl}/api/v1/auth/employee/create`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...harness.orgAdminAuth() },
       body: JSON.stringify({
         org_id: FIXTURES.ids.validOrg,
         email: "sneaky.employee@gmail.com",
@@ -156,12 +154,12 @@ describe("Tier 3: Cross-Feature Pairwise Security Combinations (8 Tests)", () =>
 
   it("T3.06: zolexoraFetch 401 refresh fails cleanly when session is globally revoked", async () => {
     const revokedUid = "user_revoked_999";
-    const revokedToken = `token_belonging_to_${revokedUid}`;
+    const revokedToken = harness.service.token({ uid: revokedUid });
 
     // 1. Mark uid as revoked in the service
     const revokeRes = await fetch(`${harness.baseUrl}/api/v1/auth/tokens/revoke`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...harness.bearer({ uid: "adm_101", is_platform_admin: true, role: "superadmin", permissions: ["*"] }) },
       body: JSON.stringify({ uid: revokedUid, reason: "Account terminated" }),
     });
     expect(revokeRes.status).toBe(200);
@@ -216,7 +214,7 @@ describe("Tier 3: Cross-Feature Pairwise Security Combinations (8 Tests)", () =>
   it("T3.08: Private KYC signed URL access is denied for unknown or tampered document IDs", async () => {
     const res = await fetch(`${harness.baseUrl}/api/v1/storage/kyc/signed-url`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...harness.userAuth() },
       body: JSON.stringify({
         document_id: "kyc_non_existent_fake_id",
         expiry_seconds: 600,

@@ -13,16 +13,17 @@ describe("Tier 1: Feature 9 — Companion Client SDK (@zolexora/auth-client)", (
     await harness.teardown();
   });
 
-  beforeEach(() => {
-    harness.resetState();
-  });
+  beforeEach(() => harness.resetState());
+
+  /** A correctly signed token that expired an hour ago (beyond the clock-skew tolerance). */
+  const expiredToken = () => harness.service.token({ uid: "usr_9981", iat: Math.floor(Date.now() / 1000) - 7200, exp: Math.floor(Date.now() / 1000) - 3600 });
 
   it("T1.9.01: zolexoraFetch injects Authorization, X-Organisation-ID, and X-Zolexora-ID headers", async () => {
     let capturedHeaders: Headers | null = null;
 
     const customFetch = createTestZolexoraFetch({
       baseUrl: harness.baseUrl,
-      getToken: async () => "mock_sdk_jwt_token_123",
+      getToken: async () => harness.service.token({ uid: "usr_9981", zolexora_id: FIXTURES.ids.validUser }),
       getOrgId: () => FIXTURES.ids.validOrg,
       getZolexoraId: () => FIXTURES.ids.validUser,
     });
@@ -33,14 +34,14 @@ describe("Tier 1: Feature 9 — Companion Client SDK (@zolexora/auth-client)", (
 
   it("T1.9.02: zolexoraFetch transparently refreshes expired token on 401 and replays request", async () => {
     let callCount = 0;
-    let tokenState = "expired_token";
+    let tokenState = expiredToken();
 
     const customFetch = createTestZolexoraFetch({
       baseUrl: harness.baseUrl,
       getToken: async (forceRefresh) => {
         callCount++;
         if (forceRefresh) {
-          tokenState = "fresh_valid_jwt_token";
+          tokenState = harness.service.token({ uid: "usr_9981" });
           return tokenState;
         }
         return tokenState;
@@ -56,7 +57,7 @@ describe("Tier 1: Feature 9 — Companion Client SDK (@zolexora/auth-client)", (
 
   it("T1.9.03: Single-flight refresh mutex deduplicates concurrent 401 refresh calls", async () => {
     let refreshCallCount = 0;
-    let tokenState = "expired_token";
+    let tokenState = expiredToken();
 
     const customFetch = createTestZolexoraFetch({
       baseUrl: harness.baseUrl,
@@ -65,7 +66,7 @@ describe("Tier 1: Feature 9 — Companion Client SDK (@zolexora/auth-client)", (
           refreshCallCount++;
           // simulate network delay during token refresh
           await new Promise((r) => setTimeout(r, 50));
-          tokenState = "fresh_deduped_token";
+          tokenState = harness.service.token({ uid: "usr_9981" });
           return tokenState;
         }
         return tokenState;

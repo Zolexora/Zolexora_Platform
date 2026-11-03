@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
 import { TestHarness } from "../helpers/http-client";
 import { FIXTURES } from "../helpers/fixtures";
+import { pdfDataUrl, webpDataUrl } from "../helpers/files";
 import {
   validatePassword,
   isValidZolexoraOrgId,
@@ -18,9 +19,7 @@ describe("Tier 2: Boundary Value Analysis (BVA) & Corner Cases (25 Tests)", () =
     await harness.teardown();
   });
 
-  beforeEach(() => {
-    harness.resetState();
-  });
+  beforeEach(() => harness.resetState());
 
   // ==========================================
   // Domain 1: Password Boundary Testing
@@ -247,16 +246,8 @@ describe("Tier 2: Boundary Value Analysis (BVA) & Corner Cases (25 Tests)", () =
       const maxExact = 10 * 1024 * 1024; // 10MB
       const res = await fetch(`${harness.baseUrl}/api/v1/storage/kyc/upload`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-File-Mime": "application/pdf",
-          "X-File-Size": String(maxExact),
-        },
-        body: JSON.stringify({
-          document_type: "passport",
-          mime_type: "application/pdf",
-          file_size: maxExact,
-        }),
+        headers: { "Content-Type": "application/json", ...harness.userAuth(), "X-Organisation-ID": FIXTURES.ids.validOrg },
+        body: JSON.stringify({ document_type: "passport", file: pdfDataUrl(maxExact) }),
       });
       expect(res.status).toBe(201);
       const data = await res.json();
@@ -286,16 +277,8 @@ describe("Tier 2: Boundary Value Analysis (BVA) & Corner Cases (25 Tests)", () =
     it("T2.4.04: Permitted image/webp format is accepted as valid modern KYC MIME type", async () => {
       const res = await fetch(`${harness.baseUrl}/api/v1/storage/kyc/upload`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-File-Mime": "image/webp",
-          "X-File-Size": "51200",
-        },
-        body: JSON.stringify({
-          document_type: "driving_license",
-          mime_type: "image/webp",
-          file_size: 51200,
-        }),
+        headers: { "Content-Type": "application/json", ...harness.userAuth(), "X-Organisation-ID": FIXTURES.ids.validOrg },
+        body: JSON.stringify({ document_type: "driving_license", file: webpDataUrl(51200) }),
       });
       expect(res.status).toBe(201);
       const data = await res.json();
@@ -331,28 +314,27 @@ describe("Tier 2: Boundary Value Analysis (BVA) & Corner Cases (25 Tests)", () =
     beforeEach(async () => {
       const uploadRes = await fetch(`${harness.baseUrl}/api/v1/storage/kyc/upload`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-File-Mime": "application/pdf" },
-        body: JSON.stringify({ document_type: "gst", mime_type: "application/pdf", file_size: 1024 }),
+        headers: { "Content-Type": "application/json", ...harness.userAuth(), "X-Organisation-ID": FIXTURES.ids.validOrg },
+        body: JSON.stringify({ document_type: "gst", file: pdfDataUrl(1024) }),
       });
       const data = await uploadRes.json();
       documentId = data.document_id;
     });
 
-    it("T2.5.01: Expiry request of 599s (below 10 min) is clamped to minimum 600s", async () => {
+    it("T2.5.01: Expiry request of 599s (below 10 min) is rejected with 400", async () => {
       const res = await fetch(`${harness.baseUrl}/api/v1/storage/kyc/signed-url`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...harness.userAuth() },
         body: JSON.stringify({ document_id: documentId, expiry_seconds: 599 }),
       });
-      expect(res.status).toBe(200);
-      const data = await res.json();
-      expect(data.expires_in_seconds).toBe(600);
+      expect(res.status).toBe(400);
+      expect((await res.json()).code).toBe("AUTH_INVALID_EXPIRY_WINDOW");
     });
 
     it("T2.5.02: Expiry request of 600s (exact 10 min boundary) is accepted as 600s", async () => {
       const res = await fetch(`${harness.baseUrl}/api/v1/storage/kyc/signed-url`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...harness.userAuth() },
         body: JSON.stringify({ document_id: documentId, expiry_seconds: 600 }),
       });
       expect(res.status).toBe(200);
@@ -363,7 +345,7 @@ describe("Tier 2: Boundary Value Analysis (BVA) & Corner Cases (25 Tests)", () =
     it("T2.5.03: Expiry request of 900s (exact 15 min boundary) is accepted as 900s", async () => {
       const res = await fetch(`${harness.baseUrl}/api/v1/storage/kyc/signed-url`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...harness.userAuth() },
         body: JSON.stringify({ document_id: documentId, expiry_seconds: 900 }),
       });
       expect(res.status).toBe(200);
@@ -371,26 +353,24 @@ describe("Tier 2: Boundary Value Analysis (BVA) & Corner Cases (25 Tests)", () =
       expect(data.expires_in_seconds).toBe(900);
     });
 
-    it("T2.5.04: Expiry request of 901s (above 15 min max) is clamped to 900s", async () => {
+    it("T2.5.04: Expiry request of 901s (above 15 min max) is rejected with 400", async () => {
       const res = await fetch(`${harness.baseUrl}/api/v1/storage/kyc/signed-url`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...harness.userAuth() },
         body: JSON.stringify({ document_id: documentId, expiry_seconds: 901 }),
       });
-      expect(res.status).toBe(200);
-      const data = await res.json();
-      expect(data.expires_in_seconds).toBe(900);
+      expect(res.status).toBe(400);
+      expect((await res.json()).code).toBe("AUTH_INVALID_EXPIRY_WINDOW");
     });
 
-    it("T2.5.05: Negative or zero expiry seconds is clamped to minimum 600s", async () => {
+    it("T2.5.05: Negative expiry seconds is rejected with 400", async () => {
       const res = await fetch(`${harness.baseUrl}/api/v1/storage/kyc/signed-url`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...harness.userAuth() },
         body: JSON.stringify({ document_id: documentId, expiry_seconds: -100 }),
       });
-      expect(res.status).toBe(200);
-      const data = await res.json();
-      expect(data.expires_in_seconds).toBe(600);
+      expect(res.status).toBe(400);
+      expect((await res.json()).code).toBe("AUTH_INVALID_EXPIRY_WINDOW");
     });
   });
 });

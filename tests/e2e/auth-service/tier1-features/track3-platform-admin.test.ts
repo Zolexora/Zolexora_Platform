@@ -13,9 +13,7 @@ describe("Tier 1: Feature 3 — Track 3 Platform Admin Authentication", () => {
     await harness.teardown();
   });
 
-  beforeEach(() => {
-    harness.resetState();
-  });
+  beforeEach(() => harness.resetState());
 
   it("T1.3.01: Platform admin authenticates without requiring an org_id", async () => {
     const res = await fetch(`${harness.baseUrl}/api/v1/auth/admin/login`, {

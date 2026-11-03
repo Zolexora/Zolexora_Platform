@@ -14,9 +14,7 @@ describe("Tier 1: Feature 2 — Track 2 Org-Scoped Employee Login & Claims", () 
     await harness.teardown();
   });
 
-  beforeEach(() => {
-    harness.resetState();
-  });
+  beforeEach(() => harness.resetState());
 
   it("T1.2.01: Org employee login accepts canonical Org ID format ZX-ORG-XXXX-XXXX-XXXX", async () => {
     const res = await fetch(`${harness.baseUrl}/api/v1/auth/employee/login`, {
@@ -61,7 +59,7 @@ describe("Tier 1: Feature 2 — Track 2 Org-Scoped Employee Login & Claims", () 
     for (const webmail of FIXTURES.emails.webmailList) {
       const res = await fetch(`${harness.baseUrl}/api/v1/auth/employee/create`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...harness.orgAdminAuth() },
         body: JSON.stringify({
           org_id: FIXTURES.ids.validOrg,
           email: webmail,
@@ -79,7 +77,7 @@ describe("Tier 1: Feature 2 — Track 2 Org-Scoped Employee Login & Claims", () 
     // 1. Admin creates employee with corporate domain
     const createRes = await fetch(`${harness.baseUrl}/api/v1/auth/employee/create`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...harness.orgAdminAuth() },
       body: JSON.stringify({
         org_id: FIXTURES.ids.validOrg,
         email: "fleet.driver01@acme-transport.com",

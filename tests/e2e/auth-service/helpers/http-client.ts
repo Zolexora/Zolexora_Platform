@@ -1,6 +1,4 @@
-import { execSync } from "node:child_process";
-import { isLiveServiceAvailable, DEFAULT_AUTH_URL } from "./env";
-import { AuthContractServer } from "./contract-server";
+import { startRealService, type RealService } from "./real-service";
 
 export interface ZolexoraFetchOptions extends RequestInit {
   organisationId?: string | null;
@@ -8,135 +6,52 @@ export interface ZolexoraFetchOptions extends RequestInit {
   skipAuth?: boolean;
 }
 
+/** One real auth service per test file; `resetState()` restarts it with fresh seed data. */
 export class TestHarness {
   private static instance: TestHarness | null = null;
-  public server: AuthContractServer | null = null;
-  public baseUrl: string = DEFAULT_AUTH_URL;
-  public isLive = false;
+  public service!: RealService;
+  public baseUrl = "";
 
   private constructor() {}
 
   public static async getInstance(): Promise<TestHarness> {
     if (!TestHarness.instance) {
       TestHarness.instance = new TestHarness();
-      await TestHarness.instance.init();
+      await TestHarness.instance.start();
     }
     return TestHarness.instance;
   }
 
-  private async init() {
-    const liveAvailable = await isLiveServiceAvailable();
-    if (liveAvailable) {
-      this.isLive = true;
-      this.baseUrl = DEFAULT_AUTH_URL;
-    } else {
-      this.isLive = false;
-      this.server = new AuthContractServer();
-      await this.server.start();
-      this.baseUrl = this.server.getUrl();
-    }
+  private async start() {
+    this.service = await startRealService();
+    this.baseUrl = this.service.url;
   }
 
-  public resetState() {
-    if (this.server) {
-      this.server.resetState();
-    } else {
-      try {
-        execSync(`curl -s -X POST ${this.baseUrl}/api/v1/test/reset`, { timeout: 1000 });
-      } catch {}
-    }
+  /** Authorization header with a real session token for `claims`. */
+  public bearer(claims: Record<string, unknown>) {
+    return { Authorization: `Bearer ${this.service.token(claims)}` };
+  }
+
+  /** The seeded consumer (consumer@clarityfi.app, ZX-8K9M-4P2W-7Y3X). */
+  public userAuth() {
+    return this.bearer({ uid: "usr_9981", zolexora_id: "ZX-8K9M-4P2W-7Y3X", email: "consumer@clarityfi.app" });
+  }
+
+  /** An admin of the seeded organisation ZX-ORG-4B8T-9M2K-7Y4X. */
+  public orgAdminAuth() {
+    return this.bearer({ uid: "emp_admin_1", zolexora_id: "ZX-4B8T-9M2K-7Y4X", org_id: "ZX-ORG-4B8T-9M2K-7Y4X", role: "admin", permissions: ["*"] });
+  }
+
+  public async resetState() {
+    await this.service.stop();
+    await this.start();
   }
 
   public async teardown() {
-    if (this.server) {
-      await this.server.stop();
-      this.server = null;
-    }
+    await this.service?.stop();
     TestHarness.instance = null;
   }
 }
 
-/**
- * Creates an instance of zolexoraFetch conforming to @zolexora/auth-client specification
- */
-export function createTestZolexoraFetch(config: {
-  baseUrl: string;
-  getToken: (forceRefresh?: boolean) => Promise<string | null>;
-  getOrgId?: () => string | null;
-  getZolexoraId?: () => string | null;
-  onSessionExpired?: () => void;
-}) {
-  let isRefreshing = false;
-  let refreshPromise: Promise<string | null> | null = null;
-  let lastRefreshedToken: string | null = null;
-
-  const refreshMutex = async (usedToken?: string | null): Promise<string | null> => {
-    if (usedToken && lastRefreshedToken && lastRefreshedToken !== usedToken) {
-      return lastRefreshedToken;
-    }
-    if (isRefreshing && refreshPromise) {
-      return refreshPromise;
-    }
-    isRefreshing = true;
-    refreshPromise = config.getToken(true).then((token) => {
-      lastRefreshedToken = token;
-      return token;
-    }).finally(() => {
-      isRefreshing = false;
-      refreshPromise = null;
-    });
-    return refreshPromise;
-  };
-
-  return async function zolexoraFetch(
-    input: string | URL | Request,
-    init?: ZolexoraFetchOptions
-  ): Promise<Response> {
-    const url =
-      typeof input === "string" && !input.startsWith("http")
-        ? `${config.baseUrl.replace(/\/$/, "")}/${input.replace(/^\//, "")}`
-        : input;
-
-    const headers = new Headers(init?.headers || {});
-
-    if (!init?.skipAuth) {
-      const token = await config.getToken(false);
-      if (token && !headers.has("Authorization")) {
-        headers.set("Authorization", `Bearer ${token}`);
-      }
-
-      const orgId = init?.organisationId || (config.getOrgId ? config.getOrgId() : null);
-      if (orgId && !headers.has("X-Organisation-ID")) {
-        headers.set("X-Organisation-ID", orgId);
-      }
-
-      const zxId = init?.zolexoraId || (config.getZolexoraId ? config.getZolexoraId() : null);
-      if (zxId && !headers.has("X-Zolexora-ID")) {
-        headers.set("X-Zolexora-ID", zxId);
-      }
-    }
-
-    let response = await fetch(url, {
-      ...init,
-      headers,
-    });
-
-    // Auto-refresh on 401 with single-flight mutex
-    if (response.status === 401 && !init?.skipAuth) {
-      const usedToken = headers.get("Authorization")?.replace(/^Bearer\s+/, "");
-      const freshToken = await refreshMutex(usedToken);
-      if (freshToken) {
-        headers.set("Authorization", `Bearer ${freshToken}`);
-        response = await fetch(url, {
-          ...init,
-          headers,
-        });
-      }
-      if (response.status === 401) {
-        config.onSessionExpired?.();
-      }
-    }
-
-    return response;
-  };
-}
+/** The real `@zolexora/auth-client` fetch wrapper (source), used against the real service. */
+export { createZolexoraFetch as createTestZolexoraFetch } from "../../../../packages/auth-client/src/client/index";

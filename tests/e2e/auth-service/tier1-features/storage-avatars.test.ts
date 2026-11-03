@@ -13,15 +13,14 @@ describe("Tier 1: Feature 8B — Cloudinary Public Avatars & Org Logos E2E", () 
     await harness.teardown();
   });
 
-  beforeEach(() => {
-    harness.resetState();
-  });
+  beforeEach(() => harness.resetState());
 
   it("T1.8B.01: Public avatar upload delivers f_auto,q_auto optimized URL at users/avatars/{zx_id}", async () => {
     const res = await fetch(`${harness.baseUrl}/api/v1/storage/avatars/upload`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...harness.userAuth(),
         "X-Zolexora-ID": FIXTURES.ids.validUser,
       },
       body: JSON.stringify({ file: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" }),
@@ -38,18 +37,14 @@ describe("Tier 1: Feature 8B — Cloudinary Public Avatars & Org Logos E2E", () 
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...harness.userAuth(),
         "X-Zolexora-ID": "ZX-INVALID-1234",
       },
-      body: JSON.stringify({ file: "data:image/jpeg;base64,/9j/4AAQSkZJRg==" }),
+      body: JSON.stringify({ file: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ==" }),
     });
 
-    // In live service it returns 400 AUTH_INVALID_ID_FORMAT; in contract server fallback returns 200 or 400
-    if (res.status === 400) {
-      const data = await res.json();
-      expect(data.code).toBe("AUTH_INVALID_ID_FORMAT");
-    } else {
-      expect(res.status).toBe(200);
-    }
+    expect(res.status).toBe(400);
+    expect((await res.json()).code).toBe("AUTH_INVALID_ID_FORMAT");
   });
 
   it("T1.8B.03: Public avatar upload rejects forbidden MIME (application/pdf) with HTTP 415", async () => {
@@ -57,6 +52,7 @@ describe("Tier 1: Feature 8B — Cloudinary Public Avatars & Org Logos E2E", () 
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...harness.userAuth(),
         "X-Zolexora-ID": FIXTURES.ids.validUser,
         "X-File-Mime": "application/pdf",
       },
@@ -73,6 +69,7 @@ describe("Tier 1: Feature 8B — Cloudinary Public Avatars & Org Logos E2E", () 
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...harness.userAuth(),
         "X-Zolexora-ID": FIXTURES.ids.validUser,
         "X-File-Mime": "image/jpeg",
         "X-File-Size": String(10 * 1024 * 1024 + 1),
@@ -90,6 +87,7 @@ describe("Tier 1: Feature 8B — Cloudinary Public Avatars & Org Logos E2E", () 
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...harness.orgAdminAuth(),
         "X-Organisation-ID": FIXTURES.ids.validOrg,
       },
       body: JSON.stringify({ file: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" }),

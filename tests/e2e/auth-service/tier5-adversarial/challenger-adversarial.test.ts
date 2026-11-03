@@ -3,40 +3,37 @@ import { createHmac } from "node:crypto";
 import { TestHarness } from "../helpers/http-client";
 import { FIXTURES } from "../helpers/fixtures";
 import { validatePassword } from "../helpers/crypto";
-import { StorageService } from "../../../../apps/zolexora-auth-service/src/services/storage.service.js";
 import { TokenService } from "../../../../apps/zolexora-auth-service/src/services/token.service.js";
+import { pdfDataUrl } from "../helpers/files";
 
 describe("Tier 5: Empirical Adversarial Security & Stress Suite (Challenger Probe)", () => {
   let harness: TestHarness;
-  const storageService = new StorageService("zolexora", "https://storage.zolexora.com");
-  const tokenService = new TokenService();
+  let tokenService: TokenService; // signs with the running service's key
+  let verifyPresignedUrl: (url: string) => Promise<boolean>;
 
   beforeAll(async () => {
     harness = await TestHarness.getInstance();
+    tokenService = new TokenService(process.env.SESSION_SECRET!, 3600);
+    // Loaded after the harness has set the test config (the service reads it at import time).
+    ({ verifyPresignedUrl } = await import("../../../../apps/zolexora-auth-service/test/helpers/fakes"));
   });
 
   afterAll(async () => {
     await harness.teardown();
   });
 
-  beforeEach(() => {
-    harness.resetState();
-  });
+  beforeEach(() => harness.resetState());
 
   // ===========================================================================
   // 1. CLOUDFLARE TURNSTILE BOT DEFENSE
   // ===========================================================================
   describe("1. Cloudflare Turnstile Bot Defense Adversarial Tests", () => {
     it("T5.1.01: Missing Turnstile token returns HTTP 400 AUTH_TURNSTILE_REQUIRED across routes", async () => {
-      // 1. Public Signup
-      const signupRes = await fetch(`${harness.baseUrl}/api/v1/auth/public/signup`, {
+      // 1. Continue with Email (sign-up entry point)
+      const signupRes = await fetch(`${harness.baseUrl}/api/v1/auth/public/identify`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: "challenger_probe1@zolexora.com",
-          phoneNumber: "+919876543210",
-          password: FIXTURES.passwords.standard,
-        }),
+        body: JSON.stringify({ email: "challenger_probe1@zolexora.com" }),
       });
       expect(signupRes.status).toBe(400);
       const signupData = await signupRes.json();
@@ -413,61 +410,31 @@ describe("Tier 5: Empirical Adversarial Security & Stress Suite (Challenger Prob
       expect(data.code).toBe("AUTH_FILE_TOO_LARGE");
     });
 
-    it("T5.4.03: Signed URL expiry is strictly clamped between 600s and 900s", async () => {
-      // 1. Upload valid document
+    it("T5.4.03: Signed URL expiry must be within 600s–900s; outside the window is rejected", async () => {
       const uploadRes = await fetch(`${harness.baseUrl}/api/v1/storage/kyc/upload`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-File-Mime": "application/pdf",
-          "X-File-Size": "1024",
-        },
-        body: JSON.stringify({
-          document_type: "incorporation",
-          mime_type: "application/pdf",
-          file_size: 1024,
-        }),
+        headers: { "Content-Type": "application/json", ...harness.userAuth(), "X-Organisation-ID": FIXTURES.ids.validOrg },
+        body: JSON.stringify({ document_type: "incorporation", file: pdfDataUrl(1024) }),
       });
       expect(uploadRes.status).toBe(201);
-      const uploadData = await uploadRes.json();
-      const docId = uploadData.document_id;
+      const docId = (await uploadRes.json()).document_id;
+      const sign = (expiry_seconds: number) =>
+        fetch(`${harness.baseUrl}/api/v1/storage/kyc/signed-url`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...harness.userAuth() },
+          body: JSON.stringify({ document_id: docId, expiry_seconds }),
+        });
 
-      // Below min: 300s -> clamped to 600s
-      const signLow = await fetch(`${harness.baseUrl}/api/v1/storage/kyc/signed-url`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ document_id: docId, expiry_seconds: 300 }),
-      });
-      expect(signLow.status).toBe(200);
-      const lowData = await signLow.json();
-      expect(lowData.expires_in_seconds).toBe(600);
-
-      // Exact boundaries: 600s and 900s accepted
-      const sign600 = await fetch(`${harness.baseUrl}/api/v1/storage/kyc/signed-url`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ document_id: docId, expiry_seconds: 600 }),
-      });
-      expect(sign600.status).toBe(200);
-      expect((await sign600.json()).expires_in_seconds).toBe(600);
-
-      const sign900 = await fetch(`${harness.baseUrl}/api/v1/storage/kyc/signed-url`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ document_id: docId, expiry_seconds: 900 }),
-      });
-      expect(sign900.status).toBe(200);
-      expect((await sign900.json()).expires_in_seconds).toBe(900);
-
-      // Above max: 1200s -> clamped to 900s
-      const signHigh = await fetch(`${harness.baseUrl}/api/v1/storage/kyc/signed-url`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ document_id: docId, expiry_seconds: 1200 }),
-      });
-      expect(signHigh.status).toBe(200);
-      const highData = await signHigh.json();
-      expect(highData.expires_in_seconds).toBe(900);
+      for (const ok of [600, 900]) {
+        const res = await sign(ok);
+        expect(res.status).toBe(200);
+        expect((await res.json()).expires_in_seconds).toBe(ok);
+      }
+      for (const bad of [300, 1200]) {
+        const res = await sign(bad);
+        expect(res.status).toBe(400);
+        expect((await res.json()).code).toBe("AUTH_INVALID_EXPIRY_WINDOW");
+      }
     });
   });
 
@@ -477,7 +444,7 @@ describe("Tier 5: Empirical Adversarial Security & Stress Suite (Challenger Prob
   describe("5. Token Revocation & Immediate Invalidation", () => {
     it("T5.5.01: Revocation immediately invalidates subsequent /api/v1/auth/me calls", async () => {
       const targetUid = "emp_target_revocation_e2e";
-      const token = `token_belonging_to_${targetUid}`;
+      const token = harness.service.token({ uid: targetUid });
 
       // 1. Token works before revocation
       const beforeRes = await fetch(`${harness.baseUrl}/api/v1/auth/me`, {
@@ -491,7 +458,7 @@ describe("Tier 5: Empirical Adversarial Security & Stress Suite (Challenger Prob
       // 2. Revoke the token
       const revokeRes = await fetch(`${harness.baseUrl}/api/v1/auth/tokens/revoke`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...harness.bearer({ uid: "adm_101", is_platform_admin: true, role: "superadmin", permissions: ["*"] }) },
         body: JSON.stringify({ uid: targetUid, reason: "Security violation" }),
       });
       expect(revokeRes.status).toBe(200);
@@ -510,7 +477,7 @@ describe("Tier 5: Empirical Adversarial Security & Stress Suite (Challenger Prob
       expect(afterData.code).toBe("AUTH_TOKEN_REVOKED");
 
       // 4. Token for another, unrevoked user remains valid
-      const otherToken = "token_belonging_to_innocent_user_102";
+      const otherToken = harness.service.token({ uid: "innocent_user_102" });
       const otherRes = await fetch(`${harness.baseUrl}/api/v1/auth/me`, {
         method: "GET",
         headers: { Authorization: `Bearer ${otherToken}` },
@@ -522,154 +489,57 @@ describe("Tier 5: Empirical Adversarial Security & Stress Suite (Challenger Prob
   // ===========================================================================
   // 6. SIGNED URL TAMPERING ADVERSARIAL SUITE
   // ===========================================================================
-  describe("6. Signed URL Tampering Adversarial Suite", () => {
-    it("T5.6.01: Genuine signed URL generated via /api/v1/storage/kyc/signed-url cryptographically verifies", async () => {
-      // 1. Upload valid KYC doc
-      const uploadRes = await fetch(`${harness.baseUrl}/api/v1/storage/kyc/upload`, {
+  describe("6. Signed URL Tampering Adversarial Suite (S3 presigned KYC links)", () => {
+    /** Uploads a real PDF and returns a fresh presigned download URL for it. */
+    const signedKycUrl = async () => {
+      const upload = await fetch(`${harness.baseUrl}/api/v1/storage/kyc/upload`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-File-Mime": "application/pdf",
-          "X-File-Size": "2048",
-        },
-        body: JSON.stringify({
-          document_type: "id_proof",
-          mime_type: "application/pdf",
-          file_size: 2048,
-        }),
+        headers: { "Content-Type": "application/json", ...harness.userAuth(), "X-Organisation-ID": FIXTURES.ids.validOrg },
+        body: JSON.stringify({ document_type: "id_proof", file: pdfDataUrl(2048) }),
       });
-      expect(uploadRes.status).toBe(201);
-      const uploadData = await uploadRes.json();
-      const docId = uploadData.document_id;
-
-      // 2. Request signed URL
-      const signRes = await fetch(`${harness.baseUrl}/api/v1/storage/kyc/signed-url`, {
+      expect(upload.status).toBe(201);
+      const sign = await fetch(`${harness.baseUrl}/api/v1/storage/kyc/signed-url`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ document_id: docId, expiry_seconds: 600 }),
+        headers: { "Content-Type": "application/json", ...harness.userAuth() },
+        body: JSON.stringify({ document_id: (await upload.json()).document_id, expiry_seconds: 600 }),
       });
-      expect(signRes.status).toBe(200);
-      const signData = await signRes.json();
-      const signedUrl = signData.signed_url;
+      expect(sign.status).toBe(200);
+      return new URL((await sign.json()).signed_url);
+    };
 
-      // 3. Cryptographic verification
-      const verify = storageService.verifySignedUrl(signedUrl);
-      expect(verify.valid).toBe(true);
-      expect(verify.reason).toBeUndefined();
+    it("T5.6.01: Genuine presigned URL verifies against the bucket credentials", async () => {
+      expect(await verifyPresignedUrl(String(await signedKycUrl()))).toBe(true);
     });
 
-    it("T5.6.02: Modified HMAC signature in signed URL is rejected with reason INVALID_SIGNATURE", async () => {
-      const uploadRes = await fetch(`${harness.baseUrl}/api/v1/storage/kyc/upload`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-File-Mime": "application/pdf",
-          "X-File-Size": "2048",
-        },
-        body: JSON.stringify({ document_type: "passport", mime_type: "application/pdf", file_size: 2048 }),
-      });
-      const uploadData = await uploadRes.json();
-
-      const signRes = await fetch(`${harness.baseUrl}/api/v1/storage/kyc/signed-url`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ document_id: uploadData.document_id, expiry_seconds: 900 }),
-      });
-      const signData = await signRes.json();
-      const genuineUrl = signData.signed_url;
-
-      const parsedUrl = new URL(genuineUrl);
-      const currentSig = parsedUrl.searchParams.get("sig")!;
-      const tamperedSig = (currentSig[0] === "a" ? "b" : "a") + currentSig.slice(1);
-      const tamperedUrl = genuineUrl.replace(`sig=${currentSig}`, `sig=${tamperedSig}`);
-
-      const verify = storageService.verifySignedUrl(tamperedUrl);
-      expect(verify.valid).toBe(false);
-      expect(verify.reason).toBe("INVALID_SIGNATURE");
+    it("T5.6.02: Modified signature is rejected", async () => {
+      const url = await signedKycUrl();
+      const sig = url.searchParams.get("X-Amz-Signature")!;
+      url.searchParams.set("X-Amz-Signature", (sig[0] === "a" ? "b" : "a") + sig.slice(1));
+      expect(await verifyPresignedUrl(String(url))).toBe(false);
     });
 
-    it("T5.6.03: Tampered expiry timestamp (extended TTL) is rejected with reason INVALID_SIGNATURE", async () => {
-      const uploadRes = await fetch(`${harness.baseUrl}/api/v1/storage/kyc/upload`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-File-Mime": "application/pdf",
-          "X-File-Size": "2048",
-        },
-        body: JSON.stringify({ document_type: "passport", mime_type: "application/pdf", file_size: 2048 }),
-      });
-      const uploadData = await uploadRes.json();
-
-      const signRes = await fetch(`${harness.baseUrl}/api/v1/storage/kyc/signed-url`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ document_id: uploadData.document_id, expiry_seconds: 600 }),
-      });
-      const signData = await signRes.json();
-      const genuineUrl = signData.signed_url;
-
-      const parsedUrl = new URL(genuineUrl);
-      const currentExpires = parsedUrl.searchParams.get("expires")!;
-      const tamperedExpires = String(Number(currentExpires) + 86400);
-      const tamperedUrl = genuineUrl.replace(`expires=${currentExpires}`, `expires=${tamperedExpires}`);
-
-      const verify = storageService.verifySignedUrl(tamperedUrl);
-      expect(verify.valid).toBe(false);
-      expect(verify.reason).toBe("INVALID_SIGNATURE");
+    it("T5.6.03: Extended expiry is rejected", async () => {
+      const url = await signedKycUrl();
+      url.searchParams.set("X-Amz-Expires", "604800");
+      expect(await verifyPresignedUrl(String(url))).toBe(false);
     });
 
-    it("T5.6.04: Tampered document ID / resource path in URL is rejected with reason INVALID_SIGNATURE", async () => {
-      const uploadRes = await fetch(`${harness.baseUrl}/api/v1/storage/kyc/upload`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-File-Mime": "application/pdf",
-          "X-File-Size": "2048",
-        },
-        body: JSON.stringify({ document_type: "passport", mime_type: "application/pdf", file_size: 2048 }),
-      });
-      const uploadData = await uploadRes.json();
-      const docId = uploadData.document_id;
-
-      const signRes = await fetch(`${harness.baseUrl}/api/v1/storage/kyc/signed-url`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ document_id: docId, expiry_seconds: 600 }),
-      });
-      const signData = await signRes.json();
-      const genuineUrl = signData.signed_url;
-
-      const tamperedDocUrl = genuineUrl.replace(docId, "kyc_impostor_victim_doc_99999");
-
-      const verify = storageService.verifySignedUrl(tamperedDocUrl);
-      expect(verify.valid).toBe(false);
-      expect(verify.reason).toBe("INVALID_SIGNATURE");
+    it("T5.6.04: Swapped object path (another document) is rejected", async () => {
+      const url = await signedKycUrl();
+      url.pathname = url.pathname.replace(/[^/]+$/, "someone-elses-document.pdf");
+      expect(await verifyPresignedUrl(String(url))).toBe(false);
     });
 
-    it("T5.6.05: Expired signed URL is rejected with reason URL_EXPIRED", () => {
-      const pastExpiry = Math.floor(Date.now() / 1000) - 300;
-      const testDocId = "kyc_expired_test_doc_123";
-      const expiredCanonical = `${testDocId}:${pastExpiry}`;
-      const expiredSig = createHmac("sha256", "zolexora-platform-auth-secret-key-32bytes-min")
-        .update(expiredCanonical)
-        .digest("hex");
-      const expiredUrl = `https://storage.zolexora.com/private/kyc/${testDocId}?expires=${pastExpiry}&sig=${expiredSig}`;
-
-      const verify = storageService.verifySignedUrl(expiredUrl);
-      expect(verify.valid).toBe(false);
-      expect(verify.reason).toBe("URL_EXPIRED");
-    });
-
-    it("T5.6.06: Malformed or missing signed URL parameters are rejected", () => {
-      expect(storageService.verifySignedUrl("https://storage.zolexora.com/private/kyc/doc123?expires=123456").valid).toBe(false);
-      expect(storageService.verifySignedUrl("https://storage.zolexora.com/private/kyc/doc123?sig=abcd1234").valid).toBe(false);
-      expect(storageService.verifySignedUrl("not a valid url").valid).toBe(false);
+    it("T5.6.05: URLs missing signing parameters are rejected", async () => {
+      const url = await signedKycUrl();
+      for (const p of ["X-Amz-Signature", "X-Amz-Date", "X-Amz-Expires"]) {
+        const stripped = new URL(String(url));
+        stripped.searchParams.delete(p);
+        expect(await verifyPresignedUrl(String(stripped))).toBe(false);
+      }
     });
   });
 
-  // ===========================================================================
-  // 7. RBAC BYPASS & TENANT BOUNDARY ISOLATION SUITE
-  // ===========================================================================
   describe("7. RBAC Bypass & Tenant Boundary Isolation Suite", () => {
     it("T5.7.01: Cross-tenant KYC signed URL generation is strictly blocked with HTTP 403 AUTH_FORBIDDEN", async () => {
       const orgA = "ZX-ORG-4B8T-9M2K-7Y4X";
@@ -680,15 +550,11 @@ describe("Tier 5: Empirical Adversarial Security & Stress Suite (Challenger Prob
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...harness.userAuth(),
           "X-Organisation-ID": orgA,
           "X-Zolexora-ID": "ZX-8K9M-4P2W-7Y3X",
         },
-        body: JSON.stringify({
-          document_type: "tax_return",
-          mime_type: "application/pdf",
-          file_size: 2048,
-          org_id: orgA,
-        }),
+        body: JSON.stringify({ document_type: "tax_return", file: pdfDataUrl(2048) }),
       });
       expect(uploadRes.status).toBe(201);
       const uploadData = await uploadRes.json();
@@ -915,7 +781,8 @@ describe("Tier 5: Empirical Adversarial Security & Stress Suite (Challenger Prob
     });
 
     it("T5.9.03: Token with future iat timestamp (+600s clock skew attack) returns HTTP 401 AUTH_TOKEN_FUTURE_IAT", async () => {
-      const futureToken = "token_with_future_iat_attack_600s";
+      const now = Math.floor(Date.now() / 1000);
+      const futureToken = tokenService.signJwt({ uid: "usr_skew", iat: now + 600, exp: now + 4200 });
 
       const res = await fetch(`${harness.baseUrl}/api/v1/auth/me`, {
         method: "GET",
@@ -928,7 +795,8 @@ describe("Tier 5: Empirical Adversarial Security & Stress Suite (Challenger Prob
     });
 
     it("T5.9.04: Expired token with legitimate signature returns HTTP 401 AUTH_TOKEN_EXPIRED", async () => {
-      const expiredToken = "expired_token";
+      const now = Math.floor(Date.now() / 1000);
+      const expiredToken = tokenService.signJwt({ uid: "usr_expired", iat: now - 7200, exp: now - 3600 });
 
       const res = await fetch(`${harness.baseUrl}/api/v1/auth/me`, {
         method: "GET",
