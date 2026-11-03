@@ -5,6 +5,9 @@ FastAPI router for the Users domain.
 
 Endpoints
 ─────────
+GET  /users/me                    – The signed-in user's marketplace profile
+PUT  /users/me                    – Update name / picture
+POST /users/me/avatar             – Upload a profile picture
 GET  /users/me/addresses          – List the authenticated buyer's saved addresses
 POST /users/me/addresses          – Add a new delivery address
 PUT  /users/me/addresses/{id}     – Update an existing address
@@ -12,7 +15,6 @@ DELETE /users/me/addresses/{id}   – Remove an address
 
 GET  /users/{user_id}             – Fetch a user's public profile (authenticated)
 GET  /users/                      – List users (admin only)
-PUT  /users/{user_id}/status      – Enable / disable a user account (admin only)
 """
 
 import logging
@@ -20,14 +22,13 @@ import uuid
 import re
 from typing import Optional
 from pydantic import BaseModel, Field
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 
 from core.deps import current_user, admin_only
 from users.models import (
     AddressCreate,
     AddressResponse,
-    AddressEmailOtpRequest,
-    EmailOtpVerifyRequest,
+    ProfileUpdate,
     UserProfile,
     PublicUserProfile,
     UserProfileDetails,
@@ -35,16 +36,11 @@ from users.models import (
 )
 from users.repositories import UserRepository, get_user_repository
 from shared.database.postgres import connection, is_pool_ready, transaction
-from shared.sms.models import PhoneOtpSendRequest, PhoneOtpVerifyRequest
-from shared.sms.otp import create_phone_otp_challenge, verify_phone_otp_challenge
-from shared.verification.email_otp import create_email_otp_challenge, verify_email_otp_challenge
 from shared.address import (
     PincodeResult,
     ShippingServiceabilityResult,
     get_pincode_provider,
     get_shipping_provider,
-    get_digipin_provider,
-    get_address_validation_provider,
 )
 
 logger = logging.getLogger("zolexora.users.router")
@@ -60,6 +56,45 @@ def _normalize_text(val: Optional[str]) -> Optional[str]:
 
 class ServiceabilityRequest(BaseModel):
     pincode: str = Field(..., min_length=6, max_length=6)
+
+
+# ── Me ────────────────────────────────────────────────────────────────────────
+
+@router.get("/me", response_model=UserProfile)
+async def get_me(user: dict = Depends(current_user)) -> UserProfile:
+    """The signed-in user's marketplace profile (role, coins, picture)."""
+    return UserProfile(**user)
+
+
+@router.put("/me", response_model=UserProfile)
+async def update_me(
+    data: ProfileUpdate,
+    user: dict = Depends(current_user),
+    repo: UserRepository = Depends(get_user_repository),
+) -> UserProfile:
+    if user["role"] == "admin":
+        raise HTTPException(400, "Administrator profiles are managed in the auth service")
+    await repo.update_fields(user["id"], data.model_dump(exclude_none=True))
+    return UserProfile(**(await repo.get_by_id(user["id"])))
+
+
+@router.post("/me/avatar")
+async def upload_avatar(
+    file: UploadFile = File(...),
+    user: dict = Depends(current_user),
+    repo: UserRepository = Depends(get_user_repository),
+) -> dict:
+    if user["role"] == "admin":
+        raise HTTPException(400, "Administrator profiles are managed in the auth service")
+    if file.content_type not in {"image/jpeg", "image/png", "image/webp"}:
+        raise HTTPException(400, "Invalid image format. Allowed formats: JPEG, PNG, WebP")
+    content = await file.read(5 * 1024 * 1024 + 1)
+    if len(content) > 5 * 1024 * 1024:
+        raise HTTPException(400, "Image size exceeds 5MB limit")
+    from core.cloudinary_client import upload_avatar as upload
+    url = await upload(user["id"], content, file.content_type)
+    await repo.update_picture(user["id"], url)
+    return {"picture": url}
 
 
 # ── Profile Details (Contacts & Addresses) ───────────────────────────────────
@@ -91,15 +126,16 @@ async def get_my_profile_details(
             addresses = [AddressResponse(**_format_address(r)) for r in rows]
 
     verified_emails = [profile["email"]] if profile.get("is_email_verified") else []
-    unique_phones = list(dict.fromkeys(a.phone for a in addresses if a.phone))
+    phone = profile.get("phone_number")
+    phone_verified = bool(phone and profile.get("is_phone_verified"))
 
     contacts = UserContacts(
         primary_email=profile["email"],
         is_email_verified=profile.get("is_email_verified", False),
         verified_emails=verified_emails,
-        primary_phone=unique_phones[0] if unique_phones else None,
-        is_phone_verified=bool(unique_phones),
-        verified_phones=unique_phones,
+        primary_phone=phone,
+        is_phone_verified=phone_verified,
+        verified_phones=[phone] if phone_verified else [],
     )
 
     return UserProfileDetails(
@@ -151,20 +187,6 @@ async def list_users(
     return [UserProfile(**u) for u in users]
 
 
-@router.put("/{user_id}/status")
-async def set_user_status(
-    user_id: str,
-    active: bool,
-    _: dict = Depends(admin_only),
-    repo: UserRepository = Depends(get_user_repository),
-) -> dict:
-    """Enable or disable a user account (admin only)."""
-    updated = await repo.set_active(user_id, active)
-    if not updated:
-        raise HTTPException(404, "User not found")
-    return {"message": f"User account {'activated' if active else 'suspended'}"}
-
-
 def _as_uuid(value: str | uuid.UUID) -> uuid.UUID:
     if isinstance(value, uuid.UUID):
         return value
@@ -201,73 +223,6 @@ async def list_addresses(user: dict = Depends(current_user)) -> list[AddressResp
             _as_uuid(user["id"]),
         )
     return [AddressResponse(**_format_address(r)) for r in rows]
-
-
-@router.post("/me/addresses/send-otp")
-async def send_address_phone_otp(
-    req: PhoneOtpSendRequest,
-    user: dict = Depends(current_user),
-) -> dict:
-    """Send a 6-digit SMS OTP to verify the address phone number."""
-    success, msg = await create_phone_otp_challenge(
-        phone=req.phone,
-        purpose="address_verification",
-        user_id=str(user["id"]),
-    )
-    if not success:
-        raise HTTPException(400, msg)
-    return {"message": msg, "phone": req.phone}
-
-
-@router.post("/me/addresses/verify-phone-otp")
-async def verify_address_phone_otp(
-    req: PhoneOtpVerifyRequest,
-    user: dict = Depends(current_user),
-) -> dict:
-    """Verify a 6-digit SMS OTP for an address phone number."""
-    verified, msg = await verify_phone_otp_challenge(
-        phone=req.phone,
-        otp=req.otp,
-        purpose="address_verification",
-        user_id=str(user["id"]),
-    )
-    if not verified:
-        raise HTTPException(400, msg)
-    return {"message": msg, "phone": req.phone, "verified": True}
-
-
-@router.post("/me/addresses/send-email-otp")
-async def send_address_email_otp(
-    req: AddressEmailOtpRequest,
-    user: dict = Depends(current_user),
-) -> dict:
-    """Send a 6-digit verification code to the address contact email."""
-    success, msg = await create_email_otp_challenge(
-        email=req.email,
-        purpose="address_email_verification",
-        user_id=str(user["id"]),
-        name=user.get("name", "Customer"),
-    )
-    if not success:
-        raise HTTPException(400, msg)
-    return {"message": msg, "email": req.email}
-
-
-@router.post("/me/addresses/verify-email-otp")
-async def verify_address_email_otp(
-    req: EmailOtpVerifyRequest,
-    user: dict = Depends(current_user),
-) -> dict:
-    """Verify a 6-digit email OTP for an address email."""
-    verified, msg = await verify_email_otp_challenge(
-        email=req.email,
-        otp=req.otp,
-        purpose="address_email_verification",
-        user_id=str(user["id"]),
-    )
-    if not verified:
-        raise HTTPException(400, msg)
-    return {"message": msg, "email": req.email, "verified": True}
 
 
 @router.get("/me/addresses/pincode-lookup", response_model=PincodeResult)
@@ -351,31 +306,6 @@ async def add_address(
 
     final_address_line = ", ".join(parts) if parts else _normalize_text(req.address_line)
     city = village_town or district or _normalize_text(req.city) or "TOWN"
-
-    # 3. If phone OTP is supplied, verify it
-    if req.phone_otp:
-        verified, err_msg = await verify_phone_otp_challenge(
-            phone=req.phone,
-            otp=req.phone_otp,
-            purpose="address_verification",
-            user_id=str(user["id"]),
-        )
-        if not verified:
-            raise HTTPException(400, err_msg)
-
-    # 4. If email OTP is supplied, verify it
-    if req.email_otp:
-        target_email = req.email or user.get("email", "")
-        if not target_email:
-            raise HTTPException(400, "Email is required for email OTP verification")
-        verified, err_msg = await verify_email_otp_challenge(
-            email=target_email,
-            otp=req.email_otp,
-            purpose="address_email_verification",
-            user_id=str(user["id"]),
-        )
-        if not verified:
-            raise HTTPException(400, err_msg)
 
     new_id = uuid.uuid4()
     async with transaction() as conn:

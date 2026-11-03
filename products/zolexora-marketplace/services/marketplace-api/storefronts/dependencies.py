@@ -12,7 +12,7 @@ from .resolver import StorefrontResolutionError, resolve_storefront
 class _TestRepository:
     def __init__(self):
         from .registry import build_registry
-        self.development = not settings._is_production_runtime()
+        self.development = not settings.is_production()
         self._registry = build_registry(development=self.development)
 
     async def get_definition_by_host(self, host: str):
@@ -28,10 +28,10 @@ class _TestRepository:
         return self._registry.surface_for_host(host)
 
 async def storefront_repository():
-    if settings._is_test_runtime():
+    if settings.is_test_runtime():
         yield _TestRepository()
         return
-    yield PostgresStorefrontRepository(None, development=not settings._is_production_runtime())
+    yield PostgresStorefrontRepository(None, development=not settings.is_production())
 
 async def optional_storefront_context(
     request: Request,

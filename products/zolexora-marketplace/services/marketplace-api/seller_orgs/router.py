@@ -1,11 +1,10 @@
 import uuid
 import re
-from datetime import datetime, timezone
 from typing import Any
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from core.deps import current_user, admin_only, is_development_mock_seller
+from core.deps import current_user, admin_only
 from core.config import settings
 
 from .schemas import (
@@ -135,28 +134,6 @@ async def list_my_seller_organizations(
     repo: PostgresSellerRepository = Depends(get_seller_repo),
     identity_repo: UserRepository = Depends(get_user_repository),
 ):
-    # Development-only fixture for exercising the verified seller portal with
-    # a known Firebase identity. It is deliberately disabled for staging and
-    # production and does not create or mutate a database organization.
-    if (
-        await is_development_mock_seller(user, identity_repo)
-    ):
-        now = datetime.now(timezone.utc)
-        return [{
-            "id": uuid.uuid5(uuid.NAMESPACE_URL, f"zolexora:mock-seller:{user['id']}"),
-            "name": "Sandbox Seller Organization",
-            "slug": "sandbox-seller-organization",
-            "status": "ACTIVE",
-            "verification_status": "VERIFIED",
-            "onboarding_state": "COMPLETED",
-            "metadata": {
-                "source": "development-mock",
-                "firebase_uid": settings.SELLER_MOCK_VERIFIED_FIREBASE_UID,
-            },
-            "created_at": now,
-            "updated_at": now,
-        }]
-
     user_id = user["id"]
     if isinstance(user_id, str):
         user_id = uuid.UUID(user_id)

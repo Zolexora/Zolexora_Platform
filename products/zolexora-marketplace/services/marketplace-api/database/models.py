@@ -50,9 +50,7 @@ users = Table(
     Column("email", String(320), nullable=False),
     Column("is_active", Boolean, nullable=False, server_default=text("true")),
     Column("is_email_verified", Boolean, nullable=False, server_default=text("false")),
-    Column("auth_version", Integer, nullable=False, server_default="1"),
-    Column("last_authenticated_at", DateTime(timezone=True)),
-    Column("firebase_uid", String(128)),
+    Column("auth_user_id", Uuid),
     Column("phone_number", String(32)),
     Column("full_name", String(150), nullable=False, server_default=""),
     Column("status", SAEnum("active", "suspended", "banned", "pending_verification", name="user_status"), nullable=False, server_default="active"),
@@ -62,9 +60,8 @@ users = Table(
     created_column(), updated_column(),
     UniqueConstraint("email", name="uq_users_email"),
     CheckConstraint("email = lower(email)", name="users_email_lower"),
-    CheckConstraint("auth_version >= 1", name="users_auth_version_positive"),
 )
-Index("uq_users_firebase_uid", users.c.firebase_uid, unique=True, postgresql_where=users.c.firebase_uid.is_not(None))
+Index("uq_users_auth_user_id", users.c.auth_user_id, unique=True)
 Index("uq_users_phone_number", users.c.phone_number, unique=True, postgresql_where=users.c.phone_number.is_not(None))
 Index("idx_users_management_status", users.c.status)
 Index("idx_users_management_last_login", users.c.last_login_at.desc())
@@ -80,41 +77,10 @@ user_profile = Table(
     CheckConstraint(f"coin_balance BETWEEN 0 AND {MAX_SAFE_INTEGER}", name="user_profile_coin_bounds"),
 )
 
-external_identity = Table(
-    "external_identity", metadata, id_column(),
-    Column("user_id", Uuid, ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
-    Column("provider", String(32), nullable=False),
-    Column("subject", String(128), nullable=False),
-    created_column(), updated_column(),
-    UniqueConstraint("provider", "subject", name="uq_external_identity_provider_subject"),
-    CheckConstraint("provider IN ('firebase')", name="external_identity_provider_values"),
-)
-
-user_auth_providers = Table(
-    "user_auth_providers", metadata, id_column(),
-    Column("user_id", Uuid, ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
-    Column("provider_uid", String(255), nullable=False), Column("provider_email", String(255)),
-    Column("linked_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
-    Column("last_used_at", DateTime(timezone=True)), Column("metadata", JSONB, nullable=False, server_default=text("'{}'::jsonb")),
-    UniqueConstraint("user_id"), UniqueConstraint("provider_uid"),
-)
-Index("idx_user_auth_providers_user", user_auth_providers.c.user_id)
-
-admins = Table(
-    "admins", metadata, id_column(),
-    Column("email", String(255), nullable=False, unique=True),
-    Column("full_name", String(150), nullable=False),
-    Column("role", SAEnum("super_admin", "support_admin", "moderator", "compliance_auditor", name="admin_role"), nullable=False, server_default="support_admin"),
-    Column("permissions", JSONB, nullable=False, server_default=text("'[]'::jsonb")),
-    Column("is_active", Boolean, nullable=False, server_default=text("true")), Column("last_active_at", DateTime(timezone=True)),
-    created_column(), updated_column(),
-)
-Index("idx_admins_email", admins.c.email)
-Index("idx_admins_role_active", admins.c.role, admins.c.is_active)
-
 admin_audit_logs = Table(
     "admin_audit_logs", metadata, id_column(),
-    Column("admin_id", Uuid, ForeignKey("admins.id", ondelete="SET NULL")),
+    Column("admin_id", Uuid),  # auth-service platform admin id
+    Column("admin_email", String(255)),
     Column("action_type", String(100), nullable=False),
     Column("target_user_id", Uuid, ForeignKey("users.id", ondelete="SET NULL")),
     Column("details", JSONB, nullable=False, server_default=text("'{}'::jsonb")),

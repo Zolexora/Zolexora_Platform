@@ -5,7 +5,7 @@ from pathlib import Path
 
 def test_openapi_deterministic_generation():
     root_dir = Path(__file__).resolve().parent.parent.parent.parent
-    script_path = root_dir / "scripts" / "generate_openapi.py"
+    script_path = root_dir / "scripts" / "generate-openapi.py"
     openapi_path = root_dir / "contracts" / "marketplace" / "openapi.json"
     
     # Run first time

@@ -2,7 +2,7 @@
   "name": "@zolexora/marketplace",
   "private": true,
   "scripts": {
-    "dev:backend": "cd services/marketplace-api && node ../../scripts/py-exec.mjs -m uvicorn main:app --reload --port 4100",
+    "dev:backend": "bash ../../scripts/setup/with-infisical.sh . sh -c 'cd services/marketplace-api && node ../../scripts/py-exec.mjs -m uvicorn main:app --reload --port 4100'",
     "dev:zolexora-shop": "pnpm --filter @zolexora/marketplace-shop-web dev",
     "dev:mahila-madel": "pnpm --filter @zolexora/marketplace-mahila-madel-web dev",
     "dev:seller": "pnpm --filter @zolexora/marketplace-seller-web dev",
@@ -21,7 +21,8 @@
     "verify": "pnpm verify:workspace && pnpm verify:contracts && pnpm verify:database && pnpm type-check && pnpm lint && pnpm test && pnpm build && pnpm verify:backend && pnpm verify:openapi",
     "verify:openapi": "bash scripts/check-openapi-drift.sh",
     "generate:openapi": "node scripts/py-exec.mjs scripts/generate-openapi.py",
-    "generate:client": "openapi-typescript contracts/marketplace/openapi.json -o packages/shared-api/src/generated/types.ts"
+    "generate:client": "openapi-typescript contracts/marketplace/openapi.json -o packages/shared-api/src/generated/types.ts",
+    "migrate": "bash ../../scripts/setup/with-infisical.sh . sh -c 'cd services/marketplace-api && node ../../scripts/py-exec.mjs -m alembic upgrade head'"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",

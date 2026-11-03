@@ -24,7 +24,7 @@ class DatabaseConfig:
 
     @classmethod
     def from_env(cls) -> "DatabaseConfig":
-        raw_url = os.getenv("DATABASE_URL") or os.getenv("SUPABASE_DATABASE_URL") or "postgresql://marketplace_local:marketplace-local-only@postgres:5432/marketplace_local"
+        raw_url = os.getenv("DATABASE_URL", "")  # Infisical only; no fallback
         return cls(
             raw_url,
             int(os.getenv("DATABASE_POOL_MIN", "1")),

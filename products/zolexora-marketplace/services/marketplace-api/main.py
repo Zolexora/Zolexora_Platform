@@ -11,7 +11,6 @@ from prometheus_client import make_asgi_app
 
 from core.config import settings
 from core.database import get_db, close_db
-from core.seed import seed_data
 from core.middleware import RequestIDMiddleware, SecurityHeadersMiddleware
 
 # ── Legacy routers (Sprint 3+ will migrate these) ────────────────────────────
@@ -29,7 +28,6 @@ from shipping.webhooks import router as shipping_webhooks_router
 from routers.erp_webhooks import router as erp_webhooks_router
 
 # ── New domain routers (Sprint 1 & 2) ────────────────────────────────────────
-from auth.router import router as auth_router
 from users.router import router as users_router
 from storefronts.router import router as storefront_router
 from storefronts.resolver import StorefrontResolutionError
@@ -69,9 +67,7 @@ async def lifespan(app: FastAPI):
     await init_pool()
 
     # ── Legacy MongoDB (kept alive for unmigrated routers) ─────────────────
-    db = get_db()
-    await ensure_indexes(db)
-    await seed_data(db)
+    await ensure_indexes(get_db())
 
     yield
 
@@ -84,7 +80,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Zolexora API", version="2.1.0",
-    description="Provider-independent Marketplace API with PostgreSQL identities and Redis sessions",
+    description="Zolexora Marketplace API. Sign-in is the Zolexora auth service; send its token as a Bearer token.",
     lifespan=lifespan,
 )
 
@@ -94,9 +90,9 @@ app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "X-CSRF-Token", "X-Request-ID", "X-Session-Transport", "X-Storefront-Key"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-Request-ID", "X-Storefront-Key"],
     expose_headers=["X-Request-ID", "X-Response-Time"],
 )
 
@@ -127,7 +123,6 @@ P = "/api"
 # Mount routers under both /api and root so requests work seamlessly with or without /api prefix
 for prefix in [P, ""]:
     # ── New domain routers (Sprint 1 & 2) ───────────── registered FIRST
-    app.include_router(auth_router,  prefix=prefix)
     app.include_router(users_router, prefix=prefix)
     app.include_router(storefront_router, prefix=prefix)
     app.include_router(payments_router, prefix=prefix)
@@ -140,8 +135,9 @@ for prefix in [P, ""]:
     app.include_router(reels_router,             prefix=prefix)
     app.include_router(cart_router,              prefix=prefix)
     app.include_router(wishlist_router,          prefix=prefix)
-    app.include_router(orders_router,            prefix=prefix)
+    # admin_orders first: /orders/admin must not be captured by /orders/{order_id}
     app.include_router(admin_orders_router,      prefix=prefix)
+    app.include_router(orders_router,            prefix=prefix)
     app.include_router(seller_catalog_router,    prefix=prefix)
     app.include_router(admin_catalog_router,     prefix=prefix)
     app.include_router(coins_router,             prefix=prefix)

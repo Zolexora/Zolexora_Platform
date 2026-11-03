@@ -8,7 +8,6 @@ class AdminUserItem(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: str
-    firebase_uid: str | None = None
     email: str
     phone_number: str | None = None
     full_name: str
@@ -18,7 +17,6 @@ class AdminUserItem(BaseModel):
     is_active: bool
     is_email_verified: bool
     is_phone_verified: bool
-    providers: list[str] = Field(default_factory=list)
     role: str
     created_at: datetime
     last_login_at: datetime | None = None
@@ -45,25 +43,11 @@ class AdminSummary(BaseModel):
     is_active: bool
 
 
-class AdminPermissionPatch(BaseModel):
-    permissions: list[str] = Field(default_factory=list, max_length=100)
-
-
-class AdminRolePatch(BaseModel):
-    role: Literal["super_admin", "support_admin", "moderator", "compliance_auditor"]
-
-
-class AdminCreate(BaseModel):
-    email: str = Field(min_length=5, max_length=255)
-    full_name: str = Field(min_length=1, max_length=150)
-    role: Literal["super_admin", "support_admin", "moderator", "compliance_auditor"] = "support_admin"
-    permissions: list[str] = Field(default_factory=list, max_length=100)
-
-
 class AuditLogItem(BaseModel):
     id: str
     action_type: str
     admin_id: str | None
+    admin_email: str | None = None
     target_user_id: str | None
     details: dict
     ip_address: str | None

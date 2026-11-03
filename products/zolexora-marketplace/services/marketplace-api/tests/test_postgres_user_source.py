@@ -4,7 +4,7 @@ from fastapi import HTTPException
 from starlette.requests import Request
 
 import core.deps as deps
-from core.deps import admin_only, current_user
+from core.deps import admin_only
 from routers.other import DiscountReq, admin_set_role, admin_stats, admin_users, coin_balance, generate_discount
 from storefronts.models import StorefrontContext, StorefrontKey, StorefrontContextSource, StorefrontDefinition
 
@@ -205,77 +205,6 @@ async def test_admin_set_role_updates_postgres_profile():
         "message": "Updated"
     }
     assert repo.roles == [("user-1", "seller")]
-
-
-@pytest.mark.asyncio
-async def test_current_user_resolves_opaque_session_to_postgres_profile(monkeypatch):
-    repo = FakeUserRepo({
-        "auth-user-1": {
-            "id": "auth-user-1",
-            "email": "buyer@example.com",
-            "role": "buyer",
-            "is_active": True,
-            "is_email_verified": True,
-            "auth_version": 1,
-            "coin_balance": 12,
-        }
-    })
-
-    async def fake_session(token):
-        assert token == "valid-token"
-        return {"user_id": "auth-user-1", "auth_version": 1}
-
-    monkeypatch.setattr(deps, "get_session", fake_session)
-
-    user = await current_user(_request(), "valid-token", repo)
-
-    assert user["id"] == "auth-user-1"
-    assert user["coin_balance"] == 12
-
-
-@pytest.mark.asyncio
-async def test_current_user_rejects_missing_token():
-    with pytest.raises(HTTPException) as exc:
-        await current_user(_request(), None, FakeUserRepo())
-
-    assert exc.value.status_code == 401
-
-
-@pytest.mark.asyncio
-async def test_current_user_rejects_invalid_opaque_session(monkeypatch):
-    async def fake_session(_token):
-        return None
-
-    monkeypatch.setattr(deps, "get_session", fake_session)
-
-    with pytest.raises(HTTPException) as exc:
-        await current_user(_request(), "bad-token", FakeUserRepo())
-
-    assert exc.value.status_code == 401
-
-
-@pytest.mark.asyncio
-async def test_current_user_rejects_inactive_postgres_profile(monkeypatch):
-    repo = FakeUserRepo({
-        "auth-user-1": {
-            "id": "auth-user-1",
-            "email": "buyer@example.com",
-            "role": "buyer",
-            "is_active": False,
-            "is_email_verified": True,
-            "auth_version": 1,
-        }
-    })
-
-    async def fake_session(_token):
-        return {"user_id": "auth-user-1", "auth_version": 1}
-
-    monkeypatch.setattr(deps, "get_session", fake_session)
-
-    with pytest.raises(HTTPException) as exc:
-        await current_user(_request(), "valid-token", repo)
-
-    assert exc.value.status_code == 401
 
 
 @pytest.mark.asyncio

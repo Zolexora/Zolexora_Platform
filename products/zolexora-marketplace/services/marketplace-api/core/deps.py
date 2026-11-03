@@ -1,126 +1,92 @@
-"""Authentication and authorization dependencies."""
+"""Authentication and authorization dependencies.
 
-import re
+Sign-in belongs to the Zolexora auth service. Every request carries its bearer token,
+which core.auth_service checks with the auth service. Buyers and sellers are public
+(Track 1) users with a local marketplace profile; administrators are auth-service
+platform admins (Track 3) and have no local profile.
+"""
+
+import logging
 
 from fastapi import Depends, HTTPException, Request
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
-from core.config import settings
+from core.auth_service import AuthServiceError, InvalidToken, introspect
 from core.database import get_db
-from shared.database.redis import get_session, validate_csrf
 from users.repositories import UserRepository, get_user_repository
-from shared.database.postgres import connection
 
-oauth2 = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
-EMAIL_RE = re.compile(r"^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$")
-SESSION_COOKIE = "z_session"
-CSRF_COOKIE = "z_csrf"
-SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
+logger = logging.getLogger("zolexora.auth")
+bearer = HTTPBearer(auto_error=False)
 
 
 async def db_dep() -> AsyncIOMotorDatabase:
     return get_db()
 
 
+def _unauthorized(detail: str = "Not authenticated") -> HTTPException:
+    return HTTPException(401, detail, headers={"WWW-Authenticate": "Bearer"})
+
+
+def _admin(identity: dict) -> dict:
+    return {
+        "id": identity["uid"],
+        "email": identity.get("email") or "",
+        "name": identity.get("email") or "Administrator",
+        "full_name": identity.get("email") or "Administrator",
+        "role": "admin",
+        "admin_role": identity.get("role") or "",
+        "permissions": list(identity.get("permissions") or []),
+        "coin_balance": 0,
+        "is_active": True,
+        "status": "active",
+    }
+
+
 async def current_user(
     request: Request,
-    bearer: str | None = Depends(oauth2),
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer),
     repo: UserRepository = Depends(get_user_repository),
 ) -> dict:
-    cookie = request.cookies.get(SESSION_COOKIE)
-    if cookie and bearer:
-        raise HTTPException(400, "Multiple session credentials are not allowed")
-    token = cookie or bearer
-    if not token:
-        raise HTTPException(401, "Not authenticated")
+    if not credentials:
+        raise _unauthorized()
     try:
-        session = await get_session(token)
-    except Exception as exc:
+        identity = await introspect(credentials.credentials)
+    except InvalidToken as exc:
+        raise _unauthorized("Invalid or expired session") from exc
+    except AuthServiceError as exc:
+        logger.error("Auth service unavailable: %s", exc)
         raise HTTPException(503, "Authentication service unavailable") from exc
-    if not session:
-        raise HTTPException(401, "Invalid or expired session")
-    user = await repo.get_by_id(session["user_id"], internal=True)
-    if user is None:
-        # Administrators are intentionally not rows in public.users. Their
-        # Firebase-verified email maps directly to the separated admin directory.
-        async with connection() as conn:
-            admin = await conn.fetchrow(
-                "SELECT id,email,full_name,is_active,created_at FROM public.admins WHERE id=$1::uuid",
-                session["user_id"],
-            )
-        if admin:
-            user = {
-                "id": str(admin["id"]), "email": admin["email"],
-                "name": admin["full_name"], "full_name": admin["full_name"],
-                "role": "admin", "coin_balance": 0, "is_active": admin["is_active"],
-                "is_email_verified": True, "is_phone_verified": False,
-                "auth_provider": "firebase",
-                "picture": None, "created_at": admin["created_at"].isoformat(), "auth_version": 1,
-                "status": "active",
-            }
-    if (
-        not user
-        or not user["is_active"]
-        or user.get("status", "active") != "active"
-        or not user["is_email_verified"]
-    ):
-        raise HTTPException(401, "Invalid or expired session")
-    if user["auth_version"] != session["auth_version"]:
-        raise HTTPException(401, "Invalid or expired session")
-    if cookie and request.method not in SAFE_METHODS:
-        origin = request.headers.get("origin")
-        csrf_cookie = request.cookies.get(CSRF_COOKIE, "")
-        csrf_header = request.headers.get("x-csrf-token", "")
-        if origin not in settings.CORS_ORIGINS or not csrf_cookie or csrf_cookie != csrf_header:
-            raise HTTPException(403, "CSRF validation failed")
-        if not await validate_csrf(token, csrf_header):
-            raise HTTPException(403, "CSRF validation failed")
-    user.pop("password_hash", None)
-    user.pop("auth_version", None)
+
+    if identity.get("is_platform_admin") is True:
+        user = _admin(identity)
+    elif identity.get("email") and identity.get("email_verified") is True:
+        user = await repo.sync_identity(identity)
+        if not user["is_active"] or user.get("status", "active") != "active":
+            raise HTTPException(403, "Account is suspended")
+    else:
+        # Employee (Track 2) tokens and unverified accounts have no marketplace access.
+        raise HTTPException(403, "This account cannot use the marketplace")
+
     request.state.authenticated_user = user
     return user
 
 
 async def optional_user(
     request: Request,
-    bearer: str | None = Depends(oauth2),
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer),
     repo: UserRepository = Depends(get_user_repository),
 ) -> dict | None:
-    if not request.cookies.get(SESSION_COOKIE) and not bearer:
+    if not credentials:
         return None
     try:
-        return await current_user(request, bearer, repo)
+        return await current_user(request, credentials, repo)
     except HTTPException:
         return None
 
 
-async def is_development_mock_seller(user: dict, repo: UserRepository | None = None) -> bool:
-    """Recognize the configured local-only seller fixture by either identity field."""
-    if settings.APP_ENV.lower() in {"prod", "production", "staging"}:
-        return False
-    configured_uid = settings.SELLER_MOCK_VERIFIED_FIREBASE_UID
-    if not configured_uid:
-        return False
-    if user.get("firebase_uid") == configured_uid:
-        return True
-    # Older identities may have the Firebase subject only in external_identity
-    # because users.firebase_uid is populated with COALESCE during migration.
-    if repo is not None:
-        try:
-            subject = await repo.get_external_identity_subject(user["id"])
-        except Exception:
-            return False
-        return subject == configured_uid
-    return False
-
-
-async def seller_only(
-    user=Depends(current_user),
-    repo: UserRepository = Depends(get_user_repository),
-):
-    mock_seller = await is_development_mock_seller(user, repo)
-    if user["role"] not in ("seller", "admin") and not mock_seller:
+async def seller_only(user=Depends(current_user)):
+    if user["role"] not in ("seller", "admin"):
         raise HTTPException(403, "Sellers only")
     return user
 
@@ -129,10 +95,3 @@ async def admin_only(user=Depends(current_user)):
     if user["role"] != "admin":
         raise HTTPException(403, "Admins only")
     return user
-
-
-def validate_email(email: str) -> str:
-    email = email.strip().lower()
-    if not EMAIL_RE.match(email):
-        raise HTTPException(400, "Invalid email address")
-    return email

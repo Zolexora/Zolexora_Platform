@@ -2,17 +2,27 @@ services:
   mongo:
     image: mongo:6
     container_name: marketplace-mongo
+    volumes:
+    - mongo_data:/data/db
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
       timeout: 5s
+      retries: 5
+  redis:
+    image: redis:7-alpine
+    container_name: marketplace-redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
       retries: 5
   postgres:
     image: postgres:15-alpine
     container_name: marketplace-postgres
     environment:
       POSTGRES_USER: zolexora
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD missing - run via scripts/setup/with-infisical.sh}
       POSTGRES_DB: marketplace
     volumes:
     - postgres_data:/var/lib/postgresql/data
@@ -41,11 +51,34 @@ services:
         APP_DIR: products/zolexora-marketplace/services/marketplace-api
     container_name: marketplace-backend
     environment:
-    - DATABASE_URL=postgresql://zolexora:${POSTGRES_PASSWORD}@postgres:5432/marketplace
+    # All values come from Infisical (scripts/setup/with-infisical.sh); `${VAR:?}` ones block startup.
+    - APP_ENV=${APP_ENV:?APP_ENV missing - run via scripts/setup/with-infisical.sh}
+    - DATABASE_URL=postgresql://zolexora:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD missing - run via scripts/setup/with-infisical.sh}@postgres:5432/marketplace
     - MONGO_URL=mongodb://mongo:27017/marketplace
-    - AUTH_OTP_PEPPER=${AUTH_OTP_PEPPER}
+    - REDIS_URL=redis://redis:6379/0
+    # Every token is checked by the Zolexora auth service; admins are its platform admins.
+    - AUTH_SERVICE_URL=${AUTH_SERVICE_URL:?AUTH_SERVICE_URL missing - run via scripts/setup/with-infisical.sh}
+    - MARKETPLACE_IN_DOCKER=1
+    - CORS_ORIGINS=${CORS_ORIGINS:?CORS_ORIGINS missing - run via scripts/setup/with-infisical.sh}
+    - TRUSTED_PROXIES
+    - CLOUDINARY_CLOUD_NAME
+    - CLOUDINARY_API_KEY
+    - CLOUDINARY_API_SECRET
+    - RAZORPAY_KEY_ID
+    - RAZORPAY_KEY_SECRET
+    - RAZORPAY_WEBHOOK_SECRET
+    - CASHFREE_ENVIRONMENT
+    - CASHFREE_CLIENT_ID
+    - CASHFREE_CLIENT_SECRET
+    - SHIPPING_WEBHOOK_SECRET
+    - UPI_ID
+    - SENTRY_DSN
+    extra_hosts:
+    - "host.docker.internal:host-gateway"
     depends_on:
       mongo:
+        condition: service_healthy
+      redis:
         condition: service_healthy
       postgres:
         condition: service_healthy
@@ -161,3 +194,4 @@ services:
 
 volumes:
   postgres_data:
+  mongo_data:

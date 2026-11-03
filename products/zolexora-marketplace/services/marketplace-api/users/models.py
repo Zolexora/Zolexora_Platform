@@ -16,10 +16,18 @@ class UserProfile(BaseModel):
     role: str
     coin_balance: int
     is_active: bool
-    is_email_verified: bool
-    auth_provider: str
+    is_email_verified: bool = True
+    phone_number: Optional[str] = None
+    is_phone_verified: bool = False
     picture: Optional[str] = None
-    created_at: str
+    created_at: Optional[str] = None
+
+
+class ProfileUpdate(BaseModel):
+    """Marketplace-owned profile fields. Email, phone and password belong to the auth service."""
+    model_config = {"extra": "forbid"}
+    name: Optional[str] = Field(default=None, min_length=1, max_length=100)
+    picture: Optional[str] = Field(default=None, max_length=2048, pattern=r"^https://")
 
 
 class PublicUserProfile(BaseModel):
@@ -62,8 +70,6 @@ class AddressCreate(BaseModel):
     address_validation_status: Optional[str] = None
     shipping_serviceability: Optional[str] = None
     email: Optional[EmailStr] = None
-    email_otp: Optional[str] = None
-    phone_otp: Optional[str] = None
 
 
 class AddressResponse(AddressCreate):
@@ -72,13 +78,6 @@ class AddressResponse(AddressCreate):
     created_at: str
 
 
-class AddressEmailOtpRequest(BaseModel):
-    email: EmailStr
-
-
-class EmailOtpVerifyRequest(BaseModel):
-    email: EmailStr
-    otp: str
 
 
 class UserProfileDetails(BaseModel):

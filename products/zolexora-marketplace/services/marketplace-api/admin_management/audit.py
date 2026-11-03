@@ -2,7 +2,6 @@
 
 import json
 import re
-import uuid
 
 from shared.database.postgres import connection
 
@@ -23,13 +22,10 @@ async def audit_admin_mutation(request, response, user: dict) -> None:
         "response_status": response.status_code,
     }
     async with connection() as conn:
-        admin_id = await conn.fetchval("SELECT id FROM public.admins WHERE lower(email)=lower($1) AND is_active=TRUE", user.get("email", ""))
-        if admin_id is None:
-            return
         await conn.execute(
             """INSERT INTO public.admin_audit_logs
-               (admin_id, action_type, target_user_id, details, ip_address, request_id)
-               VALUES ($1::uuid,$2,$3::uuid,$4::jsonb,$5,$6)""",
-            admin_id, action, target, json.dumps(details), request.client.host if request.client else None,
+               (admin_id, admin_email, action_type, target_user_id, details, ip_address, request_id)
+               VALUES ($1::uuid,$2,$3,$4::uuid,$5::jsonb,$6,$7)""",
+            user["id"], user.get("email"), action, target, json.dumps(details), request.client.host if request.client else None,
             getattr(request.state, "request_id", None),
         )

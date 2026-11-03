@@ -4,379 +4,20 @@
  */
 
 export interface paths {
-    "/api/auth/register": {
+    "/api/users/me": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
-        put?: never;
-        /** Register */
-        post: operations["register_api_auth_register_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/auth/verify-register": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Verify Register */
-        post: operations["verify_register_api_auth_verify_register_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/auth/resend-otp": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Resend Otp */
-        post: operations["resend_otp_api_auth_resend_otp_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/auth/login": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Login */
-        post: operations["login_api_auth_login_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/auth/login-phone": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Login Phone */
-        post: operations["login_phone_api_auth_login_phone_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/auth/forgot-password": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Forgot Password */
-        post: operations["forgot_password_api_auth_forgot_password_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/auth/reset-password": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Reset Password */
-        post: operations["reset_password_api_auth_reset_password_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/auth/check-email": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
         /**
-         * Check Email
-         * @description Check if an email is registered; returns authentication methods & masked phone.
+         * Get Me
+         * @description The signed-in user's marketplace profile (role, coins, picture).
          */
-        post: operations["check_email_api_auth_check_email_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/auth/check-phone": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Check Phone
-         * @description Check if a phone number is registered; returns masked phone & masked email.
-         */
-        post: operations["check_phone_api_auth_check_phone_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/auth/send-login-otp": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Send Login Otp
-         * @description Dispatch a 6-digit login OTP to registered email or SMS.
-         */
-        post: operations["send_login_otp_api_auth_send_login_otp_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/auth/verify-login-otp": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Verify Login Otp
-         * @description Verify login OTP and authenticate the existing user.
-         */
-        post: operations["verify_login_otp_api_auth_verify_login_otp_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/auth/google": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Google Auth
-         * @description Handle Google OAuth Handshake.
-         *     If user already exists -> directly login and bypass checks.
-         *     If new user -> return is_new_user=True (do NOT auto-create account, require complete profile form).
-         */
-        post: operations["google_auth_api_auth_google_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/auth/firebase": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Firebase Auth
-         * @description Verify a Firebase ID token, then create the existing opaque session.
-         */
-        post: operations["firebase_auth_api_auth_firebase_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/auth/enroll-firebase-email": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Enroll Firebase Email
-         * @description Attach a Firebase email/password credential after authenticated email-OTP recovery.
-         */
-        post: operations["enroll_firebase_email_api_auth_enroll_firebase_email_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/auth/send-phone-otp": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Send Phone Otp
-         * @description Dispatch 6-digit phone verification OTP.
-         */
-        post: operations["send_phone_otp_api_auth_send_phone_otp_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/auth/verify-phone-otp": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Verify Phone Otp
-         * @description Verify 6-digit phone verification OTP.
-         */
-        post: operations["verify_phone_otp_api_auth_verify_phone_otp_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/auth/send-email-otp": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Send Email Otp
-         * @description Dispatch 6-digit email verification code.
-         */
-        post: operations["send_email_otp_api_auth_send_email_otp_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/auth/verify-email-otp": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Verify Email Otp
-         * @description Verify 6-digit email verification code.
-         */
-        post: operations["verify_email_otp_api_auth_verify_email_otp_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/auth/complete-unified-registration": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Complete Unified Registration
-         * @description Finalize registration for Google / Email / Phone onboarding paths.
-         *     Enforces manual name entry, password, email verification, and platform-specific phone verification.
-         */
-        post: operations["complete_unified_registration_api_auth_complete_unified_registration_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/auth/me": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Me */
-        get: operations["me_api_auth_me_get"];
-        /** Update Profile */
-        put: operations["update_profile_api_auth_me_put"];
+        get: operations["get_me_api_users_me_get"];
+        /** Update Me */
+        put: operations["update_me_api_users_me_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -384,41 +25,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/auth/logout": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Logout */
-        post: operations["logout_api_auth_logout_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/auth/revoke-all": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Revoke All */
-        post: operations["revoke_all_api_auth_revoke_all_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/auth/me/avatar": {
+    "/api/users/me/avatar": {
         parameters: {
             query?: never;
             header?: never;
@@ -428,7 +35,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Upload Avatar */
-        post: operations["upload_avatar_api_auth_me_avatar_post"];
+        post: operations["upload_avatar_api_users_me_avatar_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -495,26 +102,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/users/{user_id}/status": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /**
-         * Set User Status
-         * @description Enable or disable a user account (admin only).
-         */
-        put: operations["set_user_status_api_users__user_id__status_put"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/users/me/addresses": {
         parameters: {
             query?: never;
@@ -533,86 +120,6 @@ export interface paths {
          * @description Add a new delivery address for the authenticated buyer.
          */
         post: operations["add_address_api_users_me_addresses_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/users/me/addresses/send-otp": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Send Address Phone Otp
-         * @description Send a 6-digit SMS OTP to verify the address phone number.
-         */
-        post: operations["send_address_phone_otp_api_users_me_addresses_send_otp_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/users/me/addresses/verify-phone-otp": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Verify Address Phone Otp
-         * @description Verify a 6-digit SMS OTP for an address phone number.
-         */
-        post: operations["verify_address_phone_otp_api_users_me_addresses_verify_phone_otp_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/users/me/addresses/send-email-otp": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Send Address Email Otp
-         * @description Send a 6-digit verification code to the address contact email.
-         */
-        post: operations["send_address_email_otp_api_users_me_addresses_send_email_otp_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/users/me/addresses/verify-email-otp": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Verify Address Email Otp
-         * @description Verify a 6-digit email OTP for an address email.
-         */
-        post: operations["verify_address_email_otp_api_users_me_addresses_verify_email_otp_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -736,6 +243,23 @@ export interface paths {
          * @description Legacy Razorpay verification adapter.
          */
         post: operations["verify_legacy_payment_api_payments_legacy_verify_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/seller/verification/gst/{gstin}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Verify GSTIN and fetch taxpayer profile */
+        get: operations["verify_gstin_api_seller_verification_gst__gstin__get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1098,57 +622,6 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
-        trace?: never;
-    };
-    "/api/admin/rbac/admins": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Create Admin Account */
-        post: operations["create_admin_account_api_admin_rbac_admins_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/rbac/admins/{admin_id}/permissions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Update Admin Permissions */
-        patch: operations["update_admin_permissions_api_admin_rbac_admins__admin_id__permissions_patch"];
-        trace?: never;
-    };
-    "/api/admin/rbac/admins/{admin_id}/role": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Update Admin Role */
-        patch: operations["update_admin_role_api_admin_rbac_admins__admin_id__role_patch"];
         trace?: never;
     };
     "/api/admin/audit": {
@@ -1587,6 +1060,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/orders/admin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Admin Orders */
+        get: operations["list_admin_orders_api_orders_admin_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/orders/admin/{order_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Admin Order Detail */
+        get: operations["get_admin_order_detail_api_orders_admin__order_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/orders": {
         parameters: {
             query?: never;
@@ -1783,40 +1290,6 @@ export interface paths {
         };
         /** Legacy Get Order */
         get: operations["legacy_get_order_api_orders__order_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/orders/admin": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Admin Orders */
-        get: operations["list_admin_orders_api_orders_admin_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/orders/admin/{order_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Admin Order Detail */
-        get: operations["get_admin_order_detail_api_orders_admin__order_id__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2629,379 +2102,20 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/auth/register": {
+    "/users/me": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
-        put?: never;
-        /** Register */
-        post: operations["register_auth_register_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/verify-register": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Verify Register */
-        post: operations["verify_register_auth_verify_register_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/resend-otp": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Resend Otp */
-        post: operations["resend_otp_auth_resend_otp_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/login": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Login */
-        post: operations["login_auth_login_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/login-phone": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Login Phone */
-        post: operations["login_phone_auth_login_phone_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/forgot-password": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Forgot Password */
-        post: operations["forgot_password_auth_forgot_password_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/reset-password": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Reset Password */
-        post: operations["reset_password_auth_reset_password_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/check-email": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
         /**
-         * Check Email
-         * @description Check if an email is registered; returns authentication methods & masked phone.
+         * Get Me
+         * @description The signed-in user's marketplace profile (role, coins, picture).
          */
-        post: operations["check_email_auth_check_email_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/check-phone": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Check Phone
-         * @description Check if a phone number is registered; returns masked phone & masked email.
-         */
-        post: operations["check_phone_auth_check_phone_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/send-login-otp": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Send Login Otp
-         * @description Dispatch a 6-digit login OTP to registered email or SMS.
-         */
-        post: operations["send_login_otp_auth_send_login_otp_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/verify-login-otp": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Verify Login Otp
-         * @description Verify login OTP and authenticate the existing user.
-         */
-        post: operations["verify_login_otp_auth_verify_login_otp_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/google": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Google Auth
-         * @description Handle Google OAuth Handshake.
-         *     If user already exists -> directly login and bypass checks.
-         *     If new user -> return is_new_user=True (do NOT auto-create account, require complete profile form).
-         */
-        post: operations["google_auth_auth_google_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/firebase": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Firebase Auth
-         * @description Verify a Firebase ID token, then create the existing opaque session.
-         */
-        post: operations["firebase_auth_auth_firebase_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/enroll-firebase-email": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Enroll Firebase Email
-         * @description Attach a Firebase email/password credential after authenticated email-OTP recovery.
-         */
-        post: operations["enroll_firebase_email_auth_enroll_firebase_email_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/send-phone-otp": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Send Phone Otp
-         * @description Dispatch 6-digit phone verification OTP.
-         */
-        post: operations["send_phone_otp_auth_send_phone_otp_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/verify-phone-otp": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Verify Phone Otp
-         * @description Verify 6-digit phone verification OTP.
-         */
-        post: operations["verify_phone_otp_auth_verify_phone_otp_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/send-email-otp": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Send Email Otp
-         * @description Dispatch 6-digit email verification code.
-         */
-        post: operations["send_email_otp_auth_send_email_otp_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/verify-email-otp": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Verify Email Otp
-         * @description Verify 6-digit email verification code.
-         */
-        post: operations["verify_email_otp_auth_verify_email_otp_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/complete-unified-registration": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Complete Unified Registration
-         * @description Finalize registration for Google / Email / Phone onboarding paths.
-         *     Enforces manual name entry, password, email verification, and platform-specific phone verification.
-         */
-        post: operations["complete_unified_registration_auth_complete_unified_registration_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/me": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Me */
-        get: operations["me_auth_me_get"];
-        /** Update Profile */
-        put: operations["update_profile_auth_me_put"];
+        get: operations["get_me_users_me_get"];
+        /** Update Me */
+        put: operations["update_me_users_me_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -3009,41 +2123,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/auth/logout": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Logout */
-        post: operations["logout_auth_logout_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/revoke-all": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Revoke All */
-        post: operations["revoke_all_auth_revoke_all_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/me/avatar": {
+    "/users/me/avatar": {
         parameters: {
             query?: never;
             header?: never;
@@ -3053,7 +2133,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Upload Avatar */
-        post: operations["upload_avatar_auth_me_avatar_post"];
+        post: operations["upload_avatar_users_me_avatar_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3120,26 +2200,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/users/{user_id}/status": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /**
-         * Set User Status
-         * @description Enable or disable a user account (admin only).
-         */
-        put: operations["set_user_status_users__user_id__status_put"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/users/me/addresses": {
         parameters: {
             query?: never;
@@ -3158,86 +2218,6 @@ export interface paths {
          * @description Add a new delivery address for the authenticated buyer.
          */
         post: operations["add_address_users_me_addresses_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/users/me/addresses/send-otp": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Send Address Phone Otp
-         * @description Send a 6-digit SMS OTP to verify the address phone number.
-         */
-        post: operations["send_address_phone_otp_users_me_addresses_send_otp_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/users/me/addresses/verify-phone-otp": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Verify Address Phone Otp
-         * @description Verify a 6-digit SMS OTP for an address phone number.
-         */
-        post: operations["verify_address_phone_otp_users_me_addresses_verify_phone_otp_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/users/me/addresses/send-email-otp": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Send Address Email Otp
-         * @description Send a 6-digit verification code to the address contact email.
-         */
-        post: operations["send_address_email_otp_users_me_addresses_send_email_otp_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/users/me/addresses/verify-email-otp": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Verify Address Email Otp
-         * @description Verify a 6-digit email OTP for an address email.
-         */
-        post: operations["verify_address_email_otp_users_me_addresses_verify_email_otp_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3361,6 +2341,23 @@ export interface paths {
          * @description Legacy Razorpay verification adapter.
          */
         post: operations["verify_legacy_payment_payments_legacy_verify_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seller/verification/gst/{gstin}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Verify GSTIN and fetch taxpayer profile */
+        get: operations["verify_gstin_seller_verification_gst__gstin__get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3723,57 +2720,6 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
-        trace?: never;
-    };
-    "/admin/rbac/admins": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Create Admin Account */
-        post: operations["create_admin_account_admin_rbac_admins_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/admin/rbac/admins/{admin_id}/permissions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Update Admin Permissions */
-        patch: operations["update_admin_permissions_admin_rbac_admins__admin_id__permissions_patch"];
-        trace?: never;
-    };
-    "/admin/rbac/admins/{admin_id}/role": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Update Admin Role */
-        patch: operations["update_admin_role_admin_rbac_admins__admin_id__role_patch"];
         trace?: never;
     };
     "/admin/audit": {
@@ -4212,6 +3158,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/orders/admin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Admin Orders */
+        get: operations["list_admin_orders_orders_admin_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/orders/admin/{order_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Admin Order Detail */
+        get: operations["get_admin_order_detail_orders_admin__order_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/orders": {
         parameters: {
             query?: never;
@@ -4408,40 +3388,6 @@ export interface paths {
         };
         /** Legacy Get Order */
         get: operations["legacy_get_order_orders__order_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/orders/admin": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Admin Orders */
-        get: operations["list_admin_orders_orders_admin_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/orders/admin/{order_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Admin Order Detail */
-        get: operations["get_admin_order_detail_orders_admin__order_id__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5374,18 +4320,6 @@ export interface components {
             shipping_serviceability?: string | null;
             /** Email */
             email?: string | null;
-            /** Email Otp */
-            email_otp?: string | null;
-            /** Phone Otp */
-            phone_otp?: string | null;
-        };
-        /** AddressEmailOtpRequest */
-        AddressEmailOtpRequest: {
-            /**
-             * Email
-             * Format: email
-             */
-            email: string;
         };
         /** AddressResponse */
         AddressResponse: {
@@ -5435,31 +4369,12 @@ export interface components {
             shipping_serviceability?: string | null;
             /** Email */
             email?: string | null;
-            /** Email Otp */
-            email_otp?: string | null;
-            /** Phone Otp */
-            phone_otp?: string | null;
             /** Id */
             id: string;
             /** Buyer Id */
             buyer_id: string;
             /** Created At */
             created_at: string;
-        };
-        /** AdminCreate */
-        AdminCreate: {
-            /** Email */
-            email: string;
-            /** Full Name */
-            full_name: string;
-            /**
-             * Role
-             * @default support_admin
-             * @enum {string}
-             */
-            role: "super_admin" | "support_admin" | "moderator" | "compliance_auditor";
-            /** Permissions */
-            permissions?: string[];
         };
         /** AdminInventoryResponse */
         AdminInventoryResponse: {
@@ -5655,19 +4570,6 @@ export interface components {
              */
             created_at: string;
         };
-        /** AdminPermissionPatch */
-        AdminPermissionPatch: {
-            /** Permissions */
-            permissions?: string[];
-        };
-        /** AdminRolePatch */
-        AdminRolePatch: {
-            /**
-             * Role
-             * @enum {string}
-             */
-            role: "super_admin" | "support_admin" | "moderator" | "compliance_auditor";
-        };
         /** AdminSummary */
         AdminSummary: {
             /** Id */
@@ -5697,8 +4599,6 @@ export interface components {
         AdminUserItem: {
             /** Id */
             id: string;
-            /** Firebase Uid */
-            firebase_uid?: string | null;
             /** Email */
             email: string;
             /** Phone Number */
@@ -5723,8 +4623,6 @@ export interface components {
             is_email_verified: boolean;
             /** Is Phone Verified */
             is_phone_verified: boolean;
-            /** Providers */
-            providers?: string[];
             /** Role */
             role: string;
             /**
@@ -5764,6 +4662,8 @@ export interface components {
             action_type: string;
             /** Admin Id */
             admin_id: string | null;
+            /** Admin Email */
+            admin_email?: string | null;
             /** Target User Id */
             target_user_id: string | null;
             /** Details */
@@ -5780,22 +4680,16 @@ export interface components {
              */
             created_at: string;
         };
-        /** AuthResponse */
-        AuthResponse: {
-            user: components["schemas"]["UserPublic"];
-            /** Session Token */
-            session_token?: string | null;
-        };
-        /** Body_upload_avatar_api_auth_me_avatar_post */
-        Body_upload_avatar_api_auth_me_avatar_post: {
+        /** Body_upload_avatar_api_users_me_avatar_post */
+        Body_upload_avatar_api_users_me_avatar_post: {
             /**
              * File
              * Format: binary
              */
             file: string;
         };
-        /** Body_upload_avatar_auth_me_avatar_post */
-        Body_upload_avatar_auth_me_avatar_post: {
+        /** Body_upload_avatar_users_me_avatar_post */
+        Body_upload_avatar_users_me_avatar_post: {
             /**
              * File
              * Format: binary
@@ -6029,40 +4923,6 @@ export interface components {
              */
             updated_at: string;
         };
-        /** CheckEmailRequest */
-        CheckEmailRequest: {
-            /** Email */
-            email: string;
-        };
-        /** CheckEmailResponse */
-        CheckEmailResponse: {
-            /** Exists */
-            exists: boolean;
-            /** Masked Phone */
-            masked_phone?: string | null;
-            /**
-             * Auth Methods
-             * @default [
-             *       "password",
-             *       "otp"
-             *     ]
-             */
-            auth_methods: string[];
-        };
-        /** CheckPhoneRequest */
-        CheckPhoneRequest: {
-            /** Phone */
-            phone: string;
-        };
-        /** CheckPhoneResponse */
-        CheckPhoneResponse: {
-            /** Exists */
-            exists: boolean;
-            /** Masked Phone */
-            masked_phone?: string | null;
-            /** Masked Email */
-            masked_email?: string | null;
-        };
         /** CheckoutQuote */
         CheckoutQuote: {
             /** Quote Id */
@@ -6106,36 +4966,6 @@ export interface components {
              * @default 0
              */
             coins_to_use: number;
-        };
-        /** CompleteUnifiedRegistrationRequest */
-        CompleteUnifiedRegistrationRequest: {
-            /** Email */
-            email: string;
-            /** Name */
-            name: string;
-            /** Password */
-            password: string;
-            /** Phone */
-            phone: string;
-            /** Email Otp */
-            email_otp?: string | null;
-            /** Phone Otp */
-            phone_otp?: string | null;
-            /**
-             * Google Verified
-             * @default false
-             */
-            google_verified: boolean;
-            /**
-             * Platform
-             * @default web
-             * @enum {string}
-             */
-            platform: "web" | "android";
-            /** Pnv Token */
-            pnv_token?: string | null;
-            /** Firebase Id Token */
-            firebase_id_token?: string | null;
         };
         /** CreateOrderFromQuoteRequest */
         CreateOrderFromQuoteRequest: {
@@ -6211,41 +5041,6 @@ export interface components {
             /** Declared Value */
             declared_value?: number | null;
         };
-        /** EmailOtpVerifyRequest */
-        EmailOtpVerifyRequest: {
-            /**
-             * Email
-             * Format: email
-             */
-            email: string;
-            /** Otp */
-            otp: string;
-        };
-        /**
-         * FirebaseEmailEnrollmentRequest
-         * @description A Firebase email/password token presented by an already authenticated user.
-         */
-        FirebaseEmailEnrollmentRequest: {
-            /** Id Token */
-            id_token: string;
-        };
-        /** FirebaseTokenExchangeRequest */
-        FirebaseTokenExchangeRequest: {
-            /** Id Token */
-            id_token: string;
-            /** Registration Name */
-            registration_name?: string | null;
-            /**
-             * Allow Buyer Registration
-             * @default true
-             */
-            allow_buyer_registration: boolean;
-        };
-        /** ForgotPasswordRequest */
-        ForgotPasswordRequest: {
-            /** Email */
-            email: string;
-        };
         /**
          * FulfillmentStatus
          * @enum {string}
@@ -6262,32 +5057,6 @@ export interface components {
             tracking_url?: string | null;
             /** Notes */
             notes?: string | null;
-        };
-        /** GoogleAuthRequest */
-        GoogleAuthRequest: {
-            /** Id Token */
-            id_token?: string | null;
-            /** Email */
-            email: string;
-            /** Name */
-            name?: string | null;
-            /** Google Id */
-            google_id?: string | null;
-        };
-        /** GoogleAuthResponse */
-        GoogleAuthResponse: {
-            /** Is New User */
-            is_new_user: boolean;
-            /** Email */
-            email: string;
-            /**
-             * Verified
-             * @default true
-             */
-            verified: boolean;
-            user?: components["schemas"]["UserPublic"] | null;
-            /** Session Token */
-            session_token?: string | null;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -6313,13 +5082,6 @@ export interface components {
          * @enum {string}
          */
         ListingStatus: "draft" | "active" | "paused" | "rejected" | "archived";
-        /** LoginRequest */
-        LoginRequest: {
-            /** Email */
-            email: string;
-            /** Password */
-            password: string;
-        };
         /** ManualBookRequest */
         ManualBookRequest: {
             /** Provider */
@@ -6380,11 +5142,6 @@ export interface components {
              * @default 3600
              */
             expires_in_seconds: number;
-        };
-        /** MessageResponse */
-        MessageResponse: {
-            /** Message */
-            message: string;
         };
         /**
          * Money
@@ -6453,17 +5210,6 @@ export interface components {
          * @enum {string}
          */
         OrderStatus: "draft" | "placed" | "payment_pending" | "paid" | "processing" | "partially_fulfilled" | "fulfilled" | "completed" | "cancelled" | "partially_cancelled" | "returned" | "partially_returned";
-        /** OtpSentResponse */
-        OtpSentResponse: {
-            /**
-             * Status
-             * @default otp_required
-             * @constant
-             */
-            status: "otp_required";
-            /** Email */
-            email: string;
-        };
         /**
          * PaymentIntent
          * @description A canonical, provider-neutral public payment intent contract.
@@ -6518,25 +5264,6 @@ export interface components {
          * @enum {string}
          */
         PaymentStatus: "pending" | "awaiting_verification" | "authorized" | "paid" | "failed" | "refunded" | "partially_refunded" | "voided";
-        /** PhoneLoginRequest */
-        PhoneLoginRequest: {
-            /** Phone */
-            phone: string;
-            /** Password */
-            password: string;
-        };
-        /** PhoneOtpSendRequest */
-        PhoneOtpSendRequest: {
-            /** Phone */
-            phone: string;
-        };
-        /** PhoneOtpVerifyRequest */
-        PhoneOtpVerifyRequest: {
-            /** Phone */
-            phone: string;
-            /** Otp */
-            otp: string;
-        };
         /** PickupLocationCreate */
         PickupLocationCreate: {
             /** Label */
@@ -6690,8 +5417,11 @@ export interface components {
             /** Storefront Ids */
             storefront_ids?: string[] | null;
         };
-        /** ProfileUpdateRequest */
-        ProfileUpdateRequest: {
+        /**
+         * ProfileUpdate
+         * @description Marketplace-owned profile fields. Email, phone and password belong to the auth service.
+         */
+        ProfileUpdate: {
             /** Name */
             name?: string | null;
             /** Picture */
@@ -6770,27 +5500,6 @@ export interface components {
             sponsor_data?: {
                 [key: string]: unknown;
             } | null;
-        };
-        /** RegisterRequest */
-        RegisterRequest: {
-            /** Email */
-            email: string;
-            /** Password */
-            password: string;
-            /** Name */
-            name: string;
-        };
-        /** ResendOtpRequest */
-        ResendOtpRequest: {
-            /** Email */
-            email: string;
-        };
-        /** ResetPasswordRequest */
-        ResetPasswordRequest: {
-            /** Token */
-            token: string;
-            /** New Password */
-            new_password: string;
         };
         /** ReturnRequest */
         ReturnRequest: {
@@ -7259,37 +5968,6 @@ export interface components {
              */
             created_at: string;
         };
-        /** SendAuthOtpRequest */
-        SendAuthOtpRequest: {
-            /** Email */
-            email?: string | null;
-            /** Phone */
-            phone?: string | null;
-            /**
-             * Channel
-             * @default email
-             * @enum {string}
-             */
-            channel: "email" | "sms";
-            /**
-             * Purpose
-             * @default auth
-             */
-            purpose: string;
-        };
-        /** SendLoginOtpRequest */
-        SendLoginOtpRequest: {
-            /** Email */
-            email?: string | null;
-            /** Phone */
-            phone?: string | null;
-            /**
-             * Channel
-             * @default email
-             * @enum {string}
-             */
-            channel: "email" | "sms";
-        };
         /** ServiceabilityRequest */
         ServiceabilityRequest: {
             /** Pincode */
@@ -7525,14 +6203,22 @@ export interface components {
             coin_balance: number;
             /** Is Active */
             is_active: boolean;
-            /** Is Email Verified */
+            /**
+             * Is Email Verified
+             * @default true
+             */
             is_email_verified: boolean;
-            /** Auth Provider */
-            auth_provider: string;
+            /** Phone Number */
+            phone_number?: string | null;
+            /**
+             * Is Phone Verified
+             * @default false
+             */
+            is_phone_verified: boolean;
             /** Picture */
             picture?: string | null;
             /** Created At */
-            created_at: string;
+            created_at?: string | null;
         };
         /**
          * UserProfileDetails
@@ -7558,32 +6244,6 @@ export interface components {
             /** Addresses */
             addresses?: components["schemas"]["AddressResponse"][];
         };
-        /** UserPublic */
-        UserPublic: {
-            /** Id */
-            id: string;
-            /** Email */
-            email: string;
-            /** Name */
-            name: string;
-            /**
-             * Role
-             * @enum {string}
-             */
-            role: "buyer" | "seller" | "admin";
-            /** Coin Balance */
-            coin_balance: number;
-            /** Is Active */
-            is_active: boolean;
-            /** Is Email Verified */
-            is_email_verified: boolean;
-            /** Auth Provider */
-            auth_provider: string;
-            /** Picture */
-            picture?: string | null;
-            /** Created At */
-            created_at: string;
-        };
         /** UserStatusPatch */
         UserStatusPatch: {
             /**
@@ -7603,40 +6263,10 @@ export interface components {
             /** Error Type */
             type: string;
         };
-        /** VerifyAuthOtpRequest */
-        VerifyAuthOtpRequest: {
-            /** Email */
-            email?: string | null;
-            /** Phone */
-            phone?: string | null;
-            /** Otp */
-            otp: string;
-            /**
-             * Purpose
-             * @default auth
-             */
-            purpose: string;
-        };
         /** VerifyCashfreeRequest */
         VerifyCashfreeRequest: {
             /** Order Id */
             order_id: string;
-        };
-        /** VerifyLoginOtpRequest */
-        VerifyLoginOtpRequest: {
-            /** Email */
-            email?: string | null;
-            /** Phone */
-            phone?: string | null;
-            /** Otp */
-            otp: string;
-        };
-        /** VerifyOtpRequest */
-        VerifyOtpRequest: {
-            /** Email */
-            email: string;
-            /** Otp */
-            otp: string;
         };
         /** VerifyPaymentRequest */
         VerifyPaymentRequest: {
@@ -7656,634 +6286,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    register_api_auth_register_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RegisterRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OtpSentResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    verify_register_api_auth_verify_register_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["VerifyOtpRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AuthResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    resend_otp_api_auth_resend_otp_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ResendOtpRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    login_api_auth_login_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["LoginRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AuthResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    login_phone_api_auth_login_phone_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PhoneLoginRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AuthResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    forgot_password_api_auth_forgot_password_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ForgotPasswordRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    reset_password_api_auth_reset_password_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ResetPasswordRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    check_email_api_auth_check_email_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CheckEmailRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CheckEmailResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    check_phone_api_auth_check_phone_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CheckPhoneRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CheckPhoneResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    send_login_otp_api_auth_send_login_otp_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SendLoginOtpRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    verify_login_otp_api_auth_verify_login_otp_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["VerifyLoginOtpRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AuthResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    google_auth_api_auth_google_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["GoogleAuthRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GoogleAuthResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    firebase_auth_api_auth_firebase_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["FirebaseTokenExchangeRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AuthResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    enroll_firebase_email_api_auth_enroll_firebase_email_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["FirebaseEmailEnrollmentRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AuthResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    send_phone_otp_api_auth_send_phone_otp_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SendAuthOtpRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    verify_phone_otp_api_auth_verify_phone_otp_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["VerifyAuthOtpRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    send_email_otp_api_auth_send_email_otp_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SendAuthOtpRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    verify_email_otp_api_auth_verify_email_otp_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["VerifyAuthOtpRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    complete_unified_registration_api_auth_complete_unified_registration_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CompleteUnifiedRegistrationRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AuthResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    me_api_auth_me_get: {
+    get_me_api_users_me_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -8298,12 +6301,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UserPublic"];
+                    "application/json": components["schemas"]["UserProfile"];
                 };
             };
         };
     };
-    update_profile_api_auth_me_put: {
+    update_me_api_users_me_put: {
         parameters: {
             query?: never;
             header?: never;
@@ -8312,7 +6315,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ProfileUpdateRequest"];
+                "application/json": components["schemas"]["ProfileUpdate"];
             };
         };
         responses: {
@@ -8322,7 +6325,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["MessageResponse"];
+                    "application/json": components["schemas"]["UserProfile"];
                 };
             };
             /** @description Validation Error */
@@ -8336,47 +6339,7 @@ export interface operations {
             };
         };
     };
-    logout_api_auth_logout_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-        };
-    };
-    revoke_all_api_auth_revoke_all_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-        };
-    };
-    upload_avatar_api_auth_me_avatar_post: {
+    upload_avatar_api_users_me_avatar_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -8385,7 +6348,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "multipart/form-data": components["schemas"]["Body_upload_avatar_api_auth_me_avatar_post"];
+                "multipart/form-data": components["schemas"]["Body_upload_avatar_api_users_me_avatar_post"];
             };
         };
         responses: {
@@ -8495,41 +6458,6 @@ export interface operations {
             };
         };
     };
-    set_user_status_api_users__user_id__status_put: {
-        parameters: {
-            query: {
-                active: boolean;
-            };
-            header?: never;
-            path: {
-                user_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     list_addresses_api_users_me_addresses_get: {
         parameters: {
             query?: never;
@@ -8570,146 +6498,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AddressResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    send_address_phone_otp_api_users_me_addresses_send_otp_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PhoneOtpSendRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    verify_address_phone_otp_api_users_me_addresses_verify_phone_otp_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PhoneOtpVerifyRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    send_address_email_otp_api_users_me_addresses_send_email_otp_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AddressEmailOtpRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    verify_address_email_otp_api_users_me_addresses_verify_email_otp_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["EmailOtpVerifyRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
                 };
             };
             /** @description Validation Error */
@@ -8922,6 +6710,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PaymentIntent"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    verify_gstin_api_seller_verification_gst__gstin__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                gstin: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -9620,109 +7439,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminSummary"];
-                };
-            };
-        };
-    };
-    create_admin_account_api_admin_rbac_admins_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AdminCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdminSummary"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_admin_permissions_api_admin_rbac_admins__admin_id__permissions_patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                admin_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AdminPermissionPatch"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdminSummary"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_admin_role_api_admin_rbac_admins__admin_id__role_patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                admin_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AdminRolePatch"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdminSummary"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -10688,6 +8404,57 @@ export interface operations {
             };
         };
     };
+    list_admin_orders_api_orders_admin_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminOrderSummaryResponse"][];
+                };
+            };
+        };
+    };
+    get_admin_order_detail_api_orders_admin__order_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminOrderResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     create_order_from_quote_api_orders_post: {
         parameters: {
             query?: never;
@@ -11037,57 +8804,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_admin_orders_api_orders_admin_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdminOrderSummaryResponse"][];
-                };
-            };
-        };
-    };
-    get_admin_order_detail_api_orders_admin__order_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                order_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdminOrderResponse"];
                 };
             };
             /** @description Validation Error */
@@ -12532,634 +10248,7 @@ export interface operations {
             };
         };
     };
-    register_auth_register_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RegisterRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OtpSentResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    verify_register_auth_verify_register_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["VerifyOtpRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AuthResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    resend_otp_auth_resend_otp_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ResendOtpRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    login_auth_login_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["LoginRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AuthResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    login_phone_auth_login_phone_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PhoneLoginRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AuthResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    forgot_password_auth_forgot_password_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ForgotPasswordRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    reset_password_auth_reset_password_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ResetPasswordRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    check_email_auth_check_email_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CheckEmailRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CheckEmailResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    check_phone_auth_check_phone_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CheckPhoneRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CheckPhoneResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    send_login_otp_auth_send_login_otp_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SendLoginOtpRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    verify_login_otp_auth_verify_login_otp_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["VerifyLoginOtpRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AuthResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    google_auth_auth_google_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["GoogleAuthRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GoogleAuthResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    firebase_auth_auth_firebase_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["FirebaseTokenExchangeRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AuthResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    enroll_firebase_email_auth_enroll_firebase_email_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["FirebaseEmailEnrollmentRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AuthResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    send_phone_otp_auth_send_phone_otp_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SendAuthOtpRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    verify_phone_otp_auth_verify_phone_otp_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["VerifyAuthOtpRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    send_email_otp_auth_send_email_otp_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SendAuthOtpRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    verify_email_otp_auth_verify_email_otp_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["VerifyAuthOtpRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    complete_unified_registration_auth_complete_unified_registration_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CompleteUnifiedRegistrationRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AuthResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    me_auth_me_get: {
+    get_me_users_me_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -13174,12 +10263,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UserPublic"];
+                    "application/json": components["schemas"]["UserProfile"];
                 };
             };
         };
     };
-    update_profile_auth_me_put: {
+    update_me_users_me_put: {
         parameters: {
             query?: never;
             header?: never;
@@ -13188,7 +10277,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ProfileUpdateRequest"];
+                "application/json": components["schemas"]["ProfileUpdate"];
             };
         };
         responses: {
@@ -13198,7 +10287,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["MessageResponse"];
+                    "application/json": components["schemas"]["UserProfile"];
                 };
             };
             /** @description Validation Error */
@@ -13212,47 +10301,7 @@ export interface operations {
             };
         };
     };
-    logout_auth_logout_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-        };
-    };
-    revoke_all_auth_revoke_all_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-        };
-    };
-    upload_avatar_auth_me_avatar_post: {
+    upload_avatar_users_me_avatar_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -13261,7 +10310,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "multipart/form-data": components["schemas"]["Body_upload_avatar_auth_me_avatar_post"];
+                "multipart/form-data": components["schemas"]["Body_upload_avatar_users_me_avatar_post"];
             };
         };
         responses: {
@@ -13371,41 +10420,6 @@ export interface operations {
             };
         };
     };
-    set_user_status_users__user_id__status_put: {
-        parameters: {
-            query: {
-                active: boolean;
-            };
-            header?: never;
-            path: {
-                user_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     list_addresses_users_me_addresses_get: {
         parameters: {
             query?: never;
@@ -13446,146 +10460,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AddressResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    send_address_phone_otp_users_me_addresses_send_otp_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PhoneOtpSendRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    verify_address_phone_otp_users_me_addresses_verify_phone_otp_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PhoneOtpVerifyRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    send_address_email_otp_users_me_addresses_send_email_otp_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AddressEmailOtpRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    verify_address_email_otp_users_me_addresses_verify_email_otp_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["EmailOtpVerifyRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
                 };
             };
             /** @description Validation Error */
@@ -13798,6 +10672,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PaymentIntent"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    verify_gstin_seller_verification_gst__gstin__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                gstin: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -14496,109 +11401,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminSummary"];
-                };
-            };
-        };
-    };
-    create_admin_account_admin_rbac_admins_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AdminCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdminSummary"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_admin_permissions_admin_rbac_admins__admin_id__permissions_patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                admin_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AdminPermissionPatch"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdminSummary"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_admin_role_admin_rbac_admins__admin_id__role_patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                admin_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AdminRolePatch"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdminSummary"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -15564,6 +12366,57 @@ export interface operations {
             };
         };
     };
+    list_admin_orders_orders_admin_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminOrderSummaryResponse"][];
+                };
+            };
+        };
+    };
+    get_admin_order_detail_orders_admin__order_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminOrderResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     create_order_from_quote_orders_post: {
         parameters: {
             query?: never;
@@ -15913,57 +12766,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_admin_orders_orders_admin_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdminOrderSummaryResponse"][];
-                };
-            };
-        };
-    };
-    get_admin_order_detail_orders_admin__order_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                order_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdminOrderResponse"];
                 };
             };
             /** @description Validation Error */

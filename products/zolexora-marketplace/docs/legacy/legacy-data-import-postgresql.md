@@ -34,6 +34,6 @@ Executable import tooling, production credentials, cutover, dual-write, customer
 
 ## MR-03 identity dry-run artifact
 
-`services/marketplace-api/scripts/migrate_supabase_identities.py` accepts only an immutable local JSON export containing `auth_users` and `public_users`. It performs no network or database operation and has no apply mode. Output is stable JSON with mapped/rejected counts, deterministic IDs, normalized email, verified state, canonical role, and `password_reset_required`; sensitive source fields are ignored and never echoed.
+The former `migrate_supabase_identities.py` (removed: identities now live in the Zolexora auth service) accepted only an immutable local JSON export containing `auth_users` and `public_users`. It performs no network or database operation and has no apply mode. Output is stable JSON with mapped/rejected counts, deterministic IDs, normalized email, verified state, canonical role, and `password_reset_required`; sensitive source fields are ignored and never echoed.
 
 Known seller/admin roles are rejected unless the operator explicitly supplies `--allow-privileged`; unknown roles are always rejected. Duplicate normalized emails stop the later record. Production import must later add approved reconciliation, transactional writes, count/ownership review, and cutover authorization. Legacy Supabase password hashes are not imported: affected identities require password reset.

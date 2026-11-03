@@ -36,6 +36,6 @@ async def test_docs_and_openapi(client):
     schema = response.json()
     assert schema["info"]["title"] == "Zolexora API"
     assert "/api/health" in schema["paths"]
-    assert "/api/auth/login" in schema["paths"]
+    assert not any(path.startswith("/api/auth/") for path in schema["paths"])  # sign-in is the auth service
     assert "/api/products" in schema["paths"]
     assert "/api/shipping/admin/shipments/stats" in schema["paths"]

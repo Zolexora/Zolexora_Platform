@@ -12,7 +12,7 @@ from alembic.config import Config
 from httpx import ASGITransport, AsyncClient
 
 from database.config import DatabaseConfig
-from database.engine import SCHEMA_HEAD, check_readiness
+from database.engine import check_readiness, schema_head
 from database.repositories.catalog import PostgresCatalogRepository
 from database.repositories.storefronts import PostgresStorefrontRepository, bootstrap_storefronts
 from main import app as marketplace_app
@@ -123,7 +123,7 @@ def test_pool_bounds_are_validated():
 
 def test_empty_database_upgrades_to_head(postgres_database):
     tables = set(postgres_database.first[0])
-    assert REQUIRED_TABLES == tables and postgres_database.revision == SCHEMA_HEAD
+    assert REQUIRED_TABLES == tables and postgres_database.revision == schema_head()
 
 
 def test_second_upgrade_to_head_is_schema_noop(postgres_database):

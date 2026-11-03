@@ -2,820 +2,25 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Zolexora API",
-    "description": "Provider-independent Marketplace API with PostgreSQL identities and Redis sessions",
+    "description": "Zolexora Marketplace API. Sign-in is the Zolexora auth service; send its token as a Bearer token.",
     "version": "2.1.0"
   },
   "paths": {
-    "/api/auth/register": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Register",
-        "operationId": "register_api_auth_register_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RegisterRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OtpSentResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/auth/verify-register": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Verify Register",
-        "operationId": "verify_register_api_auth_verify_register_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/VerifyOtpRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AuthResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/auth/resend-otp": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Resend Otp",
-        "operationId": "resend_otp_api_auth_resend_otp_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ResendOtpRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MessageResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/auth/login": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Login",
-        "operationId": "login_api_auth_login_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/LoginRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AuthResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/auth/login-phone": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Login Phone",
-        "operationId": "login_phone_api_auth_login_phone_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PhoneLoginRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AuthResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/auth/forgot-password": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Forgot Password",
-        "operationId": "forgot_password_api_auth_forgot_password_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ForgotPasswordRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MessageResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/auth/reset-password": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Reset Password",
-        "operationId": "reset_password_api_auth_reset_password_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ResetPasswordRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MessageResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/auth/check-email": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Check Email",
-        "description": "Check if an email is registered; returns authentication methods & masked phone.",
-        "operationId": "check_email_api_auth_check_email_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CheckEmailRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CheckEmailResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/auth/check-phone": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Check Phone",
-        "description": "Check if a phone number is registered; returns masked phone & masked email.",
-        "operationId": "check_phone_api_auth_check_phone_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CheckPhoneRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CheckPhoneResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/auth/send-login-otp": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Send Login Otp",
-        "description": "Dispatch a 6-digit login OTP to registered email or SMS.",
-        "operationId": "send_login_otp_api_auth_send_login_otp_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SendLoginOtpRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MessageResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/auth/verify-login-otp": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Verify Login Otp",
-        "description": "Verify login OTP and authenticate the existing user.",
-        "operationId": "verify_login_otp_api_auth_verify_login_otp_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/VerifyLoginOtpRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AuthResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/auth/google": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Google Auth",
-        "description": "Handle Google OAuth Handshake.\nIf user already exists -> directly login and bypass checks.\nIf new user -> return is_new_user=True (do NOT auto-create account, require complete profile form).",
-        "operationId": "google_auth_api_auth_google_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/GoogleAuthRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GoogleAuthResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/auth/firebase": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Firebase Auth",
-        "description": "Verify a Firebase ID token, then create the existing opaque session.",
-        "operationId": "firebase_auth_api_auth_firebase_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/FirebaseTokenExchangeRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AuthResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/auth/enroll-firebase-email": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Enroll Firebase Email",
-        "description": "Attach a Firebase email/password credential after authenticated email-OTP recovery.",
-        "operationId": "enroll_firebase_email_api_auth_enroll_firebase_email_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/FirebaseEmailEnrollmentRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AuthResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
-      }
-    },
-    "/api/auth/send-phone-otp": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Send Phone Otp",
-        "description": "Dispatch 6-digit phone verification OTP.",
-        "operationId": "send_phone_otp_api_auth_send_phone_otp_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SendAuthOtpRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MessageResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/auth/verify-phone-otp": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Verify Phone Otp",
-        "description": "Verify 6-digit phone verification OTP.",
-        "operationId": "verify_phone_otp_api_auth_verify_phone_otp_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/VerifyAuthOtpRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MessageResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/auth/send-email-otp": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Send Email Otp",
-        "description": "Dispatch 6-digit email verification code.",
-        "operationId": "send_email_otp_api_auth_send_email_otp_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SendAuthOtpRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MessageResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/auth/verify-email-otp": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Verify Email Otp",
-        "description": "Verify 6-digit email verification code.",
-        "operationId": "verify_email_otp_api_auth_verify_email_otp_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/VerifyAuthOtpRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MessageResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/auth/complete-unified-registration": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Complete Unified Registration",
-        "description": "Finalize registration for Google / Email / Phone onboarding paths.\nEnforces manual name entry, password, email verification, and platform-specific phone verification.",
-        "operationId": "complete_unified_registration_api_auth_complete_unified_registration_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CompleteUnifiedRegistrationRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AuthResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/auth/me": {
+    "/api/users/me": {
       "get": {
         "tags": [
-          "auth"
+          "users"
         ],
-        "summary": "Me",
-        "operationId": "me_api_auth_me_get",
+        "summary": "Get Me",
+        "description": "The signed-in user's marketplace profile (role, coins, picture).",
+        "operationId": "get_me_api_users_me_get",
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UserPublic"
+                  "$ref": "#/components/schemas/UserProfile"
                 }
               }
             }
@@ -823,21 +28,21 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       },
       "put": {
         "tags": [
-          "auth"
+          "users"
         ],
-        "summary": "Update Profile",
-        "operationId": "update_profile_api_auth_me_put",
+        "summary": "Update Me",
+        "operationId": "update_me_api_users_me_put",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ProfileUpdateRequest"
+                "$ref": "#/components/schemas/ProfileUpdate"
               }
             }
           },
@@ -849,7 +54,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MessageResponse"
+                  "$ref": "#/components/schemas/UserProfile"
                 }
               }
             }
@@ -867,70 +72,23 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
     },
-    "/api/auth/logout": {
+    "/api/users/me/avatar": {
       "post": {
         "tags": [
-          "auth"
-        ],
-        "summary": "Logout",
-        "operationId": "logout_api_auth_logout_post",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MessageResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/auth/revoke-all": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Revoke All",
-        "operationId": "revoke_all_api_auth_revoke_all_post",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MessageResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
-      }
-    },
-    "/api/auth/me/avatar": {
-      "post": {
-        "tags": [
-          "auth"
+          "users"
         ],
         "summary": "Upload Avatar",
-        "operationId": "upload_avatar_api_auth_me_avatar_post",
+        "operationId": "upload_avatar_api_users_me_avatar_post",
         "requestBody": {
           "content": {
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/Body_upload_avatar_api_auth_me_avatar_post"
+                "$ref": "#/components/schemas/Body_upload_avatar_api_users_me_avatar_post"
               }
             }
           },
@@ -944,7 +102,7 @@
                 "schema": {
                   "additionalProperties": true,
                   "type": "object",
-                  "title": "Response Upload Avatar Api Auth Me Avatar Post"
+                  "title": "Response Upload Avatar Api Users Me Avatar Post"
                 }
               }
             }
@@ -962,7 +120,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -989,7 +147,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -1004,7 +162,7 @@
         "operationId": "get_user_profile_api_users__user_id__get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -1060,7 +218,7 @@
         "operationId": "list_users_api_users__get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -1132,65 +290,6 @@
         }
       }
     },
-    "/api/users/{user_id}/status": {
-      "put": {
-        "tags": [
-          "users"
-        ],
-        "summary": "Set User Status",
-        "description": "Enable or disable a user account (admin only).",
-        "operationId": "set_user_status_api_users__user_id__status_put",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "user_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "User Id"
-            }
-          },
-          {
-            "name": "active",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "boolean",
-              "title": "Active"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Set User Status Api Users  User Id  Status Put"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/users/me/addresses": {
       "get": {
         "tags": [
@@ -1217,7 +316,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       },
@@ -1262,203 +361,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
-          }
-        ]
-      }
-    },
-    "/api/users/me/addresses/send-otp": {
-      "post": {
-        "tags": [
-          "users"
-        ],
-        "summary": "Send Address Phone Otp",
-        "description": "Send a 6-digit SMS OTP to verify the address phone number.",
-        "operationId": "send_address_phone_otp_api_users_me_addresses_send_otp_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PhoneOtpSendRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Send Address Phone Otp Api Users Me Addresses Send Otp Post"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
-      }
-    },
-    "/api/users/me/addresses/verify-phone-otp": {
-      "post": {
-        "tags": [
-          "users"
-        ],
-        "summary": "Verify Address Phone Otp",
-        "description": "Verify a 6-digit SMS OTP for an address phone number.",
-        "operationId": "verify_address_phone_otp_api_users_me_addresses_verify_phone_otp_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PhoneOtpVerifyRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Verify Address Phone Otp Api Users Me Addresses Verify Phone Otp Post"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
-      }
-    },
-    "/api/users/me/addresses/send-email-otp": {
-      "post": {
-        "tags": [
-          "users"
-        ],
-        "summary": "Send Address Email Otp",
-        "description": "Send a 6-digit verification code to the address contact email.",
-        "operationId": "send_address_email_otp_api_users_me_addresses_send_email_otp_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AddressEmailOtpRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Send Address Email Otp Api Users Me Addresses Send Email Otp Post"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
-      }
-    },
-    "/api/users/me/addresses/verify-email-otp": {
-      "post": {
-        "tags": [
-          "users"
-        ],
-        "summary": "Verify Address Email Otp",
-        "description": "Verify a 6-digit email OTP for an address email.",
-        "operationId": "verify_address_email_otp_api_users_me_addresses_verify_email_otp_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/EmailOtpVerifyRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Verify Address Email Otp Api Users Me Addresses Verify Email Otp Post"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -1473,7 +376,7 @@
         "operationId": "pincode_lookup_api_users_me_addresses_pincode_lookup_get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -1555,7 +458,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -1570,7 +473,7 @@
         "operationId": "update_address_api_users_me_addresses__address_id__put",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -1626,7 +529,7 @@
         "operationId": "delete_address_api_users_me_addresses__address_id__delete",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -1763,6 +666,51 @@
         }
       }
     },
+    "/api/seller/verification/gst/{gstin}": {
+      "get": {
+        "tags": [
+          "seller-organizations"
+        ],
+        "summary": "Verify GSTIN and fetch taxpayer profile",
+        "operationId": "verify_gstin_api_seller_verification_gst__gstin__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "gstin",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Gstin"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/seller/organizations": {
       "post": {
         "tags": [
@@ -1804,7 +752,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -1834,7 +782,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -1848,7 +796,7 @@
         "operationId": "get_seller_organization_api_seller_organizations__org_id__get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -1896,7 +844,7 @@
         "operationId": "add_org_member_api_seller_organizations__org_id__members_invite_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -1954,7 +902,7 @@
         "operationId": "list_org_members_api_seller_organizations__org_id__members_get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -2006,7 +954,7 @@
         "operationId": "update_org_member_role_api_seller_organizations__org_id__members__member_id__role_put",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -2074,7 +1022,7 @@
         "operationId": "remove_org_member_api_seller_organizations__org_id__members__member_id__delete",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -2132,7 +1080,7 @@
         "operationId": "request_storefront_grant_api_seller_organizations__org_id__grants_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -2188,7 +1136,7 @@
         "operationId": "list_org_storefront_grants_api_seller_organizations__org_id__grants_get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -2240,7 +1188,7 @@
         "operationId": "get_org_audit_log_api_seller_organizations__org_id__audit_log_get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -2292,7 +1240,7 @@
         "operationId": "admin_list_seller_organizations_api_admin_seller_organizations_get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -2366,7 +1314,7 @@
         "operationId": "admin_get_seller_organization_api_admin_seller_organizations__org_id__get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -2414,7 +1362,7 @@
         "operationId": "admin_update_organization_verification_api_admin_seller_organizations__org_id__verification_put",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -2472,7 +1420,7 @@
         "operationId": "admin_update_organization_suspension_api_admin_seller_organizations__org_id__suspension_put",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -2530,7 +1478,7 @@
         "operationId": "admin_list_storefront_grants_api_admin_storefront_grants_get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -2622,7 +1570,7 @@
         "operationId": "admin_decide_storefront_grant_api_admin_storefront_grants__grant_id__decision_put",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -2680,7 +1628,7 @@
         "operationId": "admin_get_verification_history_api_admin_seller_organizations__org_id__verification_history_get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -2732,7 +1680,7 @@
         "operationId": "request_media_upload_intent_api_seller_organizations__org_id__media_intent_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -2790,7 +1738,7 @@
         "operationId": "complete_media_upload_api_seller_organizations__org_id__media__media_id__complete_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -2858,7 +1806,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -2872,7 +1820,7 @@
         "operationId": "update_user_status_api_admin_users__user_id__status_patch",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -2941,169 +1889,9 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
-      }
-    },
-    "/api/admin/rbac/admins": {
-      "post": {
-        "tags": [
-          "administration"
-        ],
-        "summary": "Create Admin Account",
-        "operationId": "create_admin_account_api_admin_rbac_admins_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AdminCreate"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AdminSummary"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
-      }
-    },
-    "/api/admin/rbac/admins/{admin_id}/permissions": {
-      "patch": {
-        "tags": [
-          "administration"
-        ],
-        "summary": "Update Admin Permissions",
-        "operationId": "update_admin_permissions_api_admin_rbac_admins__admin_id__permissions_patch",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "admin_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Admin Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AdminPermissionPatch"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AdminSummary"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/admin/rbac/admins/{admin_id}/role": {
-      "patch": {
-        "tags": [
-          "administration"
-        ],
-        "summary": "Update Admin Role",
-        "operationId": "update_admin_role_api_admin_rbac_admins__admin_id__role_patch",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "admin_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Admin Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AdminRolePatch"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AdminSummary"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
       }
     },
     "/api/admin/audit": {
@@ -3115,7 +1903,7 @@
         "operationId": "list_admin_audit_logs_api_admin_audit_get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -3310,7 +2098,7 @@
         "operationId": "create_product_api_products_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "requestBody": {
@@ -3364,7 +2152,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -3460,7 +2248,7 @@
         "operationId": "update_product_api_products__product_id__put",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -3513,7 +2301,7 @@
         "operationId": "delete_product_api_products__product_id__delete",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -3558,7 +2346,7 @@
         "operationId": "upload_image_api_products__product_id__upload_image_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -3647,7 +2435,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -3710,7 +2498,7 @@
         "operationId": "create_reel_api_reels_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "requestBody": {
@@ -3764,7 +2552,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -3779,7 +2567,7 @@
         "operationId": "upload_reel_media_api_reels__reel_id__upload_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -3834,7 +2622,7 @@
         "operationId": "view_reel_api_reels__reel_id__view_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -3879,7 +2667,7 @@
         "operationId": "update_reel_api_reels__reel_id__put",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -3934,7 +2722,7 @@
         "operationId": "delete_reel_api_reels__reel_id__delete",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -3991,7 +2779,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       },
@@ -4013,7 +2801,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -4037,7 +2825,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -4083,7 +2871,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -4097,7 +2885,7 @@
         "operationId": "update_cart_item_api_cart_items__product_id__put",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -4175,7 +2963,7 @@
         "operationId": "remove_cart_item_api_cart_items__product_id__delete",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -4234,7 +3022,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -4278,7 +3066,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -4322,7 +3110,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -4366,7 +3154,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -4410,7 +3198,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -4434,7 +3222,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -4458,7 +3246,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -4472,7 +3260,7 @@
         "operationId": "toggle_wishlist_item_api_wishlist__product_id__post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -4515,7 +3303,7 @@
         "operationId": "remove_wishlist_item_api_wishlist__product_id__delete",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -4535,6 +3323,83 @@
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/orders/admin": {
+      "get": {
+        "tags": [
+          "admin-orders"
+        ],
+        "summary": "List Admin Orders",
+        "operationId": "list_admin_orders_api_orders_admin_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AdminOrderSummaryResponse"
+                  },
+                  "type": "array",
+                  "title": "Response List Admin Orders Api Orders Admin Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/orders/admin/{order_id}": {
+      "get": {
+        "tags": [
+          "admin-orders"
+        ],
+        "summary": "Get Admin Order Detail",
+        "operationId": "get_admin_order_detail_api_orders_admin__order_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminOrderResponse"
+                }
               }
             }
           },
@@ -4592,7 +3457,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -4622,7 +3487,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -4636,7 +3501,7 @@
         "operationId": "get_buyer_order_detail_api_orders_buyer__order_id__get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -4683,7 +3548,7 @@
         "operationId": "request_buyer_cancellation_api_orders_buyer__order_id__cancel_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -4740,7 +3605,7 @@
         "operationId": "request_buyer_return_api_orders_buyer__order_id__return_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -4813,7 +3678,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -4827,7 +3692,7 @@
         "operationId": "get_seller_order_detail_api_orders_seller__order_id__get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -4874,7 +3739,7 @@
         "operationId": "transition_seller_shipment_api_orders_seller__order_id__shipments__shipment_id__transition_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -4940,7 +3805,7 @@
         "operationId": "action_seller_cancellation_api_orders_seller__order_id__cancellations_action_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -4997,7 +3862,7 @@
         "operationId": "action_seller_return_api_orders_seller__order_id__returns_action_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -5064,7 +3929,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -5078,7 +3943,7 @@
         "operationId": "legacy_get_order_api_orders__order_id__get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -5114,83 +3979,6 @@
         }
       }
     },
-    "/api/orders/admin": {
-      "get": {
-        "tags": [
-          "admin-orders"
-        ],
-        "summary": "List Admin Orders",
-        "operationId": "list_admin_orders_api_orders_admin_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/AdminOrderSummaryResponse"
-                  },
-                  "type": "array",
-                  "title": "Response List Admin Orders Api Orders Admin Get"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
-      }
-    },
-    "/api/orders/admin/{order_id}": {
-      "get": {
-        "tags": [
-          "admin-orders"
-        ],
-        "summary": "Get Admin Order Detail",
-        "operationId": "get_admin_order_detail_api_orders_admin__order_id__get",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "order_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Order Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AdminOrderResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/seller/catalog/listings": {
       "get": {
         "tags": [
@@ -5200,7 +3988,7 @@
         "operationId": "list_seller_listings_api_seller_catalog_listings_get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -5259,7 +4047,7 @@
         "operationId": "create_seller_listing_api_seller_catalog_listings_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "requestBody": {
@@ -5305,7 +4093,7 @@
         "operationId": "get_seller_listing_api_seller_catalog_listings__listing_id__get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -5350,7 +4138,7 @@
         "operationId": "update_seller_listing_api_seller_catalog_listings__listing_id__put",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -5407,7 +4195,7 @@
         "operationId": "get_seller_inventory_api_seller_catalog_listings__listing_id__inventory_get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -5452,7 +4240,7 @@
         "operationId": "update_seller_inventory_api_seller_catalog_listings__listing_id__inventory_put",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -5509,7 +4297,7 @@
         "operationId": "change_seller_listing_lifecycle_api_seller_catalog_listings__listing_id__lifecycle_put",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -5566,7 +4354,7 @@
         "operationId": "list_admin_listings_api_admin_catalog_listings_get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -5627,7 +4415,7 @@
         "operationId": "get_admin_listing_api_admin_catalog_listings__listing_id__get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -5674,7 +4462,7 @@
         "operationId": "get_admin_inventory_api_admin_catalog_listings__listing_id__inventory_get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -5721,7 +4509,7 @@
         "operationId": "moderate_admin_listing_api_admin_catalog_listings__listing_id__moderation_put",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -5788,7 +4576,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -5812,7 +4600,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -5856,7 +4644,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -5880,7 +4668,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -5943,7 +4731,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -5967,7 +4755,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -5981,7 +4769,7 @@
         "operationId": "admin_set_role_api_admin_users__uid__role_put",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -6035,7 +4823,7 @@
         "operationId": "admin_toggle_user_api_admin_users__uid__toggle_put",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -6090,7 +4878,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -6104,7 +4892,7 @@
         "operationId": "admin_toggle_reel_api_admin_reels__rid__toggle_put",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -6149,7 +4937,7 @@
         "operationId": "admin_delete_reel_api_admin_reels__rid__delete",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -6204,7 +4992,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -6228,7 +5016,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -6242,7 +5030,7 @@
         "operationId": "verify_upi_api_admin_orders__order_id__verify_upi_put",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -6307,7 +5095,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -6331,7 +5119,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       },
@@ -6373,7 +5161,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -6387,7 +5175,7 @@
         "operationId": "update_pickup_location_api_shipping_pickup_locations__loc_id__put",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -6442,7 +5230,7 @@
         "operationId": "delete_pickup_location_api_shipping_pickup_locations__loc_id__delete",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -6487,7 +5275,7 @@
         "operationId": "ready_to_ship_api_shipping_orders__order_id__ready_to_ship_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -6542,7 +5330,7 @@
         "operationId": "discover_options_api_shipping_orders__order_id__discover_options_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -6597,7 +5385,7 @@
         "operationId": "get_options_api_shipping_orders__order_id__options_get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -6642,7 +5430,7 @@
         "operationId": "manual_book_api_shipping_orders__order_id__manual_book_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -6697,7 +5485,7 @@
         "operationId": "get_shipment_api_shipping_shipments__shipment_id__get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -6742,7 +5530,7 @@
         "operationId": "track_by_awb_api_shipping_track__awb__get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -6787,7 +5575,7 @@
         "operationId": "request_pickup_api_shipping_shipments__shipment_id__request_pickup_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -6832,7 +5620,7 @@
         "operationId": "cancel_shipment_api_shipping_shipments__shipment_id__cancel_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -6877,7 +5665,7 @@
         "operationId": "retry_booking_api_shipping_shipments__shipment_id__retry_booking_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -6922,7 +5710,7 @@
         "operationId": "sync_tracking_api_shipping_sync__shipment_id__post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -6977,7 +5765,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -7001,7 +5789,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -7025,7 +5813,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -7182,816 +5970,21 @@
         }
       }
     },
-    "/auth/register": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Register",
-        "operationId": "register_auth_register_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RegisterRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OtpSentResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/auth/verify-register": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Verify Register",
-        "operationId": "verify_register_auth_verify_register_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/VerifyOtpRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AuthResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/auth/resend-otp": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Resend Otp",
-        "operationId": "resend_otp_auth_resend_otp_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ResendOtpRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MessageResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/auth/login": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Login",
-        "operationId": "login_auth_login_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/LoginRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AuthResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/auth/login-phone": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Login Phone",
-        "operationId": "login_phone_auth_login_phone_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PhoneLoginRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AuthResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/auth/forgot-password": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Forgot Password",
-        "operationId": "forgot_password_auth_forgot_password_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ForgotPasswordRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MessageResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/auth/reset-password": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Reset Password",
-        "operationId": "reset_password_auth_reset_password_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ResetPasswordRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MessageResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/auth/check-email": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Check Email",
-        "description": "Check if an email is registered; returns authentication methods & masked phone.",
-        "operationId": "check_email_auth_check_email_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CheckEmailRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CheckEmailResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/auth/check-phone": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Check Phone",
-        "description": "Check if a phone number is registered; returns masked phone & masked email.",
-        "operationId": "check_phone_auth_check_phone_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CheckPhoneRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CheckPhoneResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/auth/send-login-otp": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Send Login Otp",
-        "description": "Dispatch a 6-digit login OTP to registered email or SMS.",
-        "operationId": "send_login_otp_auth_send_login_otp_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SendLoginOtpRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MessageResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/auth/verify-login-otp": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Verify Login Otp",
-        "description": "Verify login OTP and authenticate the existing user.",
-        "operationId": "verify_login_otp_auth_verify_login_otp_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/VerifyLoginOtpRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AuthResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/auth/google": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Google Auth",
-        "description": "Handle Google OAuth Handshake.\nIf user already exists -> directly login and bypass checks.\nIf new user -> return is_new_user=True (do NOT auto-create account, require complete profile form).",
-        "operationId": "google_auth_auth_google_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/GoogleAuthRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GoogleAuthResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/auth/firebase": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Firebase Auth",
-        "description": "Verify a Firebase ID token, then create the existing opaque session.",
-        "operationId": "firebase_auth_auth_firebase_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/FirebaseTokenExchangeRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AuthResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/auth/enroll-firebase-email": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Enroll Firebase Email",
-        "description": "Attach a Firebase email/password credential after authenticated email-OTP recovery.",
-        "operationId": "enroll_firebase_email_auth_enroll_firebase_email_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/FirebaseEmailEnrollmentRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AuthResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
-      }
-    },
-    "/auth/send-phone-otp": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Send Phone Otp",
-        "description": "Dispatch 6-digit phone verification OTP.",
-        "operationId": "send_phone_otp_auth_send_phone_otp_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SendAuthOtpRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MessageResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/auth/verify-phone-otp": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Verify Phone Otp",
-        "description": "Verify 6-digit phone verification OTP.",
-        "operationId": "verify_phone_otp_auth_verify_phone_otp_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/VerifyAuthOtpRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MessageResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/auth/send-email-otp": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Send Email Otp",
-        "description": "Dispatch 6-digit email verification code.",
-        "operationId": "send_email_otp_auth_send_email_otp_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SendAuthOtpRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MessageResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/auth/verify-email-otp": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Verify Email Otp",
-        "description": "Verify 6-digit email verification code.",
-        "operationId": "verify_email_otp_auth_verify_email_otp_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/VerifyAuthOtpRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MessageResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/auth/complete-unified-registration": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Complete Unified Registration",
-        "description": "Finalize registration for Google / Email / Phone onboarding paths.\nEnforces manual name entry, password, email verification, and platform-specific phone verification.",
-        "operationId": "complete_unified_registration_auth_complete_unified_registration_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CompleteUnifiedRegistrationRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AuthResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/auth/me": {
+    "/users/me": {
       "get": {
         "tags": [
-          "auth"
+          "users"
         ],
-        "summary": "Me",
-        "operationId": "me_auth_me_get",
+        "summary": "Get Me",
+        "description": "The signed-in user's marketplace profile (role, coins, picture).",
+        "operationId": "get_me_users_me_get",
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UserPublic"
+                  "$ref": "#/components/schemas/UserProfile"
                 }
               }
             }
@@ -7999,21 +5992,21 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       },
       "put": {
         "tags": [
-          "auth"
+          "users"
         ],
-        "summary": "Update Profile",
-        "operationId": "update_profile_auth_me_put",
+        "summary": "Update Me",
+        "operationId": "update_me_users_me_put",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ProfileUpdateRequest"
+                "$ref": "#/components/schemas/ProfileUpdate"
               }
             }
           },
@@ -8025,7 +6018,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MessageResponse"
+                  "$ref": "#/components/schemas/UserProfile"
                 }
               }
             }
@@ -8043,70 +6036,23 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
     },
-    "/auth/logout": {
+    "/users/me/avatar": {
       "post": {
         "tags": [
-          "auth"
-        ],
-        "summary": "Logout",
-        "operationId": "logout_auth_logout_post",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MessageResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/auth/revoke-all": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Revoke All",
-        "operationId": "revoke_all_auth_revoke_all_post",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MessageResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
-      }
-    },
-    "/auth/me/avatar": {
-      "post": {
-        "tags": [
-          "auth"
+          "users"
         ],
         "summary": "Upload Avatar",
-        "operationId": "upload_avatar_auth_me_avatar_post",
+        "operationId": "upload_avatar_users_me_avatar_post",
         "requestBody": {
           "content": {
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/Body_upload_avatar_auth_me_avatar_post"
+                "$ref": "#/components/schemas/Body_upload_avatar_users_me_avatar_post"
               }
             }
           },
@@ -8120,7 +6066,7 @@
                 "schema": {
                   "additionalProperties": true,
                   "type": "object",
-                  "title": "Response Upload Avatar Auth Me Avatar Post"
+                  "title": "Response Upload Avatar Users Me Avatar Post"
                 }
               }
             }
@@ -8138,7 +6084,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -8165,7 +6111,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -8180,7 +6126,7 @@
         "operationId": "get_user_profile_users__user_id__get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -8236,7 +6182,7 @@
         "operationId": "list_users_users__get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -8308,65 +6254,6 @@
         }
       }
     },
-    "/users/{user_id}/status": {
-      "put": {
-        "tags": [
-          "users"
-        ],
-        "summary": "Set User Status",
-        "description": "Enable or disable a user account (admin only).",
-        "operationId": "set_user_status_users__user_id__status_put",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "user_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "User Id"
-            }
-          },
-          {
-            "name": "active",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "boolean",
-              "title": "Active"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Set User Status Users  User Id  Status Put"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/users/me/addresses": {
       "get": {
         "tags": [
@@ -8393,7 +6280,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       },
@@ -8438,203 +6325,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
-          }
-        ]
-      }
-    },
-    "/users/me/addresses/send-otp": {
-      "post": {
-        "tags": [
-          "users"
-        ],
-        "summary": "Send Address Phone Otp",
-        "description": "Send a 6-digit SMS OTP to verify the address phone number.",
-        "operationId": "send_address_phone_otp_users_me_addresses_send_otp_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PhoneOtpSendRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Send Address Phone Otp Users Me Addresses Send Otp Post"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
-      }
-    },
-    "/users/me/addresses/verify-phone-otp": {
-      "post": {
-        "tags": [
-          "users"
-        ],
-        "summary": "Verify Address Phone Otp",
-        "description": "Verify a 6-digit SMS OTP for an address phone number.",
-        "operationId": "verify_address_phone_otp_users_me_addresses_verify_phone_otp_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PhoneOtpVerifyRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Verify Address Phone Otp Users Me Addresses Verify Phone Otp Post"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
-      }
-    },
-    "/users/me/addresses/send-email-otp": {
-      "post": {
-        "tags": [
-          "users"
-        ],
-        "summary": "Send Address Email Otp",
-        "description": "Send a 6-digit verification code to the address contact email.",
-        "operationId": "send_address_email_otp_users_me_addresses_send_email_otp_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AddressEmailOtpRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Send Address Email Otp Users Me Addresses Send Email Otp Post"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
-      }
-    },
-    "/users/me/addresses/verify-email-otp": {
-      "post": {
-        "tags": [
-          "users"
-        ],
-        "summary": "Verify Address Email Otp",
-        "description": "Verify a 6-digit email OTP for an address email.",
-        "operationId": "verify_address_email_otp_users_me_addresses_verify_email_otp_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/EmailOtpVerifyRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Verify Address Email Otp Users Me Addresses Verify Email Otp Post"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -8649,7 +6340,7 @@
         "operationId": "pincode_lookup_users_me_addresses_pincode_lookup_get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -8731,7 +6422,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -8746,7 +6437,7 @@
         "operationId": "update_address_users_me_addresses__address_id__put",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -8802,7 +6493,7 @@
         "operationId": "delete_address_users_me_addresses__address_id__delete",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -8939,6 +6630,51 @@
         }
       }
     },
+    "/seller/verification/gst/{gstin}": {
+      "get": {
+        "tags": [
+          "seller-organizations"
+        ],
+        "summary": "Verify GSTIN and fetch taxpayer profile",
+        "operationId": "verify_gstin_seller_verification_gst__gstin__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "gstin",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Gstin"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/seller/organizations": {
       "post": {
         "tags": [
@@ -8980,7 +6716,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -9010,7 +6746,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -9024,7 +6760,7 @@
         "operationId": "get_seller_organization_seller_organizations__org_id__get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -9072,7 +6808,7 @@
         "operationId": "add_org_member_seller_organizations__org_id__members_invite_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -9130,7 +6866,7 @@
         "operationId": "list_org_members_seller_organizations__org_id__members_get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -9182,7 +6918,7 @@
         "operationId": "update_org_member_role_seller_organizations__org_id__members__member_id__role_put",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -9250,7 +6986,7 @@
         "operationId": "remove_org_member_seller_organizations__org_id__members__member_id__delete",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -9308,7 +7044,7 @@
         "operationId": "request_storefront_grant_seller_organizations__org_id__grants_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -9364,7 +7100,7 @@
         "operationId": "list_org_storefront_grants_seller_organizations__org_id__grants_get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -9416,7 +7152,7 @@
         "operationId": "get_org_audit_log_seller_organizations__org_id__audit_log_get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -9468,7 +7204,7 @@
         "operationId": "admin_list_seller_organizations_admin_seller_organizations_get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -9542,7 +7278,7 @@
         "operationId": "admin_get_seller_organization_admin_seller_organizations__org_id__get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -9590,7 +7326,7 @@
         "operationId": "admin_update_organization_verification_admin_seller_organizations__org_id__verification_put",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -9648,7 +7384,7 @@
         "operationId": "admin_update_organization_suspension_admin_seller_organizations__org_id__suspension_put",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -9706,7 +7442,7 @@
         "operationId": "admin_list_storefront_grants_admin_storefront_grants_get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -9798,7 +7534,7 @@
         "operationId": "admin_decide_storefront_grant_admin_storefront_grants__grant_id__decision_put",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -9856,7 +7592,7 @@
         "operationId": "admin_get_verification_history_admin_seller_organizations__org_id__verification_history_get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -9908,7 +7644,7 @@
         "operationId": "request_media_upload_intent_seller_organizations__org_id__media_intent_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -9966,7 +7702,7 @@
         "operationId": "complete_media_upload_seller_organizations__org_id__media__media_id__complete_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -10034,7 +7770,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -10048,7 +7784,7 @@
         "operationId": "update_user_status_admin_users__user_id__status_patch",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -10117,169 +7853,9 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
-      }
-    },
-    "/admin/rbac/admins": {
-      "post": {
-        "tags": [
-          "administration"
-        ],
-        "summary": "Create Admin Account",
-        "operationId": "create_admin_account_admin_rbac_admins_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AdminCreate"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AdminSummary"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
-      }
-    },
-    "/admin/rbac/admins/{admin_id}/permissions": {
-      "patch": {
-        "tags": [
-          "administration"
-        ],
-        "summary": "Update Admin Permissions",
-        "operationId": "update_admin_permissions_admin_rbac_admins__admin_id__permissions_patch",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "admin_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Admin Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AdminPermissionPatch"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AdminSummary"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/admin/rbac/admins/{admin_id}/role": {
-      "patch": {
-        "tags": [
-          "administration"
-        ],
-        "summary": "Update Admin Role",
-        "operationId": "update_admin_role_admin_rbac_admins__admin_id__role_patch",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "admin_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Admin Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AdminRolePatch"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AdminSummary"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
       }
     },
     "/admin/audit": {
@@ -10291,7 +7867,7 @@
         "operationId": "list_admin_audit_logs_admin_audit_get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -10486,7 +8062,7 @@
         "operationId": "create_product_products_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "requestBody": {
@@ -10540,7 +8116,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -10636,7 +8212,7 @@
         "operationId": "update_product_products__product_id__put",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -10689,7 +8265,7 @@
         "operationId": "delete_product_products__product_id__delete",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -10734,7 +8310,7 @@
         "operationId": "upload_image_products__product_id__upload_image_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -10823,7 +8399,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -10886,7 +8462,7 @@
         "operationId": "create_reel_reels_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "requestBody": {
@@ -10940,7 +8516,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -10955,7 +8531,7 @@
         "operationId": "upload_reel_media_reels__reel_id__upload_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -11010,7 +8586,7 @@
         "operationId": "view_reel_reels__reel_id__view_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -11055,7 +8631,7 @@
         "operationId": "update_reel_reels__reel_id__put",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -11110,7 +8686,7 @@
         "operationId": "delete_reel_reels__reel_id__delete",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -11167,7 +8743,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       },
@@ -11189,7 +8765,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -11213,7 +8789,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -11259,7 +8835,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -11273,7 +8849,7 @@
         "operationId": "update_cart_item_cart_items__product_id__put",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -11351,7 +8927,7 @@
         "operationId": "remove_cart_item_cart_items__product_id__delete",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -11410,7 +8986,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -11454,7 +9030,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -11498,7 +9074,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -11542,7 +9118,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -11586,7 +9162,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -11610,7 +9186,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -11634,7 +9210,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -11648,7 +9224,7 @@
         "operationId": "toggle_wishlist_item_wishlist__product_id__post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -11691,7 +9267,7 @@
         "operationId": "remove_wishlist_item_wishlist__product_id__delete",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -11711,6 +9287,83 @@
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/orders/admin": {
+      "get": {
+        "tags": [
+          "admin-orders"
+        ],
+        "summary": "List Admin Orders",
+        "operationId": "list_admin_orders_orders_admin_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AdminOrderSummaryResponse"
+                  },
+                  "type": "array",
+                  "title": "Response List Admin Orders Orders Admin Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/orders/admin/{order_id}": {
+      "get": {
+        "tags": [
+          "admin-orders"
+        ],
+        "summary": "Get Admin Order Detail",
+        "operationId": "get_admin_order_detail_orders_admin__order_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminOrderResponse"
+                }
               }
             }
           },
@@ -11768,7 +9421,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -11798,7 +9451,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -11812,7 +9465,7 @@
         "operationId": "get_buyer_order_detail_orders_buyer__order_id__get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -11859,7 +9512,7 @@
         "operationId": "request_buyer_cancellation_orders_buyer__order_id__cancel_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -11916,7 +9569,7 @@
         "operationId": "request_buyer_return_orders_buyer__order_id__return_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -11989,7 +9642,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -12003,7 +9656,7 @@
         "operationId": "get_seller_order_detail_orders_seller__order_id__get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -12050,7 +9703,7 @@
         "operationId": "transition_seller_shipment_orders_seller__order_id__shipments__shipment_id__transition_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -12116,7 +9769,7 @@
         "operationId": "action_seller_cancellation_orders_seller__order_id__cancellations_action_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -12173,7 +9826,7 @@
         "operationId": "action_seller_return_orders_seller__order_id__returns_action_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -12240,7 +9893,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -12254,7 +9907,7 @@
         "operationId": "legacy_get_order_orders__order_id__get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -12290,83 +9943,6 @@
         }
       }
     },
-    "/orders/admin": {
-      "get": {
-        "tags": [
-          "admin-orders"
-        ],
-        "summary": "List Admin Orders",
-        "operationId": "list_admin_orders_orders_admin_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/AdminOrderSummaryResponse"
-                  },
-                  "type": "array",
-                  "title": "Response List Admin Orders Orders Admin Get"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
-      }
-    },
-    "/orders/admin/{order_id}": {
-      "get": {
-        "tags": [
-          "admin-orders"
-        ],
-        "summary": "Get Admin Order Detail",
-        "operationId": "get_admin_order_detail_orders_admin__order_id__get",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "order_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Order Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AdminOrderResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/seller/catalog/listings": {
       "get": {
         "tags": [
@@ -12376,7 +9952,7 @@
         "operationId": "list_seller_listings_seller_catalog_listings_get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -12435,7 +10011,7 @@
         "operationId": "create_seller_listing_seller_catalog_listings_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "requestBody": {
@@ -12481,7 +10057,7 @@
         "operationId": "get_seller_listing_seller_catalog_listings__listing_id__get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -12526,7 +10102,7 @@
         "operationId": "update_seller_listing_seller_catalog_listings__listing_id__put",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -12583,7 +10159,7 @@
         "operationId": "get_seller_inventory_seller_catalog_listings__listing_id__inventory_get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -12628,7 +10204,7 @@
         "operationId": "update_seller_inventory_seller_catalog_listings__listing_id__inventory_put",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -12685,7 +10261,7 @@
         "operationId": "change_seller_listing_lifecycle_seller_catalog_listings__listing_id__lifecycle_put",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -12742,7 +10318,7 @@
         "operationId": "list_admin_listings_admin_catalog_listings_get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -12803,7 +10379,7 @@
         "operationId": "get_admin_listing_admin_catalog_listings__listing_id__get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -12850,7 +10426,7 @@
         "operationId": "get_admin_inventory_admin_catalog_listings__listing_id__inventory_get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -12897,7 +10473,7 @@
         "operationId": "moderate_admin_listing_admin_catalog_listings__listing_id__moderation_put",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -12964,7 +10540,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -12988,7 +10564,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -13032,7 +10608,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -13056,7 +10632,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -13119,7 +10695,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -13143,7 +10719,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -13157,7 +10733,7 @@
         "operationId": "admin_set_role_admin_users__uid__role_put",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -13211,7 +10787,7 @@
         "operationId": "admin_toggle_user_admin_users__uid__toggle_put",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -13266,7 +10842,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -13280,7 +10856,7 @@
         "operationId": "admin_toggle_reel_admin_reels__rid__toggle_put",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -13325,7 +10901,7 @@
         "operationId": "admin_delete_reel_admin_reels__rid__delete",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -13380,7 +10956,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -13404,7 +10980,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -13418,7 +10994,7 @@
         "operationId": "verify_upi_admin_orders__order_id__verify_upi_put",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -13483,7 +11059,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -13507,7 +11083,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       },
@@ -13549,7 +11125,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -13563,7 +11139,7 @@
         "operationId": "update_pickup_location_shipping_pickup_locations__loc_id__put",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -13618,7 +11194,7 @@
         "operationId": "delete_pickup_location_shipping_pickup_locations__loc_id__delete",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -13663,7 +11239,7 @@
         "operationId": "ready_to_ship_shipping_orders__order_id__ready_to_ship_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -13718,7 +11294,7 @@
         "operationId": "discover_options_shipping_orders__order_id__discover_options_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -13773,7 +11349,7 @@
         "operationId": "get_options_shipping_orders__order_id__options_get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -13818,7 +11394,7 @@
         "operationId": "manual_book_shipping_orders__order_id__manual_book_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -13873,7 +11449,7 @@
         "operationId": "get_shipment_shipping_shipments__shipment_id__get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -13918,7 +11494,7 @@
         "operationId": "track_by_awb_shipping_track__awb__get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -13963,7 +11539,7 @@
         "operationId": "request_pickup_shipping_shipments__shipment_id__request_pickup_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -14008,7 +11584,7 @@
         "operationId": "cancel_shipment_shipping_shipments__shipment_id__cancel_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -14053,7 +11629,7 @@
         "operationId": "retry_booking_shipping_shipments__shipment_id__retry_booking_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -14098,7 +11674,7 @@
         "operationId": "sync_tracking_shipping_sync__shipment_id__post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -14153,7 +11729,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -14177,7 +11753,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -14201,7 +11777,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -14593,28 +12169,6 @@
               }
             ],
             "title": "Email"
-          },
-          "email_otp": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Email Otp"
-          },
-          "phone_otp": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Phone Otp"
           }
         },
         "type": "object",
@@ -14627,20 +12181,6 @@
           "pincode"
         ],
         "title": "AddressCreate"
-      },
-      "AddressEmailOtpRequest": {
-        "properties": {
-          "email": {
-            "type": "string",
-            "format": "email",
-            "title": "Email"
-          }
-        },
-        "type": "object",
-        "required": [
-          "email"
-        ],
-        "title": "AddressEmailOtpRequest"
       },
       "AddressResponse": {
         "properties": {
@@ -14811,28 +12351,6 @@
             ],
             "title": "Email"
           },
-          "email_otp": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Email Otp"
-          },
-          "phone_otp": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Phone Otp"
-          },
           "id": {
             "type": "string",
             "title": "Id"
@@ -14859,47 +12377,6 @@
           "created_at"
         ],
         "title": "AddressResponse"
-      },
-      "AdminCreate": {
-        "properties": {
-          "email": {
-            "type": "string",
-            "maxLength": 255,
-            "minLength": 5,
-            "title": "Email"
-          },
-          "full_name": {
-            "type": "string",
-            "maxLength": 150,
-            "minLength": 1,
-            "title": "Full Name"
-          },
-          "role": {
-            "type": "string",
-            "enum": [
-              "super_admin",
-              "support_admin",
-              "moderator",
-              "compliance_auditor"
-            ],
-            "title": "Role",
-            "default": "support_admin"
-          },
-          "permissions": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "maxItems": 100,
-            "title": "Permissions"
-          }
-        },
-        "type": "object",
-        "required": [
-          "email",
-          "full_name"
-        ],
-        "title": "AdminCreate"
       },
       "AdminInventoryResponse": {
         "properties": {
@@ -15442,39 +12919,6 @@
         ],
         "title": "AdminOrderSummaryResponse"
       },
-      "AdminPermissionPatch": {
-        "properties": {
-          "permissions": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "maxItems": 100,
-            "title": "Permissions"
-          }
-        },
-        "type": "object",
-        "title": "AdminPermissionPatch"
-      },
-      "AdminRolePatch": {
-        "properties": {
-          "role": {
-            "type": "string",
-            "enum": [
-              "super_admin",
-              "support_admin",
-              "moderator",
-              "compliance_auditor"
-            ],
-            "title": "Role"
-          }
-        },
-        "type": "object",
-        "required": [
-          "role"
-        ],
-        "title": "AdminRolePatch"
-      },
       "AdminSummary": {
         "properties": {
           "id": {
@@ -15544,17 +12988,6 @@
             "type": "string",
             "title": "Id"
           },
-          "firebase_uid": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Firebase Uid"
-          },
           "email": {
             "type": "string",
             "title": "Email"
@@ -15611,13 +13044,6 @@
           "is_phone_verified": {
             "type": "boolean",
             "title": "Is Phone Verified"
-          },
-          "providers": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Providers"
           },
           "role": {
             "type": "string",
@@ -15733,6 +13159,17 @@
             ],
             "title": "Admin Id"
           },
+          "admin_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Admin Email"
+          },
           "target_user_id": {
             "anyOf": [
               {
@@ -15790,30 +13227,7 @@
         ],
         "title": "AuditLogItem"
       },
-      "AuthResponse": {
-        "properties": {
-          "user": {
-            "$ref": "#/components/schemas/UserPublic"
-          },
-          "session_token": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Session Token"
-          }
-        },
-        "type": "object",
-        "required": [
-          "user"
-        ],
-        "title": "AuthResponse"
-      },
-      "Body_upload_avatar_api_auth_me_avatar_post": {
+      "Body_upload_avatar_api_users_me_avatar_post": {
         "properties": {
           "file": {
             "type": "string",
@@ -15825,9 +13239,9 @@
         "required": [
           "file"
         ],
-        "title": "Body_upload_avatar_api_auth_me_avatar_post"
+        "title": "Body_upload_avatar_api_users_me_avatar_post"
       },
-      "Body_upload_avatar_auth_me_avatar_post": {
+      "Body_upload_avatar_users_me_avatar_post": {
         "properties": {
           "file": {
             "type": "string",
@@ -15839,7 +13253,7 @@
         "required": [
           "file"
         ],
-        "title": "Body_upload_avatar_auth_me_avatar_post"
+        "title": "Body_upload_avatar_users_me_avatar_post"
       },
       "Body_upload_image_api_products__product_id__upload_image_post": {
         "properties": {
@@ -16403,107 +13817,6 @@
         ],
         "title": "CartResponse"
       },
-      "CheckEmailRequest": {
-        "properties": {
-          "email": {
-            "type": "string",
-            "maxLength": 320,
-            "title": "Email"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "email"
-        ],
-        "title": "CheckEmailRequest"
-      },
-      "CheckEmailResponse": {
-        "properties": {
-          "exists": {
-            "type": "boolean",
-            "title": "Exists"
-          },
-          "masked_phone": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Masked Phone"
-          },
-          "auth_methods": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Auth Methods",
-            "default": [
-              "password",
-              "otp"
-            ]
-          }
-        },
-        "type": "object",
-        "required": [
-          "exists"
-        ],
-        "title": "CheckEmailResponse"
-      },
-      "CheckPhoneRequest": {
-        "properties": {
-          "phone": {
-            "type": "string",
-            "maxLength": 15,
-            "minLength": 10,
-            "title": "Phone"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "phone"
-        ],
-        "title": "CheckPhoneRequest"
-      },
-      "CheckPhoneResponse": {
-        "properties": {
-          "exists": {
-            "type": "boolean",
-            "title": "Exists"
-          },
-          "masked_phone": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Masked Phone"
-          },
-          "masked_email": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Masked Email"
-          }
-        },
-        "type": "object",
-        "required": [
-          "exists"
-        ],
-        "title": "CheckPhoneResponse"
-      },
       "CheckoutQuote": {
         "properties": {
           "quote_id": {
@@ -16591,104 +13904,6 @@
           "payment_method"
         ],
         "title": "CheckoutRequest"
-      },
-      "CompleteUnifiedRegistrationRequest": {
-        "properties": {
-          "email": {
-            "type": "string",
-            "maxLength": 320,
-            "title": "Email"
-          },
-          "name": {
-            "type": "string",
-            "maxLength": 100,
-            "minLength": 1,
-            "title": "Name"
-          },
-          "password": {
-            "type": "string",
-            "maxLength": 256,
-            "minLength": 8,
-            "title": "Password"
-          },
-          "phone": {
-            "type": "string",
-            "maxLength": 15,
-            "minLength": 10,
-            "title": "Phone"
-          },
-          "email_otp": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 6
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Email Otp"
-          },
-          "phone_otp": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 6
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Phone Otp"
-          },
-          "google_verified": {
-            "type": "boolean",
-            "title": "Google Verified",
-            "default": false
-          },
-          "platform": {
-            "type": "string",
-            "enum": [
-              "web",
-              "android"
-            ],
-            "title": "Platform",
-            "default": "web"
-          },
-          "pnv_token": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 256
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Pnv Token"
-          },
-          "firebase_id_token": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 4096
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Firebase Id Token"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "email",
-          "name",
-          "password",
-          "phone"
-        ],
-        "title": "CompleteUnifiedRegistrationRequest"
       },
       "CreateOrderFromQuoteRequest": {
         "properties": {
@@ -16862,90 +14077,6 @@
         "type": "object",
         "title": "DiscoverOptionsRequest"
       },
-      "EmailOtpVerifyRequest": {
-        "properties": {
-          "email": {
-            "type": "string",
-            "format": "email",
-            "title": "Email"
-          },
-          "otp": {
-            "type": "string",
-            "title": "Otp"
-          }
-        },
-        "type": "object",
-        "required": [
-          "email",
-          "otp"
-        ],
-        "title": "EmailOtpVerifyRequest"
-      },
-      "FirebaseEmailEnrollmentRequest": {
-        "properties": {
-          "id_token": {
-            "type": "string",
-            "maxLength": 4096,
-            "minLength": 32,
-            "title": "Id Token"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "id_token"
-        ],
-        "title": "FirebaseEmailEnrollmentRequest",
-        "description": "A Firebase email/password token presented by an already authenticated user."
-      },
-      "FirebaseTokenExchangeRequest": {
-        "properties": {
-          "id_token": {
-            "type": "string",
-            "maxLength": 4096,
-            "minLength": 32,
-            "title": "Id Token"
-          },
-          "registration_name": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 100
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Registration Name"
-          },
-          "allow_buyer_registration": {
-            "type": "boolean",
-            "title": "Allow Buyer Registration",
-            "default": true
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "id_token"
-        ],
-        "title": "FirebaseTokenExchangeRequest"
-      },
-      "ForgotPasswordRequest": {
-        "properties": {
-          "email": {
-            "type": "string",
-            "maxLength": 320,
-            "title": "Email"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "email"
-        ],
-        "title": "ForgotPasswordRequest"
-      },
       "FulfillmentStatus": {
         "type": "string",
         "enum": [
@@ -17017,101 +14148,6 @@
         ],
         "title": "FulfillmentTransitionRequest"
       },
-      "GoogleAuthRequest": {
-        "properties": {
-          "id_token": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 4096
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Id Token"
-          },
-          "email": {
-            "type": "string",
-            "maxLength": 320,
-            "title": "Email"
-          },
-          "name": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 100
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name"
-          },
-          "google_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 128
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Google Id"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "email"
-        ],
-        "title": "GoogleAuthRequest"
-      },
-      "GoogleAuthResponse": {
-        "properties": {
-          "is_new_user": {
-            "type": "boolean",
-            "title": "Is New User"
-          },
-          "email": {
-            "type": "string",
-            "title": "Email"
-          },
-          "verified": {
-            "type": "boolean",
-            "title": "Verified",
-            "default": true
-          },
-          "user": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/UserPublic"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "session_token": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Session Token"
-          }
-        },
-        "type": "object",
-        "required": [
-          "is_new_user",
-          "email"
-        ],
-        "title": "GoogleAuthResponse"
-      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -17166,28 +14202,6 @@
           "archived"
         ],
         "title": "ListingStatus"
-      },
-      "LoginRequest": {
-        "properties": {
-          "email": {
-            "type": "string",
-            "maxLength": 320,
-            "title": "Email"
-          },
-          "password": {
-            "type": "string",
-            "maxLength": 256,
-            "minLength": 1,
-            "title": "Password"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "email",
-          "password"
-        ],
-        "title": "LoginRequest"
       },
       "ManualBookRequest": {
         "properties": {
@@ -17328,19 +14342,6 @@
           "upload_url"
         ],
         "title": "MediaIntentResponse"
-      },
-      "MessageResponse": {
-        "properties": {
-          "message": {
-            "type": "string",
-            "title": "Message"
-          }
-        },
-        "type": "object",
-        "required": [
-          "message"
-        ],
-        "title": "MessageResponse"
       },
       "Money": {
         "properties": {
@@ -17547,25 +14548,6 @@
         ],
         "title": "OrderStatus"
       },
-      "OtpSentResponse": {
-        "properties": {
-          "status": {
-            "type": "string",
-            "const": "otp_required",
-            "title": "Status",
-            "default": "otp_required"
-          },
-          "email": {
-            "type": "string",
-            "title": "Email"
-          }
-        },
-        "type": "object",
-        "required": [
-          "email"
-        ],
-        "title": "OtpSentResponse"
-      },
       "PaymentIntent": {
         "properties": {
           "id": {
@@ -17711,65 +14693,6 @@
           "voided"
         ],
         "title": "PaymentStatus"
-      },
-      "PhoneLoginRequest": {
-        "properties": {
-          "phone": {
-            "type": "string",
-            "maxLength": 20,
-            "minLength": 10,
-            "title": "Phone"
-          },
-          "password": {
-            "type": "string",
-            "maxLength": 256,
-            "minLength": 1,
-            "title": "Password"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "phone",
-          "password"
-        ],
-        "title": "PhoneLoginRequest"
-      },
-      "PhoneOtpSendRequest": {
-        "properties": {
-          "phone": {
-            "type": "string",
-            "pattern": "^[0-9+]{10,15}$",
-            "title": "Phone"
-          }
-        },
-        "type": "object",
-        "required": [
-          "phone"
-        ],
-        "title": "PhoneOtpSendRequest"
-      },
-      "PhoneOtpVerifyRequest": {
-        "properties": {
-          "phone": {
-            "type": "string",
-            "pattern": "^[0-9+]{10,15}$",
-            "title": "Phone"
-          },
-          "otp": {
-            "type": "string",
-            "maxLength": 6,
-            "minLength": 6,
-            "pattern": "^[0-9]{6}$",
-            "title": "Otp"
-          }
-        },
-        "type": "object",
-        "required": [
-          "phone",
-          "otp"
-        ],
-        "title": "PhoneOtpVerifyRequest"
       },
       "PickupLocationCreate": {
         "properties": {
@@ -18158,7 +15081,7 @@
         "type": "object",
         "title": "ProductUpdate"
       },
-      "ProfileUpdateRequest": {
+      "ProfileUpdate": {
         "properties": {
           "name": {
             "anyOf": [
@@ -18177,7 +15100,8 @@
             "anyOf": [
               {
                 "type": "string",
-                "maxLength": 2048
+                "maxLength": 2048,
+                "pattern": "^https://"
               },
               {
                 "type": "null"
@@ -18188,7 +15112,8 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "title": "ProfileUpdateRequest"
+        "title": "ProfileUpdate",
+        "description": "Marketplace-owned profile fields. Email, phone and password belong to the auth service."
       },
       "PublicStorefrontResponse": {
         "properties": {
@@ -18344,73 +15269,6 @@
           "title"
         ],
         "title": "ReelCreate"
-      },
-      "RegisterRequest": {
-        "properties": {
-          "email": {
-            "type": "string",
-            "maxLength": 320,
-            "title": "Email"
-          },
-          "password": {
-            "type": "string",
-            "maxLength": 256,
-            "minLength": 8,
-            "title": "Password"
-          },
-          "name": {
-            "type": "string",
-            "maxLength": 100,
-            "minLength": 1,
-            "title": "Name"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "email",
-          "password",
-          "name"
-        ],
-        "title": "RegisterRequest"
-      },
-      "ResendOtpRequest": {
-        "properties": {
-          "email": {
-            "type": "string",
-            "maxLength": 320,
-            "title": "Email"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "email"
-        ],
-        "title": "ResendOtpRequest"
-      },
-      "ResetPasswordRequest": {
-        "properties": {
-          "token": {
-            "type": "string",
-            "maxLength": 256,
-            "minLength": 32,
-            "title": "Token"
-          },
-          "new_password": {
-            "type": "string",
-            "maxLength": 256,
-            "minLength": 8,
-            "title": "New Password"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "token",
-          "new_password"
-        ],
-        "title": "ResetPasswordRequest"
       },
       "ReturnRequest": {
         "properties": {
@@ -19635,91 +16493,6 @@
         ],
         "title": "SellerVerificationHistoryResponse"
       },
-      "SendAuthOtpRequest": {
-        "properties": {
-          "email": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 320
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Email"
-          },
-          "phone": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 15
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Phone"
-          },
-          "channel": {
-            "type": "string",
-            "enum": [
-              "email",
-              "sms"
-            ],
-            "title": "Channel",
-            "default": "email"
-          },
-          "purpose": {
-            "type": "string",
-            "title": "Purpose",
-            "default": "auth"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "title": "SendAuthOtpRequest"
-      },
-      "SendLoginOtpRequest": {
-        "properties": {
-          "email": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 320
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Email"
-          },
-          "phone": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 15
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Phone"
-          },
-          "channel": {
-            "type": "string",
-            "enum": [
-              "email",
-              "sms"
-            ],
-            "title": "Channel",
-            "default": "email"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "title": "SendLoginOtpRequest"
-      },
       "ServiceabilityRequest": {
         "properties": {
           "pincode": {
@@ -20317,11 +17090,24 @@
           },
           "is_email_verified": {
             "type": "boolean",
-            "title": "Is Email Verified"
+            "title": "Is Email Verified",
+            "default": true
           },
-          "auth_provider": {
-            "type": "string",
-            "title": "Auth Provider"
+          "phone_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone Number"
+          },
+          "is_phone_verified": {
+            "type": "boolean",
+            "title": "Is Phone Verified",
+            "default": false
           },
           "picture": {
             "anyOf": [
@@ -20335,7 +17121,14 @@
             "title": "Picture"
           },
           "created_at": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Created At"
           }
         },
@@ -20346,10 +17139,7 @@
           "name",
           "role",
           "coin_balance",
-          "is_active",
-          "is_email_verified",
-          "auth_provider",
-          "created_at"
+          "is_active"
         ],
         "title": "UserProfile",
         "description": "Full user profile \u2014 returned to self or admin callers."
@@ -20409,75 +17199,6 @@
         ],
         "title": "UserProfileDetails",
         "description": "Rich user profile response containing dedicated Contacts and Addresses sections."
-      },
-      "UserPublic": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "email": {
-            "type": "string",
-            "title": "Email"
-          },
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "role": {
-            "type": "string",
-            "enum": [
-              "buyer",
-              "seller",
-              "admin"
-            ],
-            "title": "Role"
-          },
-          "coin_balance": {
-            "type": "integer",
-            "title": "Coin Balance"
-          },
-          "is_active": {
-            "type": "boolean",
-            "title": "Is Active"
-          },
-          "is_email_verified": {
-            "type": "boolean",
-            "title": "Is Email Verified"
-          },
-          "auth_provider": {
-            "type": "string",
-            "title": "Auth Provider"
-          },
-          "picture": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Picture"
-          },
-          "created_at": {
-            "type": "string",
-            "title": "Created At"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "email",
-          "name",
-          "role",
-          "coin_balance",
-          "is_active",
-          "is_email_verified",
-          "auth_provider",
-          "created_at"
-        ],
-        "title": "UserPublic"
       },
       "UserStatusPatch": {
         "properties": {
@@ -20543,52 +17264,6 @@
         ],
         "title": "ValidationError"
       },
-      "VerifyAuthOtpRequest": {
-        "properties": {
-          "email": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 320
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Email"
-          },
-          "phone": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 15
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Phone"
-          },
-          "otp": {
-            "type": "string",
-            "maxLength": 6,
-            "minLength": 6,
-            "pattern": "^[0-9]{6}$",
-            "title": "Otp"
-          },
-          "purpose": {
-            "type": "string",
-            "title": "Purpose",
-            "default": "auth"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "otp"
-        ],
-        "title": "VerifyAuthOtpRequest"
-      },
       "VerifyCashfreeRequest": {
         "properties": {
           "order_id": {
@@ -20601,70 +17276,6 @@
           "order_id"
         ],
         "title": "VerifyCashfreeRequest"
-      },
-      "VerifyLoginOtpRequest": {
-        "properties": {
-          "email": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 320
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Email"
-          },
-          "phone": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 15
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Phone"
-          },
-          "otp": {
-            "type": "string",
-            "maxLength": 6,
-            "minLength": 6,
-            "pattern": "^[0-9]{6}$",
-            "title": "Otp"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "otp"
-        ],
-        "title": "VerifyLoginOtpRequest"
-      },
-      "VerifyOtpRequest": {
-        "properties": {
-          "email": {
-            "type": "string",
-            "maxLength": 320,
-            "title": "Email"
-          },
-          "otp": {
-            "type": "string",
-            "maxLength": 6,
-            "minLength": 6,
-            "pattern": "^[0-9]{6}$",
-            "title": "Otp"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "email",
-          "otp"
-        ],
-        "title": "VerifyOtpRequest"
       },
       "VerifyPaymentRequest": {
         "properties": {
@@ -20691,14 +17302,9 @@
       }
     },
     "securitySchemes": {
-      "OAuth2PasswordBearer": {
-        "type": "oauth2",
-        "flows": {
-          "password": {
-            "scopes": {},
-            "tokenUrl": "/api/auth/login"
-          }
-        }
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
       }
     }
   }
