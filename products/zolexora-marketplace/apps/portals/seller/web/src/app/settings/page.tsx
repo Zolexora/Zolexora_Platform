@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useAuthStore } from "@/store";
 import { useAuth } from "@zolexora/auth-client/react";
+import { setActiveOrganizationId } from "@zolexora/marketplace-sign-in";
 import { authApi } from "@/lib/api";
 import { User, Mail, Coins, Shield, Save, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
@@ -25,6 +26,7 @@ export default function SettingsPage() {
 
   const handleLogout = async () => {
     await signOut();
+    setActiveOrganizationId(null);
     logout();
     router.push("/auth");
     toast.success("Signed out");
@@ -48,9 +50,6 @@ export default function SettingsPage() {
           <div>
             <p className="font-bold text-ink">{user.name}</p>
             <p className="text-sm text-ink-muted">{user.email}</p>
-            <span className="inline-block mt-1 text-[11px] font-bold uppercase tracking-wide bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full">
-              {user.role}
-            </span>
           </div>
         </div>
 

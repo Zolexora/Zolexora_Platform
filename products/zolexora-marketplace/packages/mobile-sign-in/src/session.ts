@@ -40,4 +40,12 @@ export async function signOut(): Promise<void> {
     }).catch(() => {});
   }
   await clearSessionToken();
+  await SecureStore.deleteItemAsync(ACTIVE_ORG_KEY);
 }
+
+const ACTIVE_ORG_KEY = "zolexora_active_org_id";
+
+/** Seller app: the organisation the owner chose (sent as X-Organization-Id). Staff don't need one. */
+export const activeOrganizationId = () => SecureStore.getItemAsync(ACTIVE_ORG_KEY);
+export const setActiveOrganizationId = (orgId: string | null) =>
+  orgId ? SecureStore.setItemAsync(ACTIVE_ORG_KEY, orgId) : SecureStore.deleteItemAsync(ACTIVE_ORG_KEY);

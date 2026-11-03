@@ -1,7 +1,8 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { activeOrganizationId, setActiveOrganizationId } from "@zolexora/marketplace-sign-in";
 import { authApi, sellerOrgApi } from "@/lib/api";
 import { useAuthStore } from "@/store";
 import { CheckCircle, FileUp, Loader2, ShieldCheck } from "lucide-react";
@@ -11,6 +12,7 @@ const inputClass = "w-full h-11 px-3 rounded-xl border border-gray-200 bg-gray-5
 
 export default function BusinessVerificationPage() {
   const router = useRouter();
+  const creating = useSearchParams().get("new") === "1";
   const { user } = useAuthStore();
   const [busy, setBusy] = useState(false);
   const [gstLoading, setGstLoading] = useState(false);
@@ -28,12 +30,14 @@ export default function BusinessVerificationPage() {
   const [documents, setDocuments] = useState<Record<string, File | null>>({});
 
   useEffect(() => {
+    if (creating) return;
     sellerOrgApi.listMy().then((organizations: any[]) => {
-      const current = organizations[0];
-      if (current) setStatus(current.verification_status || current.status || "PENDING");
-      if (organizations.some((org: any) => String(org.verification_status).toUpperCase() === "VERIFIED")) router.replace("/dashboard");
+      const current = organizations.find((org: any) => org.id === activeOrganizationId()) ?? organizations[0];
+      if (!current) return;
+      setStatus(current.verification_status || current.status || "PENDING");
+      if (current.status === "ACTIVE") router.replace("/dashboard");
     }).catch(() => undefined);
-  }, [router]);
+  }, [creating, router]);
 
   const update = (key: string, value: string | boolean) => setForm((previous) => ({ ...previous, [key]: value }));
 
@@ -66,12 +70,13 @@ export default function BusinessVerificationPage() {
     setBusy(true);
     try {
       const slug = (form.tradeName || form.legalName).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 90);
-      await sellerOrgApi.create({
+      const created = await sellerOrgApi.create({
         name: form.legalName.trim(), slug: slug || `seller-${Date.now()}`,
         metadata: { ...form, documents: Object.fromEntries(Object.entries(documents).map(([key, file]) => [key, file?.name || null])) },
       });
+      setActiveOrganizationId(created.id);
       toast.success("Business verification submitted for review.");
-      router.replace("/verification");
+      router.replace("/organisations");
     } catch (error: any) {
       toast.error(error?.response?.data?.detail || error?.message || "Unable to submit verification");
     } finally { setBusy(false); }
@@ -88,8 +93,8 @@ export default function BusinessVerificationPage() {
     <main className="min-h-screen bg-surface px-4 py-8">
       <div className="max-w-5xl mx-auto">
         <div className="bg-sidebar text-white rounded-3xl p-6 mb-6">
-          <div className="flex items-center gap-3"><ShieldCheck className="text-gold" /><div><h1 className="font-display text-2xl font-bold">Business Verification</h1><p className="text-white/60 text-sm">Complete verification to access your seller dashboard.</p></div></div>
-          {status && <p className="mt-4 text-xs text-gold uppercase font-bold tracking-wider">Current status: {status}</p>}
+          <div className="flex items-center gap-3"><ShieldCheck className="text-gold" /><div><h1 className="font-display text-2xl font-bold">{creating ? "Create your organisation" : "Business Verification"}</h1><p className="text-white/60 text-sm">Complete verification to access your seller dashboard.</p></div></div>
+          {!creating && status && <p className="mt-4 text-xs text-gold uppercase font-bold tracking-wider">Current status: {status}</p>}
         </div>
         <form onSubmit={submit} className="space-y-6">
           <section className="bg-white rounded-2xl p-6 border border-gray-100"><h2 className="font-display text-lg font-bold mb-4">Business identity & GST</h2><div className="grid md:grid-cols-2 gap-4">

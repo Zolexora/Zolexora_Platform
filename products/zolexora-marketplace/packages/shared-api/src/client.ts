@@ -11,6 +11,8 @@ export interface ApiConfig {
   getToken: () => string | null | Promise<string | null>;
   /** Called on 401: the auth-service session is no longer valid. */
   onUnauthorized?: () => void;
+  /** Seller portal: the organisation the owner chose (sent as X-Organization-Id, like TMS). */
+  getOrganizationId?: () => string | null | Promise<string | null>;
 }
 
 let config: ApiConfig | null = null;
@@ -26,12 +28,14 @@ export function configureApi(next: ApiConfig): void {
 export function getApiClient(): AxiosInstance {
   if (client) return client;
   if (!config) throw new Error("configureApi() must be called before the first API request.");
-  const { baseURL, getToken, onUnauthorized } = config;
+  const { baseURL, getToken, onUnauthorized, getOrganizationId } = config;
 
   client = axios.create({ baseURL, timeout: 15_000, headers: { "Content-Type": "application/json" } });
   client.interceptors.request.use(async (req) => {
     const token = await getToken();
     if (token) req.headers.set("Authorization", `Bearer ${token}`);
+    const orgId = await getOrganizationId?.();
+    if (orgId) req.headers.set("X-Organization-Id", orgId);
     return req;
   });
   client.interceptors.response.use(

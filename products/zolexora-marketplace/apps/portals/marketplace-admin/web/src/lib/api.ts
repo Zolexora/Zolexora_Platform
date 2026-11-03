@@ -21,7 +21,6 @@ export const adminApi = {
   stats:          () => api.get("/admin/stats").then(r=>r.data),
   analytics:      () => api.get("/admin/analytics").then(r=>r.data),
   users:          () => api.get("/admin/users", { params: { limit: 1000 } }).then(r=>r.data.items ?? r.data),
-  setUserRole:    (uid:string,role:string) => api.put(`/admin/users/${uid}/role`,null,{params:{role}}).then(r=>r.data),
   toggleUser:     (uid:string) => api.put(`/admin/users/${uid}/toggle`).then(r=>r.data),
   products:       () => api.get("/admin/products").then(r=>r.data),
   toggleProduct:  (pid:string) => api.put(`/admin/products/${pid}/toggle`).then(r=>r.data),

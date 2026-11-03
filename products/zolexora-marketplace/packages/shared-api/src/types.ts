@@ -1,12 +1,12 @@
 // ─── User ─────────────────────────────────────────────────────────────────────
-export type UserRole = "buyer" | "seller" | "admin";
-
 /** Marketplace profile of the signed-in user (GET /users/me). */
 export interface User {
-  id: string; email: string; name: string; role: UserRole;
+  id: string; email: string; name: string;
   coin_balance: number; is_active: boolean; is_email_verified: boolean;
   phone_number: string | null; is_phone_verified: boolean;
   picture: string | null; created_at: string | null;
+  /** Track 2 staff: the Zolexora organisation (ZX-ORG id) they signed in to. */
+  zolexora_org_id?: string | null;
 }
 
 // ─── Reel ─────────────────────────────────────────────────────────────────────
@@ -93,7 +93,7 @@ export type SubscriptionPlans = Record<string, SubscriptionPlan>;
 
 // ─── Admin ────────────────────────────────────────────────────────────────────
 export interface AdminStats {
-  total_users: number; viewers: number; sellers: number;
+  total_users: number;
   total_reels: number; sponsored_reels: number;
   total_products: number; active_products: number;
   total_orders: number; paid_orders: number;

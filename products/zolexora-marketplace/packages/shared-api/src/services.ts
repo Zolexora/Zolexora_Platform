@@ -82,7 +82,6 @@ export const admin = {
   stats:          ()                               => getApiClient().get<AdminStats>("/admin/stats").then(r => r.data),
   analytics:      ()                               => getApiClient().get("/admin/analytics").then(r => r.data),
   users:          ()                               => getApiClient().get<User[]>("/admin/users").then(r => r.data),
-  setUserRole:    (uid: string, role: string)      => getApiClient().put(`/admin/users/${uid}/role`, null, { params: { role } }).then(r => r.data),
   toggleUser:     (uid: string)                    => getApiClient().put(`/admin/users/${uid}/toggle`).then(r => r.data),
   products:       ()                               => getApiClient().get<Product[]>("/admin/products").then(r => r.data),
   toggleProduct:  (pid: string)                    => getApiClient().put(`/admin/products/${pid}/toggle`).then(r => r.data),

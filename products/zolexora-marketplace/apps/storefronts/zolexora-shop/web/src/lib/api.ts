@@ -20,7 +20,6 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: string;
   coin_balance?: number;
   phone_number?: string | null;
   picture?: string | null;
@@ -250,7 +249,6 @@ export interface UserContacts {
 export interface UserProfileDetails {
   id: string;
   name: string;
-  role: string;
   picture?: string | null;
   coin_balance: number;
   created_at: string;

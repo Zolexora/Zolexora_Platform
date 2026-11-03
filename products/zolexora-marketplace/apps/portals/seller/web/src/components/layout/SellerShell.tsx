@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { LayoutDashboard, Package, Video, ShoppingBag, BarChart3, Settings, LogOut, Coins, ChevronRight, Menu, X, Truck } from "lucide-react";
 import { useAuth } from "@zolexora/auth-client/react";
 import { useAuthStore } from "@/store";
+import { activeOrganizationId, setActiveOrganizationId } from "@zolexora/marketplace-sign-in";
 import { authApi, sellerOrgApi } from "@/lib/api";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -25,7 +26,7 @@ export default function SellerShell({ children }: { children: React.ReactNode })
   const { user: account, loading: sessionLoading, signOut } = useAuth();
   const [loading, setLoading] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const isPublicRoute = pathname === "/" || pathname.startsWith("/auth") || pathname.startsWith("/verification");
+  const isPublicRoute = pathname === "/" || ["/auth", "/verification", "/organisations"].some((p) => pathname.startsWith(p));
 
   useEffect(() => {
     if (sessionLoading) return;
@@ -38,17 +39,11 @@ export default function SellerShell({ children }: { children: React.ReactNode })
     }
     authApi.me().then(async (u: any) => {
       login(u);
-      if (!isPublicRoute) {
-        let organizations: any[] = [];
-        try {
-          organizations = await sellerOrgApi.listMy();
-        } catch {
-          // Authenticated users without seller authorization still belong in
-          // Business Verification, not on the login screen.
-          organizations = [];
-        }
-        const verified = organizations.some((org: any) => ["VERIFIED", "ACTIVE"].includes(String(org.verification_status || "").toUpperCase()) || String(org.status || "").toUpperCase() === "ACTIVE");
-        if (!verified) router.replace("/verification");
+      // Staff act for their linked organisation; owners need an active organisation chosen.
+      if (!isPublicRoute && !u.zolexora_org_id) {
+        const organizations: any[] = await sellerOrgApi.listMy().catch(() => []);
+        const active = organizations.find((org: any) => org.id === activeOrganizationId());
+        if (!active || active.status !== "ACTIVE") router.replace("/organisations");
       }
     }).catch(() => { 
       logout(); 
@@ -105,7 +100,12 @@ export default function SellerShell({ children }: { children: React.ReactNode })
             <div className="flex items-center gap-1 text-gold text-xs"><Coins size={10} />{user.coin_balance}</div>
           </div>
         </div>
-        <button onClick={() => { void signOut(); logout(); router.push("/auth"); }}
+        {!user.zolexora_org_id && (
+          <Link href="/organisations" className="w-full flex items-center gap-3 px-3 py-2 text-white/40 hover:text-white hover:bg-white/5 rounded-xl text-sm transition-all">
+            <ChevronRight size={15} /> Switch organisation
+          </Link>
+        )}
+        <button onClick={() => { void signOut(); setActiveOrganizationId(null); logout(); router.push("/auth"); }}
           className="w-full flex items-center gap-3 px-3 py-2 text-white/40 hover:text-white hover:bg-white/5 rounded-xl text-sm transition-all">
           <LogOut size={15} /> Sign Out
         </button>

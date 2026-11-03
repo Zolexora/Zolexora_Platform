@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { adminApi } from "@/lib/api";
-import { Users, Package, Video, ShoppingBag, Eye, Store, Zap, AlertTriangle, Clock, TrendingUp } from "lucide-react";
+import { Users, Package, Video, ShoppingBag, Eye, Zap, AlertTriangle, Clock, TrendingUp } from "lucide-react";
 import { motion } from "framer-motion";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import Link from "next/link";
@@ -21,7 +21,6 @@ export default function AdminDashboard() {
 
   const cards = stats ? [
     {label:"Users",    value:stats.total_users,     icon:Users,      cls:"bg-blue-50 text-blue-600",    href:"/users"},
-    {label:"Sellers",  value:stats.sellers,         icon:Store,      cls:"bg-purple-50 text-purple-600",href:"/users"},
     {label:"Products", value:stats.active_products, icon:Package,    cls:"bg-orange-50 text-orange-600",href:"/products"},
     {label:"Reels",    value:stats.total_reels,     icon:Video,      cls:"bg-pink-50 text-pink-600",    href:"/reels"},
     {label:"Sponsored",value:stats.sponsored_reels, icon:Zap,        cls:"bg-gold/10 text-amber-700",   href:"/reels"},
