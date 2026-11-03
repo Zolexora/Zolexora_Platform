@@ -35,7 +35,7 @@ TMS has no auth of its own: every app signs in through `apps/zolexora-auth-servi
 
 | App | Login | Vault keys |
 |---|---|---|
-| tms-web | Owners: Track 1 (sign in / sign up / reset). Staff: Track 2 employee login with the ZX-ORG id | `AUTH_SERVICE_PUBLIC_URL`, `TURNSTILE_SITE_KEY` |
+| tms-web | Owners: Track 1 (Continue with Google / email / phone, password reset). Staff: Track 2 employee login with the ZX-ORG id | `AUTH_SERVICE_PUBLIC_URL`, `TURNSTILE_SITE_KEY`, `NEXT_PUBLIC_TMS_CLIENT_FIREBASE_API_KEY`, `NEXT_PUBLIC_TMS_CLIENT_FIREBASE_AUTH_DOMAIN`, `NEXT_PUBLIC_TMS_CLIENT_FIREBASE_APP_ID`, `NEXT_PUBLIC_FIREBASE_PROJECT_ID` |
 | tms-admin | Track 3 platform-admin login | `AUTH_SERVICE_PUBLIC_URL`, `TURNSTILE_SITE_KEY` |
 | tms-mobile | Track 2 employee login (Turnstile in a WebView, token in the device keystore) | `AUTH_SERVICE_PUBLIC_URL`, `TURNSTILE_SITE_KEY`, `EXPO_PUBLIC_API_BASE_URL` |
 | backend | Checks every bearer token with the auth service's `/api/v1/auth/me` (30 s cache) | `AUTH_SERVICE_URL` |

@@ -85,6 +85,11 @@ services:
       # Sign-in goes through the Zolexora auth service; values come from Infisical.
       - AUTH_SERVICE_PUBLIC_URL=${AUTH_SERVICE_PUBLIC_URL:?AUTH_SERVICE_PUBLIC_URL missing - run via scripts/setup/with-infisical.sh}
       - TURNSTILE_SITE_KEY=${TURNSTILE_SITE_KEY:?TURNSTILE_SITE_KEY missing - run via scripts/setup/with-infisical.sh}
+      # Firebase web app (Track 1 Google / phone verification).
+      - NEXT_PUBLIC_TMS_CLIENT_FIREBASE_API_KEY=${NEXT_PUBLIC_TMS_CLIENT_FIREBASE_API_KEY:?NEXT_PUBLIC_TMS_CLIENT_FIREBASE_API_KEY missing - run via scripts/setup/with-infisical.sh}
+      - NEXT_PUBLIC_TMS_CLIENT_FIREBASE_AUTH_DOMAIN=${NEXT_PUBLIC_TMS_CLIENT_FIREBASE_AUTH_DOMAIN:?NEXT_PUBLIC_TMS_CLIENT_FIREBASE_AUTH_DOMAIN missing - run via scripts/setup/with-infisical.sh}
+      - NEXT_PUBLIC_TMS_CLIENT_FIREBASE_APP_ID=${NEXT_PUBLIC_TMS_CLIENT_FIREBASE_APP_ID:?NEXT_PUBLIC_TMS_CLIENT_FIREBASE_APP_ID missing - run via scripts/setup/with-infisical.sh}
+      - NEXT_PUBLIC_FIREBASE_PROJECT_ID=${NEXT_PUBLIC_FIREBASE_PROJECT_ID:?NEXT_PUBLIC_FIREBASE_PROJECT_ID missing - run via scripts/setup/with-infisical.sh}
     deploy:
       resources:
         limits:

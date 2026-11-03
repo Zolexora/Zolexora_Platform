@@ -1,4 +1,4 @@
-import { createContext } from "react";
+import { createContext, type Context } from "react";
 import type {
   ZolexoraUser,
   ZolexoraOrganization,
@@ -17,6 +17,8 @@ export interface ZolexoraAuthContextValue {
   signIn: (
     params: SignInParams
   ) => Promise<{ user: ZolexoraUser; customToken: string; routing: any }>;
+  /** Stores a Track 1 session returned by the auth service (used by usePublicSignIn). */
+  applySession: (data: { customToken: string; user: any; routing?: { user_type?: string } }) => ZolexoraUser;
   orgSignIn: (
     params: OrgSignInParams
   ) => Promise<{ user: ZolexoraUser; org: ZolexoraOrganization; customToken: string }>;
@@ -33,5 +35,6 @@ export interface ZolexoraAuthContextValue {
   isAuthenticated: boolean;
 }
 
-export const ZolexoraAuthContext =
-  createContext<ZolexoraAuthContextValue | null>(null);
+// One shared instance even when bundled into several entry points (react, public-sign-in).
+const g = globalThis as { __zolexoraAuthContext?: Context<ZolexoraAuthContextValue | null> };
+export const ZolexoraAuthContext = (g.__zolexoraAuthContext ??= createContext<ZolexoraAuthContextValue | null>(null));

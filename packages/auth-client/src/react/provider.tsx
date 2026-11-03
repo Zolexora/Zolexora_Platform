@@ -208,6 +208,27 @@ export function ZolexoraAuthProvider({
   }, [baseUrl, firebaseAuth, onAuthStateChange]);
 
   // Track 1 Login
+  /** Stores a Track 1 session returned by the auth service (password login or Firebase sign-in). */
+  const applySession = useCallback(
+    (data: { customToken: string; user: any; routing?: { user_type?: string } }): ZolexoraUser => {
+      const newUser: ZolexoraUser = {
+        uid: data.user.uid,
+        zolexora_id: data.user.zolexora_id,
+        email: data.user.email,
+        email_verified: data.user.email_verified,
+      };
+      const resolvedRole = data.routing?.user_type === "consumer" ? "consumer" : "member";
+      setUser(newUser);
+      setOrg(null);
+      setRole(resolvedRole);
+      setToken(data.customToken);
+      saveSession({ token: data.customToken, user: newUser, org: null, role: resolvedRole, savedAt: Date.now() });
+      onAuthStateChange?.(newUser, null);
+      return newUser;
+    },
+    [onAuthStateChange]
+  );
+
   const signIn = useCallback(
     async (params: SignInParams) => {
       setError(null);
@@ -223,7 +244,9 @@ export function ZolexoraAuthProvider({
             "X-Target-Product": params.product || product,
           },
           body: JSON.stringify({
-            email: params.email_or_phone,
+            ...(/^\+?[\d\s\-()]{8,}$/.test(params.email_or_phone.trim())
+              ? { phone_number: params.email_or_phone }
+              : { email: params.email_or_phone }),
             password: params.password,
             product: params.product || product,
             turnstile_token: params.turnstileToken,
@@ -235,35 +258,7 @@ export function ZolexoraAuthProvider({
           throw new Error(data.message || data.error?.message || "Sign in failed");
         }
 
-        const newUser: ZolexoraUser = {
-          uid: data.user.uid,
-          zolexora_id: data.user.zolexora_id,
-          email: data.user.email,
-          email_verified: data.user.email_verified,
-        };
-
-        const resolvedRole =
-          data.routing?.user_type === "consumer" ? "consumer" : "member";
-
-        // Firebase Custom Token exchange if Firebase is available
-        if (firebaseAuth?.signInWithCustomToken) {
-          await firebaseAuth.signInWithCustomToken(data.customToken);
-        }
-
-        setUser(newUser);
-        setOrg(null);
-        setRole(resolvedRole);
-        setToken(data.customToken);
-
-        saveSession({
-          token: data.customToken,
-          user: newUser,
-          org: null,
-          role: resolvedRole,
-          savedAt: Date.now(),
-        });
-
-        onAuthStateChange?.(newUser, null);
+        const newUser = applySession(data);
         return {
           user: newUser,
           customToken: data.customToken,
@@ -276,7 +271,7 @@ export function ZolexoraAuthProvider({
         setLoading(false);
       }
     },
-    [baseUrl, product, firebaseAuth, onAuthStateChange]
+    [baseUrl, product, firebaseAuth, applySession]
   );
 
   // Track 2 Org Employee Login
@@ -487,6 +482,7 @@ export function ZolexoraAuthProvider({
       loading,
       error,
       signIn,
+      applySession,
       orgSignIn,
       adminSignIn,
       signOut,
@@ -503,6 +499,7 @@ export function ZolexoraAuthProvider({
       loading,
       error,
       signIn,
+      applySession,
       orgSignIn,
       adminSignIn,
       signOut,

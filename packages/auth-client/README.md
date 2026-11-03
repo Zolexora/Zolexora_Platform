@@ -8,3 +8,4 @@ Universal Authentication Client SDK for Zolexora Platform, supporting Next.js 14
 - `@zolexora/auth-client/react` — React hooks (`useAuth`, `useUser`, `useOrganization`) and `ZolexoraAuthProvider`
 - `@zolexora/auth-client/client` — `zolexoraFetch` auto-refresh HTTP client with single-flight mutex
 - `@zolexora/auth-client/turnstile` — `TurnstileWidget` component and `useTurnstile` hook
+- `@zolexora/auth-client/public-sign-in` — `usePublicSignIn`: Track 1 Continue with Google / email / phone (needs `firebase`); the product renders the screen for `step`

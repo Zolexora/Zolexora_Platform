@@ -4,10 +4,12 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useAuth as useZolexoraAuth } from '@zolexora/auth-client/react';
 import { TurnstileWidget } from '@zolexora/auth-client/turnstile';
 import { isValidZolexoraOrgId, isPublicWebmailDomain } from '@zolexora/auth-client';
+import { usePublicSignIn } from '@zolexora/auth-client/public-sign-in';
 import { Building2, Users, ShieldAlert, Loader2 } from 'lucide-react';
 import { useAuth } from '../features/auth/useAuth';
 import { apiClient } from '../lib/api';
 import { AUTH_SERVICE_PUBLIC_URL, TURNSTILE_SITE_KEY } from '../lib/runtime';
+import { firebaseAuth } from '../lib/firebase';
 
 const ORGANISATION_TYPES = [
   'Sole Proprietorship / Proprietor', 'Partnership Firm', 'Limited Liability Partnership (LLP)',
@@ -20,7 +22,7 @@ const ORGANISATION_TYPES = [
   'Family Office', 'Startup', 'Freelancer / Individual', 'Self Employed', 'Other',
 ];
 
-type OwnerMode = 'signin' | 'signup' | 'verify' | 'reset' | 'reset_confirm';
+type OwnerMode = 'flow' | 'reset' | 'reset_confirm';
 
 const input =
   'w-full rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500';
@@ -48,6 +50,14 @@ function Field({ label, ...props }: { label: string } & React.InputHTMLAttribute
       {label}
       <input className={`${input} mt-1.5`} required {...props} />
     </label>
+  );
+}
+
+function GoogleIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="w-4 h-4" aria-hidden>
+      <path fill="#EA4335" d="M12 10.2v3.9h5.5c-.2 1.3-1.6 3.8-5.5 3.8-3.3 0-6-2.7-6-6.1s2.7-6.1 6-6.1c1.9 0 3.1.8 3.8 1.5l2.6-2.5C16.8 3.2 14.6 2.2 12 2.2 6.6 2.2 2.2 6.6 2.2 12s4.4 9.8 9.8 9.8c5.7 0 9.4-4 9.4-9.6 0-.6-.1-1.1-.2-1.6H12z" />
+    </svg>
   );
 }
 
@@ -83,18 +93,20 @@ function Card({ title, subtitle, children }: { title: string; subtitle: string; 
 
 /**
  * Zolexora TMS sign-in, all through the Zolexora auth service:
- * - Owner / Commander: Track 1 account (sign in, sign up with email code, password reset),
- *   then a TMS workspace is created on first sign-in.
+ * - Owner / Commander: Track 1 account — Continue with Google, email or phone (Firebase verifies
+ *   Google and the phone; the auth service issues the session), then a TMS workspace is created.
  * - Staff & Drivers: Track 2 employee login with the ZX-ORG id.
  */
 export function AuthenticationForm() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user, authMe, isLoading, signOut } = useAuth();
-  const { signIn, orgSignIn } = useZolexoraAuth();
+  const { orgSignIn } = useZolexoraAuth();
 
   const [tab, setTab] = useState<'owner' | 'staff'>('owner');
-  const [mode, setMode] = useState<OwnerMode>('signin');
+  const [mode, setMode] = useState<OwnerMode>('flow');
+  const [method, setMethod] = useState<'email' | 'phone'>('email');
+  const [turnstileKey, setTurnstileKey] = useState(0);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
@@ -133,6 +145,14 @@ export function AuthenticationForm() {
   };
 
   const refreshAuth = () => queryClient.invalidateQueries({ queryKey: ['auth-me'] });
+
+  const flow = usePublicSignIn({ firebaseAuth, product: 'zolexora-tms', authUrl: AUTH_SERVICE_PUBLIC_URL(), onSignedIn: () => void refreshAuth() });
+  /** Turnstile tokens are single-use: get a fresh widget after every attempt that spent one. */
+  const withTurnstile = async (action: (token: string) => Promise<boolean>) => {
+    await action(turnstileToken);
+    setTurnstileToken('');
+    setTurnstileKey((k) => k + 1);
+  };
 
   // Signed in but no workspace yet
   if (user && !isLoading && authMe && !authMe.organisation_id) {
@@ -233,46 +253,108 @@ export function AuthenticationForm() {
     );
   }
 
-  const ownerForms: Record<OwnerMode, React.ReactNode> = {
-    signin: (
-      <Card title="Sign in" subtitle="Zolexora TMS · Transport Management System">
-        <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); run(async () => { await signIn({ email_or_phone: email.trim(), password, turnstileToken, product: 'zolexora-tms' }); await refreshAuth(); }); }}>
-          <Field label="Email" type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} />
+  const busyIcon = <Loader2 className="w-4 h-4 animate-spin" />;
+  const flowError = <ErrorBox message={flow.error?.message ?? null} />;
+  const startOver = <button type="button" className={`${link} w-full`} onClick={() => { flow.restart(); setPassword(''); setCode(''); }}>Use a different account</button>;
+  const submit = (action: () => void) => (e: React.FormEvent) => { e.preventDefault(); action(); };
+
+  const flowScreens: Record<string, React.ReactNode> = {
+    start: (
+      <Card title="Sign in or create an account" subtitle="Zolexora TMS · Transport Management System">
+        <div className="space-y-4">
+          <button type="button" className={`${button} !bg-none bg-white text-slate-900 hover:bg-slate-100`} disabled={flow.busy || !turnstileToken}
+            onClick={() => withTurnstile((t) => flow.continueWithGoogle(t))}>
+            <GoogleIcon /> Continue with Google
+          </button>
+          <div className="flex items-center gap-3 text-[11px] uppercase tracking-wider text-slate-500"><span className="h-px flex-1 bg-slate-800" />or<span className="h-px flex-1 bg-slate-800" /></div>
+          <div className="grid grid-cols-2 rounded-xl bg-slate-900/90 p-1 border border-slate-800 text-xs">
+            {(['email', 'phone'] as const).map((m) => (
+              <button key={m} type="button" onClick={() => setMethod(m)} className={`py-2 rounded-lg font-medium ${method === m ? 'bg-slate-800 text-white' : 'text-slate-400'}`}>
+                {m === 'email' ? 'Email' : 'Phone'}
+              </button>
+            ))}
+          </div>
+          <form className="space-y-4" onSubmit={submit(() => withTurnstile((t) => (method === 'email' ? flow.continueWithEmail(email, t) : flow.continueWithPhone(phone, t))))}>
+            {method === 'email'
+              ? <Field label="Email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              : <Field label="Phone (with country code)" type="tel" autoComplete="tel" placeholder="+91 98765 43210" value={phone} onChange={(e) => setPhone(e.target.value)} />}
+            <Turnstile key={turnstileKey} action="track1-public-continue" onToken={setTurnstileToken} />
+            {flowError}
+            {notice && <p className="text-xs text-emerald-400">{notice}</p>}
+            <button className={button} disabled={flow.busy || !turnstileToken}>{flow.busy ? busyIcon : `Continue with ${method}`}</button>
+          </form>
+        </div>
+      </Card>
+    ),
+    password: (
+      <Card title="Enter your password" subtitle={flow.email ?? flow.phoneNumber ?? ''}>
+        <form className="space-y-4" onSubmit={submit(() => withTurnstile((t) => flow.signInWithPassword(password, t)))}>
           <Field label="Password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
-          <Turnstile action="track1-public-login" onToken={setTurnstileToken} />
-          <ErrorBox message={error} />
-          {notice && <p className="text-xs text-emerald-400">{notice}</p>}
-          <button className={button} disabled={busy || !turnstileToken}>{busy ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Sign in'}</button>
+          <Turnstile key={turnstileKey} action="track1-public-login" onToken={setTurnstileToken} />
+          {flowError}
+          <button className={button} disabled={flow.busy || !turnstileToken}>{flow.busy ? busyIcon : 'Sign in'}</button>
           <div className="flex justify-between">
-            <button type="button" className={link} onClick={() => go('signup')}>Create an account</button>
-            <button type="button" className={link} onClick={() => go('reset')}>Forgot password?</button>
+            {startOver}
+            {flow.email && <button type="button" className={link} onClick={() => { setEmail(flow.email!); go('reset'); }}>Forgot password?</button>}
           </div>
         </form>
       </Card>
     ),
-    signup: (
-      <Card title="Create your Zolexora account" subtitle="We'll email you a verification code">
-        <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); run(async () => { await authPost('/api/v1/auth/public/signup', { email: email.trim(), password, phone_number: phone.trim(), display_name: displayName.trim(), turnstile_token: turnstileToken }); go('verify'); }); }}>
-          <Field label="Full name" autoComplete="name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
-          <Field label="Email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-          <Field label="Phone" type="tel" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
-          <Field label="Password" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
-          <Turnstile action="track1-public-signup" onToken={setTurnstileToken} />
-          <ErrorBox message={error} />
-          <button className={button} disabled={busy || !turnstileToken}>{busy ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create account'}</button>
-          <button type="button" className={`${link} w-full`} onClick={() => go('signin')}>Already have an account? Sign in</button>
-        </form>
-      </Card>
-    ),
-    verify: (
-      <Card title="Verify your email" subtitle={`Enter the code sent to ${email}`}>
-        <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); run(async () => { await authPost('/api/v1/auth/public/verify-email-otp', { email: email.trim(), otp: code.trim() }); go('signin'); setNotice('Email verified. Sign in to continue.'); }); }}>
+    verify_email: (
+      <Card title="Verify your email" subtitle={`Enter the code sent to ${flow.email}`}>
+        <form className="space-y-4" onSubmit={submit(() => flow.verifyEmailCode(code).then((ok) => ok && setCode('')))}>
           <Field label="Verification code" inputMode="numeric" autoComplete="one-time-code" value={code} onChange={(e) => setCode(e.target.value)} />
-          <ErrorBox message={error} />
-          <button className={button} disabled={busy}>{busy ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Verify'}</button>
+          {flowError}
+          <button className={button} disabled={flow.busy}>{flow.busy ? busyIcon : 'Verify email'}</button>
+          {startOver}
         </form>
       </Card>
     ),
+    enter_email: (
+      <Card title="Add your email" subtitle="We'll email you a verification code">
+        <form className="space-y-4" onSubmit={submit(() => flow.sendEmailCode(email))}>
+          <Field label="Email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          {flowError}
+          <button className={button} disabled={flow.busy}>{flow.busy ? busyIcon : 'Send code'}</button>
+          {startOver}
+        </form>
+      </Card>
+    ),
+    enter_phone: (
+      <Card title="Verify your mobile number" subtitle="We'll text you a verification code">
+        <form className="space-y-4" onSubmit={submit(() => flow.sendPhoneCode(phone))}>
+          <Field label="Phone (with country code)" type="tel" autoComplete="tel" placeholder="+91 98765 43210" value={phone} onChange={(e) => setPhone(e.target.value)} />
+          {flowError}
+          <button className={button} disabled={flow.busy}>{flow.busy ? busyIcon : 'Send code'}</button>
+          {startOver}
+        </form>
+      </Card>
+    ),
+    verify_phone: (
+      <Card title="Enter the SMS code" subtitle={`Sent to ${flow.phoneNumber}`}>
+        <form className="space-y-4" onSubmit={submit(() => flow.verifyPhoneCode(code).then((ok) => ok && setCode('')))}>
+          <Field label="SMS code" inputMode="numeric" autoComplete="one-time-code" value={code} onChange={(e) => setCode(e.target.value)} />
+          {flowError}
+          <button className={button} disabled={flow.busy}>{flow.busy ? busyIcon : 'Verify number'}</button>
+          {startOver}
+        </form>
+      </Card>
+    ),
+    profile: (
+      <Card title="Finish your account" subtitle={[flow.email, flow.phoneNumber].filter(Boolean).join(' · ')}>
+        <form className="space-y-4" onSubmit={submit(() => flow.completeProfile(displayName || flow.suggestedName || '', password))}>
+          <Field label="Full name" autoComplete="name" value={displayName || flow.suggestedName || ''} onChange={(e) => setDisplayName(e.target.value)} />
+          <Field label="Set a password (12+ characters)" type="password" autoComplete="new-password" minLength={12} value={password} onChange={(e) => setPassword(e.target.value)} />
+          {flowError}
+          <button className={button} disabled={flow.busy}>{flow.busy ? busyIcon : 'Create account'}</button>
+        </form>
+      </Card>
+    ),
+    done: <Loader2 className="h-8 w-8 animate-spin text-slate-400 mx-auto" />,
+  };
+
+  const ownerForms: Record<OwnerMode, React.ReactNode> = {
+    flow: flowScreens[flow.step],
     reset: (
       <Card title="Reset password" subtitle="We'll email you a reset code">
         <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); run(async () => { await authPost('/api/v1/auth/public/reset-password', { email: email.trim(), turnstile_token: turnstileToken }); go('reset_confirm'); }); }}>
@@ -280,13 +362,13 @@ export function AuthenticationForm() {
           <Turnstile action="track1-public-reset-password" onToken={setTurnstileToken} />
           <ErrorBox message={error} />
           <button className={button} disabled={busy || !turnstileToken}>{busy ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Send code'}</button>
-          <button type="button" className={`${link} w-full`} onClick={() => go('signin')}>Back to sign in</button>
+          <button type="button" className={`${link} w-full`} onClick={() => go('flow')}>Back to sign in</button>
         </form>
       </Card>
     ),
     reset_confirm: (
       <Card title="Choose a new password" subtitle={`If ${email} has an account, a code was sent to it`}>
-        <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); run(async () => { await authPost('/api/v1/auth/public/reset-password/confirm', { email: email.trim(), otp: code.trim(), new_password: password }); go('signin'); setNotice('Password changed. Sign in with your new password.'); }); }}>
+        <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); run(async () => { await authPost('/api/v1/auth/public/reset-password/confirm', { email: email.trim(), otp: code.trim(), new_password: password }); go('flow'); flow.restart(); setPassword(''); setCode(''); setNotice('Password changed. Sign in with your new password.'); }); }}>
           <Field label="Reset code" inputMode="numeric" autoComplete="one-time-code" value={code} onChange={(e) => setCode(e.target.value)} />
           <Field label="New password" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
           <ErrorBox message={error} />
@@ -300,6 +382,7 @@ export function AuthenticationForm() {
     <div className="w-full max-w-md mx-auto">
       {tabs}
       {ownerForms[mode]}
+      <div id="zx-recaptcha" />
     </div>
   );
 }

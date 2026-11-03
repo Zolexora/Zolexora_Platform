@@ -42,6 +42,7 @@ export default defineConfig((options: Options) => {
       entry: {
         react: "src/react/index.ts",
         turnstile: "src/turnstile/index.ts",
+        "public-sign-in": "src/public-sign-in/index.ts",
       },
       banner: {
         js: '"use client";',

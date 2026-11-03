@@ -217,9 +217,6 @@ importers:
       '@zolexora/utils':
         specifier: workspace:*
         version: link:../utils
-      firebase:
-        specifier: '>=10.0.0 || >=11.0.0 || >=12.0.0'
-        version: 12.19.0(@react-native-async-storage/async-storage@2.2.0(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.3.0)(react@18.3.1)))
       react:
         specifier: '>=18.0.0'
         version: 18.3.1
@@ -242,6 +239,9 @@ importers:
       '@zolexora/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
+      firebase:
+        specifier: ^12.17.1
+        version: 12.19.0(@react-native-async-storage/async-storage@2.2.0(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.3.0)(react@18.3.1)))
       happy-dom:
         specifier: ^17.1.8
         version: 17.6.3
@@ -3177,6 +3177,9 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      firebase:
+        specifier: ^12.17.1
+        version: 12.19.0(@react-native-async-storage/async-storage@2.2.0(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.3.0)(react@19.1.0)))
       lucide-react:
         specifier: ^0.475.0
         version: 0.475.0(react@19.1.0)

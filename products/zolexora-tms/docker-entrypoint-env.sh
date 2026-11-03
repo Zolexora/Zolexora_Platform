@@ -5,7 +5,9 @@ set -eu
 out=/usr/share/nginx/html/env-config.js
 {
   echo "window.__ENV__ = {"
-  for var in AUTH_SERVICE_PUBLIC_URL TURNSTILE_SITE_KEY $(env | grep -oE '^VITE_[A-Z0-9_]+' || true); do
+  for var in AUTH_SERVICE_PUBLIC_URL TURNSTILE_SITE_KEY \
+    NEXT_PUBLIC_TMS_CLIENT_FIREBASE_API_KEY NEXT_PUBLIC_TMS_CLIENT_FIREBASE_AUTH_DOMAIN \
+    NEXT_PUBLIC_TMS_CLIENT_FIREBASE_APP_ID NEXT_PUBLIC_FIREBASE_PROJECT_ID $(env | grep -oE '^VITE_[A-Z0-9_]+' || true); do
     eval "val=\${$var-}"
     esc=$(printf '%s' "$val" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' -e 's/</\\u003c/g')
     printf '  "%s": "%s",\n' "$var" "$esc"
