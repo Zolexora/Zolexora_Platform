@@ -32,7 +32,7 @@ function fakeService(routes: Record<string, any>) {
   const calls: { path: string; body: any }[] = [];
   globalThis.fetch = vi.fn(async (url: string, init?: RequestInit) => {
     const path = String(url).replace(`${BASE}/api/v1/auth`, "");
-    if (path === "/public/config") return Response.json({ mobile_verification_required: true });
+    if (path === "/public/config") return Response.json({ mobile_verification_required: routes.__verify ?? true });
     const body = init?.body ? JSON.parse(String(init.body)) : {};
     calls.push({ path, body });
     const reply = routes[path];
@@ -116,6 +116,24 @@ describe("usePublicSignIn", () => {
     expect(result.current.flow.step).toBe("verify_phone");
     await act(() => result.current.flow.verifyPhoneCode("111111"));
     expect(result.current.flow.step).toBe("enter_email");
+  });
+
+  it("verification off: the number is saved without an SMS code", async () => {
+    const calls = fakeService({
+      __verify: false,
+      "/public/identify": { success: true, exists: false, next: "verify_email" },
+      "/public/signup/email/verify": { success: true, next: "verify_phone", signup_token: "t1", email: "a@example.com" },
+      "/public/signup/phone": { success: true, next: "profile", signup_token: "t2", phone_number: "+919800000001" },
+    });
+    const { result } = setup();
+    await waitFor(() => expect(result.current.flow.mobileVerificationRequired).toBe(false));
+    await act(() => result.current.flow.continueWithEmail("a@example.com", "ts"));
+    await act(() => result.current.flow.verifyEmailCode("123456"));
+    expect(result.current.flow.step).toBe("enter_phone");
+    await act(() => result.current.flow.sendPhoneCode("+91 98000 00001"));
+    expect(fb.phone).not.toHaveBeenCalled();
+    expect(result.current.flow.step).toBe("profile");
+    expect(calls.find((c) => c.path === "/public/signup/phone")!.body).toMatchObject({ phone_number: "+919800000001", signup_token: "t1" });
   });
 
   it("shows service and Firebase errors without changing step", async () => {

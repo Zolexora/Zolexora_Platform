@@ -130,12 +130,14 @@ export class InMemoryAuthRepository implements IAuthRepository {
   public async createGlobalUser(data: NewGlobalUser) {
     const email = data.email.toLowerCase().trim();
     if (this.globalUsers.has(email)) return null;
-    if (data.phone_number && (await this.getGlobalUserByPhone(data.phone_number))) return null;
+    const holder = data.phone_number ? await this.getGlobalUserByPhone(data.phone_number) : null;
+    if (holder && (holder.phone_verified || !data.phone_verified)) return null;
+    if (holder) holder.phone_number = null; // a verified number is released from an unverified holder
     if (data.firebase_uid && (await this.getGlobalUserByFirebaseUid(data.firebase_uid))) return null;
     const user: GlobalUserRecord = {
       id: `usr_${randomUUID()}`, zolexora_id: data.zolexora_id, email, phone_number: data.phone_number ?? null,
       display_name: data.display_name, firebase_uid: data.firebase_uid ?? null, password_hash: data.password_hash,
-      status: "active", email_verified: true, phone_verified: Boolean(data.phone_number),
+      status: "active", email_verified: true, phone_verified: Boolean(data.phone_number && data.phone_verified),
     };
     this.globalUsers.set(email, user);
     return user;

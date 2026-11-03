@@ -22,8 +22,8 @@ import { useAuth } from "../react/use-auth.js";
  *         └ Phone ─ existing ─▶ password ─────────────────────────────▶ done
  *                 └ new ─▶ verify_phone ▶ enter_email ▶ verify_email ▶ profile ▶ done
  *
- * The phone steps are skipped for Google/email sign-ups when the service has
- * MOBILE_OTP_VERIFICATION=false. Phone numbers are verified with Firebase PNV when the app supplies
+ * Every new account gives a mobile number. With MOBILE_OTP_VERIFICATION=false the number is only
+ * saved (no verify_phone step). Otherwise it is verified with Firebase PNV when the app supplies
  * `getPnvToken` (native apps), otherwise with Firebase's SMS code (needs an element with
  * id `recaptchaContainerId` on the page for the invisible reCAPTCHA).
  */
@@ -148,8 +148,14 @@ export function usePublicSignIn(opts: UsePublicSignInOptions) {
     [finish],
   );
 
+  const mobileVerificationRequired = config?.mobile_verification_required ?? true;
+
+  /** Verification on: PNV, else the SMS code. Off: the number is saved as typed. */
   const startSms = useCallback(
     async (phone: string) => {
+      if (!mobileVerificationRequired) {
+        return advance(await post("/signup/phone", { phone_number: phone, signup_token: signupToken.current ?? undefined }));
+      }
       if (opts.getPnvToken) {
         const pnv_token = await opts.getPnvToken(phone).catch(() => null);
         if (pnv_token) return advance(await post("/signup/phone", { pnv_token, signup_token: signupToken.current }));
@@ -161,7 +167,7 @@ export function usePublicSignIn(opts: UsePublicSignInOptions) {
       setPhoneNumber(phone);
       setStep("verify_phone");
     },
-    [advance, opts.firebaseAuth, opts.getPnvToken, post, recaptchaContainerId],
+    [advance, mobileVerificationRequired, opts.firebaseAuth, opts.getPnvToken, post, recaptchaContainerId],
   );
 
   return {
@@ -171,8 +177,8 @@ export function usePublicSignIn(opts: UsePublicSignInOptions) {
     suggestedName,
     busy,
     error,
-    /** Whether the service requires a verified phone for every new account. */
-    mobileVerificationRequired: config?.mobile_verification_required ?? true,
+    /** Whether the mobile number is verified (PNV / SMS) or only saved. */
+    mobileVerificationRequired,
 
     continueWithGoogle: (turnstileToken: string) =>
       run(async () => {

@@ -16,13 +16,14 @@ import { assertPasswordSize, getRemoteIp, getTurnstileToken, hashNewPassword } f
  * Track 1 (public users) — "Continue with Google / Email / Phone".
  *
  *   Google: POST /google ─ existing ─▶ session (no password)
- *                        └ new ──────▶ [verify phone] ▶ profile (name + password) ▶ session
+ *                        └ new ──────▶ phone ▶ profile (name + password) ▶ session
  *   Email:  POST /identify ─ existing ─▶ POST /login (password)
- *                          └ new (code emailed) ▶ /signup/email/verify ▶ [verify phone] ▶ profile ▶ session
+ *                          └ new (code emailed) ▶ /signup/email/verify ▶ phone ▶ profile ▶ session
  *   Phone:  POST /identify ─ existing ─▶ POST /login (password)
- *                          └ new ▶ /signup/phone (Firebase PNV or SMS code) ▶ /signup/email/send + verify ▶ profile ▶ session
+ *                          └ new ▶ /signup/phone ▶ /signup/email/send + verify ▶ profile ▶ session
  *
- * [verify phone] is required when MOBILE_OTP_VERIFICATION=true. Each sign-up step returns a
+ * Every account gets a mobile number. MOBILE_OTP_VERIFICATION=true: it must be verified (Firebase
+ * PNV or SMS code). false: the number is asked for and stored unverified. Each sign-up step returns a
  * `signup_token` recording what has been verified, and `next` naming the step to show.
  */
 
@@ -72,7 +73,7 @@ export async function track1PublicRoutes(
 
   const nextStep = (f: SignupFacts): Next => {
     if (!f.email) return "verify_email";
-    if (!f.phone_number && (opts.mobileVerificationRequired || f.started_with === "phone")) return "verify_phone";
+    if (!f.phone_number) return "verify_phone";
     return "profile";
   };
 
@@ -199,24 +200,36 @@ export async function track1PublicRoutes(
     },
   );
 
-  // 4. Verify the phone with Firebase PNV, or the Firebase SMS code fallback (ID token with phone_number).
-  app.post<{ Body: { signup_token?: string; pnv_token?: string; firebase_id_token?: string } }>(
+  // 4. The mobile number: verified with Firebase PNV or the SMS code (ID token with phone_number), or,
+  //    when MOBILE_OTP_VERIFICATION=false, the plain number (stored unverified).
+  app.post<{ Body: { signup_token?: string; pnv_token?: string; firebase_id_token?: string; phone_number?: string } }>(
     "/api/v1/auth/public/signup/phone",
-    { schema: { description: "Attach a Firebase-verified phone number (PNV token or SMS-code ID token)", tags } },
+    { schema: { description: "Attach the mobile number: PNV token, SMS-code ID token, or plain number when verification is off", tags } },
     async (req) => {
       limitIp(req);
-      const prior = await optionalTicket(req.body?.signup_token);
-      if (prior?.phone_number) throw badRequest("AUTH_SIGNUP_STEP_DONE", "Phone number is already verified.");
+      const body = req.body ?? {};
+      const prior = await optionalTicket(body.signup_token);
+      if (prior?.phone_number) throw badRequest("AUTH_SIGNUP_STEP_DONE", "Phone number is already added.");
 
       let phone: string | undefined;
-      if (req.body?.pnv_token) phone = await firebase.verifyPnvToken(req.body.pnv_token);
-      else phone = (await firebase.verifyIdToken(req.body?.firebase_id_token)).phoneNumber;
+      let verified = true;
+      if (body.pnv_token) phone = await firebase.verifyPnvToken(body.pnv_token);
+      else if (body.firebase_id_token) phone = (await firebase.verifyIdToken(body.firebase_id_token)).phoneNumber;
+      else if (!opts.mobileVerificationRequired) {
+        phone = normPhone(body.phone_number);
+        verified = false;
+        if (!E164.test(phone)) throw badRequest("AUTH_INVALID_PHONE", "Enter the phone number in international format, e.g. +919876543210.");
+      } else {
+        throw badRequest("AUTH_PHONE_VERIFICATION_REQUIRED", "Verify the mobile number with the SMS code.");
+      }
       if (!phone || !E164.test(phone)) throw badRequest("AUTH_PHONE_NOT_VERIFIED", "The token carries no verified phone number.");
 
-      if (await repo.getGlobalUserByPhone(phone)) {
+      // A verified number takes over from an account that only typed it in (unverified).
+      const holder = await repo.getGlobalUserByPhone(phone);
+      if (holder && (holder.phone_verified || !verified)) {
         throw conflict("AUTH_PHONE_IN_USE", "This phone number already has an account. Sign in with it instead.");
       }
-      return step({ ...(prior ?? { started_with: "phone" as const }), phone_number: phone });
+      return step({ ...(prior ?? { started_with: "phone" as const }), phone_number: phone, phone_verified: verified });
     },
   );
 
@@ -238,6 +251,7 @@ export async function track1PublicRoutes(
         zolexora_id: generateZolexoraId(),
         email: facts.email!,
         phone_number: facts.phone_number,
+        phone_verified: facts.phone_verified === true,
         firebase_uid: facts.firebase_uid,
         display_name: displayName,
         password_hash: passwordHash,

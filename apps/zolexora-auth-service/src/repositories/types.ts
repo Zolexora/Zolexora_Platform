@@ -75,7 +75,8 @@ export type RevocationType = "user_all_tokens" | "single_token";
 export interface NewGlobalUser {
   zolexora_id: string;
   email: string; // already verified
-  phone_number?: string; // already verified when present
+  phone_number?: string;
+  phone_verified: boolean;
   display_name: string;
   firebase_uid?: string;
   password_hash: string;

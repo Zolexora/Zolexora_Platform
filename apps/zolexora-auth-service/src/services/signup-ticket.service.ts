@@ -10,6 +10,8 @@ import { AppError } from "../plugins/error-handler.js";
 export interface SignupFacts {
   email?: string;
   phone_number?: string;
+  /** False when the number was typed in without PNV/SMS (MOBILE_OTP_VERIFICATION=false). */
+  phone_verified?: boolean;
   firebase_uid?: string;
   /** How the user started: decides which steps are required. */
   started_with: "email" | "phone" | "google";
@@ -41,8 +43,8 @@ export class SignupTicketService {
     const { payload } = await jwtVerify(token, this.key, { algorithms: ["HS256"], audience: AUDIENCE, typ: "signup" }).catch(() => {
       throw invalidTicket();
     });
-    const { email, phone_number, firebase_uid, started_with } = payload as Record<string, any>;
+    const { email, phone_number, phone_verified, firebase_uid, started_with } = payload as Record<string, any>;
     if (!["email", "phone", "google"].includes(started_with)) throw invalidTicket();
-    return { email, phone_number, firebase_uid, started_with };
+    return { email, phone_number, phone_verified, firebase_uid, started_with };
   }
 }

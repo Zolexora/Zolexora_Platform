@@ -155,15 +155,55 @@ describe("Track 1 — Firebase sign-in", () => {
       expect(res.json().code).toBe("AUTH_SIGNUP_INCOMPLETE");
     });
 
-    it("false: email and Google sign-ups go straight to name + password", async () => {
-      await app.close();
-      app = await buildTestApp(repo, undefined, { mobileVerificationRequired: false });
-      await post("/identify", { email: "nophone@example.com", ...TS });
-      const afterEmail = await verifyEmail("nophone@example.com");
-      expect(afterEmail.next).toBe("profile");
-      const done = await complete(afterEmail.signup_token);
-      expect(done.statusCode).toBe(201);
-      expect(done.json().user.phone_number).toBeNull();
+    it("true: a typed-in number without PNV/SMS is refused", async () => {
+      const res = await post("/signup/phone", { phone_number: "+919800000010" });
+      expect(res.statusCode).toBe(400);
+      expect(res.json().code).toBe("AUTH_PHONE_VERIFICATION_REQUIRED");
+    });
+
+    describe("false: the mobile number is still asked for, but not verified", () => {
+      beforeEach(async () => {
+        await app.close();
+        app = await buildTestApp(repo, undefined, { mobileVerificationRequired: false });
+      });
+
+      it("email sign-up → number typed in → name + password; stored unverified", async () => {
+        await post("/identify", { email: "nophone@example.com", ...TS });
+        const afterEmail = await verifyEmail("nophone@example.com");
+        expect(afterEmail.next).toBe("verify_phone"); // the number is always asked for
+        expect((await complete(afterEmail.signup_token)).json().code).toBe("AUTH_SIGNUP_INCOMPLETE");
+
+        const afterPhone = await post("/signup/phone", { phone_number: "+91 98000 00011", signup_token: afterEmail.signup_token });
+        expect(afterPhone.json()).toMatchObject({ next: "profile", phone_number: "+919800000011" });
+        const done = await complete(afterPhone.json().signup_token);
+        expect(done.statusCode).toBe(201);
+        expect(done.json().user).toMatchObject({ phone_number: "+919800000011", phone_verified: false });
+      });
+
+      it("phone-first sign-up works without the SMS code", async () => {
+        const afterPhone = (await post("/signup/phone", { phone_number: "+919800000012" })).json();
+        expect(afterPhone.next).toBe("verify_email");
+        await post("/signup/email/send", { signup_token: afterPhone.signup_token, email: "phonefirst@example.com" });
+        const afterEmail = await verifyEmail("phonefirst@example.com", afterPhone.signup_token);
+        expect((await complete(afterEmail.signup_token)).statusCode).toBe(201);
+        expect((await post("/login", { phone_number: "+919800000012", password: PASSWORD, ...TS })).statusCode).toBe(200);
+      });
+
+      it("a typed-in number cannot take one that is already used; a verified one takes it over", async () => {
+        const typed = (await post("/signup/phone", { phone_number: "+919800000013" })).json();
+        await post("/signup/email/send", { signup_token: typed.signup_token, email: "squatter@example.com" });
+        expect((await complete((await verifyEmail("squatter@example.com", typed.signup_token)).signup_token)).statusCode).toBe(201);
+
+        expect((await post("/signup/phone", { phone_number: "+919800000013" })).statusCode).toBe(409);
+
+        // The real owner proves the number by SMS: it moves to their new account.
+        const owner = await verifyPhoneSms("+919800000013");
+        expect(owner.statusCode).toBe(200);
+        await post("/signup/email/send", { signup_token: owner.json().signup_token, email: "owner@example.com" });
+        const done = await complete((await verifyEmail("owner@example.com", owner.json().signup_token)).signup_token);
+        expect(done.json().user).toMatchObject({ phone_number: "+919800000013", phone_verified: true });
+        expect((await repo.getGlobalUserByEmail("squatter@example.com"))!.phone_number).toBeNull();
+      });
     });
   });
 

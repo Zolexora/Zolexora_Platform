@@ -135,19 +135,32 @@ export class PostgresAuthRepository implements IAuthRepository {
   }
 
   public async createGlobalUser(data: NewGlobalUser): Promise<GlobalUserRecord | null> {
+    const client = await this.authPool.connect();
     try {
-      const res = await this.authPool.query(
+      await client.query("BEGIN");
+      if (data.phone_number && data.phone_verified) {
+        // A verified number is released from any account that only typed it in.
+        await client.query(
+          "UPDATE zolexora_auth_users SET phone_number = NULL WHERE phone_number = $1 AND phone_verified_at IS NULL",
+          [data.phone_number],
+        );
+      }
+      const res = await client.query(
         `INSERT INTO zolexora_auth_users
            (zolexora_id, email, phone_number, display_name, firebase_uid, password_hash, email_verified_at, phone_verified_at)
-         VALUES ($1, $2, $3, $4, $5, $6, now(), CASE WHEN $3::text IS NULL THEN NULL ELSE now() END)
+         VALUES ($1, $2, $3, $4, $5, $6, now(), CASE WHEN $7 THEN now() ELSE NULL END)
          RETURNING ${USER_COLUMNS}`,
         [data.zolexora_id, data.email.toLowerCase().trim(), data.phone_number ?? null, data.display_name,
-         data.firebase_uid ?? null, data.password_hash],
+         data.firebase_uid ?? null, data.password_hash, Boolean(data.phone_number && data.phone_verified)],
       );
+      await client.query("COMMIT");
       return toUser(res.rows[0]);
     } catch (err) {
+      await client.query("ROLLBACK").catch(() => {});
       if (isUniqueViolation(err)) return null;
       throw err;
+    } finally {
+      client.release();
     }
   }
 
