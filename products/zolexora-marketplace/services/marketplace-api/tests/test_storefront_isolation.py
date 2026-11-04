@@ -20,7 +20,7 @@ def create_context(key_str: str) -> StorefrontContext:
 
 ctx_zol = create_context("zolexora-shop")
 ctx_mah = create_context("mahila-madel")
-seller = {"id": "seller-1", "role": "seller"}
+seller = {"id": "seller-1", "role": "seller", "seller_org_id": "seller-1"}
 admin = {"id": "admin-1", "is_admin": True}
 buyer_1 = {"id": "buyer-1", "role": "viewer"}
 buyer_2 = {"id": "buyer-2", "role": "viewer"}

@@ -21,6 +21,7 @@ from routers.orders import (
     transition_seller_shipment, action_seller_cancellation, action_seller_return,
 )
 from tests.test_orders_fulfillment_contracts import EnhancedFakeDB, create_context, seed_products, shipping_addr
+from tests.commerce_seed import BUYER_1, BUYER_2, SEL_1, SEL_2, PROD_1
 
 def _create_custom_quote_token(
     quote_id, buyer_id, storefront_id, lines, currency="INR",
@@ -47,10 +48,10 @@ def _create_custom_quote_token(
 ctx_zol = create_context("zolexora-shop")
 ctx_mah = create_context("mahila-madel")
 
-buyer_a = {"id": "buyer-a", "role": "viewer", "full_name": "Buyer A"}
-buyer_b = {"id": "buyer-b", "role": "viewer", "full_name": "Buyer B"}
-seller_x = {"id": "sel-1", "role": "seller", "name": "Seller X"}
-seller_y = {"id": "sel-2", "role": "seller", "name": "Seller Y"}
+buyer_a = {"id": BUYER_1, "role": "viewer", "full_name": "Buyer A"}
+buyer_b = {"id": BUYER_2, "role": "viewer", "full_name": "Buyer B"}
+seller_x = {"id": SEL_1, "seller_org_id": SEL_1, "role": "seller", "name": "Seller X"}
+seller_y = {"id": SEL_2, "seller_org_id": SEL_2, "role": "seller", "name": "Seller Y"}
 admin_user = {"id": "admin-1", "is_admin": True, "full_name": "Admin User"}
 
 
@@ -64,20 +65,20 @@ def set_fake_quote_secret(monkeypatch):
 # ─────────────────────────────────────────────────────────────────────────────
 
 @pytest.mark.asyncio
-async def test_buyer_and_storefront_isolation():
+async def test_buyer_and_storefront_isolation(pg):
     db = EnhancedFakeDB()
-    await seed_products(db)
+    await seed_products(pg)
 
     # Buyer A creates order in Zolexora Shop
-    await add_to_cart(CartItemCreate(product_id="prod-1", quantity=1), context=ctx_zol, user=buyer_a, db=db)
-    quote_a = await checkout_quote(context=ctx_zol, user=buyer_a, db=db)
+    await add_to_cart(CartItemCreate(product_id=PROD_1, quantity=1), context=ctx_zol, user=buyer_a, pg=pg)
+    quote_a = await checkout_quote(context=ctx_zol, user=buyer_a, pg=pg)
     req_a = CreateOrderFromQuoteRequest(
         quote_id=quote_a.quote_id,
         shipping_address=shipping_addr,
         payment_method_type="card",
         idempotency_key="buyer-iso-1"
     )
-    resp_a = await create_order_from_quote(req_a, context=ctx_zol, user=buyer_a, db=db)
+    resp_a = await create_order_from_quote(req_a, context=ctx_zol, user=buyer_a, db=db, pg_conn=pg)
 
     # Attempt 1: Buyer B tries to access Buyer A's order detail under Zolexora Shop
     with pytest.raises(HTTPException) as exc_buyer_b:
@@ -114,17 +115,17 @@ async def test_buyer_and_storefront_isolation():
 # ─────────────────────────────────────────────────────────────────────────────
 
 @pytest.mark.asyncio
-async def test_seller_and_storefront_isolation():
+async def test_seller_and_storefront_isolation(pg):
     db = EnhancedFakeDB()
-    await seed_products(db)
+    await seed_products(pg)
 
     # Buyer A creates order containing item from Seller X (prod-1) in Zolexora Shop
-    await add_to_cart(CartItemCreate(product_id="prod-1", quantity=1), context=ctx_zol, user=buyer_a, db=db)
-    quote_a = await checkout_quote(context=ctx_zol, user=buyer_a, db=db)
+    await add_to_cart(CartItemCreate(product_id=PROD_1, quantity=1), context=ctx_zol, user=buyer_a, pg=pg)
+    quote_a = await checkout_quote(context=ctx_zol, user=buyer_a, pg=pg)
     resp_a = await create_order_from_quote(
         CreateOrderFromQuoteRequest(quote_id=quote_a.quote_id, shipping_address=shipping_addr, payment_method_type="card"),
         context=ctx_zol, user=buyer_a, db=db
-    )
+    , pg_conn=pg)
 
     # Attempt 1: Seller Y tries to view Seller X's order detail
     with pytest.raises(HTTPException) as exc_seller_y_detail:
@@ -149,7 +150,7 @@ async def test_seller_and_storefront_isolation():
             resp_a.order_id, shipment_id,
             FulfillmentTransitionRequest(target_status=FulfillmentStatus.processing),
             context=ctx_zol, user=seller_y, db=db
-        )
+        , pg=pg)
     assert exc_seller_y_trans.value.status_code == 404
 
     # Attempt 5: Seller Y tries to action cancellation on Seller X's order
@@ -158,7 +159,7 @@ async def test_seller_and_storefront_isolation():
             resp_a.order_id,
             SellerCancellationActionRequest(action="approve"),
             context=ctx_zol, user=seller_y, db=db
-        )
+        , pg=pg)
     assert exc_seller_y_cancel_action.value.status_code == 404
 
     # Attempt 6: Seller Y tries to action return on Seller X's order
@@ -176,50 +177,50 @@ async def test_seller_and_storefront_isolation():
 # ─────────────────────────────────────────────────────────────────────────────
 
 @pytest.mark.asyncio
-async def test_quote_token_security_and_forgery():
+async def test_quote_token_security_and_forgery(pg):
     db = EnhancedFakeDB()
-    await seed_products(db)
-    lines_data = [{"product_id": "prod-1", "quantity": 1, "unit_price": 1000}]
+    await seed_products(pg)
+    lines_data = [{"product_id": PROD_1, "quantity": 1, "unit_price": 1000}]
 
     # 1. Forged Signature Token (tampered signature string)
-    valid_token = _create_custom_quote_token("q-1", "buyer-a", "zolexora-shop", lines_data)
+    valid_token = _create_custom_quote_token("q-1", BUYER_1, "zolexora-shop", lines_data)
     forged_token = valid_token[:-5] + "XXXXX"
 
     with pytest.raises(HTTPException) as exc_forged:
         await create_order_from_quote(
             CreateOrderFromQuoteRequest(quote_id=forged_token, shipping_address=shipping_addr, payment_method_type="card"),
             context=ctx_zol, user=buyer_a, db=db
-        )
+        , pg_conn=pg)
     assert exc_forged.value.status_code == 400
     assert "signature" in exc_forged.value.detail.lower()
 
     # 2. Expired Token
-    expired_token = _create_custom_quote_token("q-exp", "buyer-a", "zolexora-shop", lines_data, expires_in_minutes=-5)
+    expired_token = _create_custom_quote_token("q-exp", BUYER_1, "zolexora-shop", lines_data, expires_in_minutes=-5)
     with pytest.raises(HTTPException) as exc_expired:
         await create_order_from_quote(
             CreateOrderFromQuoteRequest(quote_id=expired_token, shipping_address=shipping_addr, payment_method_type="card"),
             context=ctx_zol, user=buyer_a, db=db
-        )
+        , pg_conn=pg)
     assert exc_expired.value.status_code == 400
     assert "expired" in exc_expired.value.detail.lower()
 
     # 3. Token issued to Buyer A, used by Buyer B
-    token_buyer_a = _create_custom_quote_token("q-ba", "buyer-a", "zolexora-shop", lines_data)
+    token_buyer_a = _create_custom_quote_token("q-ba", BUYER_1, "zolexora-shop", lines_data)
     with pytest.raises(HTTPException) as exc_buyer_mismatch:
         await create_order_from_quote(
             CreateOrderFromQuoteRequest(quote_id=token_buyer_a, shipping_address=shipping_addr, payment_method_type="card"),
             context=ctx_zol, user=buyer_b, db=db
-        )
+        , pg_conn=pg)
     assert exc_buyer_mismatch.value.status_code == 403
     assert "belong" in exc_buyer_mismatch.value.detail.lower()
 
     # 4. Token issued for Zolexora Shop, used in Mahila Madel context
-    token_zol = _create_custom_quote_token("q-zol", "buyer-a", "zolexora-shop", lines_data)
+    token_zol = _create_custom_quote_token("q-zol", BUYER_1, "zolexora-shop", lines_data)
     with pytest.raises(HTTPException) as exc_sf_mismatch:
         await create_order_from_quote(
             CreateOrderFromQuoteRequest(quote_id=token_zol, shipping_address=shipping_addr, payment_method_type="card"),
             context=ctx_mah, user=buyer_a, db=db
-        )
+        , pg_conn=pg)
     assert exc_sf_mismatch.value.status_code == 403
     assert "storefront" in exc_sf_mismatch.value.detail.lower()
 
@@ -229,16 +230,16 @@ async def test_quote_token_security_and_forgery():
 # ─────────────────────────────────────────────────────────────────────────────
 
 @pytest.mark.asyncio
-async def test_illegal_fulfillment_state_machine_jumps():
+async def test_illegal_fulfillment_state_machine_jumps(pg):
     db = EnhancedFakeDB()
-    await seed_products(db)
+    await seed_products(pg)
 
-    await add_to_cart(CartItemCreate(product_id="prod-1", quantity=1), context=ctx_zol, user=buyer_a, db=db)
-    quote = await checkout_quote(context=ctx_zol, user=buyer_a, db=db)
+    await add_to_cart(CartItemCreate(product_id=PROD_1, quantity=1), context=ctx_zol, user=buyer_a, pg=pg)
+    quote = await checkout_quote(context=ctx_zol, user=buyer_a, pg=pg)
     resp = await create_order_from_quote(
         CreateOrderFromQuoteRequest(quote_id=quote.quote_id, shipping_address=shipping_addr, payment_method_type="card"),
         context=ctx_zol, user=buyer_a, db=db
-    )
+    , pg_conn=pg)
 
     order_doc = await db.orders.find_one({"id": resp.order_id})
     shipment_id = order_doc["shipments"][0]["shipment_id"]
@@ -250,7 +251,7 @@ async def test_illegal_fulfillment_state_machine_jumps():
             resp.order_id, shipment_id,
             FulfillmentTransitionRequest(target_status=FulfillmentStatus.delivered),
             context=ctx_zol, user=seller_x, db=db
-        )
+        , pg=pg)
     assert exc_jump1.value.status_code == 400
     assert "Invalid fulfillment state transition" in exc_jump1.value.detail
 
@@ -259,7 +260,7 @@ async def test_illegal_fulfillment_state_machine_jumps():
         resp.order_id, shipment_id,
         FulfillmentTransitionRequest(target_status=FulfillmentStatus.processing),
         context=ctx_zol, user=seller_x, db=db
-    )
+    , pg=pg)
 
     # State: processing
     # 3. Illegal jump: processing -> unfulfilled
@@ -268,7 +269,7 @@ async def test_illegal_fulfillment_state_machine_jumps():
             resp.order_id, shipment_id,
             FulfillmentTransitionRequest(target_status=FulfillmentStatus.unfulfilled),
             context=ctx_zol, user=seller_x, db=db
-        )
+        , pg=pg)
     assert exc_jump2.value.status_code == 400
 
     # 4. Valid transition: processing -> shipped
@@ -276,7 +277,7 @@ async def test_illegal_fulfillment_state_machine_jumps():
         resp.order_id, shipment_id,
         FulfillmentTransitionRequest(target_status=FulfillmentStatus.shipped),
         context=ctx_zol, user=seller_x, db=db
-    )
+    , pg=pg)
 
     # State: shipped
     # 5. Illegal jump: shipped -> unfulfilled
@@ -285,7 +286,7 @@ async def test_illegal_fulfillment_state_machine_jumps():
             resp.order_id, shipment_id,
             FulfillmentTransitionRequest(target_status=FulfillmentStatus.unfulfilled),
             context=ctx_zol, user=seller_x, db=db
-        )
+        , pg=pg)
     assert exc_jump3.value.status_code == 400
 
     # 6. Valid transition: shipped -> delivered
@@ -293,7 +294,7 @@ async def test_illegal_fulfillment_state_machine_jumps():
         resp.order_id, shipment_id,
         FulfillmentTransitionRequest(target_status=FulfillmentStatus.delivered),
         context=ctx_zol, user=seller_x, db=db
-    )
+    , pg=pg)
 
     # State: delivered
     # 7. Illegal jump: delivered -> processing (terminal state)
@@ -302,7 +303,7 @@ async def test_illegal_fulfillment_state_machine_jumps():
             resp.order_id, shipment_id,
             FulfillmentTransitionRequest(target_status=FulfillmentStatus.processing),
             context=ctx_zol, user=seller_x, db=db
-        )
+        , pg=pg)
     assert exc_jump4.value.status_code == 400
 
 
@@ -311,16 +312,16 @@ async def test_illegal_fulfillment_state_machine_jumps():
 # ─────────────────────────────────────────────────────────────────────────────
 
 @pytest.mark.asyncio
-async def test_cancellation_and_return_invariants():
+async def test_cancellation_and_return_invariants(pg):
     db = EnhancedFakeDB()
-    await seed_products(db)
+    await seed_products(pg)
 
-    await add_to_cart(CartItemCreate(product_id="prod-1", quantity=2), context=ctx_zol, user=buyer_a, db=db)
-    quote = await checkout_quote(context=ctx_zol, user=buyer_a, db=db)
+    await add_to_cart(CartItemCreate(product_id=PROD_1, quantity=2), context=ctx_zol, user=buyer_a, pg=pg)
+    quote = await checkout_quote(context=ctx_zol, user=buyer_a, pg=pg)
     resp = await create_order_from_quote(
         CreateOrderFromQuoteRequest(quote_id=quote.quote_id, shipping_address=shipping_addr, payment_method_type="card"),
         context=ctx_zol, user=buyer_a, db=db
-    )
+    , pg_conn=pg)
 
     order_doc = await db.orders.find_one({"id": resp.order_id})
     line_id = order_doc["lines"][0]["line_id"]
@@ -341,12 +342,12 @@ async def test_cancellation_and_return_invariants():
         resp.order_id, shipment_id,
         FulfillmentTransitionRequest(target_status=FulfillmentStatus.processing),
         context=ctx_zol, user=seller_x, db=db
-    )
+    , pg=pg)
     await transition_seller_shipment(
         resp.order_id, shipment_id,
         FulfillmentTransitionRequest(target_status=FulfillmentStatus.shipped),
         context=ctx_zol, user=seller_x, db=db
-    )
+    , pg=pg)
 
     # 2. Return request on SHIPPED order -> HTTP 400
     with pytest.raises(HTTPException) as exc_ret_shipped:
@@ -372,7 +373,7 @@ async def test_cancellation_and_return_invariants():
         resp.order_id, shipment_id,
         FulfillmentTransitionRequest(target_status=FulfillmentStatus.delivered),
         context=ctx_zol, user=seller_x, db=db
-    )
+    , pg=pg)
 
     # 4. Cancellation request on DELIVERED order -> HTTP 400
     with pytest.raises(HTTPException) as exc_cancel_delivered:

@@ -119,6 +119,13 @@ async def optional_user(
         return None
 
 
+async def shopper(user=Depends(current_user)) -> dict:
+    """Buying on Shop and Mahila is for personal (Track 1) accounts, not admin or staff sessions."""
+    if is_admin(user) or user.get("zolexora_org_id"):
+        raise HTTPException(403, "Shop with your personal Zolexora account")
+    return user
+
+
 def is_admin(user: dict | None) -> bool:
     """A platform admin (Track 3) token."""
     return bool(user) and user.get("is_admin") is True

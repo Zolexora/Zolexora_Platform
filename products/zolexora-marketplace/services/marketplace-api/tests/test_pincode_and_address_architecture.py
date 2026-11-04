@@ -1,7 +1,5 @@
 import pytest
-import re
 from unittest.mock import AsyncMock, patch
-from shared.address.models import PincodeResult, PostOfficeInfo
 from shared.address.pincode import FreePincodeProvider
 from shared.address.digipin import DIGIPINProvider
 from shared.address.validation import GoogleAddressValidationProvider

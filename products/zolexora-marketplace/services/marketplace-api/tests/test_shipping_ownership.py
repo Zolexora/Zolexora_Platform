@@ -8,8 +8,8 @@ from shipping import router as r
 from shipping.schemas import CourierOption, ShipmentStatus
 from shipping.service import ShippingService
 
-seller = {"id": "seller-1", "role": "seller"}
-other_seller = {"id": "seller-2", "role": "seller"}
+seller = {"id": "seller-1", "role": "seller", "seller_org_id": "seller-1"}
+other_seller = {"id": "seller-2", "role": "seller", "seller_org_id": "seller-2"}
 buyer = {"id": "buyer-1", "role": "buyer"}
 admin = {"id": "admin-1", "is_admin": True}
 

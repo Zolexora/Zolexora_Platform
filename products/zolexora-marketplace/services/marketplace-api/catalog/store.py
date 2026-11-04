@@ -22,7 +22,10 @@ _SELECT = """
 SELECT l.id, l.product_id, l.organization_id, l.listing_content, l.publication_state, l.created_at,
        s.storefront_key, m.name, m.description, m.images, o.name AS seller_name,
        COALESCE(c.name, 'Other') AS category,
-       COALESCE((SELECT SUM(il.on_hand_quantity - il.reserved_quantity)
+       COALESCE((SELECT SUM(il.on_hand_quantity - il.reserved_quantity
+                            + COALESCE((SELECT SUM(r.quantity) FROM inventory_reservation r  -- lapsed holds are free
+                                        WHERE r.variant_id = v.id AND r.organization_id = il.organization_id
+                                          AND r.status = 'ACTIVE' AND r.expires_at < now()), 0))
                  FROM product_variant v
                  JOIN inventory_ledger il ON il.variant_id = v.id AND il.organization_id = l.organization_id
                                          AND il.status = 'ACTIVE'

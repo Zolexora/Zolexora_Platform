@@ -173,13 +173,15 @@ class UserRepository:
             )
         return result != "UPDATE 0"
 
-    async def adjust_coin_balance(self, user_id: str, delta: int) -> int:
-        async with connection() as conn:
-            value = await conn.fetchval(
-                """UPDATE user_profile SET coin_balance=coin_balance+$2
-                   WHERE user_id=$1 AND coin_balance+$2>=0 RETURNING coin_balance""",
-                _as_uuid(user_id), delta,
-            )
+    async def adjust_coin_balance(self, user_id: str, delta: int, conn=None) -> int:
+        """Changes the balance (never below zero); pass conn to join the caller's transaction."""
+        sql = """UPDATE user_profile SET coin_balance=coin_balance+$2
+                 WHERE user_id=$1 AND coin_balance+$2>=0 RETURNING coin_balance"""
+        if conn is not None:
+            value = await conn.fetchval(sql, _as_uuid(user_id), delta)
+        else:
+            async with connection() as db:
+                value = await db.fetchval(sql, _as_uuid(user_id), delta)
         if value is None:
             raise HTTPException(400, "Insufficient coin balance")
         return value

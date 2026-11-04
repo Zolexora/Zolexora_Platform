@@ -4,7 +4,6 @@ from fastapi import Depends, Request
 
 from core.config import settings
 from database.repositories.storefronts import PostgresStorefrontRepository
-from database.session import connection
 
 from .models import StorefrontContext, StorefrontResolutionCode
 from .resolver import StorefrontResolutionError, resolve_storefront

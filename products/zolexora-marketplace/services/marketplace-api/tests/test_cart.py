@@ -6,8 +6,8 @@ from routers.cart import (
     get_cart, add_to_cart, update_cart_item, remove_cart_item, clear_cart,
     CartItemCreate, CartItemQuantityUpdate
 )
-from tests import fake_catalog
 from storefronts.models import StorefrontContext, StorefrontDefinition, StorefrontContextSource, StorefrontKey
+from tests.commerce_seed import BUYER_1, BUYER_2, SEL_1, PROD_1, PROD_2, seed_listing
 
 def create_context(key_str: str) -> StorefrontContext:
     key = StorefrontKey(key_str)
@@ -25,8 +25,8 @@ def create_context(key_str: str) -> StorefrontContext:
 
 ctx_zol = create_context("zolexora-shop")
 ctx_mah = create_context("mahila-madel")
-buyer_1 = {"id": "buyer-1", "role": "viewer"}
-buyer_2 = {"id": "buyer-2", "role": "viewer"}
+buyer_1 = {"id": BUYER_1, "role": "viewer"}
+buyer_2 = {"id": BUYER_2, "role": "viewer"}
 
 class FakeDB:
     class Collection:
@@ -57,6 +57,11 @@ class FakeDB:
                     matched = 1
                     break
             return type("UpdateResult", (), {"matched_count": matched})()
+        async def update_many(self, query, update):
+            for doc in self.docs:
+                if all(doc.get(k) == v for k, v in query.items()):
+                    doc.update(update.get("$set", {}))
+
         async def delete_one(self, query):
             self.docs = [d for d in self.docs if not all(d.get(k) == v for k, v in query.items())]
         async def delete_many(self, query):
@@ -65,135 +70,107 @@ class FakeDB:
             return len([d for d in self.docs if all(d.get(k) == v for k, v in query.items())])
 
     def __init__(self):
-        fake_catalog.use(self)
         self.cart = self.Collection()
-        self.storefront_listings = self.Collection()
-        self.master_products = self.Collection()
-        self.inventory_balances = self.Collection()
 
 @pytest.mark.asyncio
-async def test_cart_storefront_isolation():
-    db = FakeDB()
+async def test_cart_storefront_isolation(pg):
     # Add products
-    await db.storefront_listings.insert_one({"id": "prod-1", "product_id": "mp-1", "seller_id": "sel-1", "storefront_id": "zolexora-shop", "price": {"amount_minor": 100, "currency": "INR"}, "status": "active"})
-    await db.master_products.insert_one({"id": "mp-1", "seller_id": "sel-1", "title": "P1", "seller_name": "S1", "images": []})
-    await db.inventory_balances.insert_one({"product_id": "mp-1", "seller_id": "sel-1", "available_quantity": 10, "reserved_quantity": 0})
+    await seed_listing(pg, PROD_1, org=SEL_1, storefront="zolexora-shop", price=100, stock=10, title="P1")
     
     # buyer 1 adds to cart on zol
-    resp = await add_to_cart(CartItemCreate(product_id="prod-1", quantity=2), context=ctx_zol, user=buyer_1, db=db)
+    resp = await add_to_cart(CartItemCreate(product_id=PROD_1, quantity=2), context=ctx_zol, user=buyer_1, pg=pg)
     assert resp.item_count == 2
     assert resp.subtotal.amount_minor == 200
     
     # buyer 1 gets cart on zol
-    cart = await get_cart(context=ctx_zol, user=buyer_1, db=db)
+    cart = await get_cart(context=ctx_zol, user=buyer_1, pg=pg)
     assert len(cart.lines) == 1
     assert cart.storefront_id == "zolexora-shop"
     
     # buyer 1 on mah gets empty cart (isolated)
-    cart_mah = await get_cart(context=ctx_mah, user=buyer_1, db=db)
+    cart_mah = await get_cart(context=ctx_mah, user=buyer_1, pg=pg)
     assert len(cart_mah.lines) == 0
     
     # buyer 2 on zol gets empty cart
-    cart_b2 = await get_cart(context=ctx_zol, user=buyer_2, db=db)
+    cart_b2 = await get_cart(context=ctx_zol, user=buyer_2, pg=pg)
     assert len(cart_b2.lines) == 0
     
 @pytest.mark.asyncio
-async def test_cross_storefront_add_fails():
-    db = FakeDB()
-    await db.storefront_listings.insert_one({"id": "prod-2", "product_id": "mp-2", "seller_id": "sel-1", "storefront_id": "mahila-madel", "price": {"amount_minor": 100, "currency": "INR"}, "status": "active"})
-    await db.master_products.insert_one({"id": "mp-2", "seller_id": "sel-1", "title": "P2", "seller_name": "S1", "images": []})
-    await db.inventory_balances.insert_one({"product_id": "mp-2", "seller_id": "sel-1", "available_quantity": 10, "reserved_quantity": 0})
+async def test_cross_storefront_add_fails(pg):
+    await seed_listing(pg, PROD_2, org=SEL_1, storefront="mahila-madel", price=100, stock=10, title="P2")
     
     with pytest.raises(HTTPException) as exc:
-        await add_to_cart(CartItemCreate(product_id="prod-2", quantity=1), context=ctx_zol, user=buyer_1, db=db)
+        await add_to_cart(CartItemCreate(product_id=PROD_2, quantity=1), context=ctx_zol, user=buyer_1, pg=pg)
     assert exc.value.status_code == 404
     
 @pytest.mark.asyncio
-async def test_cart_quantity_validation():
-    db = FakeDB()
-    await db.storefront_listings.insert_one({"id": "prod-1", "product_id": "mp-1", "seller_id": "sel-1", "storefront_id": "zolexora-shop", "price": {"amount_minor": 100, "currency": "INR"}, "status": "active"})
-    await db.master_products.insert_one({"id": "mp-1", "seller_id": "sel-1", "title": "P1", "seller_name": "S1", "images": []})
-    await db.inventory_balances.insert_one({"product_id": "mp-1", "seller_id": "sel-1", "available_quantity": 5, "reserved_quantity": 0})
+async def test_cart_quantity_validation(pg):
+    await seed_listing(pg, PROD_1, org=SEL_1, storefront="zolexora-shop", price=100, stock=5, title="P1")
     
     with pytest.raises(HTTPException) as exc:
-        await add_to_cart(CartItemCreate(product_id="prod-1", quantity=6), context=ctx_zol, user=buyer_1, db=db)
+        await add_to_cart(CartItemCreate(product_id=PROD_1, quantity=6), context=ctx_zol, user=buyer_1, pg=pg)
     assert exc.value.status_code == 400
     
     # Negative and string handled by pydantic StrictInt
     with pytest.raises(ValidationError):
-        CartItemCreate(product_id="prod-1", quantity=-1)
+        CartItemCreate(product_id=PROD_1, quantity=-1)
     with pytest.raises(ValidationError):
-        CartItemCreate(product_id="prod-1", quantity=0)
+        CartItemCreate(product_id=PROD_1, quantity=0)
     with pytest.raises(ValidationError):
-        CartItemCreate(product_id="prod-1", quantity="3")
+        CartItemCreate(product_id=PROD_1, quantity="3")
 
 @pytest.mark.asyncio
-async def test_cart_mutations():
-    db = FakeDB()
-    await db.storefront_listings.insert_one({"id": "prod-1", "product_id": "mp-1", "seller_id": "sel-1", "storefront_id": "zolexora-shop", "price": {"amount_minor": 100, "currency": "INR"}, "status": "active"})
-    await db.master_products.insert_one({"id": "mp-1", "seller_id": "sel-1", "title": "P1", "seller_name": "S1", "images": []})
-    await db.inventory_balances.insert_one({"product_id": "mp-1", "seller_id": "sel-1", "available_quantity": 10, "reserved_quantity": 0})
+async def test_cart_mutations(pg):
+    await seed_listing(pg, PROD_1, org=SEL_1, storefront="zolexora-shop", price=100, stock=10, title="P1")
     
-    await add_to_cart(CartItemCreate(product_id="prod-1", quantity=2), context=ctx_zol, user=buyer_1, db=db)
-    await add_to_cart(CartItemCreate(product_id="prod-1", quantity=1), context=ctx_zol, user=buyer_1, db=db)
+    await add_to_cart(CartItemCreate(product_id=PROD_1, quantity=2), context=ctx_zol, user=buyer_1, pg=pg)
+    await add_to_cart(CartItemCreate(product_id=PROD_1, quantity=1), context=ctx_zol, user=buyer_1, pg=pg)
     
-    cart = await get_cart(context=ctx_zol, user=buyer_1, db=db)
+    cart = await get_cart(context=ctx_zol, user=buyer_1, pg=pg)
     assert cart.item_count == 3
     assert cart.subtotal.amount_minor == 300
     
-    await update_cart_item("prod-1", CartItemQuantityUpdate(quantity=4), context=ctx_zol, user=buyer_1, db=db)
-    cart = await get_cart(context=ctx_zol, user=buyer_1, db=db)
+    await update_cart_item(PROD_1, CartItemQuantityUpdate(quantity=4), context=ctx_zol, user=buyer_1, pg=pg)
+    cart = await get_cart(context=ctx_zol, user=buyer_1, pg=pg)
     assert cart.item_count == 4
     
-    await remove_cart_item("prod-1", context=ctx_zol, user=buyer_1, db=db)
-    cart = await get_cart(context=ctx_zol, user=buyer_1, db=db)
+    await remove_cart_item(PROD_1, context=ctx_zol, user=buyer_1, pg=pg)
+    cart = await get_cart(context=ctx_zol, user=buyer_1, pg=pg)
     assert cart.item_count == 0
     
-    await add_to_cart(CartItemCreate(product_id="prod-1", quantity=1), context=ctx_zol, user=buyer_1, db=db)
-    await clear_cart(context=ctx_zol, user=buyer_1, db=db)
-    cart = await get_cart(context=ctx_zol, user=buyer_1, db=db)
+    await add_to_cart(CartItemCreate(product_id=PROD_1, quantity=1), context=ctx_zol, user=buyer_1, pg=pg)
+    await clear_cart(context=ctx_zol, user=buyer_1, pg=pg)
+    cart = await get_cart(context=ctx_zol, user=buyer_1, pg=pg)
     assert cart.item_count == 0
 
 @pytest.mark.asyncio
-async def test_cart_cross_storefront_visibility():
-    db = FakeDB()
-    await db.storefront_listings.insert_one({"id": "prod-1", "product_id": "mp-1", "seller_id": "sel-1", "storefront_id": "zolexora-shop", "price": {"amount_minor": 100, "currency": "INR"}, "status": "active"})
-    await db.master_products.insert_one({"id": "mp-1", "seller_id": "sel-1", "title": "P1", "seller_name": "S1", "images": []})
-    await db.inventory_balances.insert_one({"product_id": "mp-1", "seller_id": "sel-1", "available_quantity": 10, "reserved_quantity": 0})
-    await add_to_cart(CartItemCreate(product_id="prod-1", quantity=1), context=ctx_zol, user=buyer_1, db=db)
+async def test_cart_cross_storefront_visibility(pg):
+    await seed_listing(pg, PROD_1, org=SEL_1, storefront="zolexora-shop", price=100, stock=10, title="P1")
+    await add_to_cart(CartItemCreate(product_id=PROD_1, quantity=1), context=ctx_zol, user=buyer_1, pg=pg)
     # The get_cart query inherently enforces storefront_id and user_id, testing this is essentially testing isolation
-    cart_zol = await get_cart(context=ctx_zol, user=buyer_1, db=db)
+    cart_zol = await get_cart(context=ctx_zol, user=buyer_1, pg=pg)
     assert cart_zol.item_count == 1
 
 @pytest.mark.asyncio
-async def test_cart_buyer_cannot_read_another_cart():
-    db = FakeDB()
-    await db.storefront_listings.insert_one({"id": "prod-1", "product_id": "mp-1", "seller_id": "sel-1", "storefront_id": "zolexora-shop", "price": {"amount_minor": 100, "currency": "INR"}, "status": "active"})
-    await db.master_products.insert_one({"id": "mp-1", "seller_id": "sel-1", "title": "P1", "seller_name": "S1", "images": []})
-    await db.inventory_balances.insert_one({"product_id": "mp-1", "seller_id": "sel-1", "available_quantity": 10, "reserved_quantity": 0})
-    await add_to_cart(CartItemCreate(product_id="prod-1", quantity=1), context=ctx_zol, user=buyer_1, db=db)
-    cart_b2 = await get_cart(context=ctx_zol, user=buyer_2, db=db)
+async def test_cart_buyer_cannot_read_another_cart(pg):
+    await seed_listing(pg, PROD_1, org=SEL_1, storefront="zolexora-shop", price=100, stock=10, title="P1")
+    await add_to_cart(CartItemCreate(product_id=PROD_1, quantity=1), context=ctx_zol, user=buyer_1, pg=pg)
+    cart_b2 = await get_cart(context=ctx_zol, user=buyer_2, pg=pg)
     assert cart_b2.item_count == 0
 
 @pytest.mark.asyncio
-async def test_cart_update_quantity_recalculates_totals():
-    db = FakeDB()
-    await db.storefront_listings.insert_one({"id": "prod-1", "product_id": "mp-1", "seller_id": "sel-1", "storefront_id": "zolexora-shop", "price": {"amount_minor": 100, "currency": "INR"}, "status": "active"})
-    await db.master_products.insert_one({"id": "mp-1", "seller_id": "sel-1", "title": "P1", "seller_name": "S1", "images": []})
-    await db.inventory_balances.insert_one({"product_id": "mp-1", "seller_id": "sel-1", "available_quantity": 10, "reserved_quantity": 0})
+async def test_cart_update_quantity_recalculates_totals(pg):
+    await seed_listing(pg, PROD_1, org=SEL_1, storefront="zolexora-shop", price=100, stock=10, title="P1")
 
-    await add_to_cart(CartItemCreate(product_id="prod-1", quantity=1), context=ctx_zol, user=buyer_1, db=db)
-    await update_cart_item("prod-1", CartItemQuantityUpdate(quantity=5), context=ctx_zol, user=buyer_1, db=db)
-    cart = await get_cart(context=ctx_zol, user=buyer_1, db=db)
+    await add_to_cart(CartItemCreate(product_id=PROD_1, quantity=1), context=ctx_zol, user=buyer_1, pg=pg)
+    await update_cart_item(PROD_1, CartItemQuantityUpdate(quantity=5), context=ctx_zol, user=buyer_1, pg=pg)
+    cart = await get_cart(context=ctx_zol, user=buyer_1, pg=pg)
     assert cart.subtotal.amount_minor == 500
 
 @pytest.mark.asyncio
-async def test_cart_remove_item_success():
-    db = FakeDB()
-    await db.storefront_listings.insert_one({"id": "prod-1", "product_id": "mp-1", "seller_id": "sel-1", "storefront_id": "zolexora-shop", "price": {"amount_minor": 100, "currency": "INR"}, "status": "active"})
-    await db.master_products.insert_one({"id": "mp-1", "seller_id": "sel-1", "title": "P1", "seller_name": "S1", "images": []})
-    await db.inventory_balances.insert_one({"product_id": "mp-1", "seller_id": "sel-1", "available_quantity": 10, "reserved_quantity": 0})
-    await add_to_cart(CartItemCreate(product_id="prod-1", quantity=1), context=ctx_zol, user=buyer_1, db=db)
-    await remove_cart_item("prod-1", context=ctx_zol, user=buyer_1, db=db)
-    cart = await get_cart(context=ctx_zol, user=buyer_1, db=db)
+async def test_cart_remove_item_success(pg):
+    await seed_listing(pg, PROD_1, org=SEL_1, storefront="zolexora-shop", price=100, stock=10, title="P1")
+    await add_to_cart(CartItemCreate(product_id=PROD_1, quantity=1), context=ctx_zol, user=buyer_1, pg=pg)
+    await remove_cart_item(PROD_1, context=ctx_zol, user=buyer_1, pg=pg)
+    cart = await get_cart(context=ctx_zol, user=buyer_1, pg=pg)
     assert cart.item_count == 0

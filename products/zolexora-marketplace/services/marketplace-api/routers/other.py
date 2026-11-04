@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from typing import Optional
 from catalog import store as catalog_store
 from routers.products import _invalidate_catalog_cache
+from routers.cart import mark_cashfree_paid, settle
 from shared.database.postgres import pg_conn_dep
 from core.deps import db_dep, current_user, admin_only, is_admin, require_permission, seller_only
 from core.config import settings
@@ -24,14 +25,15 @@ async def my_orders(user=Depends(current_user), context: StorefrontContext=Depen
 
 @orders_router.get("/seller")
 async def seller_orders(user=Depends(seller_only), context: StorefrontContext=Depends(require_storefront_context), db=Depends(db_dep)):
-    q = {"storefront_id": context.key} if is_admin(user) else {"seller_id":user["id"], "storefront_id": context.key}
+    q = {"storefront_id": context.key} if is_admin(user) else {"seller_id": user.get("seller_org_id"), "storefront_id": context.key}
     return await db.orders.find(q,{"_id":0}).sort("created_at",-1).to_list(200)
 
 @orders_router.get("/{order_id}")
-async def get_order(order_id:str, user=Depends(current_user), context: StorefrontContext=Depends(require_storefront_context), db=Depends(db_dep)):
+async def get_order(order_id:str, user=Depends(current_user), context: StorefrontContext=Depends(require_storefront_context), db=Depends(db_dep),
+                    pg=Depends(pg_conn_dep)):
     order = await db.orders.find_one({"id":order_id, "storefront_id": context.key},{"_id":0})
     if not order: raise HTTPException(404,"Order not found")
-    if not is_admin(user) and order["buyer_id"]!=user["id"] and order.get("seller_id")!=user["id"]:
+    if not is_admin(user) and order["buyer_id"]!=user["id"] and (not user.get("seller_org_id") or order.get("seller_id") != user["seller_org_id"]):
         raise HTTPException(403,"Not your order")
     
     # If order is pending and has a cashfree order id, auto-sync payment status
@@ -41,10 +43,7 @@ async def get_order(order_id:str, user=Depends(current_user), context: Storefron
         try:
             cf_info = await get_cashfree_order(cf_id)
             if cf_info.get("order_status") == "PAID":
-                await db.orders.update_one(
-                    {"id": order_id, "storefront_id": context.key},
-                    {"$set": {"payment_status": "paid", "updated_at": datetime.now(timezone.utc).isoformat()}}
-                )
+                await mark_cashfree_paid(db, pg, cf_id, {"storefront_id": context.key})
                 order["payment_status"] = "paid"
         except Exception:
             pass
@@ -52,12 +51,15 @@ async def get_order(order_id:str, user=Depends(current_user), context: Storefron
     return order
 
 @orders_router.put("/{order_id}/status")
-async def update_order_status(order_id:str,status:str,user=Depends(current_user), context: StorefrontContext=Depends(require_storefront_context), db=Depends(db_dep)):
+async def update_order_status(order_id:str,status:str,user=Depends(seller_only), context: StorefrontContext=Depends(require_storefront_context), db=Depends(db_dep),
+                              pg=Depends(pg_conn_dep)):
     if status not in ("processing","shipped","delivered","cancelled"):
         raise HTTPException(400,"Invalid status")
-    fq = {"id":order_id, "storefront_id": context.key} if is_admin(user) else {"id":order_id,"seller_id":user["id"], "storefront_id": context.key}
+    fq = {"id":order_id, "storefront_id": context.key} if is_admin(user) else {"id":order_id,"seller_id": user.get("seller_org_id"), "storefront_id": context.key}
     r = await db.orders.update_one(fq,{"$set":{"status":status,"updated_at":datetime.now(timezone.utc).isoformat()}})
     if r.matched_count==0: raise HTTPException(404,"Order not found or access denied")
+    if status == "cancelled":
+        await settle(pg, [order_id], paid=False)  # its stock goes back on sale
     return {"message":"Status updated"}
 
 
@@ -253,11 +255,13 @@ async def verify_upi(
             "payment_status":"paid","status":"processing",
             "upi_verified_by":u["id"],"upi_verified_at":now,
             "admin_note":req.admin_note,"updated_at":now}})
+        await settle(pg, [o["id"] for o in checkout_orders], paid=True)
         return {"message":"Payment approved ✓","order_id":order_id,"status":"processing"}
     else:
         await db.orders.update_many(checkout_filter,{"$set":{
             "payment_status":"failed","status":"cancelled",
             "admin_note":req.admin_note or "Payment not verified","updated_at":now}})
+        await settle(pg, [o["id"] for o in checkout_orders], paid=False)
         # Coins were spent when the order was placed; a rejected payment gives them back.
         coins_used = sum(o.get("coins_used",0) for o in checkout_orders)
         if coins_used > 0:

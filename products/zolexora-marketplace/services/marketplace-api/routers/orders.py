@@ -4,6 +4,7 @@ Standardized for MR-01E / ADR 0013.
 """
 
 import asyncio
+import json
 import uuid
 from typing import List
 from datetime import datetime, timezone
@@ -11,7 +12,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
-from core.deps import db_dep, current_user, is_admin, seller_only
+from core.deps import db_dep, current_user, is_admin, seller_only, shopper
 from shared.database.postgres import pg_conn_dep
 from integrations.zolexora_erp.outbox import sync_to_erp_outbox
 from storefronts.dependencies import require_storefront_context, optional_storefront_context
@@ -27,7 +28,7 @@ from models.orders import (
     CancellationRequest, CancellationResponse, SellerCancellationActionRequest,
     ReturnRequest, ReturnResponse, SellerReturnActionRequest,
 )
-from routers.cart import verify_quote_token, _get_active_product
+from routers.cart import verify_quote_token, _get_active_product, place_orders, settle
 
 orders_router = APIRouter(prefix="/orders", tags=["orders"])
 
@@ -55,7 +56,7 @@ def _get_idempotency_lock(key: str) -> asyncio.Lock:
 async def create_order_from_quote(
     req: CreateOrderFromQuoteRequest,
     context: StorefrontContext = Depends(require_storefront_context),
-    user=Depends(current_user),
+    user=Depends(shopper),
     db: AsyncIOMotorDatabase = Depends(db_dep),
     pg_conn=Depends(pg_conn_dep)
 ):
@@ -111,7 +112,7 @@ async def _create_order_from_quote_impl(
         qty = line_item["quantity"]
         unit_price_minor = line_item["unit_price"]
 
-        p_obj = await _get_active_product(db, pid, context.key)
+        p_obj = await _get_active_product(pid, context.key, pg_conn)
         if not p_obj:
             raise HTTPException(409, "A product in your cart is no longer available; review your cart")
         master_pid = pid
@@ -158,21 +159,21 @@ async def _create_order_from_quote_impl(
     created_orders = []
     buyer_name = user.get("full_name") or user.get("name") or user.get("email") or "Buyer"
 
-    for seller_id, seller_data in snapshots_by_seller.items():
+    given = [0, 0, 0]  # shipping, tax, discount allocated so far
+    for seller_index, (seller_id, seller_data) in enumerate(snapshots_by_seller.items()):
         order_id = str(uuid.uuid4())
         order_number = f"ORD-{datetime.now(timezone.utc).strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
         s_lines = seller_data["lines"]
         s_subtotal_minor = sum(line.subtotal.amount_minor for line in s_lines)
 
-        if num_sellers == 1:
-            s_shipping = quote_shipping
-            s_tax = quote_tax
-            s_discount = quote_discount
+        if seller_index == num_sellers - 1:  # the last order takes what is left, so the parts add up
+            s_shipping, s_tax, s_discount = quote_shipping - given[0], quote_tax - given[1], quote_discount - given[2]
         else:
             ratio = s_subtotal_minor / quote_item_subtotal if quote_item_subtotal > 0 else (1.0 / num_sellers)
             s_shipping = int(quote_shipping * ratio)
             s_tax = int(quote_tax * ratio)
             s_discount = int(quote_discount * ratio)
+        given = [given[0] + s_shipping, given[1] + s_tax, given[2] + s_discount]
 
         s_grand_total = s_subtotal_minor + s_shipping + s_tax - s_discount
 
@@ -228,9 +229,14 @@ async def _create_order_from_quote_impl(
             "updated_at": created_at_str,
         }
 
-        await db.orders.insert_one(order_doc)
         created_orders.append(order_doc)
 
+    # 5. One PostgreSQL transaction: stock held, quote used once, cart closed, orders stored.
+    await place_orders(pg_conn, db, user["id"], str(getattr(context.key, "value", context.key)), created_orders,
+                       quote_signature=req.quote_id.rsplit(".", 1)[1])
+
+    for order_doc in created_orders:
+        order_id = order_doc["id"]
         # Sync to ERP outbox
         # We wrap this in a try-except to ensure checkout succeeds even if ERP adapter fails
         try:
@@ -239,17 +245,14 @@ async def _create_order_from_quote_impl(
                 event_type="order.created",
                 aggregate_type="order",
                 aggregate_id=order_id,
-                payload=order_doc,
-                storefront_id=context.key,
+                payload=json.loads(json.dumps({k: v for k, v in order_doc.items() if k != "_id"}, default=str)),
+                storefront_id=str(getattr(context.key, "value", context.key)),
                 tenant_id=None # Replace with proper tenant if resolved
             )
         except Exception as e:
             # Task 5 constraint: "ensure checkout succeeds even if ERP adapter fails"
             import logging
             logging.error(f"Failed to sync order {order_id} to ERP outbox: {e}")
-
-    # 5. Clear Cart
-    await db.cart.delete_many({"user_id": user["id"], "storefront_id": context.key})
 
     # 6. Response
     first_order = created_orders[0]
@@ -473,7 +476,7 @@ async def list_seller_orders(
     user=Depends(seller_only),
     db: AsyncIOMotorDatabase = Depends(db_dep)
 ):
-    query = {"seller_id": user["id"]}
+    query = {"seller_id": user.get("seller_org_id")}
     if context is not None:
         query["storefront_id"] = context.key
         
@@ -481,7 +484,7 @@ async def list_seller_orders(
 
     summaries = []
     for doc in docs:
-        seller_lines = [line for line in doc.get("lines", []) if line.get("seller_id") == user["id"]]
+        seller_lines = [line for line in doc.get("lines", []) if line.get("seller_id") == user.get("seller_org_id")]
         seller_item_count = sum(line.get("quantity", 1) for line in seller_lines)
         seller_subtotal_minor = sum(line["subtotal"]["amount_minor"] for line in seller_lines) if seller_lines else doc["item_subtotal"]["amount_minor"]
 
@@ -490,7 +493,7 @@ async def list_seller_orders(
             order_number=doc["order_number"],
             storefront_id=doc["storefront_id"],
             buyer_name=doc.get("shipping_address", {}).get("full_name") or "Unknown Buyer",
-            seller_id=user["id"],
+            seller_id=user.get("seller_org_id"),
             status=OrderStatus(doc["status"]),
             seller_fulfillment_status=FulfillmentStatus(doc.get("fulfillment_status", FulfillmentStatus.unfulfilled)),
             currency=doc["currency"],
@@ -509,17 +512,17 @@ async def get_seller_order_detail(
     db: AsyncIOMotorDatabase = Depends(db_dep)
 ):
     doc = await db.orders.find_one(
-        {"id": order_id, "storefront_id": context.key, "seller_id": user["id"]},
+        {"id": order_id, "storefront_id": context.key, "seller_id": user.get("seller_org_id")},
         {"_id": 0}
     )
     if not doc:
         raise HTTPException(404, "Order not found or access denied")
 
-    seller_lines = [line for line in doc.get("lines", []) if line.get("seller_id") == user["id"]]
-    seller_shipments = [s for s in doc.get("shipments", []) if s.get("seller_id") == user["id"]]
+    seller_lines = [line for line in doc.get("lines", []) if line.get("seller_id") == user.get("seller_org_id")]
+    seller_shipments = [s for s in doc.get("shipments", []) if s.get("seller_id") == user.get("seller_org_id")]
     seller_line_ids = [line["line_id"] for line in seller_lines]
     seller_cancellations = [c for c in doc.get("cancellations", []) if any(lid in seller_line_ids for lid in c.get("line_item_ids", []))]
-    seller_returns = [r for r in doc.get("returns", []) if r.get("seller_id") == user["id"]]
+    seller_returns = [r for r in doc.get("returns", []) if r.get("seller_id") == user.get("seller_org_id")]
 
     seller_subtotal_minor = sum(line["subtotal"]["amount_minor"] for line in seller_lines)
 
@@ -527,7 +530,7 @@ async def get_seller_order_detail(
         order_id=doc["id"],
         order_number=doc["order_number"],
         storefront_id=doc["storefront_id"],
-        seller_id=user["id"],
+        seller_id=user.get("seller_org_id"),
         buyer_id=doc["buyer_id"],
         buyer_name=doc.get("buyer_name", "Buyer"),
         status=OrderStatus(doc["status"]),
@@ -552,17 +555,18 @@ async def transition_seller_shipment(
     req: FulfillmentTransitionRequest,
     context: StorefrontContext = Depends(require_storefront_context),
     user=Depends(seller_only),
-    db: AsyncIOMotorDatabase = Depends(db_dep)
+    db: AsyncIOMotorDatabase = Depends(db_dep),
+    pg=Depends(pg_conn_dep),
 ):
     doc = await db.orders.find_one(
-        {"id": order_id, "storefront_id": context.key, "seller_id": user["id"]},
+        {"id": order_id, "storefront_id": context.key, "seller_id": user.get("seller_org_id")},
         {"_id": 0}
     )
     if not doc:
         raise HTTPException(404, "Order not found or access denied")
 
     shipments = doc.get("shipments", [])
-    shipment_idx = next((i for i, s in enumerate(shipments) if s["shipment_id"] == shipment_id and s.get("seller_id") == user["id"]), None)
+    shipment_idx = next((i for i, s in enumerate(shipments) if s["shipment_id"] == shipment_id and s.get("seller_id") == user.get("seller_org_id")), None)
     if shipment_idx is None:
         raise HTTPException(404, "Shipment not found or access denied")
 
@@ -615,7 +619,7 @@ async def transition_seller_shipment(
         updated_lines.append(line)
 
     await db.orders.update_one(
-        {"id": order_id, "storefront_id": context.key, "seller_id": user["id"]},
+        {"id": order_id, "storefront_id": context.key, "seller_id": user.get("seller_org_id")},
         {"$set": {
             "shipments": shipments,
             "fulfillment_status": req.target_status.value,
@@ -624,6 +628,8 @@ async def transition_seller_shipment(
             "updated_at": now_str
         }}
     )
+    if req.target_status == FulfillmentStatus.cancelled:
+        await settle(pg, [order_id], paid=False)  # its stock goes back on sale
 
     return ShipmentResponse(**shipment)
 
@@ -634,10 +640,11 @@ async def action_seller_cancellation(
     req: SellerCancellationActionRequest,
     context: StorefrontContext = Depends(require_storefront_context),
     user=Depends(seller_only),
-    db: AsyncIOMotorDatabase = Depends(db_dep)
+    db: AsyncIOMotorDatabase = Depends(db_dep),
+    pg=Depends(pg_conn_dep),
 ):
     doc = await db.orders.find_one(
-        {"id": order_id, "storefront_id": context.key, "seller_id": user["id"]},
+        {"id": order_id, "storefront_id": context.key, "seller_id": user.get("seller_org_id")},
         {"_id": 0}
     )
     if not doc:
@@ -668,7 +675,7 @@ async def action_seller_cancellation(
             s["status"] = FulfillmentStatus.cancelled.value
 
         await db.orders.update_one(
-            {"id": order_id, "storefront_id": context.key, "seller_id": user["id"]},
+            {"id": order_id, "storefront_id": context.key, "seller_id": user.get("seller_org_id")},
             {"$set": {
                 "cancellations": cancellations,
                 "status": OrderStatus.cancelled.value,
@@ -678,6 +685,7 @@ async def action_seller_cancellation(
                 "updated_at": now_str
             }}
         )
+        await settle(pg, [order_id], paid=False)  # its stock goes back on sale
     else:
         cancellation["status"] = CancellationStatus.rejected.value
         cancellation["seller_comment"] = req.comment
@@ -690,7 +698,7 @@ async def action_seller_cancellation(
             updated_lines.append(line)
 
         await db.orders.update_one(
-            {"id": order_id, "storefront_id": context.key, "seller_id": user["id"]},
+            {"id": order_id, "storefront_id": context.key, "seller_id": user.get("seller_org_id")},
             {"$set": {
                 "cancellations": cancellations,
                 "lines": updated_lines,
@@ -710,14 +718,14 @@ async def action_seller_return(
     db: AsyncIOMotorDatabase = Depends(db_dep)
 ):
     doc = await db.orders.find_one(
-        {"id": order_id, "storefront_id": context.key, "seller_id": user["id"]},
+        {"id": order_id, "storefront_id": context.key, "seller_id": user.get("seller_org_id")},
         {"_id": 0}
     )
     if not doc:
         raise HTTPException(404, "Order not found or access denied")
 
     returns_list = doc.get("returns", [])
-    target_idx = next((i for i, r in enumerate(returns_list) if r.get("seller_id") == user["id"] and r["status"] not in (ReturnStatus.completed.value, ReturnStatus.rejected.value)), None)
+    target_idx = next((i for i, r in enumerate(returns_list) if r.get("seller_id") == user.get("seller_org_id") and r["status"] not in (ReturnStatus.completed.value, ReturnStatus.rejected.value)), None)
     if target_idx is None:
         raise HTTPException(400, "No active return request found")
 
@@ -758,7 +766,7 @@ async def action_seller_return(
         updated_lines.append(line)
 
     await db.orders.update_one(
-        {"id": order_id, "storefront_id": context.key, "seller_id": user["id"]},
+        {"id": order_id, "storefront_id": context.key, "seller_id": user.get("seller_org_id")},
         {"$set": {
             "returns": returns_list,
             "lines": updated_lines,
@@ -793,9 +801,9 @@ async def legacy_get_order(
     )
     if not doc:
         raise HTTPException(404, "Order not found")
-    if not is_admin(user) and doc["buyer_id"] != user["id"] and doc.get("seller_id") != user["id"]:
+    if not is_admin(user) and doc["buyer_id"] != user["id"] and (not user.get("seller_org_id") or doc.get("seller_id") != user["seller_org_id"]):
         raise HTTPException(403, "Not your order")
 
-    if doc.get("seller_id") == user["id"]:
+    if user.get("seller_org_id") and doc.get("seller_id") == user["seller_org_id"]:
         return await get_seller_order_detail(order_id, context, user, db)
     return await get_buyer_order_detail(order_id, context, user, db)

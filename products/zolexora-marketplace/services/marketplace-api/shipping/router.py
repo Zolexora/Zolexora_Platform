@@ -23,7 +23,7 @@ def _is_admin(user: dict) -> bool:
 
 async def _owned_order(db: AsyncIOMotorDatabase, order_id: str, user: dict) -> dict:
     """The order, if the caller is its seller (or an admin). 404 otherwise, so ids don't leak."""
-    q = {"id": order_id} if _is_admin(user) else {"id": order_id, "seller_id": user["id"]}
+    q = {"id": order_id} if _is_admin(user) else {"id": order_id, "seller_id": user.get("seller_org_id")}
     order = await db.orders.find_one(q, {"_id": 0})
     if not order:
         raise HTTPException(404, "Order not found")
@@ -32,7 +32,7 @@ async def _owned_order(db: AsyncIOMotorDatabase, order_id: str, user: dict) -> d
 
 async def _owned_shipment(db: AsyncIOMotorDatabase, shipment_id: str, user: dict) -> dict:
     """The shipment, if the caller is its seller (or an admin)."""
-    q = {"id": shipment_id} if _is_admin(user) else {"id": shipment_id, "seller_id": user["id"]}
+    q = {"id": shipment_id} if _is_admin(user) else {"id": shipment_id, "seller_id": user.get("seller_org_id")}
     shipment = await db.shipments.find_one(q, {"_id": 0})
     if not shipment:
         raise HTTPException(404, "Shipment not found")
@@ -43,7 +43,7 @@ async def _owned_shipment(db: AsyncIOMotorDatabase, shipment_id: str, user: dict
 
 @router.get("/pickup-locations")
 async def list_pickup_locations(user=Depends(current_user), db: AsyncIOMotorDatabase = Depends(db_dep)):
-    seller_id = None if is_admin(user) else user["id"]
+    seller_id = None if is_admin(user) else user.get("seller_org_id")
     q = {"seller_id": seller_id} if seller_id else {}
     return await db.seller_pickup_locations.find(q, {"_id": 0}).to_list(50)
 
@@ -52,15 +52,15 @@ async def list_pickup_locations(user=Depends(current_user), db: AsyncIOMotorData
 async def create_pickup_location(data: PickupLocationCreate, user=Depends(seller_only), db: AsyncIOMotorDatabase = Depends(db_dep)):
     # If this is default, unset others
     if data.is_default:
-        await db.seller_pickup_locations.update_many({"seller_id": user["id"]}, {"$set": {"is_default": False}})
-    doc = PickupLocationDoc(seller_id=user["id"], **data.model_dump())
+        await db.seller_pickup_locations.update_many({"seller_id": user.get("seller_org_id")}, {"$set": {"is_default": False}})
+    doc = PickupLocationDoc(seller_id=user.get("seller_org_id"), **data.model_dump())
     await db.seller_pickup_locations.insert_one(doc.model_dump())
     return doc.model_dump()
 
 
 @router.put("/pickup-locations/{loc_id}")
 async def update_pickup_location(loc_id: str, data: dict = Body(...), user=Depends(seller_only), db: AsyncIOMotorDatabase = Depends(db_dep)):
-    fq = {"id": loc_id} if _is_admin(user) else {"id": loc_id, "seller_id": user["id"]}
+    fq = {"id": loc_id} if _is_admin(user) else {"id": loc_id, "seller_id": user.get("seller_org_id")}
     loc = await db.seller_pickup_locations.find_one(fq, {"_id": 0})
     if not loc:
         raise HTTPException(404, "Pickup location not found")
@@ -76,7 +76,7 @@ async def update_pickup_location(loc_id: str, data: dict = Body(...), user=Depen
 
 @router.delete("/pickup-locations/{loc_id}")
 async def delete_pickup_location(loc_id: str, user=Depends(seller_only), db: AsyncIOMotorDatabase = Depends(db_dep)):
-    fq = {"id": loc_id} if is_admin(user) else {"id": loc_id, "seller_id": user["id"]}
+    fq = {"id": loc_id} if is_admin(user) else {"id": loc_id, "seller_id": user.get("seller_org_id")}
     await db.seller_pickup_locations.delete_one(fq)
     return {"message": "Deleted"}
 
@@ -158,7 +158,7 @@ async def manual_book(order_id: str, req: ManualBookRequest, user=Depends(seller
 async def get_shipment(shipment_id: str, user=Depends(current_user), db: AsyncIOMotorDatabase = Depends(db_dep)):
     fq = {"id": shipment_id}
     if not is_admin(user):
-        fq["$or"] = [{"seller_id": user["id"]}, {"buyer_id": user["id"]}]
+        fq["$or"] = [{"buyer_id": user["id"]}] + ([{"seller_id": user["seller_org_id"]}] if user.get("seller_org_id") else [])
     s = await db.shipments.find_one(fq, {"_id": 0})
     if not s:
         raise HTTPException(404, "Shipment not found")
@@ -172,7 +172,7 @@ async def get_shipment(shipment_id: str, user=Depends(current_user), db: AsyncIO
 async def track_by_awb(awb: str, user=Depends(current_user), db: AsyncIOMotorDatabase = Depends(db_dep)):
     fq = {"awb": awb}
     if not _is_admin(user):
-        fq["$or"] = [{"seller_id": user["id"]}, {"buyer_id": user["id"]}]
+        fq["$or"] = [{"buyer_id": user["id"]}] + ([{"seller_id": user["seller_org_id"]}] if user.get("seller_org_id") else [])
     shipment = await db.shipments.find_one(fq, {"_id": 0})
     if not shipment:
         raise HTTPException(404, "AWB not found")
@@ -229,7 +229,7 @@ async def retry_booking(shipment_id: str, user=Depends(seller_only), svc: Shippi
 async def sync_tracking(shipment_id: str, user=Depends(current_user), svc: ShippingService = Depends(get_service), db: AsyncIOMotorDatabase = Depends(db_dep)):
     fq = {"id": shipment_id}
     if not _is_admin(user):
-        fq["$or"] = [{"seller_id": user["id"]}, {"buyer_id": user["id"]}]
+        fq["$or"] = [{"buyer_id": user["id"]}] + ([{"seller_id": user["seller_org_id"]}] if user.get("seller_org_id") else [])
     if not await db.shipments.find_one(fq, {"_id": 0}):
         raise HTTPException(404, "Shipment not found")
     return await svc.sync_tracking(shipment_id)
