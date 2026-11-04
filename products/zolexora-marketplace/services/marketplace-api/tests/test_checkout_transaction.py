@@ -17,6 +17,7 @@ from models.orders import CreateOrderFromQuoteRequest
 from routers.cart import CartItemCreate, CheckoutRequest, add_to_cart, checkout_quote, checkout_stub, settle
 from routers.orders import create_order_from_quote
 from tests.commerce_seed import BUYER_1, BUYER_2, PROD_1, seed_listing, stock_of
+from commerce import orders as order_store
 from tests.test_cart import ctx_zol
 from tests.test_payment_hardening import FakeDB
 from users.repositories import UserRepository
@@ -48,7 +49,7 @@ async def test_placing_an_order_holds_its_stock_and_closes_the_cart(pg):
     await add_to_cart(CartItemCreate(product_id=PROD_1, quantity=3), context=ctx_zol, user=buyer_1, pg=pg)
     db = FakeDB()
     res = await checkout(pg, db, buyer_1)
-    assert res["type"] == "upi" and len(db.orders.docs) == 1
+    assert res["type"] == "upi" and len(await order_store.find(pg)) == 1
     assert await stock_of(pg, PROD_1) == (10, 3)
     assert await shown_stock(pg) == 7
     assert await cart_store.items(pg, BUYER_1, "zolexora-shop") == []
@@ -64,19 +65,19 @@ async def test_the_last_unit_is_sold_once(pg):
     with pytest.raises(HTTPException) as exc:
         await checkout(pg, db, buyer_2)
     assert exc.value.status_code == 409
-    assert [o["buyer_id"] for o in db.orders.docs] == [BUYER_1]
+    assert [o["buyer_id"] for o in await order_store.find(pg)] == [BUYER_1]
     assert await stock_of(pg, PROD_1) == (1, 1)
 
 
 @pytest.mark.asyncio
-async def test_a_failed_order_write_undoes_stock_coins_and_cart(pg):
+async def test_a_failed_order_write_undoes_stock_coins_and_cart(pg, monkeypatch):
     await seed_listing(pg, PROD_1, price=50_000, stock=10)
     await add_to_cart(CartItemCreate(product_id=PROD_1, quantity=1), context=ctx_zol, user=buyer_1, pg=pg)
     db = FakeDB()
 
-    async def broken(docs):
-        raise RuntimeError("MongoDB unavailable")
-    db.orders.insert_many = broken
+    async def broken(*args):  # the last write of the transaction fails
+        raise RuntimeError("order write failed")
+    monkeypatch.setattr(order_store, "insert", broken)
     with pytest.raises(RuntimeError):
         await checkout(pg, db, buyer_1, coins=500)
     assert await stock_of(pg, PROD_1) == (10, 0)
@@ -91,7 +92,7 @@ async def test_an_order_paid_in_coins_takes_its_stock(pg):
     await add_to_cart(CartItemCreate(product_id=PROD_1, quantity=1), context=ctx_zol, user=buyer_1, pg=pg)
     db = FakeDB()
     res = await checkout(pg, db, buyer_1, method="coins", coins=100000)
-    assert res["type"] == "coins" and db.orders.docs[0]["payment_status"] == "paid"
+    assert res["type"] == "coins" and (await order_store.find(pg))[0]["payment_status"] == "paid"
     assert await stock_of(pg, PROD_1) == (9, 0)
     assert await pg.fetchval("SELECT coin_balance FROM user_profile WHERE user_id = $1", uuid.UUID(BUYER_1)) == 100000 - 59000
 
@@ -145,11 +146,11 @@ async def test_a_quote_buys_once(pg):
     db.shipments = db.Collection()
     request = lambda key: CreateOrderFromQuoteRequest(quote_id=quote.quote_id, shipping_address=ADDRESS,  # noqa: E731
                                                       payment_method_type="card", idempotency_key=key)
-    await create_order_from_quote(request("first"), context=ctx_zol, user=buyer_1, db=db, pg_conn=pg)
+    await create_order_from_quote(request("first"), context=ctx_zol, user=buyer_1, pg_conn=pg)
     with pytest.raises(HTTPException) as exc:
-        await create_order_from_quote(request("second"), context=ctx_zol, user=buyer_1, db=db, pg_conn=pg)
+        await create_order_from_quote(request("second"), context=ctx_zol, user=buyer_1, pg_conn=pg)
     assert exc.value.status_code == 409
-    assert len(db.orders.docs) == 1 and await stock_of(pg, PROD_1) == (10, 1)
+    assert len(await order_store.find(pg)) == 1 and await stock_of(pg, PROD_1) == (10, 1)
 
 
 @pytest.mark.asyncio

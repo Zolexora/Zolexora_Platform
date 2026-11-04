@@ -210,7 +210,6 @@ async def test_admin_stats_and_users_read_postgres_profiles():
         {"id": "prod-1", "product_id": "prod-1", "status": "active", "price": {"amount_minor": 1000, "currency": "INR"}, "seller_id": "seller-1", "storefront_id": "zolexora-shop"},
         {"id": "prod-2", "product_id": "prod-2", "status": "paused", "price": {"amount_minor": 1000, "currency": "INR"}, "seller_id": "seller-1", "storefront_id": "zolexora-shop"}
     ]
-    db.orders.docs = [{"id": "order-1", "payment_status": "paid", "storefront_id": "zolexora-shop"}, {"id": "order-2", "status": "pending", "storefront_id": "zolexora-shop"}]
     repo = FakeUserRepo({
         "admin-1": {"id": "admin-1", "is_admin": True},
         "seller-1": {"id": "seller-1"},
@@ -220,10 +219,13 @@ async def test_admin_stats_and_users_read_postgres_profiles():
         storefront=StorefrontDefinition("id", StorefrontKey.ZOLEXORA_SHOP, "Name", "host", frozenset(), frozenset(), "INR", "en", True),
         source=StorefrontContextSource.CLIENT_HINT
     )
-    class Catalog:  # the PostgreSQL listing counts
+    class Catalog:  # the PostgreSQL listing and order counts
         async def fetchrow(self, sql, key):
             assert key == "zolexora-shop"
             return {"total": 2, "active": 1}
+
+        async def fetchval(self, sql, *args):
+            return 0
 
     stats = await admin_stats(u={"id": "admin-1", "is_admin": True}, context=dummy_context, db=db, user_repo=repo, pg=Catalog())
     users = await admin_users(u={"id": "admin-1", "is_admin": True}, user_repo=repo)

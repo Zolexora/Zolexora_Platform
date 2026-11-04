@@ -139,8 +139,11 @@ marketplace_order = Table(
     Column("payment_status", String(32), nullable=False, server_default="pending"),
     Column("fulfillment_status", String(32), nullable=False, server_default="unfulfilled"),
     Column("version", Integer, nullable=False, server_default="1"), Column("address_snapshot", JSON, nullable=False),
+    Column("checkout_id", Uuid), Column("payment_method", String(32)), Column("idempotency_key", String(128)),
+    Column("details", JSONB, nullable=False, server_default=text("'{}'::jsonb")),
     created_column(), updated_column(),
     UniqueConstraint("id", "storefront_id", name="uq_order_id_storefront"),
+    CheckConstraint("jsonb_typeof(details) = 'object'", name="details_object"),
     UniqueConstraint("storefront_id", "public_order_number", name="uq_order_storefront_number"),
     CheckConstraint(f"status IN ({ORDER_STATUSES})", name="order_status_values"),
     CheckConstraint("payment_status IN ('pending','awaiting_verification','authorized','paid','failed','refunded','partially_refunded','voided')", name="order_payment_status_values"),
@@ -150,6 +153,8 @@ marketplace_order = Table(
 )
 Index("ix_order_storefront_buyer_created", marketplace_order.c.storefront_id, marketplace_order.c.buyer_id, marketplace_order.c.created_at)
 Index("ix_order_storefront_org_created", marketplace_order.c.storefront_id, marketplace_order.c.organization_id, marketplace_order.c.created_at)
+Index("ix_order_checkout", marketplace_order.c.checkout_id)
+Index("ix_order_buyer_idempotency", marketplace_order.c.buyer_id, marketplace_order.c.idempotency_key, postgresql_where=marketplace_order.c.idempotency_key.is_not(None))
 
 order_item = Table(
     "order_item", metadata, id_column(),

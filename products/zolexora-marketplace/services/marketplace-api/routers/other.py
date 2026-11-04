@@ -4,63 +4,19 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 from catalog import store as catalog_store
+from commerce import orders as order_store
 from routers.products import _invalidate_catalog_cache
-from routers.cart import mark_cashfree_paid, settle
+from routers.cart import settle
 from shared.database.postgres import pg_conn_dep
-from core.deps import db_dep, current_user, admin_only, is_admin, require_permission, seller_only
+from core.deps import db_dep, current_user, admin_only, require_permission
 from core.config import settings
 from core.payments import create_razorpay_order
 from models.documents import CoinTxDoc
 from users.repositories import UserRepository, get_user_repository
 
-from storefronts.dependencies import optional_storefront_context, require_storefront_context
+from storefronts.dependencies import optional_storefront_context
 from storefronts.models import StorefrontContext
 
-# ── Orders ────────────────────────────────────────────────────────────────────
-orders_router = APIRouter(prefix="/orders", tags=["orders"])
-
-@orders_router.get("/my")
-async def my_orders(user=Depends(current_user), context: StorefrontContext=Depends(require_storefront_context), db=Depends(db_dep)):
-    return await db.orders.find({"buyer_id":user["id"], "storefront_id": context.key},{"_id":0}).sort("created_at",-1).to_list(100)
-
-@orders_router.get("/seller")
-async def seller_orders(user=Depends(seller_only), context: StorefrontContext=Depends(require_storefront_context), db=Depends(db_dep)):
-    q = {"storefront_id": context.key} if is_admin(user) else {"seller_id": user.get("seller_org_id"), "storefront_id": context.key}
-    return await db.orders.find(q,{"_id":0}).sort("created_at",-1).to_list(200)
-
-@orders_router.get("/{order_id}")
-async def get_order(order_id:str, user=Depends(current_user), context: StorefrontContext=Depends(require_storefront_context), db=Depends(db_dep),
-                    pg=Depends(pg_conn_dep)):
-    order = await db.orders.find_one({"id":order_id, "storefront_id": context.key},{"_id":0})
-    if not order: raise HTTPException(404,"Order not found")
-    if not is_admin(user) and order["buyer_id"]!=user["id"] and (not user.get("seller_org_id") or order.get("seller_id") != user["seller_org_id"]):
-        raise HTTPException(403,"Not your order")
-    
-    # If order is pending and has a cashfree order id, auto-sync payment status
-    if order.get("payment_status") != "paid" and (order.get("cashfree_order_id") or order.get("payment_method") == "cashfree"):
-        cf_id = order.get("cashfree_order_id") or order.get("id")
-        from core.payments import get_cashfree_order
-        try:
-            cf_info = await get_cashfree_order(cf_id)
-            if cf_info.get("order_status") == "PAID":
-                await mark_cashfree_paid(db, pg, cf_id, {"storefront_id": context.key})
-                order["payment_status"] = "paid"
-        except Exception:
-            pass
-
-    return order
-
-@orders_router.put("/{order_id}/status")
-async def update_order_status(order_id:str,status:str,user=Depends(seller_only), context: StorefrontContext=Depends(require_storefront_context), db=Depends(db_dep),
-                              pg=Depends(pg_conn_dep)):
-    if status not in ("processing","shipped","delivered","cancelled"):
-        raise HTTPException(400,"Invalid status")
-    fq = {"id":order_id, "storefront_id": context.key} if is_admin(user) else {"id":order_id,"seller_id": user.get("seller_org_id"), "storefront_id": context.key}
-    r = await db.orders.update_one(fq,{"$set":{"status":status,"updated_at":datetime.now(timezone.utc).isoformat()}})
-    if r.matched_count==0: raise HTTPException(404,"Order not found or access denied")
-    if status == "cancelled":
-        await settle(pg, [order_id], paid=False)  # its stock goes back on sale
-    return {"message":"Status updated"}
 
 
 # ── Coins ─────────────────────────────────────────────────────────────────────
@@ -138,16 +94,17 @@ async def admin_stats(
     pg=Depends(pg_conn_dep),
 ):
     sf = {"storefront_id": context.key.value} if context else {}
+    key = context.key.value if context else None
     return {
         "total_users":              await user_repo.count_users(),
         **await catalog_store.listing_counts(pg, context.key.value if context else None),
         "total_reels":              await db.reels.count_documents(sf),
         "sponsored_reels":          await db.reels.count_documents({**sf, "content_type":"sponsored"}),
-        "total_orders":             await db.orders.count_documents(sf),
-        "paid_orders":              await db.orders.count_documents({**sf, "payment_status":"paid"}),
-        "pending_upi_verification": await db.orders.count_documents({**sf, "payment_status":"awaiting_verification"}),
+        "total_orders":             await order_store.count(pg, storefront=key),
+        "paid_orders":              await order_store.count(pg, storefront=key, payment_status="paid"),
+        "pending_upi_verification": await order_store.count(pg, storefront=key, payment_status="awaiting_verification"),
         "total_reel_views":         await db.reel_views.count_documents(sf),
-        "pending_orders":           await db.orders.count_documents({**sf, "status":"pending"}),
+        "pending_orders":           await order_store.count(pg, storefront=key, status="placed"),
     }
 
 @admin_router.get("/users")
@@ -216,17 +173,14 @@ async def admin_delete_reel(rid:str,u=Depends(require_permission("content:write"
     await db.reels.delete_one({"id":rid, **sf}); return {"message":"Deleted"}
 
 @admin_router.get("/orders")
-async def admin_orders(u=Depends(admin_only), context: Optional[StorefrontContext] = Depends(optional_storefront_context), db=Depends(db_dep)):
-    sf = {"storefront_id": context.key.value} if context else {}
-    return await db.orders.find(sf,{"_id":0}).sort("created_at",-1).to_list(500)
+async def admin_orders(u=Depends(admin_only), context: Optional[StorefrontContext] = Depends(optional_storefront_context), pg=Depends(pg_conn_dep)):
+    return await order_store.find(pg, storefront=context.key if context else None, limit=500)
 
 # ── UPI verification ──────────────────────────────────────────────────────────
 @admin_router.get("/orders/pending-upi")
-async def pending_upi(u=Depends(admin_only), context: Optional[StorefrontContext] = Depends(optional_storefront_context), db=Depends(db_dep)):
-    sf = {"storefront_id": context.key.value} if context else {}
-    return await db.orders.find(
-        {"payment_method":"upi","payment_status":"awaiting_verification", **sf},
-        {"_id":0}).sort("created_at",-1).to_list(500)
+async def pending_upi(u=Depends(admin_only), context: Optional[StorefrontContext] = Depends(optional_storefront_context), pg=Depends(pg_conn_dep)):
+    return await order_store.find(pg, payment_method="upi", payment_status="awaiting_verification",
+                                  storefront=context.key if context else None, limit=500)
 
 class UPIVerifyReq(BaseModel):
     approve:bool; admin_note:Optional[str]=None
@@ -241,31 +195,34 @@ async def verify_upi(
     user_repo:UserRepository=Depends(get_user_repository),
     pg=Depends(pg_conn_dep),
 ):
-    sf = {"storefront_id": context.key.value} if context else {}
-    order = await db.orders.find_one({"id":order_id, **sf})
+    sf_key = context.key.value if context else None
+    order = await order_store.get(pg, id=order_id, storefront=sf_key)
     if not order: raise HTTPException(404,"Order not found")
     if order.get("payment_method")!="upi": raise HTTPException(400,"Not a UPI order")
     if order.get("payment_status") not in ("awaiting_verification","pending"):
         raise HTTPException(400,f"Cannot verify — current status: {order.get('payment_status')}")
-    checkout_filter = {"checkout_id":order["checkout_id"], **sf} if order.get("checkout_id") else {"id":order_id, **sf}
-    checkout_orders = await db.orders.find(checkout_filter,{"_id":0}).to_list(50)
+    checkout = {"checkout_id": order["checkout_id"]} if order.get("checkout_id") else {"id": order_id}
+    checkout_orders = await order_store.find(pg, storefront=sf_key, **checkout)
     now = datetime.now(timezone.utc).isoformat()
     if req.approve:
-        await db.orders.update_many(checkout_filter,{"$set":{
-            "payment_status":"paid","status":"processing",
-            "upi_verified_by":u["id"],"upi_verified_at":now,
-            "admin_note":req.admin_note,"updated_at":now}})
-        await settle(pg, [o["id"] for o in checkout_orders], paid=True)
+        async with pg.transaction():
+            ids = await order_store.update_many(pg, {
+                "payment_status":"paid","status":"processing",
+                "upi_verified_by":u["id"],"upi_verified_at":now,
+                "admin_note":req.admin_note}, storefront=sf_key, **checkout)
+            await settle(pg, ids, paid=True)
         return {"message":"Payment approved ✓","order_id":order_id,"status":"processing"}
     else:
-        await db.orders.update_many(checkout_filter,{"$set":{
-            "payment_status":"failed","status":"cancelled",
-            "admin_note":req.admin_note or "Payment not verified","updated_at":now}})
-        await settle(pg, [o["id"] for o in checkout_orders], paid=False)
-        # Coins were spent when the order was placed; a rejected payment gives them back.
         coins_used = sum(o.get("coins_used",0) for o in checkout_orders)
+        async with pg.transaction():
+            ids = await order_store.update_many(pg, {
+                "payment_status":"failed","status":"cancelled",
+                "admin_note":req.admin_note or "Payment not verified"}, storefront=sf_key, **checkout)
+            await settle(pg, ids, paid=False)
+            # Coins were spent when the order was placed; a rejected payment gives them back.
+            if coins_used > 0:
+                await user_repo.adjust_coin_balance(order["buyer_id"], coins_used, pg)
         if coins_used > 0:
-            await user_repo.adjust_coin_balance(order["buyer_id"], coins_used)
             await db.coin_transactions.insert_one(CoinTxDoc(
                 user_id=order["buyer_id"],amount=coins_used,type="refund",
                 description=f"Order {order.get('order_number', order_id)} payment rejected",ref_id=order_id).model_dump())
@@ -280,18 +237,19 @@ async def admin_analytics(
     pg=Depends(pg_conn_dep),
 ):
     sf = {"storefront_id": context.key.value} if context else {}
+    key = context.key.value if context else None
     now=datetime.now(timezone.utc)
     d30_dt=now-timedelta(days=30); d7_dt=now-timedelta(days=7)
-    d30=d30_dt.isoformat(); d7=d7_dt.isoformat()
+    d30=d30_dt.isoformat()
     return {
         "new_users_30d":         await user_repo.count_users(created_since=d30_dt),
         "new_users_7d":          await user_repo.count_users(created_since=d7_dt),
-        "orders_30d":            await db.orders.count_documents({**sf, "created_at":{"$gte":d30}}),
-        "orders_7d":             await db.orders.count_documents({**sf, "created_at":{"$gte":d7}}),
-        "razorpay_orders_30d":   await db.orders.count_documents({**sf, "payment_method":"razorpay","payment_status":"paid","created_at":{"$gte":d30}}),
-        "upi_orders_30d":        await db.orders.count_documents({**sf, "payment_method":"upi","payment_status":"paid","created_at":{"$gte":d30}}),
-        "coins_orders_30d":      await db.orders.count_documents({**sf, "payment_method":"coins","payment_status":"paid","created_at":{"$gte":d30}}),
+        "orders_30d":            await order_store.count(pg, storefront=key, since=d30_dt),
+        "orders_7d":             await order_store.count(pg, storefront=key, since=d7_dt),
+        "razorpay_orders_30d":   await order_store.count(pg, storefront=key, payment_method="razorpay", payment_status="paid", since=d30_dt),
+        "upi_orders_30d":        await order_store.count(pg, storefront=key, payment_method="upi", payment_status="paid", since=d30_dt),
+        "coins_orders_30d":      await order_store.count(pg, storefront=key, payment_method="coins", payment_status="paid", since=d30_dt),
         "reel_views_30d":        await db.reel_views.count_documents({**sf, "created_at":{"$gte":d30}}),
         "coins_earned_30d":      await db.coin_transactions.count_documents({"type":"earned","created_at":{"$gte":d30}}),
-        "pending_upi_verify":    await db.orders.count_documents({**sf, "payment_status":"awaiting_verification"}),
+        "pending_upi_verify":    await order_store.count(pg, storefront=key, payment_status="awaiting_verification"),
     }

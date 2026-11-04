@@ -10,9 +10,8 @@ from typing import List
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
-from motor.motor_asyncio import AsyncIOMotorDatabase
 
-from core.deps import db_dep, current_user, is_admin, seller_only, shopper
+from core.deps import current_user, is_admin, seller_only, shopper
 from shared.database.postgres import pg_conn_dep
 from integrations.zolexora_erp.outbox import sync_to_erp_outbox
 from storefronts.dependencies import require_storefront_context, optional_storefront_context
@@ -28,6 +27,7 @@ from models.orders import (
     CancellationRequest, CancellationResponse, SellerCancellationActionRequest,
     ReturnRequest, ReturnResponse, SellerReturnActionRequest,
 )
+from commerce import orders as order_store
 from routers.cart import verify_quote_token, _get_active_product, place_orders, settle
 
 orders_router = APIRouter(prefix="/orders", tags=["orders"])
@@ -57,21 +57,19 @@ async def create_order_from_quote(
     req: CreateOrderFromQuoteRequest,
     context: StorefrontContext = Depends(require_storefront_context),
     user=Depends(shopper),
-    db: AsyncIOMotorDatabase = Depends(db_dep),
     pg_conn=Depends(pg_conn_dep)
 ):
     if req.idempotency_key:
         lock = _get_idempotency_lock(f"{user['id']}:{req.idempotency_key}")
         async with lock:
-            return await _create_order_from_quote_impl(req, context, user, db, pg_conn)
-    return await _create_order_from_quote_impl(req, context, user, db, pg_conn)
+            return await _create_order_from_quote_impl(req, context, user, pg_conn)
+    return await _create_order_from_quote_impl(req, context, user, pg_conn)
 
 
 async def _create_order_from_quote_impl(
     req: CreateOrderFromQuoteRequest,
     context: StorefrontContext,
     user: dict,
-    db: AsyncIOMotorDatabase,
     pg_conn
 ):
     # 1. Verify Quote Token
@@ -79,11 +77,8 @@ async def _create_order_from_quote_impl(
 
     # 2. Check Idempotency Key
     if req.idempotency_key:
-        existing_orders = await db.orders.find({
-            "storefront_id": context.key,
-            "buyer_id": user["id"],
-            "idempotency_key": req.idempotency_key
-        }, {"_id": 0}).to_list(100)
+        existing_orders = await order_store.find(pg_conn, storefront=context.key, buyer_id=user["id"],
+                                                 idempotency_key=req.idempotency_key)
         if existing_orders:
             first = existing_orders[0]
             grand_total_minor = quote_data.get("grand_total", sum(o["grand_total"]["amount_minor"] for o in existing_orders))
@@ -232,7 +227,7 @@ async def _create_order_from_quote_impl(
         created_orders.append(order_doc)
 
     # 5. One PostgreSQL transaction: stock held, quote used once, cart closed, orders stored.
-    await place_orders(pg_conn, db, user["id"], str(getattr(context.key, "value", context.key)), created_orders,
+    await place_orders(pg_conn, user["id"], str(getattr(context.key, "value", context.key)), created_orders,
                        quote_signature=req.quote_id.rsplit(".", 1)[1])
 
     for order_doc in created_orders:
@@ -277,12 +272,9 @@ async def _create_order_from_quote_impl(
 async def list_buyer_orders(
     context: StorefrontContext = Depends(require_storefront_context),
     user=Depends(current_user),
-    db: AsyncIOMotorDatabase = Depends(db_dep)
+    pg=Depends(pg_conn_dep),
 ):
-    docs = await db.orders.find(
-        {"storefront_id": context.key, "buyer_id": user["id"]},
-        {"_id": 0}
-    ).sort("created_at", -1).to_list(200)
+    docs = await order_store.find(pg, **{"storefront": context.key, "buyer_id": user["id"]})
 
     summaries = []
     for doc in docs:
@@ -307,12 +299,9 @@ async def get_buyer_order_detail(
     order_id: str,
     context: StorefrontContext = Depends(require_storefront_context),
     user=Depends(current_user),
-    db: AsyncIOMotorDatabase = Depends(db_dep)
+    pg=Depends(pg_conn_dep),
 ):
-    doc = await db.orders.find_one(
-        {"id": order_id, "storefront_id": context.key, "buyer_id": user["id"]},
-        {"_id": 0}
-    )
+    doc = await order_store.get(pg, **{"id": order_id, "storefront": context.key, "buyer_id": user["id"]})
     if not doc:
         raise HTTPException(404, "Order not found or access denied")
 
@@ -346,12 +335,9 @@ async def request_buyer_cancellation(
     req: CancellationRequest,
     context: StorefrontContext = Depends(require_storefront_context),
     user=Depends(current_user),
-    db: AsyncIOMotorDatabase = Depends(db_dep)
+    pg=Depends(pg_conn_dep),
 ):
-    doc = await db.orders.find_one(
-        {"id": order_id, "storefront_id": context.key, "buyer_id": user["id"]},
-        {"_id": 0}
-    )
+    doc = await order_store.get(pg, **{"id": order_id, "storefront": context.key, "buyer_id": user["id"]})
     if not doc:
         raise HTTPException(404, "Order not found or access denied")
 
@@ -393,14 +379,11 @@ async def request_buyer_cancellation(
     cancellations = doc.get("cancellations", [])
     cancellations.append(cancellation.model_dump())
 
-    await db.orders.update_one(
-        {"id": order_id, "storefront_id": context.key, "buyer_id": user["id"]},
-        {"$set": {
+    await order_store.update(pg, order_id, {
             "cancellations": cancellations,
             "lines": updated_lines,
             "updated_at": now_str
-        }}
-    )
+        })
 
     return cancellation
 
@@ -411,12 +394,9 @@ async def request_buyer_return(
     req: ReturnRequest,
     context: StorefrontContext = Depends(require_storefront_context),
     user=Depends(current_user),
-    db: AsyncIOMotorDatabase = Depends(db_dep)
+    pg=Depends(pg_conn_dep),
 ):
-    doc = await db.orders.find_one(
-        {"id": order_id, "storefront_id": context.key, "buyer_id": user["id"]},
-        {"_id": 0}
-    )
+    doc = await order_store.get(pg, **{"id": order_id, "storefront": context.key, "buyer_id": user["id"]})
     if not doc:
         raise HTTPException(404, "Order not found or access denied")
 
@@ -456,14 +436,11 @@ async def request_buyer_return(
     returns_list = doc.get("returns", [])
     returns_list.append(ret_resp.model_dump())
 
-    await db.orders.update_one(
-        {"id": order_id, "storefront_id": context.key, "buyer_id": user["id"]},
-        {"$set": {
+    await order_store.update(pg, order_id, {
             "returns": returns_list,
             "lines": updated_lines,
             "updated_at": now_str
-        }}
-    )
+        })
 
     return ret_resp
 
@@ -474,13 +451,13 @@ async def request_buyer_return(
 async def list_seller_orders(
     context: StorefrontContext | None = Depends(optional_storefront_context),
     user=Depends(seller_only),
-    db: AsyncIOMotorDatabase = Depends(db_dep)
+    pg=Depends(pg_conn_dep),
 ):
     query = {"seller_id": user.get("seller_org_id")}
     if context is not None:
-        query["storefront_id"] = context.key
+        query["storefront"] = context.key
         
-    docs = await db.orders.find(query, {"_id": 0}).sort("created_at", -1).to_list(200)
+    docs = await order_store.find(pg, **query)
 
     summaries = []
     for doc in docs:
@@ -509,12 +486,9 @@ async def get_seller_order_detail(
     order_id: str,
     context: StorefrontContext = Depends(require_storefront_context),
     user=Depends(seller_only),
-    db: AsyncIOMotorDatabase = Depends(db_dep)
+    pg=Depends(pg_conn_dep),
 ):
-    doc = await db.orders.find_one(
-        {"id": order_id, "storefront_id": context.key, "seller_id": user.get("seller_org_id")},
-        {"_id": 0}
-    )
+    doc = await order_store.get(pg, **{"id": order_id, "storefront": context.key, "seller_id": user.get("seller_org_id")})
     if not doc:
         raise HTTPException(404, "Order not found or access denied")
 
@@ -555,13 +529,9 @@ async def transition_seller_shipment(
     req: FulfillmentTransitionRequest,
     context: StorefrontContext = Depends(require_storefront_context),
     user=Depends(seller_only),
-    db: AsyncIOMotorDatabase = Depends(db_dep),
     pg=Depends(pg_conn_dep),
 ):
-    doc = await db.orders.find_one(
-        {"id": order_id, "storefront_id": context.key, "seller_id": user.get("seller_org_id")},
-        {"_id": 0}
-    )
+    doc = await order_store.get(pg, **{"id": order_id, "storefront": context.key, "seller_id": user.get("seller_org_id")})
     if not doc:
         raise HTTPException(404, "Order not found or access denied")
 
@@ -618,18 +588,15 @@ async def transition_seller_shipment(
             line["fulfillment_status"] = req.target_status.value
         updated_lines.append(line)
 
-    await db.orders.update_one(
-        {"id": order_id, "storefront_id": context.key, "seller_id": user.get("seller_org_id")},
-        {"$set": {
+    async with pg.transaction():
+        await order_store.update(pg, order_id, {
             "shipments": shipments,
             "fulfillment_status": req.target_status.value,
             "status": new_order_status,
             "lines": updated_lines,
-            "updated_at": now_str
-        }}
-    )
-    if req.target_status == FulfillmentStatus.cancelled:
-        await settle(pg, [order_id], paid=False)  # its stock goes back on sale
+        })
+        if req.target_status == FulfillmentStatus.cancelled:
+            await settle(pg, [order_id], paid=False)  # its stock goes back on sale
 
     return ShipmentResponse(**shipment)
 
@@ -640,13 +607,9 @@ async def action_seller_cancellation(
     req: SellerCancellationActionRequest,
     context: StorefrontContext = Depends(require_storefront_context),
     user=Depends(seller_only),
-    db: AsyncIOMotorDatabase = Depends(db_dep),
     pg=Depends(pg_conn_dep),
 ):
-    doc = await db.orders.find_one(
-        {"id": order_id, "storefront_id": context.key, "seller_id": user.get("seller_org_id")},
-        {"_id": 0}
-    )
+    doc = await order_store.get(pg, **{"id": order_id, "storefront": context.key, "seller_id": user.get("seller_org_id")})
     if not doc:
         raise HTTPException(404, "Order not found or access denied")
 
@@ -674,18 +637,15 @@ async def action_seller_cancellation(
         for s in shipments:
             s["status"] = FulfillmentStatus.cancelled.value
 
-        await db.orders.update_one(
-            {"id": order_id, "storefront_id": context.key, "seller_id": user.get("seller_org_id")},
-            {"$set": {
+        async with pg.transaction():
+            await order_store.update(pg, order_id, {
                 "cancellations": cancellations,
                 "status": OrderStatus.cancelled.value,
                 "fulfillment_status": FulfillmentStatus.cancelled.value,
                 "lines": updated_lines,
                 "shipments": shipments,
-                "updated_at": now_str
-            }}
-        )
-        await settle(pg, [order_id], paid=False)  # its stock goes back on sale
+            })
+            await settle(pg, [order_id], paid=False)  # its stock goes back on sale
     else:
         cancellation["status"] = CancellationStatus.rejected.value
         cancellation["seller_comment"] = req.comment
@@ -697,14 +657,11 @@ async def action_seller_cancellation(
                 line["cancellation_status"] = CancellationStatus.rejected.value
             updated_lines.append(line)
 
-        await db.orders.update_one(
-            {"id": order_id, "storefront_id": context.key, "seller_id": user.get("seller_org_id")},
-            {"$set": {
+        await order_store.update(pg, order_id, {
                 "cancellations": cancellations,
                 "lines": updated_lines,
                 "updated_at": now_str
-            }}
-        )
+            })
 
     return CancellationResponse(**cancellation)
 
@@ -715,12 +672,9 @@ async def action_seller_return(
     req: SellerReturnActionRequest,
     context: StorefrontContext = Depends(require_storefront_context),
     user=Depends(seller_only),
-    db: AsyncIOMotorDatabase = Depends(db_dep)
+    pg=Depends(pg_conn_dep),
 ):
-    doc = await db.orders.find_one(
-        {"id": order_id, "storefront_id": context.key, "seller_id": user.get("seller_org_id")},
-        {"_id": 0}
-    )
+    doc = await order_store.get(pg, **{"id": order_id, "storefront": context.key, "seller_id": user.get("seller_org_id")})
     if not doc:
         raise HTTPException(404, "Order not found or access denied")
 
@@ -765,16 +719,31 @@ async def action_seller_return(
             line["return_status"] = ret["status"]
         updated_lines.append(line)
 
-    await db.orders.update_one(
-        {"id": order_id, "storefront_id": context.key, "seller_id": user.get("seller_org_id")},
-        {"$set": {
+    await order_store.update(pg, order_id, {
             "returns": returns_list,
             "lines": updated_lines,
             "updated_at": now_str
-        }}
-    )
+        })
 
     return ReturnResponse(**ret)
+
+
+@orders_router.put("/{order_id}/status")
+async def update_order_status(order_id:str,status:str,user=Depends(seller_only), context: StorefrontContext=Depends(require_storefront_context),
+                              pg=Depends(pg_conn_dep)):
+    # The portal's simple statuses, as order status and fulfilment status.
+    states = {"processing": ("processing", "processing"), "shipped": ("fulfilled", "shipped"),
+              "delivered": ("completed", "delivered"), "cancelled": ("cancelled", "cancelled")}
+    if status not in states:
+        raise HTTPException(400,"Invalid status")
+    async with pg.transaction():
+        ids = await order_store.update_many(
+            pg, {"status": states[status][0], "fulfillment_status": states[status][1]},
+            id=order_id, storefront=context.key, seller_id=None if is_admin(user) else user["seller_org_id"])
+        if not ids: raise HTTPException(404,"Order not found or access denied")
+        if status == "cancelled":
+            await settle(pg, ids, paid=False)  # its stock goes back on sale
+    return {"message":"Status updated"}
 
 
 # ── Backward Compatibility Helpers ──────────────────────────────────────────
@@ -783,9 +752,9 @@ async def action_seller_return(
 async def legacy_my_orders(
     context: StorefrontContext = Depends(require_storefront_context),
     user=Depends(current_user),
-    db: AsyncIOMotorDatabase = Depends(db_dep)
+    pg=Depends(pg_conn_dep),
 ):
-    return await list_buyer_orders(context, user, db)
+    return await list_buyer_orders(context, user, pg)
 
 
 @orders_router.get("/{order_id}")
@@ -793,17 +762,14 @@ async def legacy_get_order(
     order_id: str,
     context: StorefrontContext = Depends(require_storefront_context),
     user=Depends(current_user),
-    db: AsyncIOMotorDatabase = Depends(db_dep)
+    pg=Depends(pg_conn_dep),
 ):
-    doc = await db.orders.find_one(
-        {"id": order_id, "storefront_id": context.key},
-        {"_id": 0}
-    )
+    doc = await order_store.get(pg, **{"id": order_id, "storefront": context.key})
     if not doc:
         raise HTTPException(404, "Order not found")
     if not is_admin(user) and doc["buyer_id"] != user["id"] and (not user.get("seller_org_id") or doc.get("seller_id") != user["seller_org_id"]):
         raise HTTPException(403, "Not your order")
 
     if user.get("seller_org_id") and doc.get("seller_id") == user["seller_org_id"]:
-        return await get_seller_order_detail(order_id, context, user, db)
-    return await get_buyer_order_detail(order_id, context, user, db)
+        return await get_seller_order_detail(order_id, context, user, pg)
+    return await get_buyer_order_detail(order_id, context, user, pg)

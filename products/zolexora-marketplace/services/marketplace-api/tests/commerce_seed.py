@@ -97,3 +97,26 @@ async def record_quote(pg, token: str, buyer_id: str, storefront: str = "zolexor
            SELECT gen_random_uuid(), id, $1, 'READY', 'INR', $2 FROM storefront WHERE storefront_key = $3""",
         uuid.UUID(buyer_id), token.rsplit(".", 1)[1], storefront,
     )
+
+
+ORDER_1 = "00000000-0000-4000-8000-0000000000d1"
+ORDER_2 = "00000000-0000-4000-8000-0000000000d2"
+ORDER_3 = "00000000-0000-4000-8000-0000000000d3"
+
+
+async def seed_order(pg, order_id: str, *, buyer: str = BUYER_1, org: str = SEL_1, storefront: str = "zolexora-shop",
+                     total: int = 1000, **fields) -> dict:
+    """A placed one-line order (its listing is created when missing); fields override the document."""
+    from commerce import orders as order_store
+
+    listing = str(uuid.uuid5(uuid.NAMESPACE_URL, f"{org}:{storefront}"))
+    if not await pg.fetchval("SELECT 1 FROM storefront_listing WHERE id = $1", uuid.UUID(listing)):
+        await seed_listing(pg, listing, org=org, storefront=storefront, price=total)
+    money = {"amount_minor": total, "currency": "INR"}
+    doc = {"id": order_id, "order_number": f"ORD-{order_id[-6:]}", "storefront_id": storefront, "buyer_id": buyer,
+           "seller_id": org, "status": "placed", "payment_status": "pending", "currency": "INR",
+           "lines": [{"product_id": listing, "product_title": "Product", "seller_id": org, "quantity": 1,
+                      "unit_price": money, "subtotal": money}],
+           "item_subtotal": money, "grand_total": money, "shipping_address": {}, **fields}
+    await order_store.insert(pg, doc)
+    return doc

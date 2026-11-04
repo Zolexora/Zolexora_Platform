@@ -4,6 +4,8 @@ from typing import Optional
 from pydantic import BaseModel
 
 from core.deps import db_dep, current_user, seller_only, admin_only, is_admin
+from commerce import orders as order_store
+from shared.database.postgres import pg_conn_dep
 from shipping.service import ShippingService
 from shipping.schemas import (
     PickupLocationCreate, PickupLocationDoc,
@@ -13,18 +15,19 @@ from shipping.schemas import (
 router = APIRouter(prefix="/shipping", tags=["shipping"])
 
 
-def get_service(db: AsyncIOMotorDatabase = Depends(db_dep)) -> ShippingService:
-    return ShippingService(db)
+def get_service(db: AsyncIOMotorDatabase = Depends(db_dep), pg=Depends(pg_conn_dep)) -> ShippingService:
+    return ShippingService(db, pg)
 
 
 def _is_admin(user: dict) -> bool:
     return is_admin(user)
 
 
-async def _owned_order(db: AsyncIOMotorDatabase, order_id: str, user: dict) -> dict:
+async def _owned_order(pg, order_id: str, user: dict) -> dict:
     """The order, if the caller is its seller (or an admin). 404 otherwise, so ids don't leak."""
-    q = {"id": order_id} if _is_admin(user) else {"id": order_id, "seller_id": user.get("seller_org_id")}
-    order = await db.orders.find_one(q, {"_id": 0})
+    if not _is_admin(user) and not user.get("seller_org_id"):
+        raise HTTPException(404, "Order not found")
+    order = await order_store.get(pg, id=order_id, seller_id=None if _is_admin(user) else user["seller_org_id"])
     if not order:
         raise HTTPException(404, "Order not found")
     return order
@@ -92,8 +95,8 @@ class ReadyToShipRequest(BaseModel):
 
 
 @router.post("/orders/{order_id}/ready-to-ship")
-async def ready_to_ship(order_id: str, req: ReadyToShipRequest, user=Depends(seller_only), svc: ShippingService = Depends(get_service), db: AsyncIOMotorDatabase = Depends(db_dep)):
-    order = await _owned_order(db, order_id, user)
+async def ready_to_ship(order_id: str, req: ReadyToShipRequest, user=Depends(seller_only), svc: ShippingService = Depends(get_service), db: AsyncIOMotorDatabase = Depends(db_dep), pg=Depends(pg_conn_dep)):
+    order = await _owned_order(pg, order_id, user)
     result = await svc.trigger_ready_to_ship(
         order_id=order_id, seller_id=order["seller_id"],
         pickup_location_id=req.pickup_location_id,
@@ -107,8 +110,8 @@ async def ready_to_ship(order_id: str, req: ReadyToShipRequest, user=Depends(sel
 # ── Option discovery ──────────────────────────────────────────────────────────
 
 @router.post("/orders/{order_id}/discover-options")
-async def discover_options(order_id: str, req: DiscoverOptionsRequest, user=Depends(seller_only), svc: ShippingService = Depends(get_service), db: AsyncIOMotorDatabase = Depends(db_dep)):
-    order = await _owned_order(db, order_id, user)
+async def discover_options(order_id: str, req: DiscoverOptionsRequest, user=Depends(seller_only), svc: ShippingService = Depends(get_service), db: AsyncIOMotorDatabase = Depends(db_dep), pg=Depends(pg_conn_dep)):
+    order = await _owned_order(pg, order_id, user)
     shipment = await svc.get_or_create_shipment(order_id)
     if not shipment:
         raise HTTPException(404, "Order not found")
@@ -122,15 +125,15 @@ async def discover_options(order_id: str, req: DiscoverOptionsRequest, user=Depe
     valid, rejected = await svc.discover_options(
         shipment_id=shipment["id"],
         pickup_pincode=pickup["pincode"],
-        delivery_pincode=order.get("delivery_pincode", ""),
+        delivery_pincode=(order.get("shipping_address") or {}).get("postal_code", ""),
         weight_kg=req.package_weight,
     )
     return {"valid": [o.model_dump() for o in valid], "rejected": [o.model_dump() for o in rejected], "shipment_id": shipment["id"]}
 
 
 @router.get("/orders/{order_id}/options")
-async def get_options(order_id: str, user=Depends(seller_only), db: AsyncIOMotorDatabase = Depends(db_dep)):
-    await _owned_order(db, order_id, user)
+async def get_options(order_id: str, user=Depends(seller_only), db: AsyncIOMotorDatabase = Depends(db_dep), pg=Depends(pg_conn_dep)):
+    await _owned_order(pg, order_id, user)
     shipment = await db.shipments.find_one({"order_id": order_id}, {"_id": 0})
     if not shipment:
         raise HTTPException(404, "No shipment found for this order")
@@ -141,8 +144,8 @@ async def get_options(order_id: str, user=Depends(seller_only), db: AsyncIOMotor
 # ── Manual booking ────────────────────────────────────────────────────────────
 
 @router.post("/orders/{order_id}/manual-book")
-async def manual_book(order_id: str, req: ManualBookRequest, user=Depends(seller_only), svc: ShippingService = Depends(get_service), db: AsyncIOMotorDatabase = Depends(db_dep)):
-    await _owned_order(db, order_id, user)
+async def manual_book(order_id: str, req: ManualBookRequest, user=Depends(seller_only), svc: ShippingService = Depends(get_service), db: AsyncIOMotorDatabase = Depends(db_dep), pg=Depends(pg_conn_dep)):
+    await _owned_order(pg, order_id, user)
     shipment = await db.shipments.find_one({"order_id": order_id}, {"_id": 0})
     if not shipment:
         raise HTTPException(404, "No shipment found")

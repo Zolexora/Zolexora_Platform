@@ -20,8 +20,9 @@ from routers.orders import (
     list_seller_orders, get_seller_order_detail,
     transition_seller_shipment, action_seller_cancellation, action_seller_return,
 )
-from tests.test_orders_fulfillment_contracts import EnhancedFakeDB, create_context, seed_products, shipping_addr
+from tests.test_orders_fulfillment_contracts import create_context, seed_products, shipping_addr
 from tests.commerce_seed import BUYER_1, BUYER_2, SEL_1, SEL_2, PROD_1
+from commerce import orders as order_store
 
 def _create_custom_quote_token(
     quote_id, buyer_id, storefront_id, lines, currency="INR",
@@ -66,7 +67,6 @@ def set_fake_quote_secret(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_buyer_and_storefront_isolation(pg):
-    db = EnhancedFakeDB()
     await seed_products(pg)
 
     # Buyer A creates order in Zolexora Shop
@@ -78,35 +78,35 @@ async def test_buyer_and_storefront_isolation(pg):
         payment_method_type="card",
         idempotency_key="buyer-iso-1"
     )
-    resp_a = await create_order_from_quote(req_a, context=ctx_zol, user=buyer_a, db=db, pg_conn=pg)
+    resp_a = await create_order_from_quote(req_a, context=ctx_zol, user=buyer_a, pg_conn=pg)
 
     # Attempt 1: Buyer B tries to access Buyer A's order detail under Zolexora Shop
     with pytest.raises(HTTPException) as exc_buyer_b:
-        await get_buyer_order_detail(resp_a.order_id, context=ctx_zol, user=buyer_b, db=db)
+        await get_buyer_order_detail(resp_a.order_id, context=ctx_zol, user=buyer_b, pg=pg)
     assert exc_buyer_b.value.status_code == 404
 
     # Attempt 2: Buyer A tries to access order using wrong StorefrontContext (Mahila Madel)
     with pytest.raises(HTTPException) as exc_wrong_sf:
-        await get_buyer_order_detail(resp_a.order_id, context=ctx_mah, user=buyer_a, db=db)
+        await get_buyer_order_detail(resp_a.order_id, context=ctx_mah, user=buyer_a, pg=pg)
     assert exc_wrong_sf.value.status_code == 404
 
     # Attempt 3: Buyer B lists buyer orders under Zolexora Shop (should return empty)
-    buyer_b_orders = await list_buyer_orders(context=ctx_zol, user=buyer_b, db=db)
+    buyer_b_orders = await list_buyer_orders(context=ctx_zol, user=buyer_b, pg=pg)
     assert len(buyer_b_orders) == 0
 
     # Attempt 4: Buyer B tries to request cancellation on Buyer A's order
     with pytest.raises(HTTPException) as exc_cancel_b:
-        await request_buyer_cancellation(resp_a.order_id, CancellationRequest(reason="Hacked"), context=ctx_zol, user=buyer_b, db=db)
+        await request_buyer_cancellation(resp_a.order_id, CancellationRequest(reason="Hacked"), context=ctx_zol, user=buyer_b, pg=pg)
     assert exc_cancel_b.value.status_code == 404
 
     # Attempt 5: Buyer B tries to request return on Buyer A's order
     # (Set fulfillment to delivered first so it reaches security check)
-    await db.orders.update_one({"id": resp_a.order_id}, {"$set": {"fulfillment_status": "delivered"}})
-    order_doc = await db.orders.find_one({"id": resp_a.order_id})
+    await order_store.update(pg, resp_a.order_id, {"fulfillment_status": "delivered"})
+    order_doc = await order_store.get(pg, id=resp_a.order_id)
     line_id = order_doc["lines"][0]["line_id"]
 
     with pytest.raises(HTTPException) as exc_return_b:
-        await request_buyer_return(resp_a.order_id, ReturnRequest(line_item_id=line_id, quantity=1, reason="Hacked"), context=ctx_zol, user=buyer_b, db=db)
+        await request_buyer_return(resp_a.order_id, ReturnRequest(line_item_id=line_id, quantity=1, reason="Hacked"), context=ctx_zol, user=buyer_b, pg=pg)
     assert exc_return_b.value.status_code == 404
 
 
@@ -116,7 +116,6 @@ async def test_buyer_and_storefront_isolation(pg):
 
 @pytest.mark.asyncio
 async def test_seller_and_storefront_isolation(pg):
-    db = EnhancedFakeDB()
     await seed_products(pg)
 
     # Buyer A creates order containing item from Seller X (prod-1) in Zolexora Shop
@@ -124,33 +123,33 @@ async def test_seller_and_storefront_isolation(pg):
     quote_a = await checkout_quote(context=ctx_zol, user=buyer_a, pg=pg)
     resp_a = await create_order_from_quote(
         CreateOrderFromQuoteRequest(quote_id=quote_a.quote_id, shipping_address=shipping_addr, payment_method_type="card"),
-        context=ctx_zol, user=buyer_a, db=db
-    , pg_conn=pg)
+        context=ctx_zol, user=buyer_a, pg_conn=pg
+    )
 
     # Attempt 1: Seller Y tries to view Seller X's order detail
     with pytest.raises(HTTPException) as exc_seller_y_detail:
-        await get_seller_order_detail(resp_a.order_id, context=ctx_zol, user=seller_y, db=db)
+        await get_seller_order_detail(resp_a.order_id, context=ctx_zol, user=seller_y, pg=pg)
     assert exc_seller_y_detail.value.status_code == 404
 
     # Attempt 2: Seller X tries to view order under wrong StorefrontContext (Mahila Madel)
     with pytest.raises(HTTPException) as exc_seller_x_wrong_sf:
-        await get_seller_order_detail(resp_a.order_id, context=ctx_mah, user=seller_x, db=db)
+        await get_seller_order_detail(resp_a.order_id, context=ctx_mah, user=seller_x, pg=pg)
     assert exc_seller_x_wrong_sf.value.status_code == 404
 
     # Attempt 3: Seller Y lists seller orders under Zolexora Shop (should return empty)
-    seller_y_orders = await list_seller_orders(context=ctx_zol, user=seller_y, db=db)
+    seller_y_orders = await list_seller_orders(context=ctx_zol, user=seller_y, pg=pg)
     assert len(seller_y_orders) == 0
 
     # Attempt 4: Seller Y tries to transition fulfillment of Seller X's shipment
-    order_doc = await db.orders.find_one({"id": resp_a.order_id})
+    order_doc = await order_store.get(pg, id=resp_a.order_id)
     shipment_id = order_doc["shipments"][0]["shipment_id"]
 
     with pytest.raises(HTTPException) as exc_seller_y_trans:
         await transition_seller_shipment(
             resp_a.order_id, shipment_id,
             FulfillmentTransitionRequest(target_status=FulfillmentStatus.processing),
-            context=ctx_zol, user=seller_y, db=db
-        , pg=pg)
+            context=ctx_zol, user=seller_y, pg=pg
+        )
     assert exc_seller_y_trans.value.status_code == 404
 
     # Attempt 5: Seller Y tries to action cancellation on Seller X's order
@@ -158,8 +157,8 @@ async def test_seller_and_storefront_isolation(pg):
         await action_seller_cancellation(
             resp_a.order_id,
             SellerCancellationActionRequest(action="approve"),
-            context=ctx_zol, user=seller_y, db=db
-        , pg=pg)
+            context=ctx_zol, user=seller_y, pg=pg
+        )
     assert exc_seller_y_cancel_action.value.status_code == 404
 
     # Attempt 6: Seller Y tries to action return on Seller X's order
@@ -167,7 +166,7 @@ async def test_seller_and_storefront_isolation(pg):
         await action_seller_return(
             resp_a.order_id,
             SellerReturnActionRequest(action="approve"),
-            context=ctx_zol, user=seller_y, db=db
+            context=ctx_zol, user=seller_y, pg=pg
         )
     assert exc_seller_y_return_action.value.status_code == 404
 
@@ -178,7 +177,6 @@ async def test_seller_and_storefront_isolation(pg):
 
 @pytest.mark.asyncio
 async def test_quote_token_security_and_forgery(pg):
-    db = EnhancedFakeDB()
     await seed_products(pg)
     lines_data = [{"product_id": PROD_1, "quantity": 1, "unit_price": 1000}]
 
@@ -189,8 +187,8 @@ async def test_quote_token_security_and_forgery(pg):
     with pytest.raises(HTTPException) as exc_forged:
         await create_order_from_quote(
             CreateOrderFromQuoteRequest(quote_id=forged_token, shipping_address=shipping_addr, payment_method_type="card"),
-            context=ctx_zol, user=buyer_a, db=db
-        , pg_conn=pg)
+            context=ctx_zol, user=buyer_a, pg_conn=pg
+        )
     assert exc_forged.value.status_code == 400
     assert "signature" in exc_forged.value.detail.lower()
 
@@ -199,8 +197,8 @@ async def test_quote_token_security_and_forgery(pg):
     with pytest.raises(HTTPException) as exc_expired:
         await create_order_from_quote(
             CreateOrderFromQuoteRequest(quote_id=expired_token, shipping_address=shipping_addr, payment_method_type="card"),
-            context=ctx_zol, user=buyer_a, db=db
-        , pg_conn=pg)
+            context=ctx_zol, user=buyer_a, pg_conn=pg
+        )
     assert exc_expired.value.status_code == 400
     assert "expired" in exc_expired.value.detail.lower()
 
@@ -209,8 +207,8 @@ async def test_quote_token_security_and_forgery(pg):
     with pytest.raises(HTTPException) as exc_buyer_mismatch:
         await create_order_from_quote(
             CreateOrderFromQuoteRequest(quote_id=token_buyer_a, shipping_address=shipping_addr, payment_method_type="card"),
-            context=ctx_zol, user=buyer_b, db=db
-        , pg_conn=pg)
+            context=ctx_zol, user=buyer_b, pg_conn=pg
+        )
     assert exc_buyer_mismatch.value.status_code == 403
     assert "belong" in exc_buyer_mismatch.value.detail.lower()
 
@@ -219,8 +217,8 @@ async def test_quote_token_security_and_forgery(pg):
     with pytest.raises(HTTPException) as exc_sf_mismatch:
         await create_order_from_quote(
             CreateOrderFromQuoteRequest(quote_id=token_zol, shipping_address=shipping_addr, payment_method_type="card"),
-            context=ctx_mah, user=buyer_a, db=db
-        , pg_conn=pg)
+            context=ctx_mah, user=buyer_a, pg_conn=pg
+        )
     assert exc_sf_mismatch.value.status_code == 403
     assert "storefront" in exc_sf_mismatch.value.detail.lower()
 
@@ -231,17 +229,16 @@ async def test_quote_token_security_and_forgery(pg):
 
 @pytest.mark.asyncio
 async def test_illegal_fulfillment_state_machine_jumps(pg):
-    db = EnhancedFakeDB()
     await seed_products(pg)
 
     await add_to_cart(CartItemCreate(product_id=PROD_1, quantity=1), context=ctx_zol, user=buyer_a, pg=pg)
     quote = await checkout_quote(context=ctx_zol, user=buyer_a, pg=pg)
     resp = await create_order_from_quote(
         CreateOrderFromQuoteRequest(quote_id=quote.quote_id, shipping_address=shipping_addr, payment_method_type="card"),
-        context=ctx_zol, user=buyer_a, db=db
-    , pg_conn=pg)
+        context=ctx_zol, user=buyer_a, pg_conn=pg
+    )
 
-    order_doc = await db.orders.find_one({"id": resp.order_id})
+    order_doc = await order_store.get(pg, id=resp.order_id)
     shipment_id = order_doc["shipments"][0]["shipment_id"]
 
     # Initial state: unfulfilled
@@ -250,8 +247,8 @@ async def test_illegal_fulfillment_state_machine_jumps(pg):
         await transition_seller_shipment(
             resp.order_id, shipment_id,
             FulfillmentTransitionRequest(target_status=FulfillmentStatus.delivered),
-            context=ctx_zol, user=seller_x, db=db
-        , pg=pg)
+            context=ctx_zol, user=seller_x, pg=pg
+        )
     assert exc_jump1.value.status_code == 400
     assert "Invalid fulfillment state transition" in exc_jump1.value.detail
 
@@ -259,8 +256,8 @@ async def test_illegal_fulfillment_state_machine_jumps(pg):
     await transition_seller_shipment(
         resp.order_id, shipment_id,
         FulfillmentTransitionRequest(target_status=FulfillmentStatus.processing),
-        context=ctx_zol, user=seller_x, db=db
-    , pg=pg)
+        context=ctx_zol, user=seller_x, pg=pg
+    )
 
     # State: processing
     # 3. Illegal jump: processing -> unfulfilled
@@ -268,16 +265,16 @@ async def test_illegal_fulfillment_state_machine_jumps(pg):
         await transition_seller_shipment(
             resp.order_id, shipment_id,
             FulfillmentTransitionRequest(target_status=FulfillmentStatus.unfulfilled),
-            context=ctx_zol, user=seller_x, db=db
-        , pg=pg)
+            context=ctx_zol, user=seller_x, pg=pg
+        )
     assert exc_jump2.value.status_code == 400
 
     # 4. Valid transition: processing -> shipped
     await transition_seller_shipment(
         resp.order_id, shipment_id,
         FulfillmentTransitionRequest(target_status=FulfillmentStatus.shipped),
-        context=ctx_zol, user=seller_x, db=db
-    , pg=pg)
+        context=ctx_zol, user=seller_x, pg=pg
+    )
 
     # State: shipped
     # 5. Illegal jump: shipped -> unfulfilled
@@ -285,16 +282,16 @@ async def test_illegal_fulfillment_state_machine_jumps(pg):
         await transition_seller_shipment(
             resp.order_id, shipment_id,
             FulfillmentTransitionRequest(target_status=FulfillmentStatus.unfulfilled),
-            context=ctx_zol, user=seller_x, db=db
-        , pg=pg)
+            context=ctx_zol, user=seller_x, pg=pg
+        )
     assert exc_jump3.value.status_code == 400
 
     # 6. Valid transition: shipped -> delivered
     await transition_seller_shipment(
         resp.order_id, shipment_id,
         FulfillmentTransitionRequest(target_status=FulfillmentStatus.delivered),
-        context=ctx_zol, user=seller_x, db=db
-    , pg=pg)
+        context=ctx_zol, user=seller_x, pg=pg
+    )
 
     # State: delivered
     # 7. Illegal jump: delivered -> processing (terminal state)
@@ -302,8 +299,8 @@ async def test_illegal_fulfillment_state_machine_jumps(pg):
         await transition_seller_shipment(
             resp.order_id, shipment_id,
             FulfillmentTransitionRequest(target_status=FulfillmentStatus.processing),
-            context=ctx_zol, user=seller_x, db=db
-        , pg=pg)
+            context=ctx_zol, user=seller_x, pg=pg
+        )
     assert exc_jump4.value.status_code == 400
 
 
@@ -313,17 +310,16 @@ async def test_illegal_fulfillment_state_machine_jumps(pg):
 
 @pytest.mark.asyncio
 async def test_cancellation_and_return_invariants(pg):
-    db = EnhancedFakeDB()
     await seed_products(pg)
 
     await add_to_cart(CartItemCreate(product_id=PROD_1, quantity=2), context=ctx_zol, user=buyer_a, pg=pg)
     quote = await checkout_quote(context=ctx_zol, user=buyer_a, pg=pg)
     resp = await create_order_from_quote(
         CreateOrderFromQuoteRequest(quote_id=quote.quote_id, shipping_address=shipping_addr, payment_method_type="card"),
-        context=ctx_zol, user=buyer_a, db=db
-    , pg_conn=pg)
+        context=ctx_zol, user=buyer_a, pg_conn=pg
+    )
 
-    order_doc = await db.orders.find_one({"id": resp.order_id})
+    order_doc = await order_store.get(pg, id=resp.order_id)
     line_id = order_doc["lines"][0]["line_id"]
     shipment_id = order_doc["shipments"][0]["shipment_id"]
 
@@ -332,7 +328,7 @@ async def test_cancellation_and_return_invariants(pg):
         await request_buyer_return(
             resp.order_id,
             ReturnRequest(line_item_id=line_id, quantity=1, reason="Defective"),
-            context=ctx_zol, user=buyer_a, db=db
+            context=ctx_zol, user=buyer_a, pg=pg
         )
     assert exc_ret_unfulfilled.value.status_code == 400
     assert "delivered orders" in exc_ret_unfulfilled.value.detail.lower()
@@ -341,20 +337,20 @@ async def test_cancellation_and_return_invariants(pg):
     await transition_seller_shipment(
         resp.order_id, shipment_id,
         FulfillmentTransitionRequest(target_status=FulfillmentStatus.processing),
-        context=ctx_zol, user=seller_x, db=db
-    , pg=pg)
+        context=ctx_zol, user=seller_x, pg=pg
+    )
     await transition_seller_shipment(
         resp.order_id, shipment_id,
         FulfillmentTransitionRequest(target_status=FulfillmentStatus.shipped),
-        context=ctx_zol, user=seller_x, db=db
-    , pg=pg)
+        context=ctx_zol, user=seller_x, pg=pg
+    )
 
     # 2. Return request on SHIPPED order -> HTTP 400
     with pytest.raises(HTTPException) as exc_ret_shipped:
         await request_buyer_return(
             resp.order_id,
             ReturnRequest(line_item_id=line_id, quantity=1, reason="Defective"),
-            context=ctx_zol, user=buyer_a, db=db
+            context=ctx_zol, user=buyer_a, pg=pg
         )
     assert exc_ret_shipped.value.status_code == 400
 
@@ -363,7 +359,7 @@ async def test_cancellation_and_return_invariants(pg):
         await request_buyer_cancellation(
             resp.order_id,
             CancellationRequest(reason="No longer needed"),
-            context=ctx_zol, user=buyer_a, db=db
+            context=ctx_zol, user=buyer_a, pg=pg
         )
     assert exc_cancel_shipped.value.status_code == 400
     assert "shipped or delivered" in exc_cancel_shipped.value.detail.lower()
@@ -372,15 +368,15 @@ async def test_cancellation_and_return_invariants(pg):
     await transition_seller_shipment(
         resp.order_id, shipment_id,
         FulfillmentTransitionRequest(target_status=FulfillmentStatus.delivered),
-        context=ctx_zol, user=seller_x, db=db
-    , pg=pg)
+        context=ctx_zol, user=seller_x, pg=pg
+    )
 
     # 4. Cancellation request on DELIVERED order -> HTTP 400
     with pytest.raises(HTTPException) as exc_cancel_delivered:
         await request_buyer_cancellation(
             resp.order_id,
             CancellationRequest(reason="No longer needed"),
-            context=ctx_zol, user=buyer_a, db=db
+            context=ctx_zol, user=buyer_a, pg=pg
         )
     assert exc_cancel_delivered.value.status_code == 400
 
@@ -389,7 +385,7 @@ async def test_cancellation_and_return_invariants(pg):
         await request_buyer_return(
             resp.order_id,
             ReturnRequest(line_item_id=line_id, quantity=10, reason="Defective"),
-            context=ctx_zol, user=buyer_a, db=db
+            context=ctx_zol, user=buyer_a, pg=pg
         )
     assert exc_ret_overflow.value.status_code == 400
     assert "exceeds line quantity" in exc_ret_overflow.value.detail.lower()
@@ -399,7 +395,7 @@ async def test_cancellation_and_return_invariants(pg):
         await request_buyer_return(
             resp.order_id,
             ReturnRequest(line_item_id="non-existent-line-id", quantity=1, reason="Defective"),
-            context=ctx_zol, user=buyer_a, db=db
+            context=ctx_zol, user=buyer_a, pg=pg
         )
     assert exc_ret_bad_line.value.status_code == 400
     assert "not found in order" in exc_ret_bad_line.value.detail.lower()

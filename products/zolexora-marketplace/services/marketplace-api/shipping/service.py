@@ -5,6 +5,8 @@ from typing import List, Optional, Tuple
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
+from commerce import orders as order_store
+
 from shipping.base import ShippingProvider
 from shipping.schemas import (
     ShipmentDoc, ShipmentStatus, ShipmentOptionDoc, BookingAttemptDoc,
@@ -40,8 +42,9 @@ def now_iso(): return datetime.now(timezone.utc).isoformat()
 # ── Core service ──────────────────────────────────────────────────────────────
 class ShippingService:
 
-    def __init__(self, db: AsyncIOMotorDatabase):
-        self.db = db
+    def __init__(self, db: AsyncIOMotorDatabase, pg=None):
+        self.db = db  # shipments, options and pickup locations (MongoDB until they move)
+        self.pg = pg  # orders (PostgreSQL)
 
     # ── Pickup location helpers ───────────────────────────────────────────────
 
@@ -62,7 +65,7 @@ class ShippingService:
         if existing:
             return existing
 
-        order = await self.db.orders.find_one({"id": order_id}, {"_id": 0})
+        order = await order_store.get(self.pg, id=order_id)
         if not order:
             return None
 
@@ -70,7 +73,7 @@ class ShippingService:
             order_id=order_id,
             seller_id=order.get("seller_id", ""),
             buyer_id=order.get("buyer_id", ""),
-            declared_value=order.get("total_paid", 0.0),
+            declared_value=order["grand_total"]["amount_minor"] / 100,
             cod_amount=0.0,
         )
         await self.db.shipments.insert_one(shipment.model_dump())
@@ -239,10 +242,7 @@ class ShippingService:
                     }}
                 )
                 # Update order status
-                await self.db.orders.update_one(
-                    {"id": order_id},
-                    {"$set": {"status": "shipped", "updated_at": now_iso()}}
-                )
+                await order_store.update(self.pg, order_id, {"status": "fulfilled", "fulfillment_status": "shipped"})
                 logger.info(f"Auto-booked shipment {shipment_id} via {opt.provider}, AWB={result.awb}")
                 return True
             else:
@@ -270,7 +270,7 @@ class ShippingService:
         Main entry point. Called when seller marks order as ready_to_ship.
         Discovers options and auto-books the best one.
         """
-        order = await self.db.orders.find_one({"id": order_id, "seller_id": seller_id}, {"_id": 0})
+        order = await order_store.get(self.pg, id=order_id, seller_id=seller_id)
         if not order:
             return {"error": "Order not found"}
 

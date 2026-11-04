@@ -153,11 +153,11 @@ def test_buyer_seller_admin_views():
         shipping_total=Money(amount_minor=5000, currency="INR"),
         tax_total=Money(amount_minor=14100, currency="INR"),
         discount_total=Money(amount_minor=0, currency="INR"),
-        grand_total=Money(amount_minor=323000, currency="INR"),
+        grand_total=Money(amount_minor=319100, currency="INR"),
         created_at=now,
         updated_at=now,
     )
-    assert buyer_resp.grand_total.amount_minor == 323000
+    assert buyer_resp.grand_total.amount_minor == 319100
 
     seller_resp = SellerOrderResponse(
         order_id="ord-001",
@@ -193,7 +193,7 @@ def test_buyer_seller_admin_views():
         shipping_total=Money(amount_minor=5000, currency="INR"),
         tax_total=Money(amount_minor=14100, currency="INR"),
         discount_total=Money(amount_minor=0, currency="INR"),
-        grand_total=Money(amount_minor=323000, currency="INR"),
+        grand_total=Money(amount_minor=319100, currency="INR"),
         created_at=now,
         updated_at=now,
     )

@@ -17,9 +17,7 @@ async def ensure_indexes(db: AsyncIOMotorDatabase):
     # Reels
     await db.reels.create_index("created_at")
 
-    # Orders
-    await db.orders.create_index("user_id")
-    await db.orders.create_index("status")
+    # Orders live in PostgreSQL (commerce.orders).
 
     logger.info("Indexes created successfully.")
 

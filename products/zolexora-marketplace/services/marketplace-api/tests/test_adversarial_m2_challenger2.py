@@ -18,8 +18,9 @@ from routers.orders import (
     list_seller_orders, get_seller_order_detail,
 )
 from routers.admin_orders import list_admin_orders, get_admin_order_detail
-from tests.test_orders_fulfillment_contracts import EnhancedFakeDB, create_context, seed_products, shipping_addr
+from tests.test_orders_fulfillment_contracts import create_context, seed_products, shipping_addr
 from tests.commerce_seed import BUYER_1, BUYER_2, SEL_1, SEL_2, PROD_1, PROD_2, record_quote, SEL_3, PROD_3, seed_listing
+from commerce import orders as order_store
 
 def _create_quote_token(quote_id, buyer_id, storefront_id, lines, currency, item_subtotal, shipping_total, tax_total, discount_total, grand_total, expires_in_minutes=15):
     issued_at = datetime.now(timezone.utc)
@@ -60,7 +61,6 @@ def set_fake_quote_secret(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_idempotency_sequential_and_concurrent(pg):
-    db = EnhancedFakeDB()
     await seed_products(pg)
     await add_to_cart(CartItemCreate(product_id=PROD_1, quantity=1), context=ctx_zol, user=buyer_1, pg=pg)
     quote = await checkout_quote(context=ctx_zol, user=buyer_1, pg=pg)
@@ -73,8 +73,8 @@ async def test_idempotency_sequential_and_concurrent(pg):
     )
 
     # 1. Sequential calls with same idempotency key
-    resp1 = await create_order_from_quote(req, context=ctx_zol, user=buyer_1, db=db, pg_conn=pg)
-    resp2 = await create_order_from_quote(req, context=ctx_zol, user=buyer_1, db=db, pg_conn=pg)
+    resp1 = await create_order_from_quote(req, context=ctx_zol, user=buyer_1, pg_conn=pg)
+    resp2 = await create_order_from_quote(req, context=ctx_zol, user=buyer_1, pg_conn=pg)
 
     assert resp1.order_id == resp2.order_id
     assert resp1.order_number == resp2.order_number
@@ -82,7 +82,6 @@ async def test_idempotency_sequential_and_concurrent(pg):
 
     # 2. Concurrent calls with same idempotency key
     # Reset DB state for fresh concurrent test
-    db_concurrent = EnhancedFakeDB()
     await add_to_cart(CartItemCreate(product_id=PROD_1, quantity=1), context=ctx_zol, user=buyer_1, pg=pg)
     quote_conc = await checkout_quote(context=ctx_zol, user=buyer_1, pg=pg)
     req_conc = CreateOrderFromQuoteRequest(
@@ -92,7 +91,7 @@ async def test_idempotency_sequential_and_concurrent(pg):
         idempotency_key="concurrent-idem-key-888"
     )
 
-    tasks = [create_order_from_quote(req_conc, context=ctx_zol, user=buyer_1, db=db_concurrent, pg_conn=pg) for _ in range(5)]
+    tasks = [create_order_from_quote(req_conc, context=ctx_zol, user=buyer_1, pg_conn=pg) for _ in range(5)]
     results = await asyncio.gather(*tasks)
 
     first_order_id = results[0].order_id
@@ -101,7 +100,7 @@ async def test_idempotency_sequential_and_concurrent(pg):
         assert r.order_number == results[0].order_number
 
     # Ensure only 1 order doc was inserted in DB for single seller
-    doc_count = await db_concurrent.orders.count_documents({"buyer_id": BUYER_1, "idempotency_key": "concurrent-idem-key-888"})
+    doc_count = await order_store.count(pg, buyer_id=BUYER_1, idempotency_key="concurrent-idem-key-888")
     assert doc_count == 1
 
 
@@ -111,7 +110,6 @@ async def test_idempotency_sequential_and_concurrent(pg):
 
 @pytest.mark.asyncio
 async def test_multi_seller_splitting_financial_invariants_exact(pg):
-    db = EnhancedFakeDB()
     await seed_products(pg)
     # Add product 1 (sel-1, 1000) and product 2 (sel-2, 2000)
     await add_to_cart(CartItemCreate(product_id=PROD_1, quantity=1), context=ctx_zol, user=buyer_1, pg=pg)
@@ -124,9 +122,9 @@ async def test_multi_seller_splitting_financial_invariants_exact(pg):
         payment_method_type="card",
         idempotency_key="multi-seller-inv-1"
     )
-    resp = await create_order_from_quote(req, context=ctx_zol, user=buyer_1, db=db, pg_conn=pg)
+    resp = await create_order_from_quote(req, context=ctx_zol, user=buyer_1, pg_conn=pg)
 
-    orders = await db.orders.find({"buyer_id": BUYER_1, "idempotency_key": "multi-seller-inv-1"}).to_list(10)
+    orders = await order_store.find(pg, **{"buyer_id": BUYER_1, "idempotency_key": "multi-seller-inv-1"})
     assert len(orders) == 2
 
     sum_seller_grand_totals = sum(o["grand_total"]["amount_minor"] for o in orders)
@@ -141,7 +139,6 @@ async def test_multi_seller_splitting_rounding_truncation_discrepancy(pg):
     quote_shipping/tax/discount divided by subtotal ratio produces fractional values.
     Verify if sum of seller grand totals equals quote grand total or reveals rounding truncation gap.
     """
-    db = EnhancedFakeDB()
     # Add 3 sellers with items costing 100, 100, 100 (total subtotal 300)
     for listing, org in ((PROD_1, SEL_1), (PROD_2, SEL_2), (PROD_3, SEL_3)):
         await seed_listing(pg, listing, org=org, price=100)
@@ -176,9 +173,9 @@ async def test_multi_seller_splitting_rounding_truncation_discrepancy(pg):
         idempotency_key="idem-split-round"
     )
 
-    resp = await create_order_from_quote(req, context=ctx_zol, user=buyer_1, db=db, pg_conn=pg)
+    resp = await create_order_from_quote(req, context=ctx_zol, user=buyer_1, pg_conn=pg)
 
-    orders = await db.orders.find({"buyer_id": BUYER_1, "idempotency_key": "idem-split-round"}).to_list(10)
+    orders = await order_store.find(pg, **{"buyer_id": BUYER_1, "idempotency_key": "idem-split-round"})
     assert len(orders) == 3
 
     sum_seller_grand_totals = sum(o["grand_total"]["amount_minor"] for o in orders)
@@ -204,7 +201,6 @@ async def test_multi_seller_splitting_rounding_truncation_discrepancy(pg):
 
 @pytest.mark.asyncio
 async def test_zero_discount_shipping_tax_edge_cases(pg):
-    db = EnhancedFakeDB()
     await seed_products(pg)
 
     lines_data = [
@@ -228,10 +224,10 @@ async def test_zero_discount_shipping_tax_edge_cases(pg):
     await record_quote(pg, token1, BUYER_1, "zolexora-shop")
 
     req1 = CreateOrderFromQuoteRequest(quote_id=token1, shipping_address=shipping_addr, payment_method_type="upi", idempotency_key="z-1")
-    resp1 = await create_order_from_quote(req1, context=ctx_zol, user=buyer_1, db=db, pg_conn=pg)
+    resp1 = await create_order_from_quote(req1, context=ctx_zol, user=buyer_1, pg_conn=pg)
     assert resp1.grand_total.amount_minor == 1000
 
-    order1 = await db.orders.find_one({"id": resp1.order_id})
+    order1 = await order_store.get(pg, id=resp1.order_id)
     assert order1["shipping_total"]["amount_minor"] == 0
     assert order1["tax_total"]["amount_minor"] == 0
     assert order1["discount_total"]["amount_minor"] == 0
@@ -254,10 +250,10 @@ async def test_zero_discount_shipping_tax_edge_cases(pg):
     await record_quote(pg, token2, BUYER_1, "zolexora-shop")
 
     req2 = CreateOrderFromQuoteRequest(quote_id=token2, shipping_address=shipping_addr, payment_method_type="card", idempotency_key="z-2")
-    resp2 = await create_order_from_quote(req2, context=ctx_zol, user=buyer_1, db=db, pg_conn=pg)
+    resp2 = await create_order_from_quote(req2, context=ctx_zol, user=buyer_1, pg_conn=pg)
     assert resp2.grand_total.amount_minor == 0
 
-    order2 = await db.orders.find_one({"id": resp2.order_id})
+    order2 = await order_store.get(pg, id=resp2.order_id)
     assert order2["discount_total"]["amount_minor"] == 1000
     assert order2["grand_total"]["amount_minor"] == 0
 
@@ -273,7 +269,6 @@ async def test_zero_discount_shipping_tax_edge_cases(pg):
 
 @pytest.mark.asyncio
 async def test_json_serialization_primitives(pg):
-    db = EnhancedFakeDB()
     await seed_products(pg)
     await add_to_cart(CartItemCreate(product_id=PROD_1, quantity=2), context=ctx_zol, user=buyer_1, pg=pg)
     quote = await checkout_quote(context=ctx_zol, user=buyer_1, pg=pg)
@@ -286,19 +281,19 @@ async def test_json_serialization_primitives(pg):
     )
 
     # 1. CreateOrderFromQuoteResponse
-    create_resp = await create_order_from_quote(req, context=ctx_zol, user=buyer_1, db=db, pg_conn=pg)
+    create_resp = await create_order_from_quote(req, context=ctx_zol, user=buyer_1, pg_conn=pg)
     create_json = create_resp.model_dump(mode="json")
     assert isinstance(create_json["grand_total"], dict)
     assert create_json["grand_total"] == {"amount_minor": 7260, "currency": "INR"}  # 2000 + 18% tax + delivery
     assert isinstance(create_json["created_at"], str)
 
     # 2. BuyerOrderSummaryResponse & BuyerOrderResponse
-    buyer_summaries = await list_buyer_orders(context=ctx_zol, user=buyer_1, db=db)
+    buyer_summaries = await list_buyer_orders(context=ctx_zol, user=buyer_1, pg=pg)
     bs_json = buyer_summaries[0].model_dump(mode="json")
     assert bs_json["grand_total"] == {"amount_minor": 7260, "currency": "INR"}
     assert isinstance(bs_json["created_at"], str)
 
-    buyer_detail = await get_buyer_order_detail(create_resp.order_id, context=ctx_zol, user=buyer_1, db=db)
+    buyer_detail = await get_buyer_order_detail(create_resp.order_id, context=ctx_zol, user=buyer_1, pg=pg)
     bd_json = buyer_detail.model_dump(mode="json")
     assert bd_json["item_subtotal"] == {"amount_minor": 2000, "currency": "INR"}
     assert bd_json["shipping_total"] == {"amount_minor": 4900, "currency": "INR"}  # delivery under ₹499
@@ -306,40 +301,40 @@ async def test_json_serialization_primitives(pg):
     assert bd_json["lines"][0]["subtotal"] == {"amount_minor": 2000, "currency": "INR"}
 
     # 3. SellerOrderSummaryResponse & SellerOrderResponse
-    seller_summaries = await list_seller_orders(context=ctx_zol, user=seller_1, db=db)
+    seller_summaries = await list_seller_orders(context=ctx_zol, user=seller_1, pg=pg)
     ss_json = seller_summaries[0].model_dump(mode="json")
     assert ss_json["seller_subtotal"] == {"amount_minor": 2000, "currency": "INR"}
     assert isinstance(ss_json["created_at"], str)
 
-    seller_detail = await get_seller_order_detail(create_resp.order_id, context=ctx_zol, user=seller_1, db=db)
+    seller_detail = await get_seller_order_detail(create_resp.order_id, context=ctx_zol, user=seller_1, pg=pg)
     sd_json = seller_detail.model_dump(mode="json")
     assert sd_json["seller_subtotal"] == {"amount_minor": 2000, "currency": "INR"}
     assert sd_json["seller_shipments"][0]["events"][0]["status"] == "unfulfilled"
     assert isinstance(sd_json["seller_shipments"][0]["events"][0]["timestamp"], str)
 
     # 4. AdminOrderSummaryResponse & AdminOrderResponse
-    admin_summaries = await list_admin_orders(context=ctx_zol, user=admin_user, db=db)
+    admin_summaries = await list_admin_orders(context=ctx_zol, user=admin_user, pg=pg)
     as_json = admin_summaries[0].model_dump(mode="json")
     assert as_json["grand_total"] == {"amount_minor": 7260, "currency": "INR"}
 
-    admin_detail = await get_admin_order_detail(create_resp.order_id, context=ctx_zol, user=admin_user, db=db)
+    admin_detail = await get_admin_order_detail(create_resp.order_id, context=ctx_zol, user=admin_user, pg=pg)
     ad_json = admin_detail.model_dump(mode="json")
     assert ad_json["grand_total"] == {"amount_minor": 7260, "currency": "INR"}
     assert ad_json["item_subtotal"] == {"amount_minor": 2000, "currency": "INR"}
     assert isinstance(ad_json["created_at"], str)
 
     # 5. Cancellation & Return response serialization
-    cancel_resp = await request_buyer_cancellation(create_resp.order_id, CancellationRequest(reason="Test"), context=ctx_zol, user=buyer_1, db=db)
+    cancel_resp = await request_buyer_cancellation(create_resp.order_id, CancellationRequest(reason="Test"), context=ctx_zol, user=buyer_1, pg=pg)
     cr_json = cancel_resp.model_dump(mode="json")
     assert isinstance(cr_json["created_at"], str)
     assert cr_json["status"] == "requested"
 
     # Mark delivered and test Return Response serialization
-    await db.orders.update_one({"id": create_resp.order_id}, {"$set": {"fulfillment_status": "delivered"}})
-    order_doc = await db.orders.find_one({"id": create_resp.order_id})
+    await order_store.update(pg, create_resp.order_id, {"fulfillment_status": "delivered"})
+    order_doc = await order_store.get(pg, id=create_resp.order_id)
     line_id = order_doc["lines"][0]["line_id"]
 
-    ret_resp = await request_buyer_return(create_resp.order_id, ReturnRequest(line_item_id=line_id, quantity=1, reason="Test return"), context=ctx_zol, user=buyer_1, db=db)
+    ret_resp = await request_buyer_return(create_resp.order_id, ReturnRequest(line_item_id=line_id, quantity=1, reason="Test return"), context=ctx_zol, user=buyer_1, pg=pg)
     rr_json = ret_resp.model_dump(mode="json")
     assert isinstance(rr_json["created_at"], str)
 

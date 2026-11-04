@@ -19,6 +19,7 @@ from pydantic import BaseModel, Field, StrictInt
 
 from catalog import store as catalog_store
 from commerce import cart as cart_store
+from commerce import orders as order_store
 from commerce import stock
 from core.config import settings
 from core.deps import db_dep, shopper
@@ -153,7 +154,7 @@ def _get(line, name):
     return line.get(name) if isinstance(line, dict) else getattr(line, name, None)
 
 
-async def place_orders(pg, db, buyer_id: str, storefront_key: str, orders: list[dict], *,
+async def place_orders(pg, buyer_id: str, storefront_key: str, orders: list[dict], *,
                        coins_used: int = 0, paid: bool = False, user_repo: UserRepository | None = None,
                        quote_signature: str | None = None) -> None:
     """One PostgreSQL transaction: hold (or, when paid, take) the stock, spend the coins, use up
@@ -174,7 +175,8 @@ async def place_orders(pg, db, buyer_id: str, storefront_key: str, orders: list[
             if not used:
                 raise HTTPException(409, "This quote was already used or is unknown; request a new quote")
         await cart_store.convert(pg, buyer_id, storefront_key)
-        await db.orders.insert_many(orders)
+        for order in orders:
+            await order_store.insert(pg, order)
 
 
 async def settle(pg, order_ids, paid: bool) -> None:
@@ -182,6 +184,14 @@ async def settle(pg, order_ids, paid: bool) -> None:
     async with pg.transaction():
         for order_id in order_ids:
             await (stock.consume if paid else stock.release)(pg, order_id)
+
+
+async def mark_paid(pg, fields: dict, **q) -> list[str]:
+    """Pending orders matching q become paid (with fields) and take their stock, together."""
+    async with pg.transaction():
+        ids = await order_store.update_many(pg, {"payment_status": "paid", **fields}, payment_status="pending", **q)
+        await settle(pg, ids, paid=True)
+    return ids
 
 
 def _generate_quote_token(buyer_id: str, quote_data: dict) -> str:
@@ -438,7 +448,7 @@ async def checkout_stub(
             order.update(fields)
 
     async def place_order(paid: bool = False) -> None:
-        await place_orders(pg, db, user["id"], sf, orders, coins_used=coins_used, paid=paid, user_repo=user_repo)
+        await place_orders(pg, user["id"], sf, orders, coins_used=coins_used, paid=paid, user_repo=user_repo)
         if coins_used:
             await db.coin_transactions.insert_one(CoinTxDoc(
                 user_id=user["id"], amount=-coins_used, type="spent",
@@ -551,7 +561,6 @@ async def verify_payment_stub(
     req: VerifyPaymentRequest,
     context: StorefrontContext = Depends(require_storefront_context),
     user=Depends(shopper),
-    db: AsyncIOMotorDatabase = Depends(db_dep),
     pg: Connection = Depends(pg_conn_dep),
 ):
     if not settings.RAZORPAY_KEY_SECRET:
@@ -566,17 +575,10 @@ async def verify_payment_stub(
     if not hmac.compare_digest(expected_sig, req.razorpay_signature):
         raise HTTPException(400, "Signature verification failed")
     
-    pending = {"razorpay_order_id": req.razorpay_order_id, "buyer_id": user["id"],
-               "storefront_id": _key(context.key), "payment_status": "pending"}
-    ids = [o["id"] for o in await db.orders.find(pending, {"_id": 0, "id": 1}).to_list(50)]
+    ids = await mark_paid(pg, {"razorpay_payment_id": req.razorpay_payment_id}, buyer_id=user["id"],
+                          storefront=_key(context.key), details={"razorpay_order_id": req.razorpay_order_id})
     if not ids:
         raise HTTPException(404, "Pending order not found")
-    await db.orders.update_many(
-        {**pending, "id": {"$in": ids}},
-        {"$set": {"payment_status": "paid", "razorpay_payment_id": req.razorpay_payment_id,
-                  "updated_at": datetime.now(timezone.utc).isoformat()}}
-    )
-    await settle(pg, ids, paid=True)
     return {"status": "ok"}
 
 class VerifyCashfreeRequest(BaseModel):
@@ -587,7 +589,6 @@ async def verify_cashfree_stub(
     req: VerifyCashfreeRequest,
     context: StorefrontContext = Depends(require_storefront_context),
     user=Depends(shopper),
-    db: AsyncIOMotorDatabase = Depends(db_dep),
     pg: Connection = Depends(pg_conn_dep),
 ):
     from core.payments import get_cashfree_order
@@ -598,17 +599,13 @@ async def verify_cashfree_stub(
     
     order_status = cf_info.get("order_status")
     if order_status == "PAID":
-        await mark_cashfree_paid(db, pg, req.order_id, {"buyer_id": user["id"], "storefront_id": _key(context.key)})
+        await mark_cashfree_paid(pg, req.order_id, buyer_id=user["id"], storefront=_key(context.key))
         return {"status": "paid", "order_status": order_status}
     return {"status": order_status.lower() if order_status else "pending", "order_status": order_status}
 
-async def mark_cashfree_paid(db, pg, cashfree_order_id: str, scope: dict) -> None:
+async def mark_cashfree_paid(pg, cashfree_order_id: str, **scope) -> None:
     """Cashfree says PAID: every pending order of that checkout is paid and takes its stock."""
-    pending = {"$or": [{"cashfree_order_id": cashfree_order_id}, {"id": cashfree_order_id}], **scope, "payment_status": "pending"}
-    ids = [o["id"] for o in await db.orders.find(pending, {"_id": 0, "id": 1}).to_list(50)]
-    if ids:
-        await db.orders.update_many({"id": {"$in": ids}}, {"$set": {"payment_status": "paid", "updated_at": datetime.now(timezone.utc).isoformat()}})
-        await settle(pg, ids, paid=True)
+    await mark_paid(pg, {}, details={"cashfree_order_id": cashfree_order_id}, **scope)
 
 class UpiPaidRequest(BaseModel):
     order_id: str
@@ -619,17 +616,17 @@ async def upi_paid_stub(
     req: UpiPaidRequest,
     context: StorefrontContext = Depends(require_storefront_context),
     user=Depends(shopper),
-    db: AsyncIOMotorDatabase = Depends(db_dep)
+    pg: Connection = Depends(pg_conn_dep),
 ):
     # The buyer's UTR is a claim, not proof: an admin checks it (PUT /admin/orders/{id}/verify-upi).
-    scope = {"buyer_id": user["id"], "storefront_id": _key(context.key), "payment_method": "upi", "payment_status": "pending"}
-    order = await db.orders.find_one({"id": req.order_id, **scope})
+    scope = {"buyer_id": user["id"], "storefront": _key(context.key), "payment_method": "upi", "payment_status": "pending"}
+    order = await order_store.get(pg, id=req.order_id, **scope)
     if not order:
         raise HTTPException(404, "Pending UPI order not found")
     # One UPI payment covers the whole checkout (one order per seller).
-    await db.orders.update_many(
-        {"checkout_id": order["checkout_id"], **scope} if order.get("checkout_id") else {"id": req.order_id, **scope},
-        {"$set": {"payment_status": "awaiting_verification", "upi_transaction_ref": req.upi_transaction_ref, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    await order_store.update_many(
+        pg, {"payment_status": "awaiting_verification", "upi_transaction_ref": req.upi_transaction_ref},
+        **({"checkout_id": order["checkout_id"]} if order.get("checkout_id") else {"id": req.order_id}), **scope,
     )
     return {"status": "awaiting_verification"}
 

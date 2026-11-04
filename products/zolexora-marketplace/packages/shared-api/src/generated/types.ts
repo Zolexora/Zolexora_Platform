@@ -1281,6 +1281,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/orders/{order_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update Order Status */
+        put: operations["update_order_status_api_orders__order_id__status_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/orders/my": {
         parameters: {
             query?: never;
@@ -3373,6 +3390,23 @@ export interface paths {
         put?: never;
         /** Action Seller Return */
         post: operations["action_seller_return_orders_seller__order_id__returns_action_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/orders/{order_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update Order Status */
+        put: operations["update_order_status_orders__order_id__status_put"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -8837,6 +8871,39 @@ export interface operations {
             };
         };
     };
+    update_order_status_api_orders__order_id__status_put: {
+        parameters: {
+            query: {
+                status: string;
+            };
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     legacy_my_orders_api_orders_my_get: {
         parameters: {
             query?: never;
@@ -12787,6 +12854,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReturnResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_order_status_orders__order_id__status_put: {
+        parameters: {
+            query: {
+                status: string;
+            };
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

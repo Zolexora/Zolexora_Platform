@@ -6,9 +6,10 @@ Standardized for MR-01E / ADR 0013.
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
-from motor.motor_asyncio import AsyncIOMotorDatabase
 
-from core.deps import db_dep, admin_only
+from commerce import orders as order_store
+from core.deps import admin_only
+from shared.database.postgres import pg_conn_dep
 from storefronts.dependencies import require_storefront_context
 from storefronts.models import StorefrontContext
 from models.primitives import Money
@@ -26,12 +27,9 @@ admin_orders_router = APIRouter(prefix="/orders/admin", tags=["admin-orders"])
 async def list_admin_orders(
     context: StorefrontContext = Depends(require_storefront_context),
     user=Depends(admin_only),
-    db: AsyncIOMotorDatabase = Depends(db_dep)
+    pg=Depends(pg_conn_dep),
 ):
-    docs = await db.orders.find(
-        {"storefront_id": context.key},
-        {"_id": 0}
-    ).sort("created_at", -1).to_list(500)
+    docs = await order_store.find(pg, storefront=context.key, limit=500)
 
     summaries = []
     for doc in docs:
@@ -57,12 +55,9 @@ async def get_admin_order_detail(
     order_id: str,
     context: StorefrontContext = Depends(require_storefront_context),
     user=Depends(admin_only),
-    db: AsyncIOMotorDatabase = Depends(db_dep)
+    pg=Depends(pg_conn_dep),
 ):
-    doc = await db.orders.find_one(
-        {"id": order_id, "storefront_id": context.key},
-        {"_id": 0}
-    )
+    doc = await order_store.get(pg, id=order_id, storefront=context.key)
     if not doc:
         raise HTTPException(404, "Order not found or access denied")
 
