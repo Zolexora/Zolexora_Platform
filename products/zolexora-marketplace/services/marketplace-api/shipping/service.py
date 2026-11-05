@@ -9,7 +9,7 @@ from shipping import store
 from shipping.base import ShippingProvider
 from shipping.schemas import (
     ShipmentStatus, ShipmentOptionDoc, BookingAttemptDoc,
-    TrackingEventDoc, CourierOption, BookingResult,
+    TrackingEventDoc, CourierOption, BookingResult, apply_courier_status,
 )
 from shipping.rules import filter_and_rank
 from shipping.providers.delhivery import DelhiveryProvider
@@ -347,14 +347,6 @@ class ShippingService:
         if new_events:
             await store.append(self.pg, shipment_id, "tracking_events", new_events)
 
-        # Map provider status to our status
-        status_map = {
-            "delivered": ShipmentStatus.DELIVERED,
-            "out for delivery": ShipmentStatus.OUT_FOR_DELIVERY,
-            "in transit": ShipmentStatus.IN_TRANSIT,
-        }
-        mapped = next((v for k, v in status_map.items() if k in result.current_status.lower()), None)
-        if mapped:
-            await store.update(self.pg, shipment_id, {"current_status": mapped})
+        await apply_courier_status(self.pg, shipment, result.current_status)
 
         return {"awb": shipment["awb"], "current_status": result.current_status, "new_events": len(new_events)}

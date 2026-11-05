@@ -2,12 +2,13 @@ import logging
 import hmac
 import hashlib
 import json
+import uuid
 from fastapi import APIRouter, Request, HTTPException
 from fastapi import Depends
 from core.config import settings
 from shared.database.postgres import pg_conn_dep
 from shipping import store
-from shipping.schemas import TrackingEventDoc, ShipmentStatus
+from shipping.schemas import TrackingEventDoc, apply_courier_status
 
 router = APIRouter(prefix="/webhooks/shipping", tags=["shipping-webhooks"])
 logger = logging.getLogger("zolexora.shipping.webhooks")
@@ -50,17 +51,6 @@ async def _verified_payload(request: Request) -> dict:
     except json.JSONDecodeError as exc:
         raise HTTPException(400, "Invalid JSON payload") from exc
 
-# Status mapping helpers
-def _map_status(raw_status: str) -> str:
-    s = raw_status.lower()
-    if any(x in s for x in ["delivered", "dlv"]): return ShipmentStatus.DELIVERED
-    if any(x in s for x in ["out for delivery", "ofd"]): return ShipmentStatus.OUT_FOR_DELIVERY
-    if any(x in s for x in ["transit", "in transit", "intransit"]): return ShipmentStatus.IN_TRANSIT
-    if any(x in s for x in ["pickup", "picked up"]): return ShipmentStatus.PICKUP_REQUESTED
-    if any(x in s for x in ["cancel"]): return ShipmentStatus.CANCELLED
-    return ShipmentStatus.IN_TRANSIT
-
-
 async def _save_event(pg, awb: str, provider: str, status: str, description: str, location: str, raw: dict):
     s = await store.get(pg, awb=awb)
     if not s:
@@ -71,10 +61,13 @@ async def _save_event(pg, awb: str, provider: str, status: str, description: str
         status=status, description=description, location=location,
         raw_payload=raw,
     )
-    mapped = _map_status(status)
     async with pg.transaction():
+        # A replayed delivery is ignored.
+        if await pg.fetchval("SELECT details -> 'tracking_events' @> jsonb_build_array(jsonb_build_object('raw_payload', $2::jsonb)) FROM shipment WHERE id = $1",
+                             uuid.UUID(s["id"]), json.dumps(raw)):
+            return
         await store.append(pg, s["id"], "tracking_events", [event.model_dump()])
-        await store.update(pg, s["id"], {"current_status": mapped})
+        mapped = await apply_courier_status(pg, s, status)
     logger.info(f"Webhook [{provider}] AWB={awb} status={mapped}")
 
 

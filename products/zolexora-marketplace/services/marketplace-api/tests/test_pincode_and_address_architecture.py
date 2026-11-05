@@ -72,7 +72,7 @@ async def test_google_address_validation_placeholder():
         pincode="203207",
         landmark="NEAR MAIN MARKET",
     )
-    assert res.status == "VALID"
+    assert res.status == "UNVALIDATED"  # complete, but nobody verified it
     assert res.is_complete is True
 
 
@@ -82,6 +82,6 @@ async def test_shipway_serviceability_provider():
     provider = ShipwayProvider()
     res = await provider.check_serviceability("203207")
     assert res.serviceable is True
-    assert res.provider == "SHIPWAY"
-    assert res.estimated_delivery_days == 3
-    assert res.cod_available is True
+    assert res.provider == "NONE"  # no courier was asked; booking confirms
+    assert res.estimated_delivery_days is None
+    assert res.cod_available is False

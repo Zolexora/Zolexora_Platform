@@ -1,3 +1,4 @@
+import re
 import uuid
 from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any
@@ -56,6 +57,43 @@ class ShipmentStatus:
     CANCELLED          = "cancelled"
     FAILED             = "booking_failed"
     ATTENTION_REQUIRED = "shipping_attention_required"
+
+
+FINAL_STATUSES = {ShipmentStatus.DELIVERED, ShipmentStatus.CANCELLED}
+_PROBLEM = re.compile(r"undeliver|not deliver|\bndr\b|fail|\brto\b|return|lost|damage|exception|refused")
+
+
+def courier_status(text: str) -> str | None:
+    """Our status for a courier's status text: ATTENTION_REQUIRED for problems (undelivered, RTO,
+    lost...), None when the text says nothing we act on."""
+    s = (text or "").lower()
+    if _PROBLEM.search(s):
+        return ShipmentStatus.ATTENTION_REQUIRED
+    if "cancel" in s:
+        return ShipmentStatus.CANCELLED
+    if "out for delivery" in s or re.search(r"\bofd\b", s):
+        return ShipmentStatus.OUT_FOR_DELIVERY
+    if "deliver" in s or re.search(r"\bdlv\b", s):
+        return ShipmentStatus.DELIVERED
+    if re.search(r"transit|picked up|shipped|dispatch|reached|arrived", s):
+        return ShipmentStatus.IN_TRANSIT
+    if "pickup" in s:
+        return ShipmentStatus.PICKUP_REQUESTED
+    return None
+
+
+async def apply_courier_status(conn, shipment: dict, text: str) -> str | None:
+    """Moves a shipment on from a courier status; delivered and cancelled shipments stay put."""
+    from shipping import store
+
+    mapped = courier_status(text)
+    if mapped is None or shipment.get("current_status") in FINAL_STATUSES:
+        return None
+    if mapped == ShipmentStatus.ATTENTION_REQUIRED:
+        await store.update(conn, shipment["id"], {"shipping_attention_required": True})
+    else:
+        await store.update(conn, shipment["id"], {"current_status": mapped})
+    return mapped
 
 
 class PackageDetails(BaseModel):

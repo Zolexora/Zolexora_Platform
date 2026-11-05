@@ -1,7 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
 from typing import Optional
-from core.config import settings
 from shared.address.models import AddressValidationResult
 
 logger = logging.getLogger(__name__)
@@ -36,12 +35,6 @@ class GoogleAddressValidationProvider(AddressValidationProvider):
         landmark: Optional[str] = None,
         state: Optional[str] = None,
     ) -> AddressValidationResult:
-        api_key = (
-            settings.GOOGLE_ADDRESS_VALIDATION_API_KEY.get_secret_value()
-            if settings.GOOGLE_ADDRESS_VALIDATION_API_KEY
-            else None
-        )
-
         # Basic structural validation
         if not house_no or not village_town or not pincode or len(pincode) != 6:
             return AddressValidationResult(
@@ -51,12 +44,12 @@ class GoogleAddressValidationProvider(AddressValidationProvider):
                 message="Missing mandatory address components",
             )
 
-        # Placeholder: When GOOGLE_ADDRESS_VALIDATION_API_KEY is configured in production, call Google API
+        # No Google call is made yet: the address is complete, not verified.
         return AddressValidationResult(
-            status="VALID",
-            provider="GOOGLE",
+            status="UNVALIDATED",
+            provider="NONE",
             is_complete=True,
-            message="Address verified by postal validation standards",
+            message="Address is complete; it has not been verified",
         )
 
 

@@ -1,4 +1,5 @@
 import os
+import time
 import httpx
 import logging
 from typing import List, Optional
@@ -11,11 +12,12 @@ SR_EMAIL  = os.environ.get("SHIPROCKET_EMAIL", "")
 SR_PASS   = os.environ.get("SHIPROCKET_PASSWORD", "")
 TIMEOUT   = 20.0
 
-_token_cache: dict = {"token": None}
+_token_cache: dict = {"token": None, "expires": 0.0}
+TOKEN_LIFETIME = 8 * 24 * 3600  # Shiprocket tokens last 10 days; renew well before that
 
 
 async def _get_token() -> Optional[str]:
-    if _token_cache["token"]:
+    if _token_cache["token"] and time.monotonic() < _token_cache["expires"]:
         return _token_cache["token"]
     if not SR_EMAIL or not SR_PASS:
         return None
@@ -24,7 +26,7 @@ async def _get_token() -> Optional[str]:
             r = await c.post(f"{BASE_URL}/auth/login", json={"email": SR_EMAIL, "password": SR_PASS})
             data = r.json()
             token = data.get("token")
-            _token_cache["token"] = token
+            _token_cache.update(token=token, expires=time.monotonic() + TOKEN_LIFETIME if token else 0.0)
             return token
     except Exception as e:
         logger.warning(f"Shiprocket auth error: {e}")

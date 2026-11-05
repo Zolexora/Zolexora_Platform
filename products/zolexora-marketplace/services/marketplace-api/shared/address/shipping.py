@@ -1,7 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
 from typing import Optional
-from core.config import settings
 from shared.address.models import ShippingServiceabilityResult
 
 logger = logging.getLogger(__name__)
@@ -33,10 +32,7 @@ class ShipwayProvider(ShippingProvider):
         shipment_weight_grams: int = 500,
     ) -> ShippingServiceabilityResult:
         clean_pin = pincode.strip()
-        api_key = settings.SHIPWAY_API_KEY.get_secret_value() if settings.SHIPWAY_API_KEY else None
-
-        # Placeholder: When real Shipway API credentials are provided, dispatch HTTP POST
-        # For now, evaluate serviceability deterministically based on standard 6-digit Indian PIN rules
+        # Only the pincode format is checked here; couriers confirm serviceability when the seller books.
         if not clean_pin.isdigit() or len(clean_pin) != 6:
             return ShippingServiceabilityResult(
                 serviceable=False,
@@ -46,13 +42,12 @@ class ShipwayProvider(ShippingProvider):
                 message="Invalid delivery pincode format",
             )
 
-        # Standard serviceable region check
         return ShippingServiceabilityResult(
             serviceable=True,
-            provider="SHIPWAY",
-            estimated_delivery_days=3,
-            cod_available=True,
-            message="Courier delivery serviceable via Shipway Express",
+            provider="NONE",
+            estimated_delivery_days=None,
+            cod_available=False,
+            message="Pincode accepted; the courier confirms delivery when the order ships",
         )
 
 
