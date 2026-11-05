@@ -40,7 +40,7 @@ export default function ShopScreen() {
       if (reset) setPage(1); else setPage(p => p + 1);
     } catch {}
     finally { setLoading(false); setLoadingMore(false); }
-  }, [category, sort, activeSearch]);
+  }, [category, sort, activeSearch, page]);
 
   useEffect(() => { load(true); }, [category, sort, activeSearch]);
 

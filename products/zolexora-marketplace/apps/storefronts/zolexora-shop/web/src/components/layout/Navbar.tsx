@@ -171,7 +171,7 @@ export default function Navbar() {
         <div className="max-w-[1400px] mx-auto px-4 flex items-center gap-6 h-9 overflow-x-auto scrollbar-hide">
           <Link href="/store" className="text-xs font-medium text-gray-500 hover:text-ink whitespace-nowrap transition-colors">All Products</Link>
           {categories.map((cat) => (
-            <Link key={cat} href={`/store?category=${cat}`} className="text-xs font-medium text-gray-500 hover:text-ink whitespace-nowrap transition-colors">
+            <Link key={cat} href={`/store?category=${encodeURIComponent(cat)}`} className="text-xs font-medium text-gray-500 hover:text-ink whitespace-nowrap transition-colors">
               {cat}
             </Link>
           ))}

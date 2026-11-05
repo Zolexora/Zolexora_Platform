@@ -140,7 +140,7 @@ export default function HomeScreen() {
             {CATS.map((c, i) => (
               <Animated.View key={c.name} entering={FadeInDown.delay(200 + i*40)}>
                 <TouchableOpacity style={[ss.catChip, { backgroundColor: c.bg }]}
-                  onPress={() => router.push(`/(tabs)/shop?category=${c.name}`)}>
+                  onPress={() => router.push(`/(tabs)/shop?category=${encodeURIComponent(c.name)}`)}>
                   <Text style={{ fontSize:20 }}>{c.emoji}</Text>
                   <Text style={ss.catLabel}>{c.name.split(" ")[0]}</Text>
                 </TouchableOpacity>

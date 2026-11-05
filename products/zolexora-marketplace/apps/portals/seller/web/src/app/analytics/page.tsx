@@ -26,7 +26,7 @@ export default function AnalyticsPage() {
   }, []);
 
   // Compute stats
-  const paidOrders = orders.filter((o) => o.payment_status === "paid");
+  const paidOrders = orders.filter((o) => o.payment_status === "paid" && o.status !== "cancelled");
   const totalRevenue = paidOrders.reduce((s, o) => s + o.total_paid, 0);
   const avgOrderValue = paidOrders.length ? totalRevenue / paidOrders.length : 0;
   const totalViews = reels.reduce((s, r) => s + r.views_count, 0);

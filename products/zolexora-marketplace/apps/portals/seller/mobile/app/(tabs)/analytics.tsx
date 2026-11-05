@@ -13,7 +13,7 @@ export default function SellerAnalyticsScreen() {
       .finally(() => setLoading(false));
   }, []);
 
-  const paid = data.orders.filter((o: any) => o.payment_status === "paid");
+  const paid = data.orders.filter((o: any) => o.payment_status === "paid" && o.status !== "cancelled");
   const revenue = paid.reduce((s: number, o: any) => s + o.total_paid, 0);
   const avgOrder = paid.length ? revenue / paid.length : 0;
   const totalViews = data.reels.reduce((s: number, r: any) => s + r.views_count, 0);

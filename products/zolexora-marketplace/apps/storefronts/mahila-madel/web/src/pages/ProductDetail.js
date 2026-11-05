@@ -68,7 +68,7 @@ export default function ProductDetail() {
     <div className="pd container">
       <div className="pd-breadcrumb">
         <span onClick={() => navigate('/')}>Home</span> /
-        <span onClick={() => navigate(`/products?category=${product.category}`)}>{product.category}</span> /
+        <span onClick={() => navigate(`/products?category=${encodeURIComponent(product.category)}`)}>{product.category}</span> /
         <span>{(product.name || '').slice(0, 30)}...</span>
       </div>
 

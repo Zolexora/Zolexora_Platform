@@ -60,11 +60,22 @@ const mapProduct = (p) => ({
   ratings: p.rating ?? p.ratings ?? 0,
 });
 
-export const getProducts = async (params) => {
+const PAGE_SIZE = 24;
+const SORTS = { 'price-asc': 'price_asc', 'price-desc': 'price_desc', rating: 'popular' };
+
+// The page's filters in the API's names (search, min_price, skip...).
+export const getProducts = async ({ category, keyword, sort, page = 1, minPrice, maxPrice } = {}) => {
+  const params = { limit: PAGE_SIZE, skip: (Math.max(1, Number(page) || 1) - 1) * PAGE_SIZE, sort: SORTS[sort] || sort || 'newest' };
+  if (category && category !== 'All') params.category = category;
+  if (keyword) params.search = keyword;
+  if (minPrice) params.min_price = minPrice;
+  if (maxPrice) params.max_price = maxPrice;
   const res = await API.get('/products', { params });
   const arr = Array.isArray(res.data) ? res.data : (res.data.products || []);
   const mapped = arr.map(mapProduct);
-  return { data: { products: mapped, total: mapped.length, pages: 1 } };
+  const current = Math.max(1, Number(page) || 1);
+  // The API returns a page, not a count: offer a next page while pages come back full.
+  return { data: { products: mapped, total: (current - 1) * PAGE_SIZE + mapped.length, pages: mapped.length === PAGE_SIZE ? current + 1 : current } };
 };
 export const getProduct = async (id) => {
   const res = await API.get(`/products/${id}`);

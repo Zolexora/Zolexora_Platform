@@ -259,6 +259,7 @@ export default function CartScreen() {
 
   // ── ADDRESS ───────────────────────────────────────────────────────────────
   if (step === "address") {
+    // Called as F({...}), not <F/>: a component defined here would remount (and lose focus) on every keystroke.
     const F = ({ label, k, type="default", ph="" }: { label:string; k:keyof Addr; type?:any; ph?:string }) => (
       <View style={{ marginBottom:14 }}>
         <Text style={ss.fieldLabel}>{label}</Text>
@@ -271,11 +272,11 @@ export default function CartScreen() {
         <TouchableOpacity onPress={() => setStep("cart")} style={ss.backLink}><Text style={ss.backLinkText}>← Back</Text></TouchableOpacity>
         <Text style={ss.pageTitle}>Delivery Address</Text>
         <View style={ss.addrCard}>
-          <View style={ss.addrRow}><View style={{flex:1}}><F label="Full Name *" k="name" ph="Your name"/></View><View style={{width:12}}/><View style={{flex:1}}><F label="Phone *" k="phone" type="phone-pad" ph="10-digit mobile"/></View></View>
-          <F label="Email *" k="email" type="email-address" ph="you@email.com"/>
-          <F label="Address *" k="address" ph="House no., Street, Area"/>
-          <View style={ss.addrRow}><View style={{flex:1}}><F label="City *" k="city" ph="City"/></View><View style={{width:12}}/><View style={{flex:1}}><F label="State *" k="state" ph="State"/></View></View>
-          <F label="Pincode *" k="pincode" type="number-pad" ph="6-digit"/>
+          <View style={ss.addrRow}><View style={{flex:1}}>{F({ label: "Full Name *", k: "name", ph: "Your name" })}</View><View style={{width:12}}/><View style={{flex:1}}>{F({ label: "Phone *", k: "phone", type: "phone-pad", ph: "10-digit mobile" })}</View></View>
+          {F({ label: "Email *", k: "email", type: "email-address", ph: "you@email.com" })}
+          {F({ label: "Address *", k: "address", ph: "House no., Street, Area" })}
+          <View style={ss.addrRow}><View style={{flex:1}}>{F({ label: "City *", k: "city", ph: "City" })}</View><View style={{width:12}}/><View style={{flex:1}}>{F({ label: "State *", k: "state", ph: "State" })}</View></View>
+          {F({ label: "Pincode *", k: "pincode", type: "number-pad", ph: "6-digit" })}
         </View>
         <TouchableOpacity style={ss.primaryBtn} onPress={proceedToPayment}>
           <Text style={ss.primaryBtnText}>Continue to Payment</Text>

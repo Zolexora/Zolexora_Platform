@@ -25,6 +25,12 @@ export default function StorePage() {
   const [hasMore, setHasMore] = useState(true);
   const LIMIT = 20;
 
+  // Links (navbar categories, search) change the URL; follow them.
+  useEffect(() => {
+    setCategory(searchParams.get("category") || "All");
+    setSearch(searchParams.get("search") || "");
+  }, [searchParams]);
+
   const fetchProducts = useCallback(async (skip: number, reset = false) => {
     setLoading(true);
     try {
@@ -49,7 +55,7 @@ export default function StorePage() {
 
   const setFilter = (cat: string) => {
     setCategory(cat);
-    router.push(`/store?category=${cat}`, { scroll: false });
+    router.push(`/store?category=${encodeURIComponent(cat)}`, { scroll: false });
   };
 
   return (

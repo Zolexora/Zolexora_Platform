@@ -15,7 +15,7 @@ export default function DashboardPage() {
   useEffect(() => {
     Promise.all([productsApi.my(), ordersApi.seller(), reelsApi.my(), coinsApi.balance()])
       .then(([products, orders, reels, coinData]) => {
-        const revenue = orders.filter((o: any) => o.payment_status === "paid" || o.status !== "cancelled").reduce((s: number, o: any) => s + (o.seller_subtotal?.amount_minor / 100 || 0), 0);
+        const revenue = orders.filter((o: any) => o.payment_status === "paid" && o.status !== "cancelled").reduce((s: number, o: any) => s + (o.total_paid || 0), 0);
         setStats({
           products: products.length,
           orders: orders.length,
