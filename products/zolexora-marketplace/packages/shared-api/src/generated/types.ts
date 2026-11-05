@@ -577,40 +577,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/seller/organizations/{org_id}/media/intent": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Request a media upload intent */
-        post: operations["request_media_upload_intent_api_seller_organizations__org_id__media_intent_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/seller/organizations/{org_id}/media/{media_id}/complete": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Mark a media upload as complete */
-        post: operations["complete_media_upload_api_seller_organizations__org_id__media__media_id__complete_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/admin/users": {
         parameters: {
             query?: never;
@@ -2750,40 +2716,6 @@ export interface paths {
         /** Link the seller organisation to a Zolexora (auth-service) organisation */
         put: operations["admin_link_zolexora_org_admin_seller_organizations__org_id__zolexora_org_put"];
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/seller/organizations/{org_id}/media/intent": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Request a media upload intent */
-        post: operations["request_media_upload_intent_seller_organizations__org_id__media_intent_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/seller/organizations/{org_id}/media/{media_id}/complete": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Mark a media upload as complete */
-        post: operations["complete_media_upload_seller_organizations__org_id__media__media_id__complete_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5251,58 +5183,6 @@ export interface components {
             /** Courier Name */
             courier_name: string;
         };
-        /** MediaAssetResponse */
-        MediaAssetResponse: {
-            /** Id */
-            id: string;
-            /** Filename */
-            filename: string;
-            /** Content Type */
-            content_type: string;
-            /** Size Bytes */
-            size_bytes: number;
-            /** Storage Key */
-            storage_key: string;
-            /** Status */
-            status: string;
-            /**
-             * Created At
-             * Format: date-time
-             * @description ISO 8601 UTC timestamp
-             */
-            created_at: string;
-            /**
-             * Updated At
-             * Format: date-time
-             * @description ISO 8601 UTC timestamp
-             */
-            updated_at: string;
-        };
-        /** MediaIntentRequest */
-        MediaIntentRequest: {
-            /** Filename */
-            filename: string;
-            /** Content Type */
-            content_type: string;
-            /** Size Bytes */
-            size_bytes: number;
-            /** Purpose */
-            purpose: string;
-        };
-        /** MediaIntentResponse */
-        MediaIntentResponse: {
-            /** Media Id */
-            media_id: string;
-            /** Storage Key */
-            storage_key: string;
-            /** Upload Url */
-            upload_url: string;
-            /**
-             * Expires In Seconds
-             * @default 3600
-             */
-            expires_in_seconds: number;
-        };
         /**
          * Money
          * @description Canonical money format for the marketplace.
@@ -7560,73 +7440,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    request_media_upload_intent_api_seller_organizations__org_id__media_intent_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                org_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["MediaIntentRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MediaIntentResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    complete_media_upload_api_seller_organizations__org_id__media__media_id__complete_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                org_id: string;
-                media_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MediaAssetResponse"];
                 };
             };
             /** @description Validation Error */
@@ -11642,73 +11455,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    request_media_upload_intent_seller_organizations__org_id__media_intent_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                org_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["MediaIntentRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MediaIntentResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    complete_media_upload_seller_organizations__org_id__media__media_id__complete_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                org_id: string;
-                media_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MediaAssetResponse"];
                 };
             };
             /** @description Validation Error */

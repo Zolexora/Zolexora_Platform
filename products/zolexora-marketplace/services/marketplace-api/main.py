@@ -31,7 +31,6 @@ from storefronts.router import router as storefront_router
 from storefronts.resolver import StorefrontResolutionError
 from routers.payments import router as payments_router
 from seller_orgs.router import router as seller_orgs_router
-from media.router import router as media_router
 from admin_management.router import router as admin_management_router
 
 # ── New shared infrastructure ────────────────────────────────────────────────
@@ -121,7 +120,6 @@ for prefix in [P, ""]:
     app.include_router(storefront_router, prefix=prefix)
     app.include_router(payments_router, prefix=prefix)
     app.include_router(seller_orgs_router, prefix=prefix)
-    app.include_router(media_router, prefix=prefix)
     app.include_router(admin_management_router, prefix=prefix)
 
     # ── Legacy routers (to be migrated in Sprint 3 & 4) ──────────────────────

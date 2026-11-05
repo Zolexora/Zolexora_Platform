@@ -108,7 +108,7 @@ async def list_public(conn, storefront_key: str, *, category=None, search=None, 
         args.append(category)
         where.append(f"c.name = ${len(args)}")
     if search:
-        args.append(f"%{search}%")
+        args.append("%" + search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%")
         where.append(f"(m.name ILIKE ${len(args)} OR m.description ILIKE ${len(args)})")
     if min_minor is not None:
         args.append(min_minor)

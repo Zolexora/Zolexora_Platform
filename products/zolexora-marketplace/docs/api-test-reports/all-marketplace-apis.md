@@ -132,8 +132,6 @@
 
 | Method | Endpoint Path | Auth Requirement | Description |
 | :--- | :--- | :--- | :--- |
-| **`POST`** | `/api/seller/organizations/{org_id}/media/intent` | Public | Request a media upload intent |
-| **`POST`** | `/api/seller/organizations/{org_id}/media/{media_id}/complete` | Public | Mark a media upload as complete |
 
 ---
 

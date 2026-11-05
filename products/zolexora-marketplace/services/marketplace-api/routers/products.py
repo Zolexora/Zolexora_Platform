@@ -6,7 +6,8 @@ import time
 from typing import Optional, List
 
 from asyncpg import Connection
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Request, Response
+from typing import Annotated
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Request, Response, Query
 from pydantic import BaseModel, Field, StrictInt, field_validator, model_validator
 
 from catalog import store
@@ -178,6 +179,15 @@ _CATALOG_CACHE: dict[str, tuple[float, list[ProductListingResponse]]] = {}
 _PRODUCT_DETAIL_CACHE: dict[str, tuple[float, ProductListingResponse]] = {}
 
 
+CACHE_MAX_ENTRIES = 500
+
+
+def _remember(cache: dict, key: str, value) -> None:
+    if len(cache) >= CACHE_MAX_ENTRIES:  # bounded: many distinct searches can't grow memory
+        cache.clear()
+    cache[key] = value
+
+
 def _invalidate_catalog_cache():
     _CATALOG_CACHE.clear()
     _PRODUCT_DETAIL_CACHE.clear()
@@ -188,9 +198,10 @@ def _key(context: StorefrontContext | None) -> str | None:
 
 
 @router.get("", response_model=list[ProductListingResponse])
-async def list_products(category: Optional[str]=None, search: Optional[str]=None,
+async def list_products(category: Optional[str]=None, search: Annotated[Optional[str], Query(max_length=100)] = None,
                         min_price: Optional[float]=None, max_price: Optional[float]=None,
-                        sort: Optional[str]="newest", limit: int=40, skip: int=0,
+                        sort: Optional[str]="newest", limit: Annotated[int, Query(ge=1, le=100)] = 40,
+                        skip: Annotated[int, Query(ge=0, le=10_000)] = 0,
                         context: StorefrontContext=Depends(require_storefront_context),
                         db: Connection=Depends(pg_conn_dep)):
     cache_key = f"{_key(context)}:{category}:{search}:{min_price}:{max_price}:{sort}:{limit}:{skip}"
@@ -204,7 +215,7 @@ async def list_products(category: Optional[str]=None, search: Optional[str]=None
         max_minor=None if max_price is None else int(max_price * 100),
         sort=sort or "newest", limit=limit, skip=skip,
     )
-    _CATALOG_CACHE[cache_key] = (now, results)
+    _remember(_CATALOG_CACHE, cache_key, (now, results))
     return results
 
 
@@ -248,7 +259,7 @@ async def get_product(product_id: str, context: StorefrontContext | None = Depen
     product = await store.public_listing(product_id, _key(context), db)
     if not product:
         raise HTTPException(404, "Product not found")
-    _PRODUCT_DETAIL_CACHE[cache_key] = (now, product)
+    _remember(_PRODUCT_DETAIL_CACHE, cache_key, (now, product))
     return product
 
 
