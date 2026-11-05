@@ -119,6 +119,61 @@ The status docs say MR-00 to MR-19 are complete. The code does not support that:
   - Mahila search and profile parameters don't match the API.
   - Mobile sign-up has no OTP entry screen.
 
+**Medium status 2026-11-05.** ✔ fixed · ✗ no longer applies (code removed: local sign-in, MongoDB) · ◐ partly · ○ open.
+
+- **Auth and RBAC**
+  - ✔ Only owners make, change or remove owners.
+  - ✗ rbac:write self-grant, admin seed, check-email/phone, buyer→seller role: admins and permissions live in the auth service, and the marketplace has no roles.
+  - ◐ Caches: auth-service introspection is cached for 30 s by design. A marketplace suspension applies on the next request.
+  - ✔ Verification and suspension: lifting a suspension never skips verification, verifying never lifts a suspension, and both take fixed enums.
+- **Admin API**
+  - ✔ Admin user management works for auth-service admins (tested).
+  - ✔ CORS allows PATCH.
+  - ✔ Users list has no 422.
+- **Readiness and infra**
+  - ✔ Readiness.
+  - ✔ Compose has Redis and Infisical-only secrets; Mongo is gone.
+  - ✔ uvicorn doesn't trust forwarded headers; they count only from `TRUSTED_PROXIES`.
+- **ERP outbox**
+  - ✔ Events are written in the order transaction, once per event.
+  - ○ There is no publisher worker yet.
+- **Shipping**
+  - ✔ Status mapping: "Undelivered", RTO and failed flag attention; final statuses hold.
+  - ◐ Webhooks: replays are ignored, but all couriers still share one secret.
+  - ✔ Pickup update.
+  - ✔ Shiprocket token renewal.
+  - ◐ The address and serviceability checks are honest about being format-only. Real Google and Shipway calls are still open.
+- **Money**
+  - ○ Per-seller split rounding was not re-checked. Each order now carries its own tax and total.
+  - ✔ Returns are bounded across requests.
+  - ✔ Orders are cancelled whole.
+  - ✔ Cancelled paid orders are marked `refund_due`, and an admin records the refund. The money itself is returned outside the app.
+  - ✗ The stale cart cache is gone.
+  - ✔ Legacy order detail views work.
+  - ✔ Subscription `await`, but ○ a paid subscription still activates nothing.
+  - ✔ Coin moves are atomic.
+  - ○ Coin discount codes are never redeemed at checkout.
+  - ◐ Reels pay once per reel per day under a daily cap.
+- **Search and media**
+  - ✔ No regex: escaped ILIKE, bounded limit/skip/search, capped caches.
+  - ✔ The fake media API is removed (uploads go through Cloudinary).
+  - ✔ Drafts are never public.
+- **Migrations**
+  - ✗ 0013, 0014 and 0016 are applied history.
+  - ✔ No model/migration drift (`alembic check` is clean).
+  - ✔ `verify:database` passes.
+- **Frontends**
+  - ✔ Shop filters follow the URL, and links are encoded.
+  - ✔ Mobile "load more".
+  - ✔ The address form keeps focus.
+  - ✔ Money prices.
+  - ○ Navbar hydration was not re-checked in a browser.
+  - ✔ Sign-out.
+  - ✗ CSRF: the apps use Bearer tokens.
+  - ✔ Seller revenue counts only paid, uncancelled orders.
+  - ✔ Mahila filter parameters.
+  - ✗ Mobile OTP: sign-up is in the auth service.
+
 ## Dead code and cleanup
 
 - **Password auth is dead.** The password hash is never stored, so `/auth/login`, `/register`, `/forgot-password` and `/reset-password` can't work. Note that `_DUMMY_HASH` would accept the literal dummy password if the 500 were "fixed" (`auth/services.py:20,101-110`).
