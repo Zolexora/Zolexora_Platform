@@ -10,7 +10,6 @@ import sentry_sdk
 from prometheus_client import make_asgi_app
 
 from core.config import settings
-from core.database import get_db, close_db
 from core.middleware import RequestIDMiddleware, SecurityHeadersMiddleware
 
 # ── Legacy routers (Sprint 3+ will migrate these) ────────────────────────────
@@ -22,7 +21,6 @@ from routers.orders import orders_router
 from routers.admin_orders import admin_orders_router
 from routers.portal_catalog import admin_catalog_router, seller_catalog_router
 from routers.other import coins_router, subs_router, admin_router
-from scripts.ensure_indexes import ensure_indexes
 from shipping.router import router as shipping_router
 from shipping.webhooks import router as shipping_webhooks_router
 from routers.erp_webhooks import router as erp_webhooks_router
@@ -66,15 +64,11 @@ async def lifespan(app: FastAPI):
     await check_redis_connection()
     await init_pool()
 
-    # ── Legacy MongoDB (kept alive for unmigrated routers) ─────────────────
-    await ensure_indexes(get_db())
-
     yield
 
     # ── Shutdown ───────────────────────────────────────────────────────────
     await close_redis()
     await close_pool()
-    close_db()
     logger.info("Zolexora API stopped.")
 
 

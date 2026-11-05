@@ -1,79 +1,37 @@
+"""A buyer's wishlist per storefront, in PostgreSQL; it lists only products still for sale."""
+
 import pytest
-from httpx import AsyncClient, ASGITransport
-from main import app
-from catalog import store as catalog_store
-from core.deps import current_user, db_dep
-from storefronts.dependencies import require_storefront_context
-from storefronts.models import StorefrontContext, StorefrontDefinition, StorefrontKey, StorefrontContextSource
-from unittest.mock import AsyncMock, MagicMock
+from fastapi import HTTPException
+
+from routers.wishlist import get_wishlist, remove_wishlist_item, toggle_wishlist_item
+from tests.commerce_seed import BUYER_1, BUYER_2, PROD_1, PROD_2, seed_listing
+from tests.test_storefront_isolation import ctx_mah, ctx_zol
+
+buyer_1, buyer_2 = {"id": BUYER_1}, {"id": BUYER_2}
 
 
 @pytest.mark.asyncio
-async def test_wishlist_endpoints(monkeypatch):
-    mock_db = MagicMock()
-    mock_cursor = MagicMock()
-    mock_cursor.sort.return_value = mock_cursor
-    mock_cursor.to_list = AsyncMock(return_value=[
-        {"product_id": "prod_1", "created_at": "2026-08-18T16:00:00Z"}
-    ])
-    mock_db.wishlist.find = MagicMock(return_value=mock_cursor)
-    
-    async def public_listings(ids, storefront_key, conn=None):  # the PostgreSQL catalog
-        assert storefront_key == "mahila-madel"
-        return {"prod_1": {"id": "prod_1", "title": "Silk Saree"}} if "prod_1" in ids else {}
+async def test_toggle_adds_and_removes_per_buyer_and_storefront(pg):
+    await seed_listing(pg, PROD_1, title="Silk Saree")
+    out = await toggle_wishlist_item(PROD_1, context=ctx_zol, user=buyer_1, pg=pg)
+    assert out["added"] is True and [p.title for p in out["wishlist"]] == ["Silk Saree"]
+    assert await get_wishlist(context=ctx_zol, user=buyer_2, pg=pg) == []
+    assert await get_wishlist(context=ctx_mah, user=buyer_1, pg=pg) == []
 
-    monkeypatch.setattr(catalog_store, "public_listings", public_listings)
-    mock_db.wishlist.find_one = AsyncMock(return_value=None)
-    mock_db.wishlist.insert_one = AsyncMock(return_value=AsyncMock(inserted_id="w_1"))
-    mock_db.wishlist.delete_one = AsyncMock(return_value=MagicMock(deleted_count=1))
+    out = await toggle_wishlist_item(PROD_1, context=ctx_zol, user=buyer_1, pg=pg)
+    assert out["added"] is False and out["wishlist"] == []
 
-    fake_user = {
-        "id": "0bc66f05-dea8-4e44-85c1-78c7e266dd24",
-        "email": "test@mahilamadel.store",
-        "role": "buyer"
-    }
 
-    definition = StorefrontDefinition(
-        id="sf_mm_123",
-        key=StorefrontKey.MAHILA_MADEL,
-        display_name="Mahila Madel",
-        canonical_host="mahilamadel.store",
-        hosts=frozenset(["mahilamadel.store"]),
-        origins=frozenset(["https://mahilamadel.store"])
-    )
+@pytest.mark.asyncio
+async def test_only_products_for_sale_are_added_or_listed(pg):
+    await seed_listing(pg, PROD_1, storefront="mahila-madel")
+    with pytest.raises(HTTPException) as exc:  # another storefront's product
+        await toggle_wishlist_item(PROD_1, context=ctx_zol, user=buyer_1, pg=pg)
+    assert exc.value.status_code == 404
 
-    fake_sf_ctx = StorefrontContext(
-        storefront=definition,
-        source=StorefrontContextSource.CLIENT_HINT,
-    )
-
-    app.dependency_overrides[current_user] = lambda: fake_user
-    app.dependency_overrides[db_dep] = lambda: mock_db
-    app.dependency_overrides[require_storefront_context] = lambda: fake_sf_ctx
-
-    try:
-        transport = ASGITransport(app=app)
-        async with AsyncClient(transport=transport, base_url="http://test") as client:
-            # 1. GET /api/wishlist
-            res = await client.get("/api/wishlist")
-            assert res.status_code == 200
-            data = res.json()
-            assert isinstance(data, list)
-            assert len(data) == 1
-            assert data[0]["title"] == "Silk Saree"
-
-            # 2. POST /api/wishlist/prod_1 (Toggle on)
-            res = await client.post("/api/wishlist/prod_1")
-            assert res.status_code == 200
-            data = res.json()
-            assert data["added"] is True
-            assert data["product_id"] == "prod_1"
-
-            # 3. DELETE /api/wishlist/prod_1
-            res = await client.delete("/api/wishlist/prod_1")
-            assert res.status_code == 200
-            assert res.json()["success"] is True
-    finally:
-        app.dependency_overrides.pop(current_user, None)
-        app.dependency_overrides.pop(db_dep, None)
-        app.dependency_overrides.pop(require_storefront_context, None)
+    await seed_listing(pg, PROD_2)
+    await toggle_wishlist_item(PROD_2, context=ctx_zol, user=buyer_1, pg=pg)
+    await pg.execute("UPDATE storefront_listing SET publication_state = 'HIDDEN' WHERE id = $1::uuid", PROD_2)
+    assert await get_wishlist(context=ctx_zol, user=buyer_1, pg=pg) == []
+    assert (await remove_wishlist_item(PROD_2, context=ctx_zol, user=buyer_1, pg=pg))["success"] is True
+    assert (await remove_wishlist_item("not-a-uuid", context=ctx_zol, user=buyer_1, pg=pg))["success"] is False

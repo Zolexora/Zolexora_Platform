@@ -1,6 +1,5 @@
 """Cart, checkout quote and checkout. The cart, prices, stock and coins are PostgreSQL; placing
-an order reserves stock, spends coins and closes the cart in one transaction (the order
-documents are still written to MongoDB inside it, so a failed write undoes everything)."""
+an order reserves stock, spends coins, closes the cart and stores the orders in one transaction."""
 
 import base64
 import hashlib
@@ -14,7 +13,6 @@ from typing import List, Optional
 
 from asyncpg import Connection
 from fastapi import APIRouter, Depends, HTTPException, Request
-from motor.motor_asyncio import AsyncIOMotorDatabase
 from pydantic import BaseModel, Field, StrictInt
 
 from catalog import store as catalog_store
@@ -22,13 +20,12 @@ from commerce import cart as cart_store
 from commerce import orders as order_store
 from commerce import stock
 from core.config import settings
-from core.deps import db_dep, shopper
-from models.documents import CoinTxDoc
+from commerce import coins
+from core.deps import shopper
 from models.primitives import EntityId, Money, UTCDateTime
 from shared.database.postgres import pg_conn_dep
 from storefronts.dependencies import require_storefront_context
 from storefronts.models import StorefrontContext, StorefrontKey
-from users.repositories import UserRepository, get_user_repository
 
 router = APIRouter(tags=["cart"])
 
@@ -155,8 +152,7 @@ def _get(line, name):
 
 
 async def place_orders(pg, buyer_id: str, storefront_key: str, orders: list[dict], *,
-                       coins_used: int = 0, paid: bool = False, user_repo: UserRepository | None = None,
-                       quote_signature: str | None = None) -> None:
+                       coins_used: int = 0, paid: bool = False, quote_signature: str | None = None) -> None:
     """One PostgreSQL transaction: hold (or, when paid, take) the stock, spend the coins, use up
     the quote, close the cart, then store the orders. Any failure undoes all of it."""
     async with pg.transaction():
@@ -165,7 +161,7 @@ async def place_orders(pg, buyer_id: str, storefront_key: str, orders: list[dict
             if paid:
                 await stock.consume(pg, order["id"])
         if coins_used:
-            await (user_repo or UserRepository()).adjust_coin_balance(buyer_id, -coins_used, pg)
+            await coins.move(pg, buyer_id, -coins_used, "spent", f"Order {orders[0]['order_number']}", orders[0]["id"])
         if quote_signature:
             used = await pg.fetchval(
                 """UPDATE checkout_quote SET status = 'CONVERTED', updated_at = now()
@@ -383,8 +379,6 @@ async def checkout_stub(
     request: Request,
     context: StorefrontContext = Depends(require_storefront_context),
     user=Depends(shopper),
-    db: AsyncIOMotorDatabase = Depends(db_dep),
-    user_repo: UserRepository = Depends(get_user_repository),
     pg: Connection = Depends(pg_conn_dep),
 ):
     sf = _key(context.key)
@@ -448,11 +442,7 @@ async def checkout_stub(
             order.update(fields)
 
     async def place_order(paid: bool = False) -> None:
-        await place_orders(pg, user["id"], sf, orders, coins_used=coins_used, paid=paid, user_repo=user_repo)
-        if coins_used:
-            await db.coin_transactions.insert_one(CoinTxDoc(
-                user_id=user["id"], amount=-coins_used, type="spent",
-                description=f"Order {order_doc['order_number']}", ref_id=order_id).model_dump())
+        await place_orders(pg, user["id"], sf, orders, coins_used=coins_used, paid=paid)
 
     # Dynamically select gateway based on storefront config
     raw_provider = (

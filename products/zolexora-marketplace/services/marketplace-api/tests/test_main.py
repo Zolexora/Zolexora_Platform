@@ -1,22 +1,12 @@
 import pytest
 from httpx import ASGITransport, AsyncClient
 from main import app
-from core.deps import db_dep
-from mongomock_motor import AsyncMongoMockClient
 
 @pytest.fixture
-async def mock_db():
-    client = AsyncMongoMockClient()
-    return client["test_db"]
-
-@pytest.fixture
-async def client(mock_db):
-    # Override dependency
-    app.dependency_overrides[db_dep] = lambda: mock_db
+async def client():
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
-    app.dependency_overrides.clear()
 
 @pytest.mark.asyncio
 async def test_health_check(client):

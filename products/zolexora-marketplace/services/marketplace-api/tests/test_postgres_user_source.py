@@ -1,10 +1,13 @@
 
+import uuid
+
 import pytest
 from fastapi import HTTPException
 from starlette.requests import Request
 
 from core.deps import admin_only
-from routers.other import DiscountReq, admin_stats, admin_users, coin_balance, generate_discount
+from routers.other import DiscountReq, admin_stats, admin_users, coin_balance, coin_history, generate_discount, my_discounts
+from tests.commerce_seed import BUYER_1, BUYER_2
 from storefronts.models import StorefrontContext, StorefrontKey, StorefrontContextSource, StorefrontDefinition
 
 def _mock_context() -> StorefrontContext:
@@ -17,93 +20,6 @@ def _mock_context() -> StorefrontContext:
         origins=frozenset(["https://shop.zolexora.com"]),
     )
     return StorefrontContext(storefront=definition, source=StorefrontContextSource.HOST)
-
-
-class ForbiddenUsersCollection:
-    def __getattr__(self, name):
-        raise AssertionError(f"db.users must not be used for current user data: {name}")
-
-
-class Cursor:
-    def __init__(self, items):
-        self.items = items
-
-    async def to_list(self, _limit):
-        return self.items
-
-
-class Collection:
-    def __init__(self, docs=None):
-        self.docs = docs or []
-        self.inserted = []
-        self.deleted_filter = None
-        self.updated = []
-        self.deleted = []
-
-    def find(self, query, projection=None):
-        return Cursor([d.copy() for d in self.docs if _matches(d, query)])
-
-    async def find_one(self, query, projection=None):
-        for doc in self.docs:
-            if _matches(doc, query):
-                return doc.copy()
-        return None
-
-    async def insert_one(self, doc):
-        self.inserted.append(doc)
-
-    async def insert_many(self, docs):
-        self.inserted.extend(docs)
-
-    async def update_one(self, query, update):
-        self.updated.append((query, update))
-
-    async def update_many(self, query, update):
-        self.updated.append((query, update))
-
-    async def delete_one(self, query):
-        self.deleted.append(query)
-        before = len(self.docs)
-        self.docs = [doc for doc in self.docs if not _matches(doc, query)]
-        return type("DeleteResult", (), {"deleted_count": before - len(self.docs)})()
-
-    async def delete_many(self, query):
-        self.deleted_filter = query
-
-    async def count_documents(self, query):
-        return len([d for d in self.docs if _matches(d, query)])
-
-
-class FakeDB:
-    def __init__(self):
-        self.users = ForbiddenUsersCollection()
-        self.cart = Collection([{"user_id": "buyer-1", "product_id": "product-1", "quantity": 2, "storefront_id": "zolexora-shop"}])
-        self.storefront_listings = Collection([{
-            "id": "product-1",
-            "product_id": "master-1",
-            "price": {"amount_minor": 10000, "currency": "INR"},
-            "seller_id": "seller-1",
-            "status": "active",
-            "storefront_id": "zolexora-shop"
-        }])
-        self.master_products = Collection([{
-            "id": "master-1",
-            "title": "Test Product",
-            "images": ["image.jpg"],
-            "seller_id": "seller-1",
-            "seller_name": "Seller",
-            "category": "Test"
-        }])
-        self.inventory_balances = Collection([{
-            "product_id": "master-1",
-            "seller_id": "seller-1",
-            "available_quantity": 999
-        }])
-        self.orders = Collection()
-        self.coin_transactions = Collection()
-        self.discount_codes = Collection()
-        self.reels = Collection()
-        self.reel_views = Collection()
 
 
 class FakeUserRepo:
@@ -139,10 +55,6 @@ class FakeUserRepo:
         return True
 
 
-def _matches(doc, query):
-    return all(doc.get(key) == value for key, value in query.items())
-
-
 # Removed obsolete cart and checkout tests
 
 
@@ -152,40 +64,21 @@ async def test_coin_balance_uses_authenticated_postgres_user():
 
 
 @pytest.mark.asyncio
-async def test_generate_discount_debits_postgres_profile():
-    db = FakeDB()
-    user = {"id": "buyer-1", "coin_balance": 100}
-    repo = FakeUserRepo({"buyer-1": {"coin_balance": 100}})
-
-    discount = await generate_discount(
-        DiscountReq(coins_to_spend=50),
-        user=user,
-        db=db,
-        user_repo=repo,
-    )
-
-    assert discount["coins_spent"] == 50
-    assert repo.adjustments == [("buyer-1", -50)]
-    assert db.discount_codes.inserted
+async def test_generate_discount_spends_coins_and_stores_the_code(pg):
+    discount = await generate_discount(DiscountReq(coins_to_spend=50), user={"id": BUYER_1, "coin_balance": 1000}, pg=pg)
+    assert discount["coins_spent"] == 50 and len(discount["code"]) == 8
+    assert await pg.fetchval("SELECT coin_balance FROM user_profile WHERE user_id = $1", uuid.UUID(BUYER_1)) == 950
+    assert [d["code"] for d in await my_discounts(user={"id": BUYER_1}, pg=pg)] == [discount["code"]]
+    assert [t["amount"] for t in await coin_history(user={"id": BUYER_1}, pg=pg)] == [-50]
 
 
 @pytest.mark.asyncio
-async def test_generate_discount_rejects_insufficient_postgres_coin_balance():
-    db = FakeDB()
-    user = {"id": "buyer-1", "coin_balance": 10}
-    repo = FakeUserRepo({"buyer-1": {"coin_balance": 10}})
-
-    with pytest.raises(HTTPException) as exc:
-        await generate_discount(
-            DiscountReq(coins_to_spend=50),
-            user=user,
-            db=db,
-            user_repo=repo,
-        )
-
+async def test_generate_discount_rejects_insufficient_coin_balance(pg):
+    with pytest.raises(HTTPException) as exc:  # the profile said 100, the balance is 0
+        await generate_discount(DiscountReq(coins_to_spend=50), user={"id": BUYER_2, "coin_balance": 100}, pg=pg)
     assert exc.value.status_code == 400
-    assert repo.adjustments == []
-    assert db.discount_codes.inserted == []
+    assert await my_discounts(user={"id": BUYER_2}, pg=pg) == []
+    assert await coin_history(user={"id": BUYER_2}, pg=pg) == []
 
 
 @pytest.mark.asyncio
@@ -205,11 +98,6 @@ async def test_admin_only_rejects_non_admin_profile():
 
 @pytest.mark.asyncio
 async def test_admin_stats_and_users_read_postgres_profiles():
-    db = FakeDB()
-    db.storefront_listings.docs = [
-        {"id": "prod-1", "product_id": "prod-1", "status": "active", "price": {"amount_minor": 1000, "currency": "INR"}, "seller_id": "seller-1", "storefront_id": "zolexora-shop"},
-        {"id": "prod-2", "product_id": "prod-2", "status": "paused", "price": {"amount_minor": 1000, "currency": "INR"}, "seller_id": "seller-1", "storefront_id": "zolexora-shop"}
-    ]
     repo = FakeUserRepo({
         "admin-1": {"id": "admin-1", "is_admin": True},
         "seller-1": {"id": "seller-1"},
@@ -227,7 +115,7 @@ async def test_admin_stats_and_users_read_postgres_profiles():
         async def fetchval(self, sql, *args):
             return 0
 
-    stats = await admin_stats(u={"id": "admin-1", "is_admin": True}, context=dummy_context, db=db, user_repo=repo, pg=Catalog())
+    stats = await admin_stats(u={"id": "admin-1", "is_admin": True}, context=dummy_context, user_repo=repo, pg=Catalog())
     users = await admin_users(u={"id": "admin-1", "is_admin": True}, user_repo=repo)
 
     assert stats["total_users"] == 3

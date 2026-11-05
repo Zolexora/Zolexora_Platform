@@ -19,8 +19,8 @@ The repository currently contains two partially independent commerce systems.
 | Mahila buyer mobile | Expo shell at `apps/storefronts/mahila-madel/mobile` |
 | Shared seller mobile | Expo app at `apps/portals/seller/mobile` |
 | API | FastAPI at `services/marketplace-api/` |
-| Document persistence | MongoDB for products, carts, orders, reels, rewards, and operational documents |
-| Relational/auth persistence | Supabase PostgreSQL and Supabase Auth for users and related relational data |
+| Persistence | PostgreSQL for everything: users, catalog, stock, carts, orders, payments, shipping, coins, reels, wishlists (MongoDB retired in migration 0024) |
+| Sign-in | Zolexora auth service (`apps/zolexora-auth-service`); the API introspects its tokens |
 | Cache | Redis |
 | Media | Cloudinary |
 | Payments | One global Razorpay configuration plus UPI settings |
@@ -137,7 +137,7 @@ During migration, adapters may support current providers, but new business logic
 
 - No canonical `storefront_id`, storefront registry, listing model, or immutable order-origin field.
 - Phase 1.5 established the canonical capability-oriented tree; pnpm, CI, and Compose use those paths.
-- Storage ownership is split between MongoDB and Supabase, with a second MongoDB model in Mahila Madel.
+- The Mahila legacy Express server still has its own MongoDB model; it is retired after shared-backend parity.
 - One global Razorpay/UPI configuration is used and the client can currently request a payment method.
 - Payment webhooks, refund orchestration, robust idempotency, and reconciliation are incomplete.
 - Web clients currently use bearer-token patterns that must migrate to secure sessions.

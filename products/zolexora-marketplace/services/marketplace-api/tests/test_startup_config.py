@@ -8,7 +8,6 @@ REQUIRED = {
     "APP_ENV": "production",
     "AUTH_SERVICE_URL": "https://auth.zolexora.com",
     "DATABASE_URL": "postgresql://db/marketplace",
-    "MONGO_URL": "mongodb://mongo/marketplace",
     "REDIS_URL": "redis://redis:6379/0",
     "CORS_ORIGINS": ["https://shop.zolexora.com"],
 }

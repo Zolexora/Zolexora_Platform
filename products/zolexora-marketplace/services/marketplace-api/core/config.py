@@ -41,10 +41,6 @@ class Settings:
     # ── Canonical Marketplace PostgreSQL
     DATABASE_URL: str = os.environ.get("DATABASE_URL", "").strip()
 
-    # ── MongoDB — documents (products, orders, cart, reels, shipping, coins)
-    MONGO_URL: str = os.environ.get("MONGO_URL", "").strip()
-    DB_NAME:   str = os.environ.get("MONGO_DB_NAME", "zolexora_db").strip()
-
     # GST taxpayer verification (ClearTax credentials stay server-side)
     GST_CLEARTAX_BASE_URL: str = os.environ.get("GST_CLEARTAX_BASE_URL", "").strip().rstrip("/")
     GST_CLEARTAX_AUTH_TOKEN: SecretStr | None = (
@@ -140,7 +136,6 @@ class Settings:
             "APP_ENV": self.APP_ENV,
             "AUTH_SERVICE_URL": self.AUTH_SERVICE_URL,
             "DATABASE_URL": self.DATABASE_URL,
-            "MONGO_URL": self.MONGO_URL,
             "REDIS_URL": self.REDIS_URL,
             "CORS_ORIGINS": self.CORS_ORIGINS,
         }.items() if not v]

@@ -19,6 +19,7 @@ REQUIRED = {
     "master_product", "product_variant", "storefront_listing", "inventory_ledger", "inventory_reservation",
     "shopping_cart", "shopping_cart_item", "checkout_quote", "marketplace_order", "order_item",
     "payment_record", "refund_record", "shipment", "pickup_location", "idempotency_record",
+    "coin_transaction", "coin_discount_code", "subscription_payment", "reel", "reel_view",
     "integration_outbox", "external_reference", "audit_event",
 }
 # One commerce model (migration 0020): sellers are organisations; no local roles (0019).

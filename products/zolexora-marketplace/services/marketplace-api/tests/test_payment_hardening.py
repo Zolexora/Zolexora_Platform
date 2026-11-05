@@ -1,5 +1,7 @@
 """Regression tests: coins can't fund free orders, a UPI reference isn't proof of payment,
 and Razorpay verification needs its secret and the buyer's own pending order."""
+import uuid
+
 import pytest
 from fastapi import HTTPException
 
@@ -8,48 +10,34 @@ from routers.cart import (
     CartItemCreate, CheckoutRequest, UpiPaidRequest, VerifyPaymentRequest,
     add_to_cart, checkout_stub, upi_paid_stub, verify_payment_stub,
 )
-from tests.test_cart import FakeDB as CartDB, buyer_1, buyer_2, ctx_zol
-from tests.commerce_seed import SEL_1, PROD_1, seed_listing, BUYER_2, ORDER_1, seed_order
+from tests.test_cart import buyer_1, buyer_2, ctx_zol
+from tests.commerce_seed import SEL_1, PROD_1, seed_listing, BUYER_1, BUYER_2, ORDER_1, seed_order
+from commerce import coins
 from commerce import orders as order_store
 
 
-class FakeDB(CartDB):
-    def __init__(self):
-        super().__init__()
-        self.orders = self.Collection()
-        self.coin_transactions = self.Collection()
-
-
-class FakeUserRepo:
-    def __init__(self, balance: int):
-        self.balance = balance
-
-    async def adjust_coin_balance(self, user_id, delta, conn=None):
-        if self.balance + delta < 0:
-            raise HTTPException(400, "Insufficient coin balance")
-        self.balance += delta
-        return self.balance
+async def balance(pg, user_id=BUYER_1) -> int:
+    return await pg.fetchval("SELECT coin_balance FROM user_profile WHERE user_id = $1", uuid.UUID(user_id))
 
 
 async def cart_db(pg, price_minor=100_000):
-    db = FakeDB()
     await seed_listing(pg, PROD_1, org=SEL_1, storefront="zolexora-shop", price=price_minor, stock=10, title="P1")
     await add_to_cart(CartItemCreate(product_id=PROD_1, quantity=1), context=ctx_zol, user=buyer_1, pg=pg)
-    return db
 
 
-async def checkout(pg, db, repo, balance, **req):
-    user = {**buyer_1, "coin_balance": balance}
-    return await checkout_stub(CheckoutRequest(**req), None, context=ctx_zol, user=user, db=db, pg=pg, user_repo=repo)
+async def checkout(pg, shown_balance, **req):
+    """shown_balance: the balance on the caller's profile when the request was read."""
+    user = {**buyer_1, "coin_balance": shown_balance}
+    return await checkout_stub(CheckoutRequest(**req), None, context=ctx_zol, user=user, pg=pg)
 
 
 @pytest.mark.asyncio
 async def test_coins_beyond_the_balance_are_rejected(pg):
-    db = await cart_db(pg)
+    await cart_db(pg)
     with pytest.raises(HTTPException) as exc:
-        await checkout(pg, db, FakeUserRepo(100), 100, payment_method="coins", coins_to_use=10**9)
+        await checkout(pg, 1000, payment_method="coins", coins_to_use=10**9)
     assert exc.value.status_code == 400
-    assert await order_store.find(pg) == []
+    assert await order_store.find(pg) == [] and await balance(pg) == 1000
 
 
 def test_negative_coins_are_rejected():
@@ -59,32 +47,32 @@ def test_negative_coins_are_rejected():
 
 @pytest.mark.asyncio
 async def test_coin_order_spends_exactly_the_order_total(pg):
-    db = await cart_db(pg)
-    repo = FakeUserRepo(10**9)
-    res = await checkout(pg, db, repo, repo.balance, payment_method="coins", coins_to_use=10**9)
+    await cart_db(pg)
+    await pg.execute("UPDATE user_profile SET coin_balance = 1000000 WHERE user_id = $1", uuid.UUID(BUYER_1))
+    res = await checkout(pg, 1_000_000, payment_method="coins", coins_to_use=10**9)
     [order] = await order_store.find(pg)
     payable = 100_000 + 18_000  # subtotal + 18% tax, free delivery over ₹499
     assert res["type"] == "coins"
     assert order["coins_used"] == payable and order["grand_total"]["amount_minor"] == 0
-    assert repo.balance == 10**9 - payable
-    assert db.coin_transactions.docs[0]["amount"] == -payable
+    assert await balance(pg) == 1_000_000 - payable
+    [tx] = await coins.history(pg, BUYER_1)
+    assert (tx["amount"], tx["type"], tx["ref_id"]) == (-payable, "spent", order["id"])
 
 
 @pytest.mark.asyncio
 async def test_coins_are_not_spent_twice(pg):
-    db = await cart_db(pg)
-    repo = FakeUserRepo(50)
+    await cart_db(pg)
     # The profile was read before another order spent the balance: the atomic deduction refuses.
-    repo.balance = 0
+    await pg.execute("UPDATE user_profile SET coin_balance = 0 WHERE user_id = $1", uuid.UUID(BUYER_1))
     with pytest.raises(HTTPException):
-        await checkout(pg, db, repo, 50, payment_method="upi", coins_to_use=50)
-    assert await order_store.find(pg) == []
+        await checkout(pg, 50, payment_method="upi", coins_to_use=50)
+    assert await order_store.find(pg) == [] and await coins.history(pg, BUYER_1) == []
 
 
 @pytest.mark.asyncio
 async def test_upi_reference_only_queues_the_order_for_verification(pg):
-    db = await cart_db(pg)
-    res = await checkout(pg, db, FakeUserRepo(0), 0, payment_method="upi")
+    await cart_db(pg)
+    res = await checkout(pg, 0, payment_method="upi")
     order_id = res["order_id"]
 
     with pytest.raises(HTTPException):  # someone else's order

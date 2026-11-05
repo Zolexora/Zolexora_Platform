@@ -16,19 +16,13 @@ import uuid
 
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from core.auth_service import AuthServiceError, InvalidToken, introspect
-from core.database import get_db
 from shared.database.postgres import connection, pg_conn_dep
 from users.repositories import UserRepository, get_user_repository
 
 logger = logging.getLogger("zolexora.auth")
 bearer = HTTPBearer(auto_error=False)
-
-
-async def db_dep() -> AsyncIOMotorDatabase:
-    return get_db()
 
 
 def _unauthorized(detail: str = "Not authenticated") -> HTTPException:

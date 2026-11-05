@@ -31,14 +31,14 @@ This file is the shortest durable context for anyone resuming work on the reposi
 ## Repository reality after Phase 1.6
 
 - The main API is FastAPI under `services/marketplace-api/`.
-- Canonical relational persistence is PostgreSQL through a standard `DATABASE_URL`; MongoDB and Supabase data sources remain transitional pending an authorized import.
+- PostgreSQL through a standard `DATABASE_URL` is the only data store; the API no longer uses MongoDB (retired in migration 0024, old data not imported).
 - Zolexora Shop is under `apps/storefronts/zolexora-shop/web`; shared portals are under `apps/portals/`.
 - Zolexora and Mahila buyer Expo apps live beside their storefronts; shared seller mobile lives at `apps/portals/seller/mobile`.
 - Mahila web and its transitional Express server are separated under `apps/storefronts/mahila-madel/`.
 - Shared TypeScript packages are under `packages/`.
 - The root pnpm workspace owns exactly ten packages and rejects missing canonical paths.
 - FastAPI has a dynamic PostgreSQL-backed storefront resolver using `TRUSTED_PROXIES` for secure proxy/forwarded-host extraction.
-- Existing MongoDB collections (products, carts, orders, reels) enforce strict query-level storefront isolation on all read and write operations.
+- Every PostgreSQL store (catalog, cart, orders, shipping, reels, wishlist) filters by storefront on all reads and writes.
 - PostgreSQL migration chain up through `0010_erp_outbox_inbox` owns the canonical relational, identity/RBAC, multitenant isolation foundation, seller grants, master catalog, storefront listings, inventory ledgers, pricing, taxes, promotions, shopping carts, wishlists, checkout quotations, payment webhook receipts, payment transaction ledgers, order history, fulfillment records, returns, disputes, and asynchronous ERP integration patterns (outbox/inbox). Redis holds only expiring opaque sessions and verification state. The Oracle proof and revision are retained only as historical evidence.
 
 ## Target ownership

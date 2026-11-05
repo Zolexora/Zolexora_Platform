@@ -29,61 +29,22 @@ FastAPI resolves `zolexora-shop` and `mahila-madel` from exact registered custom
 
 Zolexora ERP is a separate commercial product/company and Marketplace is one customer. The proposed generic v1 contract is under `contracts/zolexora-erp/v1/`; no live ERP communication exists. Systems do not share databases, authentication, secrets, deployments, or releases, and checkout never waits synchronously for ERP.
 
-## Oracle foundation
-
-Phase 5 proves the forward-only storefront/domain and integration-reliability migration, bootstrap, constraints, concurrent claim pattern, repository, and readiness behavior on disposable Oracle Database 23ai Free 23.9. Production storefront resolution is repository-backed and fail-closed. This is not a full commerce migration or OCI proof: MongoDB, Supabase, Redis, Cloudinary, and the Mahila legacy server still serve existing domains. See `docs/oracle-persistence.md`.
-
----
-
-## 🗄️ Database & Media Storage Architecture
-
-Zolexora implements a hybrid storage model to leverage the strengths of relational and document databases while keeping within free quotas:
+## 🗄️ Data & Media Storage
 
 ```mermaid
 graph TD
     A[Clients: Web/Mobile] --> B[FastAPI Backend]
-    B --> C[(MongoDB Atlas)]
-    B --> D[(Supabase PostgreSQL)]
-    B --> E[(Cloudinary API)]
-    
-    subgraph MongoDB Documents
-        C --> C1[Products & Carts]
-        C --> C2[Orders & Shipments]
-        C --> C3[Reels & Views]
-        C --> C4[Coin Transactions & Codes]
-    end
-    
-    subgraph Supabase Relational
-        D --> D1[Users & Profiles]
-        D --> D2[Subscriptions]
-        D --> D3[Payment Transactions]
-    end
-    
-    subgraph Cloudinary Media
-        E --> E1[Product Images]
-        E --> E2[Reel Videos / Thumbnails]
-        E --> E3[User Avatars]
-    end
+    A --> X[Zolexora auth service]
+    B --> X
+    B --> D[(PostgreSQL)]
+    B --> R[(Redis)]
+    B --> E[(Cloudinary)]
 ```
 
-### 1. MongoDB Atlas (Non-Relational Store)
-Handles schema-flexible, fast-access document data. Managed through `services/marketplace-api/scripts/setup_indexes.py`.
-* **Collections**: `products`, `orders`, `cart`, `reels`, `reel_views`, `coin_transactions`, `pending_registrations`, `password_resets`, `discount_codes`.
-* **TTL Rules (Time to Live)**:
-  * `pending_registrations`: Expired OTP objects are automatically deleted.
-  * `password_resets`: Used/expired tokens are auto-deleted after 24 hours.
-  * `reel_views`: Views are automatically purged after 90 days (`7,776,000` seconds) to keep storage under the 500 MB Atlas limit.
-
-### 2. Supabase PostgreSQL (Relational Store)
-Used for structured relational tables that require strict consistency. Transitional schema scripts are under `services/marketplace-api/scripts/`.
-* **Tables**:
-  * `public.users`: User accounts and roles (`viewer`, `seller`, `admin`). Mirrored on MongoDB.
-  * `public.subscriptions`: Subscriptions mapping (`basic`, `premium`).
-  * `public.payment_transactions`: Financial history for Razorpay and UPI.
-
-### 3. Cloudinary (Binary Assets)
-All media (images, videos, profile pictures) are offloaded to Cloudinary so that no binary blobs consume database storage or traffic bandwidth.
-* **Buckets**: `zolexora/products/`, `zolexora/reels/`, `zolexora/avatars/`.
+* **PostgreSQL** is the only data store: users and coin balances, catalog and stock, carts and quotes, orders and payments, shipments and pickup addresses, coins history, reels and wishlists. The schema is the Alembic chain in `services/marketplace-api/migrations/postgresql_versions/` (MongoDB was retired in migration 0024; old MongoDB data was not imported).
+* **Zolexora auth service** signs everyone in; the API checks its tokens. There are no local passwords or roles.
+* **Redis** holds caches and rate-limit counters only.
+* **Cloudinary** holds media: `zolexora/products/`, `zolexora/reels/`, `zolexora/avatars/`.
 
 ---
 
@@ -143,14 +104,12 @@ Make sure you have the following installed on your machine:
 * **Expo CLI** (For Mobile Testing) — Install via `npm install -g expo-cli eas-cli`
 
 ### Account setups (Free Tiers)
-1. **MongoDB Atlas**: Create a free M0 cluster (512MB), add database credentials, allow IP access from anywhere (`0.0.0.0/0`), and copy the connection string.
-2. **Supabase (transitional)**: configure a development project and follow the scripts under `services/marketplace-api/scripts/`.
-3. **Cloudinary**: Create a free account and copy your Cloud Name, API Key, and API Secret.
-4. **Google Cloud Console**: Set up an OAuth 2.0 Web Application client. Add origins:
+1. **Cloudinary**: Create a free account and copy your Cloud Name, API Key, and API Secret.
+2. **Google Cloud Console**: Set up an OAuth 2.0 Web Application client. Add origins:
    * `http://localhost:3000`, `http://localhost:3001`, `http://localhost:3002`
    * `http://127.0.0.1:3000`, `http://127.0.0.1:3001`, `http://127.0.0.1:3002`
-5. **Razorpay**: Register an account and generate a set of API test keys.
-6. **Resend**: Open an account and create an API Key. Use default sandbox emails or verify your custom domain.
+3. **Razorpay**: Register an account and generate a set of API test keys.
+4. **Resend**: Open an account and create an API Key. Use default sandbox emails or verify your custom domain.
 
 ---
 
@@ -164,13 +123,7 @@ Secrets come only from Infisical (`/Zolexora_Marketplace`); there are no `.env` 
 ### 2. Backend & Core Configuration
 Configure these key subsystems in Infisical:
 
-* **Startup Database Validation (Required)**:
-  * `MONGO_URL`: Connection string for MongoDB (e.g. `mongodb://localhost:27017` or Atlas URL).
-  * `SUPABASE_URL` & `SUPABASE_SERVICE_ROLE_KEY`: Supabase API credentials.
-  * `SUPABASE_DATABASE_URL` or `SUPABASE_DB_PASSWORD`: PostgreSQL DSN or pooler URL/password.
-* **Default Admin Seed (Optional)**:
-  * `DEFAULT_ADMIN_EMAIL`: Email for the default admin user.
-  * `DEFAULT_ADMIN_PASSWORD`: Password for the default admin user.
+* **Startup validation (required)**: `APP_ENV`, `AUTH_SERVICE_URL`, `DATABASE_URL` (in Docker: `POSTGRES_PASSWORD`), `REDIS_URL`, `CORS_ORIGINS`. The API refuses to start without them.
 * **Shipping Webhooks Verification**:
   * `SHIPPING_WEBHOOK_SECRET`: HMAC SHA256 secret to verify status updates from couriers (e.g., Shiprocket, Delhivery). Paste this webhook secret in your courier developer dashboard.
 * **Cart Limits**:
@@ -209,11 +162,11 @@ source .venv/bin/activate        # On Windows: .venv\Scripts\activate
 pip install -r services/marketplace-api/requirements.txt
 ```
 
-### 2. One-Time Database Initialization
-Build search indexes, unique keys, and automatic TTL expiration rules on MongoDB Atlas:
+### 2. Database
+Apply the PostgreSQL migrations before starting the API (and after pulling new ones):
 ```bash
 cd services/marketplace-api
-bash ../../../../scripts/setup/with-infisical.sh products/zolexora-marketplace python scripts/setup_indexes.py
+bash ../../../../scripts/setup/with-infisical.sh products/zolexora-marketplace python -m alembic upgrade head
 cd -
 ```
 
@@ -292,14 +245,7 @@ const [, , googlePromptAsync] = Google.useAuthRequest({
 
 ## 🔐 Default Login Credentials & Seed Account
 
-On first successful startup, the backend automatically seeds a primary system administrator account:
-
-* **Role**: Platform Administrator
-* **Email**: `admin@zolexora.com`
-* **Password**: `Zolexora@Admin2025`
-
-> [!WARNING]
-> Change the admin password immediately upon first login on production environments by updating the database record directly inside MongoDB Atlas or through the Admin moderation tools.
+Administrators are the auth service's platform admins (Track 3); the marketplace keeps no admin accounts of its own.
 
 ---
 
@@ -315,9 +261,7 @@ zolexora/
 │   │   └── cloudinary_client.py    ← Media CDN uploader
 │   ├── models/                     ← Pydantic documents and collections types
 │   ├── routers/                    ← HTTP API endpoints (Auth, Products, Reels, Payments)
-│   ├── scripts/                    
-│   │   ├── setup_indexes.py        ← MongoDB indices builder
-│   │   └── supabase_schema.sql     ← Relational PostgreSQL setup
+│   ├── migrations/             ← PostgreSQL schema (Alembic, forward-only)
 │   └── shipping/                   ← Courier selection logic
 │       ├── base.py                 ← Shipping abstract structures
 │       ├── rules.py                ← Auto-filtering ranking logic
@@ -494,12 +438,12 @@ To deploy the backend on a private VPS (like AWS EC2, DigitalOcean, or Hetzner):
 | Symptom | Cause | Solution |
 | :--- | :--- | :--- |
 | **`CORS Blocked`** | Calling address not in allowed list | Add your frontend domain or local IP (e.g. `http://localhost:3001`) to `CORS_ORIGINS` in Infisical |
-| **`MongoDB Connection Timeout`** | Network restriction or invalid URI | Ensure `MONGO_URL` includes credentials and you have whitelisted your IP address (or added `0.0.0.0/0`) in MongoDB Atlas |
+| **`Database is temporarily unavailable`** | PostgreSQL unreachable or `DATABASE_URL` wrong | Check the `DATABASE_URL` / `POSTGRES_PASSWORD` key in Infisical and that the database is running |
 | **`Google Login Fails`** | Mismatched client ID strings | Confirm the Google client ID keys in Infisical match the frontend configuration |
 | **`Uploaded images not visible`** | Missing or incorrect CDN credentials | Validate `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET` in Infisical |
 | **`Verification Emails not sending`** | Resend API auth failure | Ensure your Resend domain is verified at [resend.com/domains](https://resend.com/domains) and matches your `SENDER_EMAIL` |
 | **`Razorpay payment modal fails`** | Invalid merchant key loading | Ensure `NEXT_PUBLIC_RAZORPAY_KEY` is set in Infisical |
-| **`Admin portal displays blank screen`** | Authentication role mismatch | Sign in using the correct administrator credentials: `admin@zolexora.com` |
+| **`Admin portal displays blank screen`** | Signed-in account is not a platform admin | Sign in with an auth-service platform admin (Track 3) account |
 | **`Port 4100 Address Already in Use`** | Zombie python process running | Free the port by running: `lsof -ti:4100 \| xargs kill -9` |
 
 ---
@@ -507,5 +451,4 @@ To deploy the backend on a private VPS (like AWS EC2, DigitalOcean, or Hetzner):
 ## 📞 Support & Resources
 * **Backend Health Check Route**: `https://api--zolexora-api--4m8d68ky29h8.code.run/api/health`
 * **API Documentation Endpoint**: `https://api.zolexora.com/docs`
-* **Default Seeder Admin Account**: `admin@zolexora.com` / `Zolexora@Admin2025`
-* **MongoDB Management Console**: [MongoDB Atlas](https://cloud.mongodb.com)
+

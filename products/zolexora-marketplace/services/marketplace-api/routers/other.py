@@ -1,17 +1,19 @@
+import secrets
 import uuid
 from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 from catalog import store as catalog_store
+from commerce import coins
 from commerce import orders as order_store
+from content import reels as reel_store
 from routers.products import _invalidate_catalog_cache
 from routers.cart import settle
 from shared.database.postgres import pg_conn_dep
-from core.deps import db_dep, current_user, admin_only, require_permission
+from core.deps import current_user, admin_only, require_permission
 from core.config import settings
 from core.payments import create_razorpay_order
-from models.documents import CoinTxDoc
 from users.repositories import UserRepository, get_user_repository
 
 from storefronts.dependencies import optional_storefront_context
@@ -27,8 +29,8 @@ async def coin_balance(user=Depends(current_user)):
     return {"coin_balance":user.get("coin_balance",0)}
 
 @coins_router.get("/history")
-async def coin_history(user=Depends(current_user),db=Depends(db_dep)):
-    return await db.coin_transactions.find({"user_id":user["id"]},{"_id":0}).sort("created_at",-1).to_list(100)
+async def coin_history(user=Depends(current_user),pg=Depends(pg_conn_dep)):
+    return await coins.history(pg, user["id"])
 
 class DiscountReq(BaseModel):
     coins_to_spend:int; product_id:Optional[str]=None
@@ -39,26 +41,28 @@ TIERS=[{"coins":50,"percent":10},{"coins":100,"percent":20},{"coins":200,"percen
 async def generate_discount(
     req:DiscountReq,
     user=Depends(current_user),
-    db=Depends(db_dep),
-    user_repo:UserRepository=Depends(get_user_repository),
+    pg=Depends(pg_conn_dep),
 ):
     tier = next((t for t in TIERS if t["coins"]==req.coins_to_spend),None)
     if not tier: raise HTTPException(400,f"Valid: {[t['coins'] for t in TIERS]}")
     if user.get("coin_balance",0)<tier["coins"]: raise HTTPException(400,"Insufficient coins")
-    code = str(uuid.uuid4())[:8].upper()
-    discount = {"id":str(uuid.uuid4()),"user_id":user["id"],"code":code,
+    discount = {"id":str(uuid.uuid4()),"user_id":user["id"],"code":secrets.token_hex(4).upper(),
                 "discount_percent":tier["percent"],"coins_spent":tier["coins"],
                 "is_used":False,"product_id":req.product_id,
                 "created_at":datetime.now(timezone.utc).isoformat()}
-    await db.discount_codes.insert_one(discount)
-    await user_repo.adjust_coin_balance(user["id"], -tier["coins"])
-    await db.coin_transactions.insert_one(CoinTxDoc(user_id=user["id"],amount=-tier["coins"],type="spent",
-        description=f"Generated {tier['percent']}% discount code").model_dump())
-    discount.pop("_id",None); return discount
+    async with pg.transaction():  # the coins are spent only if the code is stored
+        await coins.move(pg, user["id"], -tier["coins"], "spent", f"Generated {tier['percent']}% discount code", discount["id"])
+        await pg.execute(
+            """INSERT INTO coin_discount_code (id, user_id, code, discount_percent, coins_spent, product_id)
+               VALUES ($1, $2, $3, $4, $5, $6)""",
+            uuid.UUID(discount["id"]), uuid.UUID(user["id"]), discount["code"], tier["percent"], tier["coins"], req.product_id)
+    return discount
 
 @coins_router.get("/discounts")
-async def my_discounts(user=Depends(current_user),db=Depends(db_dep)):
-    return await db.discount_codes.find({"user_id":user["id"]},{"_id":0}).sort("created_at",-1).to_list(50)
+async def my_discounts(user=Depends(current_user),pg=Depends(pg_conn_dep)):
+    rows = await pg.fetch("""SELECT id, user_id, code, discount_percent, coins_spent, is_used, product_id, created_at
+                             FROM coin_discount_code WHERE user_id = $1 ORDER BY created_at DESC LIMIT 50""", uuid.UUID(user["id"]))
+    return [{**dict(r), "id": str(r["id"]), "user_id": str(r["user_id"]), "created_at": r["created_at"].isoformat()} for r in rows]
 
 
 # ── Subscriptions ─────────────────────────────────────────────────────────────
@@ -70,15 +74,15 @@ async def get_plans(): return settings.SUBSCRIPTION_PLANS
 class SubReq(BaseModel): plan_type:str
 
 @subs_router.post("/checkout")
-async def sub_checkout(req:SubReq,user=Depends(current_user),db=Depends(db_dep)):
+async def sub_checkout(req:SubReq,user=Depends(current_user),pg=Depends(pg_conn_dep)):
     if req.plan_type not in settings.SUBSCRIPTION_PLANS: raise HTTPException(400,"Invalid plan")
     if not settings.RAZORPAY_KEY_ID: raise HTTPException(503,"Payment gateway not configured")
     plan = settings.SUBSCRIPTION_PLANS[req.plan_type]
     rz_order = create_razorpay_order({"amount":int(plan["price"]*100),"currency":"INR",
         "notes":{"user_id":user["id"],"plan_type":req.plan_type,"type":"subscription"}})
-    await db.payment_transactions.insert_one({"id":str(uuid.uuid4()),"user_id":user["id"],
-        "razorpay_order_id":rz_order["id"],"amount":plan["price"],"plan_type":req.plan_type,
-        "status":"pending","created_at":datetime.now(timezone.utc).isoformat()})
+    await pg.execute("""INSERT INTO subscription_payment (id, user_id, razorpay_order_id, plan_type, amount_minor)
+                        VALUES ($1, $2, $3, $4, $5)""",
+                     uuid.uuid4(), uuid.UUID(user["id"]), rz_order["id"], req.plan_type, int(plan["price"]*100))
     return {"razorpay_order_id":rz_order["id"],"amount":plan["price"],"key_id":settings.RAZORPAY_KEY_ID}
 
 
@@ -89,21 +93,19 @@ admin_router = APIRouter(prefix="/admin", tags=["admin"])
 async def admin_stats(
     u=Depends(admin_only),
     context: Optional[StorefrontContext] = Depends(optional_storefront_context),
-    db=Depends(db_dep),
     user_repo:UserRepository=Depends(get_user_repository),
     pg=Depends(pg_conn_dep),
 ):
-    sf = {"storefront_id": context.key.value} if context else {}
     key = context.key.value if context else None
     return {
         "total_users":              await user_repo.count_users(),
         **await catalog_store.listing_counts(pg, context.key.value if context else None),
-        "total_reels":              await db.reels.count_documents(sf),
-        "sponsored_reels":          await db.reels.count_documents({**sf, "content_type":"sponsored"}),
+        "total_reels":              await reel_store.count(pg, storefront=key),
+        "sponsored_reels":          await reel_store.count(pg, storefront=key, content_type="sponsored"),
         "total_orders":             await order_store.count(pg, storefront=key),
         "paid_orders":              await order_store.count(pg, storefront=key, payment_status="paid"),
         "pending_upi_verification": await order_store.count(pg, storefront=key, payment_status="awaiting_verification"),
-        "total_reel_views":         await db.reel_views.count_documents(sf),
+        "total_reel_views":         await reel_store.view_count(pg, storefront=key),
         "pending_orders":           await order_store.count(pg, storefront=key, status="placed"),
     }
 
@@ -155,22 +157,18 @@ async def admin_delete_product(pid:str,u=Depends(require_permission("catalog:wri
     return {"message":"Deleted"}
 
 @admin_router.get("/reels")
-async def admin_reels(u=Depends(admin_only), context: Optional[StorefrontContext] = Depends(optional_storefront_context), db=Depends(db_dep)):
-    sf = {"storefront_id": context.key.value} if context else {}
-    return await db.reels.find(sf,{"_id":0}).sort("created_at",-1).to_list(500)
+async def admin_reels(u=Depends(admin_only), context: Optional[StorefrontContext] = Depends(optional_storefront_context), pg=Depends(pg_conn_dep)):
+    return await reel_store.find(pg, storefront=context.key if context else None)
 
 @admin_router.put("/reels/{rid}/toggle")
-async def admin_toggle_reel(rid:str,u=Depends(require_permission("content:write")), context: Optional[StorefrontContext] = Depends(optional_storefront_context), db=Depends(db_dep)):
-    sf = {"storefront_id": context.key.value} if context else {}
-    r = await db.reels.find_one({"id":rid, **sf})
-    if not r: raise HTTPException(404)
-    await db.reels.update_one({"id":rid, **sf},{"$set":{"is_active":not r["is_active"]}})
-    return {"is_active":not r["is_active"]}
+async def admin_toggle_reel(rid:str,u=Depends(require_permission("content:write")), context: Optional[StorefrontContext] = Depends(optional_storefront_context), pg=Depends(pg_conn_dep)):
+    active = await reel_store.toggle(pg, id=rid, storefront=context.key if context else None)
+    if active is None: raise HTTPException(404)
+    return {"is_active":active}
 
 @admin_router.delete("/reels/{rid}")
-async def admin_delete_reel(rid:str,u=Depends(require_permission("content:write")), context: Optional[StorefrontContext] = Depends(optional_storefront_context), db=Depends(db_dep)):
-    sf = {"storefront_id": context.key.value} if context else {}
-    await db.reels.delete_one({"id":rid, **sf}); return {"message":"Deleted"}
+async def admin_delete_reel(rid:str,u=Depends(require_permission("content:write")), context: Optional[StorefrontContext] = Depends(optional_storefront_context), pg=Depends(pg_conn_dep)):
+    await reel_store.delete(pg, id=rid, storefront=context.key if context else None); return {"message":"Deleted"}
 
 @admin_router.get("/orders")
 async def admin_orders(u=Depends(admin_only), context: Optional[StorefrontContext] = Depends(optional_storefront_context), pg=Depends(pg_conn_dep)):
@@ -191,8 +189,6 @@ async def verify_upi(
     req:UPIVerifyReq,
     u=Depends(require_permission("orders:write")),
     context: Optional[StorefrontContext] = Depends(optional_storefront_context),
-    db=Depends(db_dep),
-    user_repo:UserRepository=Depends(get_user_repository),
     pg=Depends(pg_conn_dep),
 ):
     sf_key = context.key.value if context else None
@@ -221,26 +217,20 @@ async def verify_upi(
             await settle(pg, ids, paid=False)
             # Coins were spent when the order was placed; a rejected payment gives them back.
             if coins_used > 0:
-                await user_repo.adjust_coin_balance(order["buyer_id"], coins_used, pg)
-        if coins_used > 0:
-            await db.coin_transactions.insert_one(CoinTxDoc(
-                user_id=order["buyer_id"],amount=coins_used,type="refund",
-                description=f"Order {order.get('order_number', order_id)} payment rejected",ref_id=order_id).model_dump())
+                await coins.move(pg, order["buyer_id"], coins_used, "refund",
+                                 f"Order {order.get('order_number', order_id)} payment rejected", order_id)
         return {"message":"Payment rejected ✗","order_id":order_id,"status":"cancelled"}
 
 @admin_router.get("/analytics")
 async def admin_analytics(
     u=Depends(admin_only),
     context: Optional[StorefrontContext] = Depends(optional_storefront_context),
-    db=Depends(db_dep),
     user_repo:UserRepository=Depends(get_user_repository),
     pg=Depends(pg_conn_dep),
 ):
-    sf = {"storefront_id": context.key.value} if context else {}
     key = context.key.value if context else None
     now=datetime.now(timezone.utc)
     d30_dt=now-timedelta(days=30); d7_dt=now-timedelta(days=7)
-    d30=d30_dt.isoformat()
     return {
         "new_users_30d":         await user_repo.count_users(created_since=d30_dt),
         "new_users_7d":          await user_repo.count_users(created_since=d7_dt),
@@ -249,7 +239,7 @@ async def admin_analytics(
         "razorpay_orders_30d":   await order_store.count(pg, storefront=key, payment_method="razorpay", payment_status="paid", since=d30_dt),
         "upi_orders_30d":        await order_store.count(pg, storefront=key, payment_method="upi", payment_status="paid", since=d30_dt),
         "coins_orders_30d":      await order_store.count(pg, storefront=key, payment_method="coins", payment_status="paid", since=d30_dt),
-        "reel_views_30d":        await db.reel_views.count_documents({**sf, "created_at":{"$gte":d30}}),
-        "coins_earned_30d":      await db.coin_transactions.count_documents({"type":"earned","created_at":{"$gte":d30}}),
+        "reel_views_30d":        await reel_store.view_count(pg, storefront=key, since=d30_dt),
+        "coins_earned_30d":      await coins.earned_count(pg, since=d30_dt),
         "pending_upi_verify":    await order_store.count(pg, storefront=key, payment_status="awaiting_verification"),
     }

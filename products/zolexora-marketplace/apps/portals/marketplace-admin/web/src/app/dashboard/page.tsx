@@ -46,7 +46,7 @@ export default function AdminDashboard() {
     <div className="max-w-6xl mx-auto space-y-8">
       <div>
         <h1 className="font-display text-2xl font-bold text-ink">Platform Overview</h1>
-        <p className="text-ink-muted text-sm mt-0.5">Cloudinary (media) · Supabase (users) · MongoDB Atlas (data)</p>
+        <p className="text-ink-muted text-sm mt-0.5">Cloudinary (media) · PostgreSQL (data) · Zolexora auth service (sign-in)</p>
       </div>
 
       {/* UPI Alert */}
@@ -109,21 +109,15 @@ export default function AdminDashboard() {
       {/* Storage Architecture */}
       <div className="bg-gradient-to-r from-slate-50 to-blue-50 rounded-2xl border border-slate-100 p-5">
         <h2 className="font-display text-sm font-bold text-ink mb-3 flex items-center gap-2"><TrendingUp size={15}/> Storage Architecture</h2>
-        <div className="grid md:grid-cols-3 gap-4 text-xs">
+        <div className="grid md:grid-cols-2 gap-4 text-xs">
           <div><p className="font-semibold text-orange-800 mb-1">☁️ Cloudinary (media)</p>
             <ul className="text-orange-700 space-y-0.5 list-disc list-inside">
               <li>Product images → /products/</li><li>Reel videos → /reels/</li><li>User avatars → /avatars/</li>
               <li className="text-gray-500">Free: 25GB + global CDN</li>
             </ul></div>
-          <div><p className="font-semibold text-green-800 mb-1">🟢 Supabase (500MB)</p>
-            <ul className="text-green-700 space-y-0.5 list-disc list-inside">
-              <li>users table</li><li>subscriptions</li><li>payment_transactions</li>
-              <li className="text-gray-500">~50MB used typically</li>
-            </ul></div>
-          <div><p className="font-semibold text-blue-800 mb-1">🔵 MongoDB Atlas (500MB)</p>
+          <div><p className="font-semibold text-blue-800 mb-1">🔵 PostgreSQL</p>
             <ul className="text-blue-700 space-y-0.5 list-disc list-inside">
-              <li>products, orders, cart</li><li>reels metadata + views</li><li>coins, shipments</li>
-              <li className="text-gray-500">TTL indexes save quota</li>
+              <li>catalog, stock, carts, orders</li><li>payments, shipments, pickup addresses</li><li>coins, reels, wishlists</li>
             </ul></div>
         </div>
       </div>
