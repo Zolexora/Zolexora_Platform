@@ -81,6 +81,8 @@ class Settings:
 
     # ── UPI / QR
     UPI_ID:            str = os.environ.get("UPI_ID", "")
+    # Fernet key that encrypts seller PAN and payout account numbers (seller_orgs/kyc.py).
+    SELLER_KYC_ENCRYPTION_KEY: str = os.environ.get("SELLER_KYC_ENCRYPTION_KEY", "").strip()
     UPI_MERCHANT_NAME: str = os.environ.get("UPI_MERCHANT_NAME", "Zolexora")
 
     # ── Checkout Quotes

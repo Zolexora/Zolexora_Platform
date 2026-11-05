@@ -1453,6 +1453,53 @@
         }
       }
     },
+    "/api/admin/seller-organizations/{org_id}/kyc": {
+      "get": {
+        "tags": [
+          "seller-organizations"
+        ],
+        "summary": "Admin read an organisation's PAN and payout account",
+        "description": "Full PAN and bank account number, for verification and payouts. Every read is recorded in\nthe organisation's audit log.",
+        "operationId": "admin_get_seller_kyc_api_admin_seller_organizations__org_id__kyc_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Org Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/storefront-grants": {
       "get": {
         "tags": [
@@ -7489,6 +7536,53 @@
                 "schema": {
                   "$ref": "#/components/schemas/SellerOrgResponse"
                 }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/seller-organizations/{org_id}/kyc": {
+      "get": {
+        "tags": [
+          "seller-organizations"
+        ],
+        "summary": "Admin read an organisation's PAN and payout account",
+        "description": "Full PAN and bank account number, for verification and payouts. Every read is recorded in\nthe organisation's audit log.",
+        "operationId": "admin_get_seller_kyc_admin_seller_organizations__org_id__kyc_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Org Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           },

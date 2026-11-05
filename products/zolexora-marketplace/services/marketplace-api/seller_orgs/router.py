@@ -22,6 +22,7 @@ from .schemas import (
     SellerAuditLogResponse,
     SellerVerificationHistoryResponse,
 )
+from . import kyc
 from .repository import PostgresSellerRepository
 from users.repositories import UserRepository, get_user_repository
 from .dependencies import (
@@ -113,13 +114,19 @@ async def create_seller_organization(
     if isinstance(user_id, str):
         user_id = uuid.UUID(user_id)
 
+    # Members see the metadata; PAN and payout account go encrypted to seller_kyc (last four
+    # digits stay in metadata), and only the last four digits of an Aadhaar number are kept.
+    metadata, secrets = kyc.split(payload.metadata)
+    kyc.require_key(secrets)
     try:
-        org = await repo.create_organization(
-            name=payload.name,
-            slug=payload.slug,
-            owner_user_id=user_id,
-            metadata=payload.metadata,
-        )
+        async with repo.connection.transaction():
+            org = await repo.create_organization(
+                name=payload.name,
+                slug=payload.slug,
+                owner_user_id=user_id,
+                metadata=metadata,
+            )
+            await kyc.store(repo.connection, org["id"], secrets)
         return org
     except ValueError as exc:
         raise HTTPException(
@@ -429,6 +436,25 @@ async def admin_update_organization_suspension(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(exc),
         )
+
+
+@router.get("/admin/seller-organizations/{org_id}/kyc", summary="Admin read an organisation's PAN and payout account")
+async def admin_get_seller_kyc(
+    org_id: uuid.UUID,
+    admin: dict[str, Any] = Depends(require_permission("sellers:write")),
+    repo: PostgresSellerRepository = Depends(get_seller_repo),
+):
+    """Full PAN and bank account number, for verification and payouts. Every read is recorded in
+    the organisation's audit log."""
+    if not await repo.get_organization_by_id(org_id):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Organization not found")
+    async with repo.connection.transaction():
+        secrets = await kyc.read(repo.connection, org_id)
+        await repo.connection.execute(
+            """INSERT INTO seller_audit_log (id, organization_id, actor_user_id, action, resource_type, resource_id, payload)
+               VALUES ($1, $2, $3, 'KYC_VIEWED', 'seller_kyc', $2, NULL)""",
+            uuid.uuid4(), org_id, uuid.UUID(str(admin["id"])))
+    return secrets
 
 
 @router.get(

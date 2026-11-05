@@ -488,6 +488,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/seller-organizations/{org_id}/kyc": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Admin read an organisation's PAN and payout account
+         * @description Full PAN and bank account number, for verification and payouts. Every read is recorded in
+         *     the organisation's audit log.
+         */
+        get: operations["admin_get_seller_kyc_api_admin_seller_organizations__org_id__kyc_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/storefront-grants": {
         parameters: {
             query?: never;
@@ -2619,6 +2640,27 @@ export interface paths {
         get?: never;
         /** Admin suspend or unsuspend organization */
         put: operations["admin_update_organization_suspension_admin_seller_organizations__org_id__suspension_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/seller-organizations/{org_id}/kyc": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Admin read an organisation's PAN and payout account
+         * @description Full PAN and bank account number, for verification and payouts. Every read is recorded in
+         *     the organisation's audit log.
+         */
+        get: operations["admin_get_seller_kyc_admin_seller_organizations__org_id__kyc_get"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -7318,6 +7360,37 @@ export interface operations {
             };
         };
     };
+    admin_get_seller_kyc_api_admin_seller_organizations__org_id__kyc_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     admin_list_storefront_grants_api_admin_storefront_grants_get: {
         parameters: {
             query?: {
@@ -11321,6 +11394,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SellerOrgResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_get_seller_kyc_admin_seller_organizations__org_id__kyc_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

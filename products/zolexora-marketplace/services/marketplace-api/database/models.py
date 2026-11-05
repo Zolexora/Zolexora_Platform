@@ -194,7 +194,7 @@ refund_record = Table(
     Column("amount_minor", BigInteger, nullable=False), Column("currency", String(3), nullable=False),
     Column("status", String(24), nullable=False, server_default="pending"), Column("reason", String(500), nullable=False),
     Column("external_reference", String(256)), Column("idempotency_key", String(128), nullable=False),
-    Column("requested_by", Uuid, ForeignKey("users.id", ondelete="RESTRICT"), nullable=False), created_column(), updated_column(),
+    Column("requested_by", Uuid, nullable=False), created_column(), updated_column(),
     ForeignKeyConstraint(["order_id", "storefront_id"], ["marketplace_order.id", "marketplace_order.storefront_id"], ondelete="RESTRICT", name="fk_refund_order_storefront"),
     UniqueConstraint("storefront_id", "idempotency_key", name="uq_refund_storefront_idempotency"),
     CheckConstraint("status IN ('pending','processing','succeeded','failed','cancelled')", name="refund_status_values"),
@@ -267,7 +267,7 @@ Index("ix_external_ref_storefront_entity", external_reference.c.storefront_id, e
 
 audit_event = Table(
     "audit_event", metadata, id_column(),
-    Column("actor_id", Uuid, ForeignKey("users.id", ondelete="RESTRICT"), nullable=False),
+    Column("actor_id", Uuid, nullable=False),
     Column("storefront_id", Uuid, ForeignKey("storefront.id", ondelete="RESTRICT")),
     Column("action", String(128), nullable=False), Column("resource_type", String(64), nullable=False),
     Column("resource_id", Uuid, nullable=False), Column("correlation_id", String(128)),
@@ -318,7 +318,7 @@ seller_storefront_grant = Table(
     Column("organization_id", Uuid, ForeignKey("seller_organization.id", ondelete="RESTRICT"), nullable=False),
     Column("storefront_id", Uuid, ForeignKey("storefront.id", ondelete="RESTRICT"), nullable=False),
     Column("grant_status", String(32), nullable=False, server_default="PENDING"),
-    Column("granted_by_user_id", Uuid, ForeignKey("users.id", ondelete="RESTRICT")),
+    Column("granted_by_user_id", Uuid),
     Column("grant_reason", String(500)),
     Column("effective_at", DateTime(timezone=True)),
     Column("revoked_at", DateTime(timezone=True)),
@@ -331,7 +331,7 @@ Index("ix_seller_storefront_grant_lookup", seller_storefront_grant.c.organizatio
 seller_audit_log = Table(
     "seller_audit_log", metadata, id_column(),
     Column("organization_id", Uuid, ForeignKey("seller_organization.id", ondelete="RESTRICT"), nullable=False),
-    Column("actor_user_id", Uuid, ForeignKey("users.id", ondelete="RESTRICT"), nullable=False),
+    Column("actor_user_id", Uuid, nullable=False),
     Column("action", String(128), nullable=False),
     Column("resource_type", String(64), nullable=False),
     Column("resource_id", Uuid, nullable=False),
@@ -345,7 +345,7 @@ Index("ix_seller_audit_log_resource", seller_audit_log.c.resource_type, seller_a
 seller_verification_history = Table(
     "seller_verification_history", metadata, id_column(),
     Column("organization_id", Uuid, ForeignKey("seller_organization.id", ondelete="RESTRICT"), nullable=False),
-    Column("verified_by_user_id", Uuid, ForeignKey("users.id", ondelete="RESTRICT"), nullable=False),
+    Column("verified_by_user_id", Uuid, nullable=False),
     Column("status", String(32), nullable=False),
     Column("notes", Text),
     created_column(),
@@ -724,7 +724,7 @@ order_state_history = Table(
     Column("previous_status", String(32)),
     Column("new_status", String(32), nullable=False),
     Column("reason", String(500)),
-    Column("actor_id", Uuid, ForeignKey("users.id", ondelete="RESTRICT")),
+    Column("actor_id", Uuid),
     created_column(),
     CheckConstraint(f"new_status IN ({ORDER_STATUSES})", name="order_state_history_new_status_values"),
 )
@@ -910,3 +910,11 @@ reel_view = Table(
     UniqueConstraint("user_id", "reel_id", "view_date", name="uq_reel_view_daily"),
 )
 Index("ix_reel_view_storefront_created", reel_view.c.storefront_id, reel_view.c.created_at)
+
+# Encrypted seller KYC (migration 0025); organisation metadata keeps only last-four digits.
+seller_kyc = Table(
+    "seller_kyc", metadata,
+    Column("organization_id", Uuid, ForeignKey("seller_organization.id", ondelete="CASCADE"), primary_key=True),
+    Column("pan_ciphertext", Text), Column("account_number_ciphertext", Text),
+    Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+)
