@@ -4711,9 +4711,9 @@ export interface components {
         AdminSuspensionUpdate: {
             /**
              * Action
-             * @description SUSPEND or UNSUSPEND
+             * @enum {string}
              */
-            action: string;
+            action: "SUSPEND" | "UNSUSPEND";
             /** Reason */
             reason: string;
         };
@@ -4768,9 +4768,9 @@ export interface components {
         AdminVerificationUpdate: {
             /**
              * Verification Status
-             * @description UNVERIFIED, PENDING, VERIFIED, REJECTED, NEEDS_REVISION
+             * @enum {string}
              */
-            verification_status: string;
+            verification_status: "UNVERIFIED" | "PENDING" | "VERIFIED" | "REJECTED" | "NEEDS_REVISION";
             /** Notes */
             notes?: string | null;
         };

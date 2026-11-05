@@ -105,7 +105,7 @@ async def test_seller_without_grant_cannot_publish(repo, seed_data):
     assert org["status"] == "PENDING_VERIFICATION"
 
     # Even if org is set to ACTIVE, without grant, has_active_grant is False
-    await repo.update_organization_status(org_id=org_id, status="ACTIVE", actor_user_id=s1)
+    await repo.update_organization_verification(org_id=org_id, verification_status="VERIFIED", admin_user_id=s1)
     has_grant = await repo.has_active_grant(org_id, sf_shop)
     assert has_grant is False
 
@@ -122,13 +122,13 @@ async def test_storefront_grant_isolation(repo, seed_data):
 
     # Org 1 granted for Zolexora Shop only
     org1 = await repo.create_organization(name="Shop Seller", slug=f"shop-seller-{uuid.uuid4().hex[:6]}", owner_user_id=s1)
-    await repo.update_organization_status(org_id=org1["id"], status="ACTIVE", actor_user_id=admin)
+    await repo.update_organization_verification(org_id=org1["id"], verification_status="VERIFIED", admin_user_id=admin)
     g1 = await repo.request_storefront_grant(org_id=org1["id"], storefront_id=sf_shop, actor_user_id=s1)
     await repo.update_grant_status(grant_id=g1["id"], decision="APPROVE", admin_user_id=admin)
 
     # Org 2 granted for Mahila Madel only
     org2 = await repo.create_organization(name="Mahila Seller", slug=f"mahila-seller-{uuid.uuid4().hex[:6]}", owner_user_id=s2)
-    await repo.update_organization_status(org_id=org2["id"], status="ACTIVE", actor_user_id=admin)
+    await repo.update_organization_verification(org_id=org2["id"], verification_status="VERIFIED", admin_user_id=admin)
     g2 = await repo.request_storefront_grant(org_id=org2["id"], storefront_id=sf_mahila, actor_user_id=s2)
     await repo.update_grant_status(grant_id=g2["id"], decision="APPROVE", admin_user_id=admin)
 
@@ -150,7 +150,7 @@ async def test_revoked_grant_immediately_blocks_publishing(repo, seed_data):
     sf_shop = seed_data["shop_sf_id"]
 
     org = await repo.create_organization(name="Revoke Org", slug=f"revoke-org-{uuid.uuid4().hex[:6]}", owner_user_id=s1)
-    await repo.update_organization_status(org_id=org["id"], status="ACTIVE", actor_user_id=admin)
+    await repo.update_organization_verification(org_id=org["id"], verification_status="VERIFIED", admin_user_id=admin)
     g = await repo.request_storefront_grant(org_id=org["id"], storefront_id=sf_shop, actor_user_id=s1)
     await repo.update_grant_status(grant_id=g["id"], decision="APPROVE", admin_user_id=admin)
 
@@ -172,7 +172,7 @@ async def test_suspended_org_blocks_writes_preserves_history(repo, seed_data):
 
     org = await repo.create_organization(name="Suspend Org", slug=f"suspend-org-{uuid.uuid4().hex[:6]}", owner_user_id=s1)
     org_id = org["id"]
-    await repo.update_organization_status(org_id=org_id, status="ACTIVE", actor_user_id=admin)
+    await repo.update_organization_verification(org_id=org_id, verification_status="VERIFIED", admin_user_id=admin)
 
     # Add second member while active
     m2 = await repo.add_member(org_id=org_id, user_id=seed_data["seller2_id"], role="MANAGER", actor_user_id=s1)

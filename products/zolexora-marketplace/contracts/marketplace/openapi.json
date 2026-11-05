@@ -13234,8 +13234,11 @@
         "properties": {
           "action": {
             "type": "string",
-            "title": "Action",
-            "description": "SUSPEND or UNSUSPEND"
+            "enum": [
+              "SUSPEND",
+              "UNSUSPEND"
+            ],
+            "title": "Action"
           },
           "reason": {
             "type": "string",
@@ -13381,8 +13384,14 @@
         "properties": {
           "verification_status": {
             "type": "string",
-            "title": "Verification Status",
-            "description": "UNVERIFIED, PENDING, VERIFIED, REJECTED, NEEDS_REVISION"
+            "enum": [
+              "UNVERIFIED",
+              "PENDING",
+              "VERIFIED",
+              "REJECTED",
+              "NEEDS_REVISION"
+            ],
+            "title": "Verification Status"
           },
           "notes": {
             "anyOf": [

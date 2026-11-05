@@ -29,26 +29,38 @@ The status docs say MR-00 to MR-19 are complete. The code does not support that:
 
 | # | Area | Finding | Evidence |
 |---|---|---|---|
-| H1 | Auth | Phone login and identity linking look users up by **any delivery-address phone**, so a gift recipient lands in the buyer's account. | `users/repositories.py:98-111`, `auth/services.py:291-301` |
-| H2 | Auth | OTP race: when the verify script returns 0 (challenge deleted) and a 15-minute "verified" marker exists, verification succeeds. Parallel wrong guesses can log in as a victim. | `shared/sms/otp.py:115-126`, `shared/verification/email_otp.py:119-130` |
-| H3 | Auth | The SMS OTP rate-limit key is `(purpose, "anon")`. `purpose` is free text, so SMS pumping is unlimited; with a fixed purpose, six requests lock out every registrant. | `shared/sms/otp.py:57,153`, `auth/router.py:270`, `auth/schemas.py:199` |
-| H4 | Auth | OTPs are logged and reported as sent when SMS credentials are missing, and `APP_ENV` defaults to `development`. | `shared/sms/providers/smscountry.py:202-215`, `core/config.py:61`, `auth/services.py:59-60` |
-| H5 | RBAC | `admin_only` ignores fine-grained admin permissions, so any admin can suspend users or approve grants. The legacy `/admin/users/{id}/role` and `/toggle` routes (used by the admin UI) have no permission check and no audit log. | `core/deps.py:128-131`, `routers/other.py:158,169` |
-| H6 | Isolation | `require_storefront_grant` is never used. Any seller can publish on Mahila by sending `X-Storefront-Key`. Legacy product routes let sellers set listings `active` and skip moderation. | `seller_orgs/dependencies.py:89-105`, `routers/portal_catalog.py:35-39,180-230`, `routers/products.py:457,497,520` |
+| H1 ✔ | Auth | Phone login and identity linking look users up by **any delivery-address phone**, so a gift recipient lands in the buyer's account. | `users/repositories.py:98-111`, `auth/services.py:291-301` |
+| H2 ✔ | Auth | OTP race: when the verify script returns 0 (challenge deleted) and a 15-minute "verified" marker exists, verification succeeds. Parallel wrong guesses can log in as a victim. | `shared/sms/otp.py:115-126`, `shared/verification/email_otp.py:119-130` |
+| H3 ✔ | Auth | The SMS OTP rate-limit key is `(purpose, "anon")`. `purpose` is free text, so SMS pumping is unlimited; with a fixed purpose, six requests lock out every registrant. | `shared/sms/otp.py:57,153`, `auth/router.py:270`, `auth/schemas.py:199` |
+| H4 ✔ | Auth | OTPs are logged and reported as sent when SMS credentials are missing, and `APP_ENV` defaults to `development`. | `shared/sms/providers/smscountry.py:202-215`, `core/config.py:61`, `auth/services.py:59-60` |
+| H5 ✔ | RBAC | `admin_only` ignores fine-grained admin permissions, so any admin can suspend users or approve grants. The legacy `/admin/users/{id}/role` and `/toggle` routes (used by the admin UI) have no permission check and no audit log. | `core/deps.py:128-131`, `routers/other.py:158,169` |
+| H6 ✔ | Isolation | `require_storefront_grant` is never used. Any seller can publish on Mahila by sending `X-Storefront-Key`. Legacy product routes let sellers set listings `active` and skip moderation. | `seller_orgs/dependencies.py:89-105`, `routers/portal_catalog.py:35-39,180-230`, `routers/products.py:457,497,520` |
 | H7 ✔ | ERP | The webhook secret is the literal `"erp_secret_key"`, compared with `==`, with in-memory replay protection. | `routers/erp_webhooks.py:8`, `integrations/zolexora_erp/adapter.py:32-41` |
-| H8 | Payments | Razorpay verification passes when `RAZORPAY_KEY_SECRET` is empty (the default), and the update isn't scoped to the buyer, storefront or pending status. | `routers/cart.py:613-626`, `core/config.py:131` |
-| H9 | Money | Checkout quotes are never consumed, so one quote creates unlimited orders. The quote and the legacy checkout disagree: the quote has 0 tax and shipping, the legacy checkout adds an 18% float tax and ₹49. The web UI shows a total that doesn't include the tax it charges. | `routers/orders.py:77`, `routers/cart.py:401-404,461-462`; `zolexora-shop/web/src/app/cart/page.tsx:253-258` |
-| H10 | Inventory | Stock is never reserved or decremented on order, so products oversell. | `routers/cart.py:447-596`, `routers/orders.py:109-259` |
-| H11 | Shipping | There is no guard against double booking, so a double-click or retry buys two AWBs. | `shipping/service.py:157-346` |
-| H12 | Routing | `orders_router` is mounted before `admin_orders_router`, so `GET /orders/admin` matches `/{order_id}` and returns 404. | `main.py:143-144` |
-| H13 | Seller KYC | Bank account, Aadhaar and PAN are stored as plain-text org metadata and returned to every org member. Verification is enforced only by a client-side redirect. Documents are never uploaded. | `seller/web/src/app/verification/page.tsx:280-282`, `seller_orgs/schemas.py:31` |
-| H14 | Frontends | Order history is broken everywhere. `/orders/my` and `/orders/seller` return `order_id` and summaries, but the UIs read `id`, `items`, `total_paid` and `payment_status`. Mobile screens crash on `order.id.slice`, and the detail pages never find the order. | `models/orders.py:341`; storefront and seller `orders` pages |
-| H15 | Frontends | Seller product Edit, Hide, Delete and image upload all 404, because `/products/my` returns master IDs while the write routes expect listing IDs. | `routers/products.py:369` vs `:423,482,550,566` |
-| H16 | Frontends | Bulk upload and mobile product create/edit send `price` as a number, but the API requires a Money object, so they return 422. | `seller/web/.../products/bulk/page.tsx:370`, `seller/mobile/app/product-form/index.tsx:215` |
-| H17 | Frontends | Every mobile write returns 403. Mobile uses the cookie session, but its CSRF header comes from `document.cookie`, which doesn't exist in React Native, and the token is never kept in SecureStore. The buyer apps store `"dummy-native-token"` as a fallback. | `packages/shared-api/src/client.ts:36`, `core/deps.py:73-77`, `zolexora-shop/mobile/app/auth/index.tsx:58` |
-| H18 | Frontends | Admins can't sign in to the admin portal: it uses `/auth/login` (users table), but admins exist only in `public.admins` via `/auth/firebase`. | `marketplace-admin/web/src/app/auth/page.tsx:21` |
-| H19 | Frontends | Mahila checkout fails for COD (it sends `cod` and `upi_qr`, which the server rejects). The UPI QR shows a hardcoded `mahilamadel@upi` payee before any order exists. The Zolexora QR is a random pattern that can't be scanned, and `upi_link` is undefined. | `mahila-madel/web/src/pages/Checkout.js:96,405-419,829-837`; `zolexora-shop/web/src/app/cart/page.tsx:49-66,283` |
-| H20 | Frontends | The buyer mobile cart crashes because the response is treated as an array and price as a number. Mahila mobile can't build because `assets/` is missing and the EAS `projectId` is a placeholder. | `*/mobile/app/(tabs)/cart.tsx:37-47`, `mahila-madel/mobile/app.json` |
+| H8 ✔ | Payments | Razorpay verification passes when `RAZORPAY_KEY_SECRET` is empty (the default), and the update isn't scoped to the buyer, storefront or pending status. | `routers/cart.py:613-626`, `core/config.py:131` |
+| H9 ✔ | Money | Checkout quotes are never consumed, so one quote creates unlimited orders. The quote and the legacy checkout disagree: the quote has 0 tax and shipping, the legacy checkout adds an 18% float tax and ₹49. The web UI shows a total that doesn't include the tax it charges. | `routers/orders.py:77`, `routers/cart.py:401-404,461-462`; `zolexora-shop/web/src/app/cart/page.tsx:253-258` |
+| H10 ✔ | Inventory | Stock is never reserved or decremented on order, so products oversell. | `routers/cart.py:447-596`, `routers/orders.py:109-259` |
+| H11 ✔ | Shipping | There is no guard against double booking, so a double-click or retry buys two AWBs. | `shipping/service.py:157-346` |
+| H12 ✔ | Routing | `orders_router` is mounted before `admin_orders_router`, so `GET /orders/admin` matches `/{order_id}` and returns 404. | `main.py:143-144` |
+| H13 ✔ | Seller KYC | Bank account, Aadhaar and PAN are stored as plain-text org metadata and returned to every org member. Verification is enforced only by a client-side redirect. Documents are never uploaded. | `seller/web/src/app/verification/page.tsx:280-282`, `seller_orgs/schemas.py:31` |
+| H14 ✔ | Frontends | Order history is broken everywhere. `/orders/my` and `/orders/seller` return `order_id` and summaries, but the UIs read `id`, `items`, `total_paid` and `payment_status`. Mobile screens crash on `order.id.slice`, and the detail pages never find the order. | `models/orders.py:341`; storefront and seller `orders` pages |
+| H15 ✔ | Frontends | Seller product Edit, Hide, Delete and image upload all 404, because `/products/my` returns master IDs while the write routes expect listing IDs. | `routers/products.py:369` vs `:423,482,550,566` |
+| H16 ✔ | Frontends | Bulk upload and mobile product create/edit send `price` as a number, but the API requires a Money object, so they return 422. | `seller/web/.../products/bulk/page.tsx:370`, `seller/mobile/app/product-form/index.tsx:215` |
+| H17 ✔ | Frontends | Every mobile write returns 403. Mobile uses the cookie session, but its CSRF header comes from `document.cookie`, which doesn't exist in React Native, and the token is never kept in SecureStore. The buyer apps store `"dummy-native-token"` as a fallback. | `packages/shared-api/src/client.ts:36`, `core/deps.py:73-77`, `zolexora-shop/mobile/app/auth/index.tsx:58` |
+| H18 ✔ | Frontends | Admins can't sign in to the admin portal: it uses `/auth/login` (users table), but admins exist only in `public.admins` via `/auth/firebase`. | `marketplace-admin/web/src/app/auth/page.tsx:21` |
+| H19 ✔ | Frontends | Mahila checkout fails for COD (it sends `cod` and `upi_qr`, which the server rejects). The UPI QR shows a hardcoded `mahilamadel@upi` payee before any order exists. The Zolexora QR is a random pattern that can't be scanned, and `upi_link` is undefined. | `mahila-madel/web/src/pages/Checkout.js:96,405-419,829-837`; `zolexora-shop/web/src/app/cart/page.tsx:49-66,283` |
+| H20 ◐ | Frontends | The buyer mobile cart crashes because the response is treated as an array and price as a number. Mahila mobile can't build because `assets/` is missing and the EAS `projectId` is a placeholder. | `*/mobile/app/(tabs)/cart.tsx:37-47`, `mahila-madel/mobile/app.json` |
+
+**Status 2026-11-05** (branch `fix/marketplace-auth-service`):
+- H1–H4, H17, H18 went away with local sign-in. Every app signs in through the Zolexora auth service and sends a Bearer token, and admins are auth-service Track 3 accounts.
+- H5: admin routes check the token's permissions (`require_permission`).
+- H6: publishing checks for an approved storefront grant.
+- H8: Razorpay verification returns 503 without the secret and only marks the buyer's own pending order paid.
+- H9–H11: orders, stock and shipments are on PostgreSQL. A quote is used once, stock is reserved, and booking is claimed once.
+- H13:
+  - PAN and the account number are encrypted in `seller_kyc`; members see only the last four digits.
+  - Organisations stay `PENDING_VERIFICATION` until an admin verifies them, enforced on the server.
+  - Still open: KYC documents are not uploaded (only file names are sent).
+- H20 ◐: the cart is fixed. The three marketplace mobile apps still need `assets/` (icon, splash) and a real EAS `projectId`.
 
 ## Medium (summary)
 

@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -94,14 +94,14 @@ class StorefrontGrantResponse(BaseModel):
 class AdminVerificationUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    verification_status: str = Field(..., description="UNVERIFIED, PENDING, VERIFIED, REJECTED, NEEDS_REVISION")
+    verification_status: Literal["UNVERIFIED", "PENDING", "VERIFIED", "REJECTED", "NEEDS_REVISION"]
     notes: str | None = None
 
 
 class AdminSuspensionUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    action: str = Field(..., description="SUSPEND or UNSUSPEND")
+    action: Literal["SUSPEND", "UNSUSPEND"]
     reason: str = Field(..., min_length=1, max_length=500)
 
 

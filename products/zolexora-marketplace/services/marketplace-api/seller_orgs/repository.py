@@ -248,6 +248,7 @@ class PostgresSellerRepository:
         new_role: str,
         actor_user_id: uuid.UUID,
         permissions: list[str] | None = None,
+        actor_role: str = "OWNER",
     ) -> dict[str, Any]:
         audit_id = uuid.uuid4()
         perms_json = json.dumps(permissions) if permissions is not None else None
@@ -259,6 +260,8 @@ class PostgresSellerRepository:
             )
             if not current_member:
                 raise ValueError(f"Member {member_id} not found in organization {org_id}")
+            if actor_role != "OWNER" and "OWNER" in (current_member["role"], new_role):
+                raise PermissionError("Only an owner can make or change an owner")
 
             if current_member["role"] == "OWNER" and new_role != "OWNER":
                 owner_count = await self.connection.fetchval(
@@ -297,6 +300,7 @@ class PostgresSellerRepository:
         org_id: uuid.UUID,
         member_id: uuid.UUID,
         actor_user_id: uuid.UUID,
+        actor_role: str = "OWNER",
     ) -> dict[str, Any]:
         audit_id = uuid.uuid4()
         async with self.connection.transaction():
@@ -306,6 +310,8 @@ class PostgresSellerRepository:
             )
             if not current_member:
                 raise ValueError(f"Member {member_id} not found in organization {org_id}")
+            if actor_role != "OWNER" and current_member["role"] == "OWNER":
+                raise PermissionError("Only an owner can remove an owner")
 
             if current_member["role"] == "OWNER":
                 owner_count = await self.connection.fetchval(
@@ -527,27 +533,21 @@ class PostgresSellerRepository:
         v_status = verification_status.upper()
 
         async with self.connection.transaction():
-            new_org_status = "ACTIVE" if v_status == "VERIFIED" else None
-            if new_org_status:
-                org_row = await self.connection.fetchrow(
-                    """
-                    UPDATE seller_organization
-                    SET verification_status = $2, status = $3, updated_at = NOW()
-                    WHERE id = $1
-                    RETURNING id, name, slug, status, verification_status, onboarding_state, metadata, created_at, updated_at
-                    """,
-                    org_id, v_status, new_org_status
-                )
-            else:
-                org_row = await self.connection.fetchrow(
-                    """
-                    UPDATE seller_organization
-                    SET verification_status = $2, updated_at = NOW()
-                    WHERE id = $1
-                    RETURNING id, name, slug, status, verification_status, onboarding_state, metadata, created_at, updated_at
-                    """,
-                    org_id, v_status
-                )
+            # Verification decides whether the organisation may sell; a suspension stays until lifted.
+            org_row = await self.connection.fetchrow(
+                """
+                UPDATE seller_organization
+                SET verification_status = $2::text,
+                    status = CASE WHEN status IN ('SUSPENDED', 'INACTIVE') THEN status
+                                  WHEN $2::text = 'VERIFIED' THEN 'ACTIVE'
+                                  WHEN $2::text = 'REJECTED' THEN 'REJECTED'
+                                  ELSE 'PENDING_VERIFICATION' END,
+                    updated_at = NOW()
+                WHERE id = $1
+                RETURNING id, name, slug, status, verification_status, onboarding_state, metadata, created_at, updated_at
+                """,
+                org_id, v_status
+            )
 
             if not org_row:
                 raise ValueError(f"Organization {org_id} not found")
@@ -583,6 +583,7 @@ class PostgresSellerRepository:
         actor_user_id: uuid.UUID,
         reason: str | None = None,
     ) -> dict[str, Any]:
+        """SUSPENDED suspends; anything else lifts a suspension back to what verification allows."""
         audit_id = uuid.uuid4()
         s_status = status.upper()
 
@@ -590,7 +591,12 @@ class PostgresSellerRepository:
             org_row = await self.connection.fetchrow(
                 """
                 UPDATE seller_organization
-                SET status = $2, updated_at = NOW()
+                SET status = CASE WHEN $2::text = 'SUSPENDED' THEN 'SUSPENDED'
+                                  WHEN status <> 'SUSPENDED' THEN status
+                                  WHEN verification_status = 'VERIFIED' THEN 'ACTIVE'
+                                  WHEN verification_status = 'REJECTED' THEN 'REJECTED'
+                                  ELSE 'PENDING_VERIFICATION' END,
+                    updated_at = NOW()
                 WHERE id = $1
                 RETURNING id, name, slug, status, verification_status, onboarding_state, metadata, created_at, updated_at
                 """,

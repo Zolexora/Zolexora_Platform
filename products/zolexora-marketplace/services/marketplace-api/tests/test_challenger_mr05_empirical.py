@@ -158,7 +158,7 @@ async def test_zero_grants_publishing_attempt_returns_403(pg_conn, repo, seed_da
         owner_user_id=s1_id,
     )
     org_id = org["id"]
-    await repo.update_organization_status(org_id=org_id, status="ACTIVE", actor_user_id=admin_id)
+    await repo.update_organization_verification(org_id=org_id, verification_status="VERIFIED", admin_user_id=admin_id)
 
     user_payload = {"id": str(s1_id), "email": "seller1@example.com", "role": "seller"}
     mock_sf_repo = MockStorefrontRepository(shop_sf_id, mahila_sf_id)
@@ -200,7 +200,7 @@ async def test_zolexora_granted_seller_cannot_publish_to_mahila_madel(pg_conn, r
         owner_user_id=s1_id,
     )
     org_id = org["id"]
-    await repo.update_organization_status(org_id=org_id, status="ACTIVE", actor_user_id=admin_id)
+    await repo.update_organization_verification(org_id=org_id, verification_status="VERIFIED", admin_user_id=admin_id)
 
     # Request & approve grant for Zolexora Shop ONLY
     g = await repo.request_storefront_grant(org_id=org_id, storefront_id=shop_sf_id, actor_user_id=s1_id)
@@ -252,7 +252,7 @@ async def test_revoked_grant_immediately_blocks_publishing(pg_conn, repo, seed_d
         owner_user_id=s1_id,
     )
     org_id = org["id"]
-    await repo.update_organization_status(org_id=org_id, status="ACTIVE", actor_user_id=admin_id)
+    await repo.update_organization_verification(org_id=org_id, verification_status="VERIFIED", admin_user_id=admin_id)
 
     # Approve grant
     g = await repo.request_storefront_grant(org_id=org_id, storefront_id=shop_sf_id, actor_user_id=s1_id)

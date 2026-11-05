@@ -37,6 +37,11 @@ router = APIRouter(tags=["seller-organizations"])
 GSTIN_PATTERN = re.compile(r"^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$")
 
 
+
+def _actor_role(user: dict[str, Any], member: dict[str, Any]) -> str:
+    """Platform admins act with owner rights; members with their own role."""
+    return "OWNER" if is_admin(user) else str(member.get("role") or "")
+
 @router.get("/seller/verification/gst/{gstin}", summary="Verify GSTIN and fetch taxpayer profile")
 async def verify_gstin(gstin: str, _user: dict[str, Any] = Depends(current_user)):
     normalized = gstin.strip().upper()
@@ -183,6 +188,8 @@ async def add_org_member(
     if isinstance(actor_id, str):
         actor_id = uuid.UUID(actor_id)
 
+    if payload.role.upper() == "OWNER" and _actor_role(user, _member_role) != "OWNER":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Only an owner can add an owner")
     try:
         member = await repo.add_member(
             org_id=org_id,
@@ -237,8 +244,11 @@ async def update_org_member_role(
             new_role=payload.role.upper(),
             actor_user_id=actor_id,
             permissions=payload.permissions,
+            actor_role=_actor_role(user, _member_role),
         )
         return updated
+    except PermissionError as exc:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, str(exc))
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -268,8 +278,11 @@ async def remove_org_member(
             org_id=org_id,
             member_id=member_id,
             actor_user_id=actor_id,
+            actor_role=_actor_role(user, _member_role),
         )
         return removed
+    except PermissionError as exc:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, str(exc))
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -421,7 +434,7 @@ async def admin_update_organization_suspension(
     if isinstance(admin_id, str):
         admin_id = uuid.UUID(admin_id)
 
-    target_status = "SUSPENDED" if payload.action.upper() == "SUSPEND" else "ACTIVE"
+    target_status = "SUSPENDED" if payload.action == "SUSPEND" else "ACTIVE"
 
     try:
         org = await repo.update_organization_status(
