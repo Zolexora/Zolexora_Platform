@@ -3525,6 +3525,62 @@
         }
       }
     },
+    "/api/orders/admin/{order_id}/refunded": {
+      "post": {
+        "tags": [
+          "admin-orders"
+        ],
+        "summary": "Record Refund",
+        "description": "Records that the money of a cancelled, paid order was paid back to the buyer.",
+        "operationId": "record_refund_api_orders_admin__order_id__refunded_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefundRecorded"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/orders": {
       "post": {
         "tags": [
@@ -9624,6 +9680,62 @@
         }
       }
     },
+    "/orders/admin/{order_id}/refunded": {
+      "post": {
+        "tags": [
+          "admin-orders"
+        ],
+        "summary": "Record Refund",
+        "description": "Records that the money of a cancelled, paid order was paid back to the buyer.",
+        "operationId": "record_refund_orders_admin__order_id__refunded_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefundRecorded"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/orders": {
       "post": {
         "tags": [
@@ -15654,6 +15766,22 @@
           "title"
         ],
         "title": "ReelCreate"
+      },
+      "RefundRecorded": {
+        "properties": {
+          "reference": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 3,
+            "title": "Reference",
+            "description": "Bank, UPI or gateway refund reference"
+          }
+        },
+        "type": "object",
+        "required": [
+          "reference"
+        ],
+        "title": "RefundRecorded"
       },
       "ReturnRequest": {
         "properties": {

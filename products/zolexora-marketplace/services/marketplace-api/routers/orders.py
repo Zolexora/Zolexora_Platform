@@ -28,7 +28,7 @@ from models.orders import (
     CancellationRequest, CancellationResponse, SellerCancellationActionRequest,
     ReturnRequest, ReturnResponse, SellerReturnActionRequest,
 )
-from commerce import orders as order_store
+from commerce import coins, orders as order_store
 from routers.cart import verify_quote_token, _get_active_product, place_orders, settle
 
 orders_router = APIRouter(prefix="/orders", tags=["orders"])
@@ -330,6 +330,19 @@ async def get_buyer_order_detail(
     )
 
 
+async def close_cancelled(pg, doc: dict) -> dict:
+    """What a cancelled order gives back: its stock goes back on sale, spent coins return, and an
+    unpaid payment is voided; a paid one is marked refund due until an admin records the refund.
+    Returns the order fields to save. Run inside the caller's transaction."""
+    await settle(pg, [doc["id"]], paid=False)
+    if doc.get("coins_used"):
+        await coins.move(pg, doc["buyer_id"], int(doc["coins_used"]), "refund",
+                         f"Order {doc.get('order_number', doc['id'])} cancelled", doc["id"])
+    if doc.get("payment_status") == PaymentStatus.paid.value:
+        return {"refund_due": True}
+    return {"payment_status": PaymentStatus.voided.value}
+
+
 @orders_router.post("/buyer/{order_id}/cancel", response_model=CancellationResponse)
 async def request_buyer_cancellation(
     order_id: str,
@@ -351,11 +364,12 @@ async def request_buyer_cancellation(
         raise HTTPException(400, "Cancellation not permitted for orders that are shipped or delivered")
 
     all_line_ids = [line["line_id"] for line in doc.get("lines", [])]
-    target_line_ids = req.line_item_ids if req.line_item_ids else all_line_ids
-
-    for lid in target_line_ids:
-        if lid not in all_line_ids:
-            raise HTTPException(400, f"Line item {lid} does not exist in order")
+    if req.line_item_ids and set(req.line_item_ids) != set(all_line_ids):
+        # Each order has one seller; it is cancelled whole (totals, coins and refunds stay simple).
+        raise HTTPException(400, "Cancel the whole order; single items cannot be cancelled")
+    if any(c["status"] == CancellationStatus.requested.value for c in doc.get("cancellations", [])):
+        raise HTTPException(409, "A cancellation is already requested")
+    target_line_ids = all_line_ids
 
     now_str = datetime.now(timezone.utc).isoformat()
     cancellation = CancellationResponse(
@@ -409,8 +423,10 @@ async def request_buyer_return(
     if not target_line:
         raise HTTPException(400, f"Line item {req.line_item_id} not found in order")
 
-    if req.quantity > target_line["quantity"]:
-        raise HTTPException(400, f"Return quantity ({req.quantity}) exceeds line quantity ({target_line['quantity']})")
+    already = sum(r["quantity"] for r in doc.get("returns", [])
+                  if r.get("line_item_id") == req.line_item_id and r.get("status") != ReturnStatus.rejected.value)
+    if already + req.quantity > target_line["quantity"]:
+        raise HTTPException(400, f"Only {target_line['quantity'] - already} of this item can still be returned")
 
     now_str = datetime.now(timezone.utc).isoformat()
     ret_resp = ReturnResponse(
@@ -590,14 +606,14 @@ async def transition_seller_shipment(
         updated_lines.append(line)
 
     async with pg.transaction():
+        cancelled = req.target_status == FulfillmentStatus.cancelled and doc.get("status") != OrderStatus.cancelled.value
         await order_store.update(pg, order_id, {
             "shipments": shipments,
             "fulfillment_status": req.target_status.value,
             "status": new_order_status,
             "lines": updated_lines,
+            **(await close_cancelled(pg, doc) if cancelled else {}),
         })
-        if req.target_status == FulfillmentStatus.cancelled:
-            await settle(pg, [order_id], paid=False)  # its stock goes back on sale
 
     return ShipmentResponse(**shipment)
 
@@ -645,8 +661,8 @@ async def action_seller_cancellation(
                 "fulfillment_status": FulfillmentStatus.cancelled.value,
                 "lines": updated_lines,
                 "shipments": shipments,
+                **await close_cancelled(pg, doc),
             })
-            await settle(pg, [order_id], paid=False)  # its stock goes back on sale
     else:
         cancellation["status"] = CancellationStatus.rejected.value
         cancellation["seller_comment"] = req.comment

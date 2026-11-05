@@ -388,7 +388,7 @@ async def test_cancellation_and_return_invariants(pg):
             context=ctx_zol, user=buyer_a, pg=pg
         )
     assert exc_ret_overflow.value.status_code == 400
-    assert "exceeds line quantity" in exc_ret_overflow.value.detail.lower()
+    assert "can still be returned" in exc_ret_overflow.value.detail.lower()
 
     # 6. Return request with INVALID line_item_id -> HTTP 400
     with pytest.raises(HTTPException) as exc_ret_bad_line:

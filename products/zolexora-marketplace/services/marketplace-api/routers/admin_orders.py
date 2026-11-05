@@ -6,9 +6,10 @@ Standardized for MR-01E / ADR 0013.
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, Field
 
 from commerce import orders as order_store
-from core.deps import admin_only
+from core.deps import admin_only, require_permission
 from shared.database.postgres import pg_conn_dep
 from storefronts.dependencies import require_storefront_context
 from storefronts.models import StorefrontContext
@@ -90,3 +91,26 @@ async def get_admin_order_detail(
 
 
 
+
+
+class RefundRecorded(BaseModel):
+    reference: str = Field(..., min_length=3, max_length=128, description="Bank, UPI or gateway refund reference")
+
+
+@admin_orders_router.post("/{order_id}/refunded")
+async def record_refund(
+    order_id: str,
+    req: RefundRecorded,
+    context: StorefrontContext = Depends(require_storefront_context),
+    admin=Depends(require_permission("orders:write")),
+    pg=Depends(pg_conn_dep),
+):
+    """Records that the money of a cancelled, paid order was paid back to the buyer."""
+    doc = await order_store.get(pg, id=order_id, storefront=context.key)
+    if not doc:
+        raise HTTPException(404, "Order not found")
+    if not doc.get("refund_due"):
+        raise HTTPException(400, "No refund is due on this order")
+    await order_store.update(pg, order_id, {"payment_status": PaymentStatus.refunded.value, "refund_due": False,
+                                            "refund_reference": req.reference, "refunded_by": admin["id"]})
+    return {"order_id": order_id, "payment_status": PaymentStatus.refunded.value}

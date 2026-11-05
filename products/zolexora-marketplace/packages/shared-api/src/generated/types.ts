@@ -1132,6 +1132,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/orders/admin/{order_id}/refunded": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record Refund
+         * @description Records that the money of a cancelled, paid order was paid back to the buyer.
+         */
+        post: operations["record_refund_api_orders_admin__order_id__refunded_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/orders": {
         parameters: {
             query?: never;
@@ -3285,6 +3305,26 @@ export interface paths {
         get: operations["get_admin_order_detail_orders_admin__order_id__get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/orders/admin/{order_id}/refunded": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record Refund
+         * @description Records that the money of a cancelled, paid order was paid back to the buyer.
+         */
+        post: operations["record_refund_orders_admin__order_id__refunded_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5653,6 +5693,14 @@ export interface components {
             sponsor_data?: {
                 [key: string]: unknown;
             } | null;
+        };
+        /** RefundRecorded */
+        RefundRecorded: {
+            /**
+             * Reference
+             * @description Bank, UPI or gateway refund reference
+             */
+            reference: string;
         };
         /** ReturnRequest */
         ReturnRequest: {
@@ -8666,6 +8714,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminOrderResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    record_refund_api_orders_admin__order_id__refunded_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefundRecorded"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -12713,6 +12796,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminOrderResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    record_refund_orders_admin__order_id__refunded_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefundRecorded"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
