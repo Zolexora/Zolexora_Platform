@@ -35,6 +35,13 @@ def _is_trusted_proxy(ip: str) -> bool:
             return True
     return False
 
+def client_ip(request: Request) -> str | None:
+    """The caller's address: the direct peer, or the X-Real-IP a trusted proxy (nginx) set."""
+    peer = request.client.host if request.client else None
+    if peer and _is_trusted_proxy(peer):
+        return request.headers.get("x-real-ip") or peer
+    return peer
+
 def _get_request_host(request: Request) -> str:
     # First get direct host
     host = request.headers.get("host", "")

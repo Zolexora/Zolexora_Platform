@@ -4,7 +4,6 @@ Standardized for MR-01E / ADR 0013.
 """
 
 import asyncio
-import json
 import uuid
 from typing import List
 from datetime import datetime, timezone
@@ -227,28 +226,15 @@ async def _create_order_from_quote_impl(
 
         created_orders.append(order_doc)
 
-    # 5. One PostgreSQL transaction: stock held, quote used once, cart closed, orders stored.
-    await place_orders(pg_conn, user["id"], str(getattr(context.key, "value", context.key)), created_orders,
-                       quote_signature=req.quote_id.rsplit(".", 1)[1])
-
-    for order_doc in created_orders:
-        order_id = order_doc["id"]
-        # Sync to ERP outbox
-        # We wrap this in a try-except to ensure checkout succeeds even if ERP adapter fails
-        try:
-            await sync_to_erp_outbox(
-                conn=pg_conn,
-                event_type="order.created",
-                aggregate_type="order",
-                aggregate_id=order_id,
-                payload=json.loads(json.dumps({k: v for k, v in order_doc.items() if k != "_id"}, default=str)),
-                storefront_id=str(getattr(context.key, "value", context.key)),
-                tenant_id=None # Replace with proper tenant if resolved
-            )
-        except Exception as e:
-            # Task 5 constraint: "ensure checkout succeeds even if ERP adapter fails"
-            import logging
-            logging.error(f"Failed to sync order {order_id} to ERP outbox: {e}")
+    # 5. One PostgreSQL transaction: stock held, quote used once, cart closed, orders stored,
+    #    and their ERP events queued with them.
+    storefront_key = str(getattr(context.key, "value", context.key))
+    async with pg_conn.transaction():
+        await place_orders(pg_conn, user["id"], storefront_key, created_orders,
+                           quote_signature=req.quote_id.rsplit(".", 1)[1])
+        for order_doc in created_orders:
+            await sync_to_erp_outbox(pg_conn, "order.created", "order", order_doc["id"], order_doc,
+                                     storefront_key=storefront_key)
 
     # 6. Response
     first_order = created_orders[0]

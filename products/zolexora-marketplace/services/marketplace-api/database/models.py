@@ -123,6 +123,9 @@ storefront_domain = Table(
     CheckConstraint("domain_role IN ('primary','alias','development')", name="storefront_domain_role_values"),
     CheckConstraint("environment IN ('production','development','test')", name="storefront_domain_environment_values"),
 )
+Index("ix_storefront_domain_storefront_id", storefront_domain.c.storefront_id)
+Index("ix_storefront_domain_active_lookup", storefront_domain.c.hostname, storefront_domain.c.is_active)
+Index("uq_storefront_domain_normalized_hostname", text("lower(trim(trailing '.' from hostname))"), unique=True)
 Index(
     "uq_storefront_active_primary_domain", storefront_domain.c.storefront_id, storefront_domain.c.environment,
     unique=True, postgresql_where=(storefront_domain.c.is_active.is_(True) & (storefront_domain.c.domain_role == "primary")),
@@ -815,6 +818,7 @@ erp_inbox = Table(
     Column("failure_category", String(64)),
     Column("received_at", DateTime(timezone=True), nullable=False),
     Column("processed_at", DateTime(timezone=True)),
+    UniqueConstraint("external_event_id", name="uq_erp_inbox_event"),
 )
 
 erp_outbox = Table(
@@ -822,12 +826,12 @@ erp_outbox = Table(
     Column("event_type", String(128), nullable=False),
     Column("schema_version", String(16), nullable=False),
     Column("aggregate_type", String(64), nullable=False),
-    Column("aggregate_id", Uuid, nullable=False),
+    Column("aggregate_id", String(128), nullable=False),
     Column("storefront_id", Uuid, ForeignKey("storefront.id", ondelete="RESTRICT")),
     Column("correlation_id", String(64)),
     Column("causation_id", String(64)),
     Column("idempotency_key", String(128), nullable=False),
-    Column("payload_json", Text, nullable=False),
+    Column("payload_json", JSON, nullable=False),
     Column("payload_hash", String(64), nullable=False),
     Column("status", String(24), nullable=False, server_default="pending"),
     Column("attempt_count", Integer, nullable=False, server_default="0"),

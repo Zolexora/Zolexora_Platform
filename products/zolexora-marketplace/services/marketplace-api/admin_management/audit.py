@@ -4,6 +4,7 @@ import json
 import re
 
 from core.deps import is_admin
+from storefronts.resolver import client_ip
 from shared.database.postgres import connection
 
 _UUID_RE = re.compile(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}")
@@ -27,6 +28,6 @@ async def audit_admin_mutation(request, response, user: dict) -> None:
             """INSERT INTO public.admin_audit_logs
                (admin_id, admin_email, action_type, target_user_id, details, ip_address, request_id)
                VALUES ($1::uuid,$2,$3,$4::uuid,$5::jsonb,$6,$7)""",
-            user["id"], user.get("email"), action, target, json.dumps(details), request.client.host if request.client else None,
+            user["id"], user.get("email"), action, target, json.dumps(details), client_ip(request),
             getattr(request.state, "request_id", None),
         )

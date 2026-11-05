@@ -27,16 +27,15 @@ async def test_sync_to_erp_outbox_atomicity(postgres_database, db_connection):
         aggregate_type="order",
         aggregate_id=order_id,
         payload=payload,
-        storefront_id=None
+        storefront_key="zolexora-shop",
     )
-    
-    # Verify insertion
-    row = await db_connection.fetchrow(
-        "SELECT * FROM erp_outbox WHERE aggregate_id = $1", order_id
-    )
-    assert row is not None
-    assert row["event_type"] == "order.created"
-    assert row["status"] == "pending"
+    # The same event again is not queued twice.
+    await sync_to_erp_outbox(db_connection, "order.created", "order", order_id, payload, storefront_key="zolexora-shop")
+
+    rows = await db_connection.fetch("SELECT * FROM erp_outbox WHERE aggregate_id = $1", order_id)
+    assert len(rows) == 1
+    assert rows[0]["event_type"] == "order.created" and rows[0]["status"] == "pending"
+    assert rows[0]["storefront_id"] is not None
 
 @pytest.mark.asyncio
 async def test_webhook_validation():

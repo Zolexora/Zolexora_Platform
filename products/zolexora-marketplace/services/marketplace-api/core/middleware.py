@@ -62,7 +62,3 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             h["Content-Security-Policy"] = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self';"
         return response
 
-
-def real_ip(request: Request) -> str:
-    fwd = request.headers.get("X-Forwarded-For")
-    return fwd.split(",")[0].strip() if fwd else (request.client.host if request.client else "unknown")

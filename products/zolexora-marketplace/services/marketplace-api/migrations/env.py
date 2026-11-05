@@ -21,6 +21,14 @@ def _migration_url() -> str:
     return value.replace("postgresql://", "postgresql+asyncpg://", 1)
 
 
+# Expression indexes that autogenerate cannot compare (they exist in both the migrations and models).
+EXPRESSION_INDEXES = {"uq_storefront_domain_normalized_hostname"}
+
+
+def include_object(obj, name, type_, reflected, compare_to) -> bool:
+    return not (type_ == "index" and name in EXPRESSION_INDEXES)
+
+
 def run_migrations_offline() -> None:
     context.configure(
         url=_migration_url(),
@@ -28,13 +36,15 @@ def run_migrations_offline() -> None:
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
         compare_type=True,
+        include_object=include_object,
     )
     with context.begin_transaction():
         context.run_migrations()
 
 
 def _run_sync_migrations(connection) -> None:
-    context.configure(connection=connection, target_metadata=target_metadata, compare_type=True)
+    context.configure(connection=connection, target_metadata=target_metadata, compare_type=True,
+                      include_object=include_object)
     with context.begin_transaction():
         context.run_migrations()
 

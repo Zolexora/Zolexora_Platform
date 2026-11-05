@@ -4,6 +4,7 @@ import json
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from storefronts.resolver import client_ip
 
 from shared.database.postgres import connection, transaction
 from .dependencies import admin_context, require_permission
@@ -31,7 +32,7 @@ async def _audit(conn, admin: dict, request: Request, action: str, target: str |
            (admin_id, admin_email, action_type, target_user_id, details, ip_address, request_id)
            VALUES ($1::uuid, $2, $3, $4::uuid, $5::jsonb, $6, $7)""",
         admin["id"], admin["email"], action, target, json.dumps(details, default=str),
-        request.client.host if request.client else None,
+        client_ip(request),
         getattr(request.state, "request_id", None),
     )
 
