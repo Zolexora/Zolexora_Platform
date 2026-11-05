@@ -206,10 +206,29 @@ shipment = Table(
     Column("organization_id", Uuid, ForeignKey("seller_organization.id", ondelete="RESTRICT"), nullable=False),
     Column("status", String(32), nullable=False, server_default="unfulfilled"),
     Column("external_reference", String(256)), Column("service_code", String(128)), created_column(), updated_column(),
+    Column("courier_status", String(40), nullable=False, server_default="pending"),
+    Column("attention_required", Boolean, nullable=False, server_default=text("false")),
+    Column("details", JSONB, nullable=False, server_default=text("'{}'::jsonb")),
     ForeignKeyConstraint(["order_id", "storefront_id"], ["marketplace_order.id", "marketplace_order.storefront_id"], ondelete="RESTRICT", name="fk_shipment_order_storefront"),
     CheckConstraint(f"status IN ({FULFILLMENT_STATUSES})", name="shipment_status_values"),
+    CheckConstraint("jsonb_typeof(details) = 'object'", name="details_object"),
 )
 Index("ix_shipment_storefront_org_order", shipment.c.storefront_id, shipment.c.organization_id, shipment.c.order_id)
+Index("uq_shipment_order", shipment.c.order_id, unique=True)
+Index("ix_shipment_awb", shipment.c.external_reference, postgresql_where=shipment.c.external_reference.isnot(None))
+
+pickup_location = Table(
+    "pickup_location", metadata, id_column(),
+    Column("organization_id", Uuid, ForeignKey("seller_organization.id", ondelete="CASCADE"), nullable=False),
+    Column("label", String(120), nullable=False), Column("contact_name", String(200), nullable=False),
+    Column("phone", String(32), nullable=False), Column("email", String(320), nullable=False),
+    Column("address_line_1", String(300), nullable=False), Column("address_line_2", String(300), nullable=False, server_default=""),
+    Column("city", String(120), nullable=False), Column("state", String(120), nullable=False), Column("pincode", String(12), nullable=False),
+    Column("country", String(80), nullable=False, server_default="India"), Column("gst_number", String(32), nullable=False, server_default=""),
+    Column("is_default", Boolean, nullable=False, server_default=text("false")), created_column(), updated_column(),
+)
+Index("ix_pickup_location_org", pickup_location.c.organization_id)
+Index("uq_pickup_location_default", pickup_location.c.organization_id, unique=True, postgresql_where=pickup_location.c.is_default)
 
 idempotency_record = Table(
     "idempotency_record", metadata, id_column(),

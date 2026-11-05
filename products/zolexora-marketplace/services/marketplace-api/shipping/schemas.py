@@ -116,6 +116,7 @@ class ShipmentOptionDoc(BaseModel):
     shipment_id: str
     provider: str
     courier_name: str
+    service_code: str = ""
     serviceable: bool = False
     estimated_cost: Optional[float] = None
     estimated_delivery_days: Optional[int] = None

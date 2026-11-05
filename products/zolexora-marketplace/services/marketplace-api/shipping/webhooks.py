@@ -2,18 +2,16 @@ import logging
 import hmac
 import hashlib
 import json
-from datetime import datetime, timezone
 from fastapi import APIRouter, Request, HTTPException
-from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import Depends
 from core.config import settings
-from core.deps import db_dep
+from shared.database.postgres import pg_conn_dep
+from shipping import store
 from shipping.schemas import TrackingEventDoc, ShipmentStatus
 
 router = APIRouter(prefix="/webhooks/shipping", tags=["shipping-webhooks"])
 logger = logging.getLogger("zolexora.shipping.webhooks")
 
-def now_iso(): return datetime.now(timezone.utc).isoformat()
 
 
 SIGNATURE_HEADERS = (
@@ -63,8 +61,8 @@ def _map_status(raw_status: str) -> str:
     return ShipmentStatus.IN_TRANSIT
 
 
-async def _save_event(db, awb: str, provider: str, status: str, description: str, location: str, raw: dict):
-    s = await db.shipments.find_one({"awb": awb}, {"_id": 0})
+async def _save_event(pg, awb: str, provider: str, status: str, description: str, location: str, raw: dict):
+    s = await store.get(pg, awb=awb)
     if not s:
         logger.warning(f"Webhook: AWB {awb} not found in DB")
         return
@@ -73,14 +71,15 @@ async def _save_event(db, awb: str, provider: str, status: str, description: str
         status=status, description=description, location=location,
         raw_payload=raw,
     )
-    await db.shipment_tracking_events.insert_one(event.model_dump())
     mapped = _map_status(status)
-    await db.shipments.update_one({"id": s["id"]}, {"$set": {"current_status": mapped, "updated_at": now_iso()}})
+    async with pg.transaction():
+        await store.append(pg, s["id"], "tracking_events", [event.model_dump()])
+        await store.update(pg, s["id"], {"current_status": mapped})
     logger.info(f"Webhook [{provider}] AWB={awb} status={mapped}")
 
 
 @router.post("/delhivery")
-async def delhivery_webhook(request: Request, db: AsyncIOMotorDatabase = Depends(db_dep)):
+async def delhivery_webhook(request: Request, pg=Depends(pg_conn_dep)):
     data = await _verified_payload(request)
     packages = data.get("packages", [data])
     for pkg in packages:
@@ -88,71 +87,71 @@ async def delhivery_webhook(request: Request, db: AsyncIOMotorDatabase = Depends
         status = pkg.get("status") or pkg.get("Status", "")
         location = pkg.get("city") or pkg.get("Location", "")
         if awb:
-            await _save_event(db, awb, "delhivery", status, status, location, pkg)
+            await _save_event(pg, awb, "delhivery", status, status, location, pkg)
     return {"status": "ok"}
 
 
 @router.post("/nimbuspost")
-async def nimbuspost_webhook(request: Request, db: AsyncIOMotorDatabase = Depends(db_dep)):
+async def nimbuspost_webhook(request: Request, pg=Depends(pg_conn_dep)):
     data = await _verified_payload(request)
     awb = data.get("awb_number") or data.get("awb")
     status = data.get("status", "")
     location = data.get("current_location", "")
     if awb:
-        await _save_event(db, awb, "nimbuspost", status, data.get("description", status), location, data)
+        await _save_event(pg, awb, "nimbuspost", status, data.get("description", status), location, data)
     return {"status": "ok"}
 
 
 @router.post("/shiprocket")
-async def shiprocket_webhook(request: Request, db: AsyncIOMotorDatabase = Depends(db_dep)):
+async def shiprocket_webhook(request: Request, pg=Depends(pg_conn_dep)):
     data = await _verified_payload(request)
     awb = data.get("awb") or data.get("awb_code")
     status = data.get("current_status") or data.get("status", "")
     location = data.get("shipment_city") or data.get("location", "")
     if awb:
-        await _save_event(db, awb, "shiprocket", status, status, location, data)
+        await _save_event(pg, awb, "shiprocket", status, status, location, data)
     return {"status": "ok"}
 
 
 @router.post("/pickrr")
-async def pickrr_webhook(request: Request, db: AsyncIOMotorDatabase = Depends(db_dep)):
+async def pickrr_webhook(request: Request, pg=Depends(pg_conn_dep)):
     data = await _verified_payload(request)
     awb = data.get("tracking_id") or data.get("awb")
     status = data.get("current_status_description") or data.get("status", "")
     location = data.get("current_location", "")
     if awb:
-        await _save_event(db, awb, "pickrr", status, status, location, data)
+        await _save_event(pg, awb, "pickrr", status, status, location, data)
     return {"status": "ok"}
 
 
 @router.post("/dtdc")
-async def dtdc_webhook(request: Request, db: AsyncIOMotorDatabase = Depends(db_dep)):
+async def dtdc_webhook(request: Request, pg=Depends(pg_conn_dep)):
     data = await _verified_payload(request)
     awb = data.get("consignmentNumber") or data.get("awb")
     status = data.get("status", "")
     location = data.get("city", "")
     if awb:
-        await _save_event(db, awb, "dtdc", status, status, location, data)
+        await _save_event(pg, awb, "dtdc", status, status, location, data)
     return {"status": "ok"}
 
 
 @router.post("/bluedart")
-async def bluedart_webhook(request: Request, db: AsyncIOMotorDatabase = Depends(db_dep)):
+async def bluedart_webhook(request: Request, pg=Depends(pg_conn_dep)):
     data = await _verified_payload(request)
     awb = data.get("AWBNo") or data.get("waybillNumber")
     status = data.get("ScanType") or data.get("status", "")
     location = data.get("ScannedLocation", "")
     if awb:
-        await _save_event(db, awb, "bluedart", status, status, location, data)
+        await _save_event(pg, awb, "bluedart", status, status, location, data)
     return {"status": "ok"}
 
 
 @router.post("/indiapost")
-async def indiapost_webhook(request: Request, db: AsyncIOMotorDatabase = Depends(db_dep)):
+async def indiapost_webhook(request: Request, pg=Depends(pg_conn_dep)):
     data = await _verified_payload(request)
     awb = data.get("consignment_number") or data.get("tracking_number")
     status = data.get("current_status", "")
     location = data.get("current_location", "")
     if awb:
-        await _save_event(db, awb, "indiapost", status, status, location, data)
+        await _save_event(pg, awb, "indiapost", status, status, location, data)
     return {"status": "ok"}

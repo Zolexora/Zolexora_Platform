@@ -120,3 +120,18 @@ async def seed_order(pg, order_id: str, *, buyer: str = BUYER_1, org: str = SEL_
            "item_subtotal": money, "grand_total": money, "shipping_address": {}, **fields}
     await order_store.insert(pg, doc)
     return doc
+
+
+async def seed_shipment(pg, order_id: str, **fields) -> dict:
+    """The order's courier shipment (the order must exist); fields override the document."""
+    from shipping import store
+
+    shipment = await store.get_or_create(pg, await _order(pg, order_id))
+    if fields:
+        await store.update(pg, shipment["id"], fields)
+    return await store.get(pg, id=shipment["id"])
+
+
+async def _order(pg, order_id: str) -> dict:
+    from commerce import orders as order_store
+    return await order_store.get(pg, id=order_id)

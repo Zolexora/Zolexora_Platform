@@ -18,7 +18,7 @@ REQUIRED = {
     "seller_organization", "seller_org_member", "seller_storefront_grant",
     "master_product", "product_variant", "storefront_listing", "inventory_ledger", "inventory_reservation",
     "shopping_cart", "shopping_cart_item", "checkout_quote", "marketplace_order", "order_item",
-    "payment_record", "refund_record", "shipment", "idempotency_record",
+    "payment_record", "refund_record", "shipment", "pickup_location", "idempotency_record",
     "integration_outbox", "external_reference", "audit_event",
 }
 # One commerce model (migration 0020): sellers are organisations; no local roles (0019).

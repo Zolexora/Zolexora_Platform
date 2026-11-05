@@ -142,8 +142,6 @@ async def test_a_quote_buys_once(pg):
     await seed_listing(pg, PROD_1, stock=10)
     await add_to_cart(CartItemCreate(product_id=PROD_1, quantity=1), context=ctx_zol, user=buyer_1, pg=pg)
     quote = await checkout_quote(context=ctx_zol, user=buyer_1, pg=pg)
-    db = FakeDB()
-    db.shipments = db.Collection()
     request = lambda key: CreateOrderFromQuoteRequest(quote_id=quote.quote_id, shipping_address=ADDRESS,  # noqa: E731
                                                       payment_method_type="card", idempotency_key=key)
     await create_order_from_quote(request("first"), context=ctx_zol, user=buyer_1, pg_conn=pg)

@@ -21,7 +21,7 @@ ROOT = Path(__file__).parents[3]
 API = ROOT / "services/marketplace-api"
 REQUIRED_TABLES = {
     "users", "admin_audit_logs", "buyer_address", "storefront", "storefront_domain", "marketplace_order", "order_item",
-    "payment_record", "refund_record", "shipment", "idempotency_record",
+    "payment_record", "refund_record", "shipment", "pickup_location", "idempotency_record",
     "integration_outbox", "external_reference", "audit_event", "alembic_version",
     "user_profile",
     "seller_organization", "seller_org_member", "seller_storefront_grant",
