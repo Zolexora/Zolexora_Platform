@@ -34,7 +34,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
       - id: img
         run: echo "name=${{ steps.ghcr.outputs.prefix }}/zolexora-${{ inputs.product }}-${{ matrix.service }}" >> "$GITHUB_OUTPUT"
-      - uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v7
         with:
           context: ${{ matrix.context || '.' }}
           file: ${{ matrix.file }}
