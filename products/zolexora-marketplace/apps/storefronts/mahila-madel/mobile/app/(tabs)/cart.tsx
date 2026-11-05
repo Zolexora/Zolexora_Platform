@@ -35,7 +35,13 @@ export default function CartScreen() {
     if (!user) { setLoading(false); return; }
     try {
       const [cartData, coinData] = await Promise.all([cartApi.get(), coinsApi.balance()]);
-      setItems(cartData); setCount(cartData.length); setCoinBal(coinData.coin_balance);
+      // The API sends { lines: [...] } with prices as money in paise; this screen works in rupees.
+      const lines = (cartData?.lines ?? []).map((l: any) => ({
+        product_id: l.product_id, quantity: l.quantity,
+        product: { id: l.product_id, title: l.product_title, images: l.image ? [l.image] : [],
+                   seller_id: l.seller_id, seller_name: l.seller_name, price: (l.unit_price?.amount_minor ?? 0) / 100 },
+      }));
+      setItems(lines); setCount(cartData?.item_count ?? lines.length); setCoinBal(coinData.coin_balance);
     } catch {} finally { setLoading(false); }
   }, [user]);
 
@@ -44,11 +50,17 @@ export default function CartScreen() {
     if (user) setAddr(a => ({ ...a, name:user.name||"", email:user.email||"" }));
   }, [user]);
 
-  const subtotal     = items.reduce((s,i) => s + i.product.price * i.quantity, 0);
-  const delivery     = subtotal >= 499 ? 0 : 49;
+  // Same pricing as the server: one order per seller with 18% tax (whole paise, rounded down),
+  // ₹49 delivery under ₹499.
+  const bySeller: Record<string, number> = {};
+  items.forEach(i => { bySeller[i.product.seller_id] = (bySeller[i.product.seller_id] || 0) + Math.round(i.product.price * 100) * i.quantity; });
+  const subtotalMinor = Object.values(bySeller).reduce((s, v) => s + v, 0);
+  const subtotal     = subtotalMinor / 100;
+  const tax          = Object.values(bySeller).reduce((s, v) => s + Math.floor(v * 0.18), 0) / 100;
+  const delivery     = subtotalMinor >= 49900 ? 0 : 49;
   const maxCoins     = Math.min(coinBal, Math.floor((subtotal * 0.5) / 0.01));
   const coinDiscount = parseFloat((coinsToUse * 0.01).toFixed(2));
-  const total        = Math.max(0, subtotal - coinDiscount) + delivery;
+  const total        = Math.max(0, Math.round((subtotal + tax + delivery - coinDiscount) * 100) / 100);
 
   const updateQty = async (product_id: string, qty: number) => {
     try {
@@ -225,6 +237,7 @@ export default function CartScreen() {
       <View style={ss.summaryBox}>
         <View style={ss.summaryRow}><Text style={ss.summaryLabel}>Subtotal</Text><Text style={ss.summaryVal}>₹{subtotal.toLocaleString("en-IN")}</Text></View>
         {coinDiscount>0 && <View style={ss.summaryRow}><Text style={[ss.summaryLabel,{color:"#22C55E"}]}>Coin discount</Text><Text style={{color:"#22C55E",fontWeight:"700"}}>-₹{coinDiscount.toFixed(0)}</Text></View>}
+        <View style={ss.summaryRow}><Text style={ss.summaryLabel}>GST (18%)</Text><Text style={ss.summaryVal}>₹{tax.toLocaleString("en-IN")}</Text></View>
         <View style={ss.summaryRow}><Text style={ss.summaryLabel}>Delivery</Text><Text style={[ss.summaryVal, delivery===0 && {color:"#22C55E"}]}>{delivery===0?"FREE":`₹${delivery}`}</Text></View>
         <View style={[ss.summaryRow,{borderTopWidth:1,borderTopColor:"#F0F0F0",paddingTop:10,marginTop:4}]}>
           <Text style={[ss.summaryLabel,{fontWeight:"800",color:"#111"}]}>Total</Text>
@@ -310,10 +323,11 @@ export default function CartScreen() {
           <View style={{ gap:12, marginTop:8 }}>
             <View style={ss.summaryBox}>
               <View style={ss.summaryRow}><Text style={ss.summaryLabel}>Subtotal</Text><Text style={ss.summaryVal}>₹{subtotal.toLocaleString("en-IN")}</Text></View>
+              <View style={ss.summaryRow}><Text style={ss.summaryLabel}>GST (18%)</Text><Text style={ss.summaryVal}>₹{tax.toLocaleString("en-IN")}</Text></View>
               <View style={ss.summaryRow}><Text style={ss.summaryLabel}>Delivery</Text><Text style={[ss.summaryVal, delivery===0&&{color:"#22C55E"}]}>{delivery===0?"FREE":`₹${delivery}`}</Text></View>
               <View style={[ss.summaryRow,{borderTopWidth:1,borderTopColor:"#F0F0F0",paddingTop:10,marginTop:4}]}>
                 <Text style={[ss.summaryLabel,{fontWeight:"800",color:"#111"}]}>Estimated Total</Text>
-                <Text style={[ss.summaryVal,{fontWeight:"900",fontSize:17}]}>₹{(subtotal+delivery).toLocaleString("en-IN")}</Text>
+                <Text style={[ss.summaryVal,{fontWeight:"900",fontSize:17}]}>₹{(Math.round((subtotal+tax+delivery)*100)/100).toLocaleString("en-IN")}</Text>
               </View>
             </View>
             <TouchableOpacity style={ss.primaryBtn} onPress={() => setStep("address")}><Text style={ss.primaryBtnText}>Checkout <ArrowRight size={16} color="#111"/></Text></TouchableOpacity>

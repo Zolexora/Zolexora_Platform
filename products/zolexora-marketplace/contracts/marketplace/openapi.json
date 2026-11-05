@@ -4032,7 +4032,33 @@
           "orders"
         ],
         "summary": "Legacy My Orders",
+        "description": "The caller's orders on this storefront, newest first.",
         "operationId": "legacy_my_orders_api_orders_my_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/orders/sales": {
+      "get": {
+        "tags": [
+          "orders"
+        ],
+        "summary": "Legacy Seller Orders",
+        "description": "The orders of the caller's organisation on this storefront (every order for an admin).",
+        "operationId": "legacy_seller_orders_api_orders_sales_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -10058,7 +10084,33 @@
           "orders"
         ],
         "summary": "Legacy My Orders",
+        "description": "The caller's orders on this storefront, newest first.",
         "operationId": "legacy_my_orders_orders_my_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/orders/sales": {
+      "get": {
+        "tags": [
+          "orders"
+        ],
+        "summary": "Legacy Seller Orders",
+        "description": "The orders of the caller's organisation on this storefront (every order for an admin).",
+        "operationId": "legacy_seller_orders_orders_sales_get",
         "responses": {
           "200": {
             "description": "Successful Response",

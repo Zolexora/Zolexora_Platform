@@ -81,8 +81,9 @@ export default function Checkout() {
 
   // Shipping & Payment Method
   const [shippingSpeed, setShippingSpeed] = useState('standard'); // 'standard' | 'express'
-  const [paymentMethod, setPaymentMethod] = useState('cashfree'); // 'cashfree' | 'razorpay' | 'upi_qr' | 'cod'
+  const [paymentMethod, setPaymentMethod] = useState('cashfree'); // 'cashfree' | 'razorpay' | 'upi'
   const [upiRef, setUpiRef] = useState('');
+  const [upiOrder, setUpiOrder] = useState(null); // the placed UPI order: amount, payee, upi_link, upi_qr
 
   // Coins & Rewards
   const [coinBal, setCoinBal] = useState(0);
@@ -213,12 +214,18 @@ export default function Checkout() {
 
   // Calculations
   const items = Array.isArray(cart?.lines) ? cart.lines : [];
-  const subtotal = cartTotal || 0;
-  const shipping = shippingSpeed === 'express' ? 99 : (subtotal >= 499 ? 0 : 49);
-  const tax = Math.round(subtotal * 0.18);
+  // Same pricing as the server: one order per seller with 18% tax (whole paise, rounded down),
+  // ₹49 delivery under ₹499. `discount` (MRP savings) is already in the prices, so it is shown,
+  // not subtracted again.
+  const bySeller = {};
+  items.forEach((l) => { bySeller[l.seller_id] = (bySeller[l.seller_id] || 0) + (l.subtotal?.amount_minor || 0); });
+  const subtotalMinor = Object.values(bySeller).reduce((s, v) => s + v, 0);
+  const subtotal = items.length ? subtotalMinor / 100 : (cartTotal || 0);
+  const shipping = subtotal >= 499 ? 0 : 49;
+  const tax = Object.values(bySeller).reduce((s, v) => s + Math.floor(v * 0.18), 0) / 100;
   const maxCoins = Math.min(coinBal, Math.floor((subtotal * 0.5) / 0.01));
   const coinDiscount = parseFloat((coinsToUse * 0.01).toFixed(2));
-  const grandTotal = Math.max(0, subtotal - discount - coinDiscount + shipping + tax);
+  const grandTotal = Math.max(0, Math.round((subtotal + tax + shipping - coinDiscount) * 100) / 100);
 
   // Selected address object
   const activeAddress = savedAddresses.find((a) => a.id === selectedAddrId) || savedAddresses[0] || addrForm;
@@ -327,7 +334,15 @@ export default function Checkout() {
         return;
       }
 
-      // 3. Direct COD or Instant Confirmation
+      // 3. UPI: the order exists now; show the QR for its amount and take the UTR.
+      if (data.type === 'upi') {
+        await clearCartItems();
+        setUpiOrder(data);
+        if (/Android|iPhone|iPad/i.test(navigator.userAgent)) window.location.href = data.upi_link;
+        return;
+      }
+
+      // 4. Paid in full with coins
       await clearCartItems();
       toast.success('Order placed successfully! 🎉');
       navigate(`/orders/${orderId}`);
@@ -345,14 +360,38 @@ export default function Checkout() {
     }
     try {
       setBusy(true);
-      await verifyUpiPaid({ order_id: 'pending', upi_transaction_ref: upiRef.trim() }).catch(() => {});
-      toast.success('UPI Reference recorded! Finalizing order verification.');
-    } catch {
-      toast.error('Failed to submit UPI reference');
+      await verifyUpiPaid({ order_id: upiOrder.order_id, upi_transaction_ref: upiRef.trim() });
+      toast.success('Payment submitted! We will confirm it shortly.');
+      navigate(`/orders/${upiOrder.order_id}`);
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Failed to submit UPI reference');
     } finally {
       setBusy(false);
     }
   };
+
+  if (upiOrder) {
+    return (
+      <div className="mm-checkout-page container">
+        <div className="mm-upi-qr-box">
+          <p className="mm-upi-instruction">
+            Pay <strong>{fmt(upiOrder.amount)}</strong> to <strong>{upiOrder.payee}</strong> ({upiOrder.upi_id}) with GPay / PhonePe / Paytm / Cred:
+          </p>
+          <div className="mm-qr-frame">
+            <img src={upiOrder.upi_qr} alt="UPI payment QR code" className="mm-qr-img" />
+          </div>
+          <div className="mm-utr-input-wrap">
+            <label>ENTER 12-DIGIT UPI REFERENCE / UTR *</label>
+            <div className="mm-input-wrap">
+              <input type="text" maxLength={12} placeholder="e.g. 329182746192" value={upiRef}
+                     onChange={(e) => setUpiRef(e.target.value)} />
+              <button type="button" onClick={handleUpiSubmit} disabled={busy} className="mm-btn-inline">Submit UTR</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mm-checkout-page container">
@@ -623,19 +662,6 @@ export default function Checkout() {
                     <span className="mm-option-price">{subtotal >= 499 ? 'FREE' : '₹49'}</span>
                   </label>
 
-                  <label className={`mm-option-card ${shippingSpeed === 'express' ? 'selected' : ''}`}>
-                    <input
-                      type="radio"
-                      name="shippingSpeed"
-                      checked={shippingSpeed === 'express'}
-                      onChange={() => setShippingSpeed('express')}
-                    />
-                    <div className="mm-option-info">
-                      <strong>Priority Express (Air Shipping)</strong>
-                      <span>Estimated delivery in 1-2 business days</span>
-                    </div>
-                    <span className="mm-option-price">₹99</span>
-                  </label>
                 </div>
               </div>
 
@@ -697,12 +723,12 @@ export default function Checkout() {
                   </label>
 
                   {/* 3. Instant UPI QR Code */}
-                  <label className={`mm-pay-option ${paymentMethod === 'upi_qr' ? 'selected' : ''}`}>
+                  <label className={`mm-pay-option ${paymentMethod === 'upi' ? 'selected' : ''}`}>
                     <input
                       type="radio"
                       name="payMethod"
-                      checked={paymentMethod === 'upi_qr'}
-                      onChange={() => setPaymentMethod('upi_qr')}
+                      checked={paymentMethod === 'upi'}
+                      onChange={() => setPaymentMethod('upi')}
                     />
                     <div className="mm-pay-info">
                       <strong><FiSmartphone /> Instant UPI QR Code</strong>
@@ -710,49 +736,8 @@ export default function Checkout() {
                     </div>
                   </label>
 
-                  {/* 4. Cash on Delivery */}
-                  <label className={`mm-pay-option ${paymentMethod === 'cod' ? 'selected' : ''}`}>
-                    <input
-                      type="radio"
-                      name="payMethod"
-                      checked={paymentMethod === 'cod'}
-                      onChange={() => setPaymentMethod('cod')}
-                    />
-                    <div className="mm-pay-info">
-                      <strong>Cash on Delivery (COD)</strong>
-                      <span>Pay cash upon delivery to your doorstep</span>
-                    </div>
-                  </label>
                 </div>
 
-                {/* QR Code details when UPI QR is chosen */}
-                {paymentMethod === 'upi_qr' && (
-                  <div className="mm-upi-qr-box">
-                    <p className="mm-upi-instruction">Scan this QR code using GPay / PhonePe / Paytm / Cred:</p>
-                    <div className="mm-qr-frame">
-                      <img
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=upi://pay?pa=mahilamadel@upi%26pn=MahilaMadel%26am=${grandTotal}%26cu=INR`}
-                        alt="UPI Payment QR Code"
-                        className="mm-qr-img"
-                      />
-                    </div>
-                    <div className="mm-utr-input-wrap">
-                      <label>ENTER 12-DIGIT UPI REFERENCE / UTR *</label>
-                      <div className="mm-input-wrap">
-                        <input
-                          type="text"
-                          maxLength={12}
-                          placeholder="e.g. 329182746192"
-                          value={upiRef}
-                          onChange={(e) => setUpiRef(e.target.value)}
-                        />
-                        <button type="button" onClick={handleUpiSubmit} className="mm-btn-inline">
-                          Submit UTR
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* Navigation buttons */}
@@ -794,7 +779,7 @@ export default function Checkout() {
                 </div>
                 <p className="mm-review-text">
                   Method: <strong className="uppercase">{paymentMethod}</strong><br />
-                  Speed: <strong>{shippingSpeed === 'express' ? 'Priority Express' : 'Standard Delivery'}</strong>
+                  Speed: <strong>Standard Delivery</strong>
                 </p>
               </div>
 

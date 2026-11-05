@@ -42,6 +42,7 @@ export interface Product {
   stock?: number;
   rating?: number;
   reviews_count?: number;
+  seller_id?: string;
   seller_name?: string;
 }
 

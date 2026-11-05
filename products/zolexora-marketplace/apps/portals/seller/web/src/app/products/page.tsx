@@ -6,6 +6,7 @@ import { Plus, Pencil, Trash2, ImagePlus, Eye, EyeOff, Search, Filter, X, Loader
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import Link from "next/link";
+import { inrMoney, rupees } from "@zolexora/marketplace-shared-api";
 
 const CATS = ["Electronics","Fashion","Home & Living","Beauty","Sports","Food","Other"];
 
@@ -13,7 +14,7 @@ function ProductModal({ product, onClose, onSave }: { product?: any; onClose: ()
   const isEdit = !!product?.id;
   const [form, setForm] = useState({
     title: product?.title || "", description: product?.description || "",
-    price: product?.price || "", original_price: product?.original_price || "",
+    price: product?.price ? String(rupees(product.price)) : "", original_price: product?.original_price ? String(rupees(product.original_price)) : "",
     discount_percent: product?.discount_percent || "", category: product?.category || "Other",
     stock: product?.stock || 999,
   });
@@ -25,7 +26,7 @@ function ProductModal({ product, onClose, onSave }: { product?: any; onClose: ()
     e.preventDefault();
     setSaving(true);
     try {
-      const payload = { ...form, price: Number(form.price), original_price: form.original_price ? Number(form.original_price) : undefined, discount_percent: form.discount_percent ? Number(form.discount_percent) : undefined, stock: Number(form.stock) };
+      const payload = { ...form, price: inrMoney(Number(form.price)), original_price: form.original_price ? inrMoney(Number(form.original_price)) : undefined, discount_percent: form.discount_percent ? Number(form.discount_percent) : undefined, stock: Number(form.stock) };
       const result = isEdit ? await productsApi.update(product.id, payload) : await productsApi.create(payload);
       onSave(result);
       toast.success(isEdit ? "Product updated" : "Product created!");

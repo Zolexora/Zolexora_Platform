@@ -68,3 +68,24 @@ async def test_cancelling_from_the_portal_puts_paid_stock_back(pg):
     assert await stock_of(pg, listing) == (99, 0)
     await update_order_status(ORDER_1, "cancelled", user=SELLER, context=ctx_zol, pg=pg)
     assert await stock_of(pg, listing) == (100, 0)
+
+
+@pytest.mark.asyncio
+async def test_the_apps_get_orders_in_their_simple_shape(pg):
+    from routers.orders import legacy_get_order, legacy_my_orders, legacy_seller_orders
+
+    address = {"full_name": "Alice", "phone": "9876543210", "email": "a@example.com", "address_line1": "1 Main St",
+               "city": "Mumbai", "state": "MH", "postal_code": "400001", "country": "IN"}
+    await seed_order(pg, ORDER_1, total=25_000, shipping_address=address, coins_used=500)
+    await update_order_status(ORDER_1, "shipped", user=SELLER, context=ctx_zol, pg=pg)
+
+    [mine] = await legacy_my_orders(context=ctx_zol, user={"id": BUYER_1}, pg=pg)
+    assert (mine["id"], mine["status"], mine["order_status"]) == (ORDER_1, "shipped", "fulfilled")
+    assert (mine["total_paid"], mine["coins_discount"], mine["delivery_pincode"]) == (250.0, 5.0, "400001")
+    assert mine["items"][0]["quantity"] == 1 and mine["items"][0]["price"] == 250.0
+
+    assert [o["id"] for o in await legacy_seller_orders(context=ctx_zol, user=SELLER, pg=pg)] == [ORDER_1]
+    assert await legacy_seller_orders(context=ctx_zol, user={"id": "x", "seller_org_id": SEL_2}, pg=pg) == []
+    assert (await legacy_get_order(ORDER_1, context=ctx_zol, user=SELLER, pg=pg))["delivery_name"] == "Alice"
+    with pytest.raises(HTTPException):
+        await legacy_get_order(ORDER_1, context=ctx_zol, user={"id": "someone-else"}, pg=pg)

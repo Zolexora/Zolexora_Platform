@@ -74,6 +74,10 @@ async def test_upi_reference_only_queues_the_order_for_verification(pg):
     await cart_db(pg)
     res = await checkout(pg, 0, payment_method="upi")
     order_id = res["order_id"]
+    # What the buyer pays: the merchant's id and the order's total, as a link and a scannable QR.
+    assert (res["upi_id"], res["amount"]) == ("zolexora@testbank", 1180.0)
+    assert res["upi_link"].startswith("upi://pay?pa=zolexora%40testbank&pn=") and "&am=1180.00&cu=INR" in res["upi_link"]
+    assert res["upi_qr"].startswith("data:image/svg+xml")
 
     with pytest.raises(HTTPException):  # someone else's order
         await upi_paid_stub(UpiPaidRequest(order_id=order_id, upi_transaction_ref="123456789012"), context=ctx_zol, user=buyer_2, pg=pg)
@@ -107,3 +111,12 @@ async def test_razorpay_verification_only_marks_the_buyers_pending_order(pg, mon
         await verify_payment_stub(req, context=ctx_zol, user=buyer_1, pg=pg)
     assert exc.value.status_code == 404
     assert (await order_store.get(pg, id=ORDER_1))["payment_status"] == "pending"
+
+
+@pytest.mark.asyncio
+async def test_upi_checkout_needs_a_configured_upi_id(pg, monkeypatch):
+    monkeypatch.setattr(settings, "UPI_ID", "")
+    await cart_db(pg)
+    with pytest.raises(HTTPException) as exc:
+        await checkout(pg, 0, payment_method="upi")
+    assert exc.value.status_code == 503 and await order_store.find(pg) == []

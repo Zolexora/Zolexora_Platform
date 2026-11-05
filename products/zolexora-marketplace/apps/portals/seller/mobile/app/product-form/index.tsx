@@ -4,6 +4,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { X, Check } from "lucide-react-native";
 import { productsApi } from "../../src/lib/api";
 import Toast from "react-native-toast-message";
+import { inrMoney, rupees } from "@zolexora/marketplace-shared-api";
 
 const CATS = ["Electronics","Fashion","Home & Living","Beauty","Sports","Food","Other"];
 
@@ -15,8 +16,8 @@ export default function ProductFormScreen() {
   const [form, setForm] = useState({
     title: existing?.title || "",
     description: existing?.description || "",
-    price: existing?.price?.toString() || "",
-    original_price: existing?.original_price?.toString() || "",
+    price: existing?.price ? String(rupees(existing.price)) : "",
+    original_price: existing?.original_price ? String(rupees(existing.original_price)) : "",
     discount_percent: existing?.discount_percent?.toString() || "",
     category: existing?.category || "Other",
     stock: existing?.stock?.toString() || "100",
@@ -44,8 +45,8 @@ export default function ProductFormScreen() {
         title: form.title.trim(),
         description: form.description.trim(),
         category: form.category,
-        price,
-        original_price: Number.isFinite(originalPrice) ? originalPrice : undefined,
+        price: inrMoney(price),
+        original_price: Number.isFinite(originalPrice) ? inrMoney(originalPrice) : undefined,
         discount_percent: Number.isFinite(discountPercent) ? discountPercent : undefined,
         stock: Number.isFinite(stock) ? stock : 100,
       };

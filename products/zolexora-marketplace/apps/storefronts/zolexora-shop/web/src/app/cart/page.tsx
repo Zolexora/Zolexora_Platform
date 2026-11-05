@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useCartStore, useAuthStore } from "@/store";
@@ -21,7 +21,9 @@ interface Addr { name:string; phone:string; email:string; address:string; city:s
 interface UpiData {
   amount: number;
   upi_link: string;
+  upi_qr: string;   // the upi_link as a scannable QR (SVG data URI, made by the API)
   upi_id: string;
+  payee: string;
   order_id: string;
   type: "upi";
 }
@@ -43,26 +45,6 @@ interface RazorpayConstructor {
     theme: { color: string };
     modal: { ondismiss: () => void };
   }): RazorpayCheckout;
-}
-
-/* Simple QR using canvas (replace with `qrcode` npm pkg for production) */
-function QRCanvas({ data, size=180 }: { data:string; size?:number }) {
-  const ref = useRef<HTMLCanvasElement>(null);
-  useEffect(()=>{
-    if(!ref.current||!data)return;
-    const ctx=ref.current.getContext("2d")!;
-    ctx.fillStyle="#fff"; ctx.fillRect(0,0,size,size);
-    ctx.fillStyle="#111";
-    const cell=size/25;
-    for(let r=0;r<25;r++) for(let c=0;c<25;c++)
-      if((r+c*3+data.charCodeAt(r%data.length))%3===0) ctx.fillRect(c*cell,r*cell,cell-1,cell-1);
-    [[0,0],[0,18],[18,0]].forEach(([r,c])=>{
-      ctx.strokeStyle="#111";ctx.lineWidth=2;
-      ctx.strokeRect(c*cell,r*cell,7*cell,7*cell);
-      ctx.fillRect((c+2)*cell,(r+2)*cell,3*cell,3*cell);
-    });
-  },[data,size]);
-  return <canvas ref={ref} width={size} height={size} className="rounded-2xl border-2 border-gray-100 shadow"/>;
 }
 
 export default function CartPage() {
@@ -246,12 +228,19 @@ export default function CartPage() {
     }
   },[user, fetch, router]);
 
-  const subtotal     = items.reduce((s,i) => s + ((i.product.price.amount_minor / 100) * i.quantity), 0);
-  const tax          = subtotal * 0.18;
-  const delivery     = subtotal >= 499 ? 0 : 49;
+  // Same pricing as the server: one order per seller with 18% tax (whole paise, rounded down),
+  // ₹49 delivery under ₹499.
+  const bySeller     = items.reduce<Record<string,number>>((m,i) => {
+    const k = i.product.seller_id || i.product.seller_name || "";
+    m[k] = (m[k] || 0) + i.product.price.amount_minor * i.quantity; return m;
+  }, {});
+  const subtotalMinor = Object.values(bySeller).reduce((s,v) => s + v, 0);
+  const subtotal     = subtotalMinor / 100;
+  const tax          = Object.values(bySeller).reduce((s,v) => s + Math.floor(v * 0.18), 0) / 100;
+  const delivery     = subtotalMinor >= 49900 ? 0 : 49;
   const maxCoins     = Math.min(coinBal,Math.floor((subtotal*0.5)/0.01));
   const coinDiscount = parseFloat((coinsToUse*0.01).toFixed(2));
-  const total        = Math.max(0,subtotal-coinDiscount+delivery);
+  const total        = Math.max(0,Math.round((subtotal+tax+delivery-coinDiscount)*100)/100);
 
   const go = async (fn:()=>Promise<void>) => {
     setBusy(true);
@@ -404,7 +393,7 @@ export default function CartPage() {
         Amount: <strong className="text-ink">₹{upiData.amount?.toLocaleString("en-IN")}</strong>
       </p>
       <div className="bg-white rounded-2xl border border-gray-100 p-6 flex flex-col items-center gap-4 mb-4">
-        <QRCanvas data={upiData.upi_link} size={200}/>
+        <img src={upiData.upi_qr} alt={`UPI QR: pay ${upiData.payee}`} width={200} height={200} className="rounded-2xl border-2 border-gray-100 shadow bg-white"/>
         <p className="text-xs text-ink-muted text-center">Scan with GPay, PhonePe, Paytm or any UPI app</p>
         <div className="w-full border-t border-gray-100 pt-4">
           <p className="text-xs text-gray-400 text-center mb-2">Or pay directly to UPI ID:</p>
@@ -482,6 +471,7 @@ export default function CartPage() {
       <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-5 space-y-2 text-sm">
         <div className="flex justify-between text-gray-500"><span>Subtotal</span><span>₹{subtotal.toLocaleString("en-IN")}</span></div>
         {coinDiscount>0&&<div className="flex justify-between text-green-600"><span>Coin discount</span><span>-₹{coinDiscount.toFixed(0)}</span></div>}
+        <div className="flex justify-between text-gray-500"><span>GST (18%)</span><span>₹{tax.toLocaleString("en-IN")}</span></div>
         <div className="flex justify-between text-gray-500"><span>Delivery</span><span className={delivery===0?"text-green-600":""}>{delivery===0?"FREE":`₹${delivery}`}</span></div>
         <div className="border-t pt-2 flex justify-between font-bold text-base text-ink"><span>Total</span><span>₹{total.toLocaleString("en-IN")}</span></div>
       </div>
@@ -1077,8 +1067,9 @@ export default function CartPage() {
               <h3 className="font-bold text-base text-ink mb-4">Order Summary</h3>
               <div className="space-y-2.5 text-sm">
                 <div className="flex justify-between text-gray-600"><span>Subtotal</span><span>₹{subtotal.toLocaleString("en-IN")}</span></div>
+                <div className="flex justify-between text-gray-600"><span>GST (18%)</span><span>₹{tax.toLocaleString("en-IN")}</span></div>
                 <div className="flex justify-between text-gray-600"><span>Delivery</span><span className={delivery===0?"text-green-600":""}>{delivery===0?"FREE":`₹${delivery}`}</span></div>
-                <div className="border-t border-gray-100 pt-2.5 flex justify-between font-bold text-base text-ink"><span>Total</span><span>₹{(subtotal+delivery).toLocaleString("en-IN")}</span></div>
+                <div className="border-t border-gray-100 pt-2.5 flex justify-between font-bold text-base text-ink"><span>Total</span><span>₹{(Math.round((subtotal+tax+delivery)*100)/100).toLocaleString("en-IN")}</span></div>
               </div>
               <button onClick={()=>setStep("address")}
                 className="w-full mt-5 h-12 bg-gold hover:bg-amber-400 rounded-xl flex items-center justify-center gap-2 font-bold text-sm text-ink transition-all">

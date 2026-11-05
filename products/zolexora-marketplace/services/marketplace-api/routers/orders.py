@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 
+from core.config import settings
 from core.deps import current_user, is_admin, seller_only, shopper
 from shared.database.postgres import pg_conn_dep
 from integrations.zolexora_erp.outbox import sync_to_erp_outbox
@@ -748,13 +749,66 @@ async def update_order_status(order_id:str,status:str,user=Depends(seller_only),
 
 # ── Backward Compatibility Helpers ──────────────────────────────────────────
 
+# The storefront and seller apps show orders in a simple shape: a five-step status, rupee
+# amounts, `items` and flat delivery fields. These routes serve that view of the stored order
+# (which keeps its full status as `order_status`); /orders/buyer and /orders/seller are the
+# detailed API.
+
+def portal_status(doc: dict) -> str:
+    status, fulfilment = doc.get("status"), doc.get("fulfillment_status")
+    if status in ("cancelled", "partially_cancelled"):
+        return "cancelled"
+    if status == "completed" or fulfilment == "delivered":
+        return "delivered"
+    if status == "fulfilled" or fulfilment in ("shipped", "out_for_delivery"):
+        return "shipped"
+    if status in ("processing", "paid", "partially_fulfilled") or fulfilment == "processing":
+        return "processing"
+    return "pending"
+
+
+def portal_order(doc: dict) -> dict:
+    rupees = lambda money: (money or {}).get("amount_minor", 0) / 100  # noqa: E731
+    address = doc.get("shipping_address") or {}
+    items = [{"id": line.get("line_id"), "product_id": line.get("product_id"),
+              "product_title": line.get("title") or line.get("product_title"),
+              "title": line.get("title") or line.get("product_title"),
+              "quantity": line.get("quantity", 1), "price": rupees(line.get("unit_price")),
+              "image": line.get("image_url")} for line in doc.get("lines", [])]
+    return {
+        **doc, "status": portal_status(doc), "order_status": doc.get("status"), "items": items,
+        "subtotal": rupees(doc.get("item_subtotal")), "total_paid": rupees(doc.get("grand_total")),
+        "coins_discount": (doc.get("coins_used") or 0) * settings.COIN_VALUE,
+        "buyer_name": doc.get("buyer_name") or address.get("full_name") or "",
+        "delivery_name": address.get("full_name", ""), "delivery_phone": address.get("phone", ""),
+        "delivery_email": address.get("email", ""),
+        "delivery_address": ", ".join(filter(None, (address.get("address_line1"), address.get("address_line2")))),
+        "delivery_city": address.get("city", ""), "delivery_state": address.get("state", ""),
+        "delivery_pincode": address.get("postal_code", ""),
+    }
+
+
 @orders_router.get("/my")
 async def legacy_my_orders(
     context: StorefrontContext = Depends(require_storefront_context),
     user=Depends(current_user),
     pg=Depends(pg_conn_dep),
 ):
-    return await list_buyer_orders(context, user, pg)
+    """The caller's orders on this storefront, newest first."""
+    return [portal_order(d) for d in await order_store.find(pg, buyer_id=user["id"], storefront=context.key, limit=100)]
+
+
+@orders_router.get("/sales")
+async def legacy_seller_orders(
+    context: StorefrontContext = Depends(require_storefront_context),
+    user=Depends(seller_only),
+    pg=Depends(pg_conn_dep),
+):
+    """The orders of the caller's organisation on this storefront (every order for an admin)."""
+    if not is_admin(user) and not user.get("seller_org_id"):
+        return []
+    org = None if is_admin(user) else user["seller_org_id"]
+    return [portal_order(d) for d in await order_store.find(pg, seller_id=org, storefront=context.key)]
 
 
 @orders_router.get("/{order_id}")
@@ -769,7 +823,4 @@ async def legacy_get_order(
         raise HTTPException(404, "Order not found")
     if not is_admin(user) and doc["buyer_id"] != user["id"] and (not user.get("seller_org_id") or doc.get("seller_id") != user["seller_org_id"]):
         raise HTTPException(403, "Not your order")
-
-    if user.get("seller_org_id") and doc.get("seller_id") == user["seller_org_id"]:
-        return await get_seller_order_detail(order_id, context, user, pg)
-    return await get_buyer_order_detail(order_id, context, user, pg)
+    return portal_order(doc)

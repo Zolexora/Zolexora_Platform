@@ -57,7 +57,7 @@ export const cart = {
 // ─── Orders ───────────────────────────────────────────────────────────────────
 export const orders = {
   my:     ()                                   => getApiClient().get<Order[]>("/orders/my").then(r => r.data),
-  seller: ()                                   => getApiClient().get<Order[]>("/orders/seller").then(r => r.data),
+  seller: ()                                   => getApiClient().get<Order[]>("/orders/sales").then(r => r.data),
   get:    (id: string)                         => getApiClient().get<Order>(`/orders/${id}`).then(r => r.data),
   updateStatus: (id: string, status: string)   => getApiClient().put(`/orders/${id}/status`, null, { params: { status } }).then(r => r.data),
 };

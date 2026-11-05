@@ -10,6 +10,9 @@ import re
 import uuid
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
+from urllib.parse import quote, urlencode
+
+import segno
 
 from asyncpg import Connection
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -536,10 +539,23 @@ async def checkout_stub(
         return {"type": "coins", "order_id": order_id}
 
     elif req.payment_method == "upi":
+        if not settings.UPI_ID:
+            raise HTTPException(503, "UPI payments are not configured")
         await place_order()
-        return {"type": "upi", "order_id": order_id}
+        return {"type": "upi", "order_id": order_id, **upi_request(grand_total_minor, context.storefront.display_name,
+                                                                   f"Order {order_doc['order_number']}")}
 
     raise HTTPException(400, "Unsupported payment method")
+
+def upi_request(amount_minor: int, payee: str, note: str) -> dict:
+    """What the buyer pays with: the merchant's UPI id, the amount, a upi:// link (opens a UPI
+    app on a phone) and the same link as a scannable QR (SVG data URI)."""
+    amount = amount_minor / 100
+    link = "upi://pay?" + urlencode({"pa": settings.UPI_ID, "pn": payee, "am": f"{amount:.2f}", "cu": "INR", "tn": note},
+                                    quote_via=quote)
+    return {"amount": amount, "upi_id": settings.UPI_ID, "payee": payee, "upi_link": link,
+            "upi_qr": segno.make(link, error="m").svg_data_uri(scale=5, border=2)}
+
 
 class VerifyPaymentRequest(BaseModel):
     razorpay_order_id: str

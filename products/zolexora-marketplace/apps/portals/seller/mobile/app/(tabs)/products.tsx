@@ -6,6 +6,7 @@ import Animated, { FadeInDown } from "react-native-reanimated";
 import * as ImagePicker from "expo-image-picker";
 import { productsApi } from "../../src/lib/api";
 import Toast from "react-native-toast-message";
+import { rupees } from "@zolexora/marketplace-shared-api";
 
 export default function SellerProductsScreen() {
   const router = useRouter();
@@ -89,8 +90,8 @@ export default function SellerProductsScreen() {
                 <Text style={ss.cardTitle} numberOfLines={2}>{p.title}</Text>
                 <Text style={ss.cardCat}>{p.category}</Text>
                 <View style={ss.priceRow}>
-                  <Text style={ss.price}>₹{p.price?.toLocaleString("en-IN")}</Text>
-                  {p.original_price > p.price && <Text style={ss.origPrice}>₹{p.original_price?.toLocaleString("en-IN")}</Text>}
+                  <Text style={ss.price}>₹{rupees(p.price).toLocaleString("en-IN")}</Text>
+                  {rupees(p.original_price) > rupees(p.price) && <Text style={ss.origPrice}>₹{rupees(p.original_price).toLocaleString("en-IN")}</Text>}
                 </View>
                 <Text style={ss.stock}>{p.stock} in stock</Text>
               </View>

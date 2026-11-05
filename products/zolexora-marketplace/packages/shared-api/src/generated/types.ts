@@ -1305,8 +1305,31 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Legacy My Orders */
+        /**
+         * Legacy My Orders
+         * @description The caller's orders on this storefront, newest first.
+         */
         get: operations["legacy_my_orders_api_orders_my_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/orders/sales": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Legacy Seller Orders
+         * @description The orders of the caller's organisation on this storefront (every order for an admin).
+         */
+        get: operations["legacy_seller_orders_api_orders_sales_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3420,8 +3443,31 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Legacy My Orders */
+        /**
+         * Legacy My Orders
+         * @description The caller's orders on this storefront, newest first.
+         */
         get: operations["legacy_my_orders_orders_my_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/orders/sales": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Legacy Seller Orders
+         * @description The orders of the caller's organisation on this storefront (every order for an admin).
+         */
+        get: operations["legacy_seller_orders_orders_sales_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -8924,6 +8970,26 @@ export interface operations {
             };
         };
     };
+    legacy_seller_orders_api_orders_sales_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
     legacy_get_order_api_orders__order_id__get: {
         parameters: {
             query?: never;
@@ -12901,6 +12967,26 @@ export interface operations {
         };
     };
     legacy_my_orders_orders_my_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    legacy_seller_orders_orders_sales_get: {
         parameters: {
             query?: never;
             header?: never;

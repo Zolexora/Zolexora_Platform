@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import Link from "next/link";
+import { inrMoney } from "@zolexora/marketplace-shared-api";
 
 const CATEGORIES = ["Electronics","Fashion","Home & Living","Beauty","Sports","Food","Other"];
 
@@ -139,8 +140,8 @@ export default function BulkUploadPage() {
         title:          r.title.trim(),
         description:    r.description.trim(),
         category:       r.category,
-        price:          parseFloat(r.price),
-        original_price: r.original_price ? parseFloat(r.original_price) : undefined,
+        price:          inrMoney(parseFloat(r.price)),
+        original_price: r.original_price ? inrMoney(parseFloat(r.original_price)) : undefined,
         stock:          parseInt(r.stock) || 999,
         images:         r.images ? r.images.split(",").map(s=>s.trim()).filter(Boolean) : [],
       }));

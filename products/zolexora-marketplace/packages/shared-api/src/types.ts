@@ -25,14 +25,21 @@ export interface ReelCreateRequest {
 
 // ─── Product ──────────────────────────────────────────────────────────────────
 export type ProductCategory = "Electronics"|"Fashion"|"Home & Living"|"Beauty"|"Sports"|"Food"|"Other";
+/** An amount in the smallest currency unit (paise for INR), as the API sends and expects it. */
+export interface Money { amount_minor: number; currency: string; }
+/** Rupees (e.g. 499.5) as API money. */
+export const inrMoney = (rupees: number): Money => ({ amount_minor: Math.round(rupees * 100), currency: "INR" });
+/** API money as rupees, for display and form fields. */
+export const rupees = (money: Money | null | undefined): number => (money?.amount_minor ?? 0) / 100;
+
 export interface Product {
   id: string; seller_id: string; seller_name: string; title: string; description: string;
-  price: number; original_price: number | null; discount_percent: number | null;
+  price: Money; original_price: Money | null; discount_percent: number | null;
   category: ProductCategory; images: string[]; stock: number; is_active: boolean;
   rating: number; reviews_count: number; created_at: string;
 }
 export interface ProductCreateRequest {
-  title: string; description: string; price: number; original_price?: number;
+  title: string; description: string; price: Money; original_price?: Money;
   discount_percent?: number; category?: ProductCategory; images?: string[]; stock?: number;
 }
 
@@ -57,7 +64,7 @@ export interface Order {
   upi_transaction_ref: string | null; upi_verified_by: string | null; upi_verified_at: string | null;
   delivery_name: string | null; delivery_phone: string | null; delivery_email: string | null;
   delivery_address: string | null; delivery_city: string | null; delivery_state: string | null;
-  delivery_pincode: string | null; status: OrderStatus; admin_note: string | null;
+  delivery_pincode: string | null; status: OrderStatus; order_status?: string; admin_note: string | null;
   created_at: string; updated_at: string;
 }
 
