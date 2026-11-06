@@ -14,6 +14,7 @@ from .routers import (
     telemetry_router,
     email_router,
     storage_router,
+    identity_router,
 )
 
 logger = logging.getLogger("platform-admin")
@@ -61,3 +62,4 @@ app.include_router(connections_router, dependencies=admin_only)
 app.include_router(telemetry_router, dependencies=admin_only)
 app.include_router(email_router, dependencies=admin_only)
 app.include_router(storage_router, dependencies=admin_only)
+app.include_router(identity_router, dependencies=admin_only)  # the auth service re-checks admin rights

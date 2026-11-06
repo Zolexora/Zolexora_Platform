@@ -1,5 +1,12 @@
 // Test-only configuration, shared by the unit tests and tests/e2e/auth-service.
 // Production values come exclusively from Infisical.
+import { generateKeyPairSync } from "node:crypto";
+
+// Keys made fresh for every test run.
+const signing = generateKeyPairSync("ec", { namedCurve: "P-256" });
+/** Stands in for UIDAI's offline e-KYC signing key: tests sign their own Aadhaar XML with it. */
+export const UIDAI_TEST_KEYS = generateKeyPairSync("rsa", { modulusLength: 2048 });
+export const TEST_PRODUCT_KEYS = { tms: "tms-catalog-secret-0123456789abcdef0123", marketplace: "mkt-catalog-secret-0123456789abcdef0123" };
 export const TEST_ENV: Record<string, string> = {
   NODE_ENV: "test",
   PORT: "3081",
@@ -40,6 +47,26 @@ export const TEST_ENV: Record<string, string> = {
   FIREBASE_PNV_AUDIENCE: "projects/123",
   MOBILE_OTP_VERIFICATION: "true",
   SIGNUP_TICKET_TTL_SECONDS: "1800",
+  AUTH_ENCRYPTION_KEY: Buffer.alloc(32, 7).toString("base64"),
+  AUTH_SIGNING_PRIVATE_KEY: signing.privateKey.export({ type: "pkcs8", format: "pem" }).toString(),
+  INVITE_ACCEPT_URL: "https://accounts.zolexora.test/invite",
+  PWNED_PASSWORDS_API_URL: "https://pwned.test/range",
+  CATALOG_PRODUCT_KEYS: `tms=${TEST_PRODUCT_KEYS.tms},marketplace=${TEST_PRODUCT_KEYS.marketplace}`,
+  IDENTITY_VERIFICATION_PROVIDER: "aadhaar_offline,digio,manual",
+  PAN_VERIFICATION_PROVIDER: "gstin,cashfree,manual",
+  GST_VERIFICATION_PROVIDER: "cashfree,manual",
+  REGISTRATION_VERIFICATION_PROVIDER: "manual",
+  AUTHORITY_VERIFICATION_PROVIDER: "manual",
+  BANK_VERIFICATION_PROVIDER: "cashfree",
+  BANK_VERIFICATION_METHODS: "upi_vpa,reverse_penny_drop,penny_drop",
+  UIDAI_OFFLINE_EKYC_CERT: UIDAI_TEST_KEYS.publicKey.export({ type: "spki", format: "pem" }).toString(),
+  DIGIO_BASE_URL: "https://digio.test",
+  DIGIO_CLIENT_ID: "digio-client",
+  DIGIO_CLIENT_SECRET: "digio-secret",
+  DIGIO_IDENTITY_TEMPLATE: "ZX_DIGILOCKER",
+  CASHFREE_VERIFICATION_BASE_URL: "https://cashfree.test/verification",
+  CASHFREE_VERIFICATION_CLIENT_ID: "cf-client",
+  CASHFREE_VERIFICATION_CLIENT_SECRET: "cf-secret",
 };
 
 export const applyTestEnv = () => Object.assign(process.env, TEST_ENV);

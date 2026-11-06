@@ -5,8 +5,9 @@ import { InMemoryAuthRepository } from "./helpers/in-memory-auth.repository.js";
 import { CONSTANTS } from "../src/config/constants.js";
 
 // Employee provisioning requires an org admin (or platform admin) token.
+// Employees are invited (ADR 0005 §6.2); a platform admin can invite into any business.
 const orgAdminAuth = () => ({
-  authorization: `Bearer ${testTokens().signJwt({ uid: "emp_admin_1", zolexora_id: "ZX-4B8T-9M2K-7Y4X", org_id: "ZX-ORG-4B8T-9M2K-7Y4X", role: "admin", permissions: ["*"] })}`,
+  authorization: `Bearer ${testTokens().signJwt({ uid: "00000000-0000-4000-8000-000000000201", is_platform_admin: true, type: "platform_admin" })}`,
 });
 
 
@@ -78,14 +79,9 @@ describe("apps/zolexora-auth-service integration tests", () => {
   it("POST /api/v1/auth/employee/create with webmail returns 400 AUTH_WEBMAIL_DOMAIN_FORBIDDEN", async () => {
     const res = await app.inject({
       method: "POST",
-      url: "/api/v1/auth/employee/create",
+      url: "/api/v1/organizations/ZX-ORG-4B8T-9M2K-7Y4X/invites",
           headers: orgAdminAuth(),
-      payload: {
-        org_id: "ZX-ORG-4B8T-9M2K-7Y4X",
-        email: "dispatcher@gmail.com",
-        password: "CorporateSecurePass123!",
-        turnstile_token: TURNSTILE.VALID_TOKEN,
-      },
+      payload: { kind: "employee", email: "dispatcher@gmail.com" },
     });
     expect(res.statusCode).toBe(400);
     const body = res.json();

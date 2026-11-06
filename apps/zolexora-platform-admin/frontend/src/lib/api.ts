@@ -38,7 +38,7 @@ function authHeader(): Record<string, string> {
 /**
  * Generic JSON fetch wrapper with timeout and error handling.
  */
-async function fetchJson<T>(endpoint: string, options?: RequestInit): Promise<T> {
+export async function fetchJson<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
   try {
     const res = await fetch(url, {

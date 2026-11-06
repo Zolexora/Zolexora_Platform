@@ -8,6 +8,7 @@ import {
   DatabaseIcon,
   KeyIcon,
   EmailIcon,
+  ShieldIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
 } from './icons';
@@ -53,6 +54,38 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
       icon: EmailIcon,
       badge: 'Failover',
       badgeColor: 'bg-sky-950 text-sky-300 border-sky-800',
+    },
+    {
+      href: '/verifications',
+      label: 'Verification queue',
+      shortLabel: 'Verify',
+      icon: ShieldIcon,
+      badge: 'Review',
+      badgeColor: 'bg-amber-950 text-amber-300 border-amber-800',
+    },
+    {
+      href: '/verification-documents',
+      label: 'Accepted documents',
+      shortLabel: 'Documents',
+      icon: ShieldIcon,
+      badge: 'KYC',
+      badgeColor: 'bg-slate-800 text-slate-300 border-slate-700',
+    },
+    {
+      href: '/activity-groups',
+      label: 'Activity groups',
+      shortLabel: 'Activities',
+      icon: ShieldIcon,
+      badge: 'Orgs',
+      badgeColor: 'bg-slate-800 text-slate-300 border-slate-700',
+    },
+    {
+      href: '/catalog',
+      label: 'Permission catalog',
+      shortLabel: 'Catalog',
+      icon: ShieldIcon,
+      badge: 'RBAC',
+      badgeColor: 'bg-violet-950 text-violet-300 border-violet-800',
     },
   ];
 

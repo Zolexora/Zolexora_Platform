@@ -1,7 +1,8 @@
 # Every value comes from Infisical — run via scripts/docker-start.sh (wraps scripts/setup/with-infisical.sh).
 # No defaults: Compose refuses to start if a required key is missing.
 # Databases are the two Supabase projects referenced in Infisical (no local Postgres container);
-# set them up with scripts/db/auth-service-{upgrade-users,schema,admin-schema}.sql.
+# set them up with scripts/db/auth-service-{upgrade-users,schema,admin-schema}.sql, then
+# scripts/db/auth-service-upgrade-identity.sql (businesses, roles, sessions, verification; safe to re-run).
 services:
   auth-service:
     image: ${AUTH_SERVICE_IMAGE:-ghcr.io/zolexora/zolexora-auth-service:latest}
@@ -69,6 +70,33 @@ services:
       - FIREBASE_PNV_AUDIENCE
       - MOBILE_OTP_VERIFICATION
       - SIGNUP_TICKET_TTL_SECONDS
+      # ADR 0004 / 0005: businesses, roles, business sessions, verification providers
+      - AUTH_ENCRYPTION_KEY
+      - AUTH_SIGNING_PRIVATE_KEY
+      - INVITE_ACCEPT_URL
+      - PWNED_PASSWORDS_API_URL
+      - CATALOG_PRODUCT_KEYS
+      - IDENTITY_VERIFICATION_PROVIDER
+      - PAN_VERIFICATION_PROVIDER
+      - GST_VERIFICATION_PROVIDER
+      - REGISTRATION_VERIFICATION_PROVIDER
+      - AUTHORITY_VERIFICATION_PROVIDER
+      - BANK_VERIFICATION_PROVIDER
+      - BANK_VERIFICATION_METHODS
+      - UIDAI_OFFLINE_EKYC_CERT
+      - DIGIO_BASE_URL
+      - DIGIO_CLIENT_ID
+      - DIGIO_CLIENT_SECRET
+      - DIGIO_IDENTITY_TEMPLATE
+      - DIGIO_PAN_TEMPLATE
+      - DIGIO_REVERSE_PENNY_DROP_TEMPLATE
+      - DIGIO_PENNY_DROP_TEMPLATE
+      - CASHFREE_VERIFICATION_BASE_URL
+      - CASHFREE_VERIFICATION_CLIENT_ID
+      - CASHFREE_VERIFICATION_CLIENT_SECRET
+      - GST_CLEARTAX_BASE_URL
+      - GST_CLEARTAX_AUTH_TOKEN
+      - GST_CLEARTAX_TAXABLE_ENTITY_ID
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- \"http://localhost:$$PORT/health\" || exit 1"]
       interval: 15s

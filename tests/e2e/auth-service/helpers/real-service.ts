@@ -9,6 +9,8 @@ export interface RealService {
   url: string;
   /** Latest 6-digit code emailed to `to`. */
   lastCode: (to: string) => string | undefined;
+  /** Latest email text sent to `to` (invite links). */
+  lastMail: (to: string) => string | undefined;
   firebaseIdToken: (o?: Record<string, unknown>) => Promise<string>;
   pnvToken: (phone: string) => Promise<string>;
   /** A real session token signed by the service's key. */
@@ -31,6 +33,7 @@ export async function startRealService(): Promise<RealService> {
   return {
     url: address,
     lastCode: (to) => app.mail.lastCode(to),
+    lastMail: (to) => [...app.mail.sent].reverse().find((m) => m.to === to)?.text,
     firebaseIdToken: (o) => fakes.firebaseIdToken(o as any),
     pnvToken: (phone) => fakes.pnvToken(phone),
     token: (claims) => fakes.testTokens().signJwt(claims),

@@ -11,7 +11,10 @@ interface RevokeTokenBody {
   revocation_type?: RevocationType;
 }
 
-export async function sessionRoutes(app: FastifyInstance, opts: { repo: IAuthRepository; tokenService: TokenService }) {
+export async function sessionRoutes(
+  app: FastifyInstance,
+  opts: { repo: IAuthRepository; tokenService: TokenService; memberMe: (memberId: string, product: string | null) => Promise<unknown> },
+) {
   const authenticate = createAuthMiddleware({ tokenService: opts.tokenService, repo: opts.repo });
 
   // single_token revokes the caller's current token (logout).
@@ -51,6 +54,10 @@ export async function sessionRoutes(app: FastifyInstance, opts: { repo: IAuthRep
     "/api/v1/auth/me",
     { preHandler: [authenticate], schema: { description: "Introspect the active bearer token", tags: ["Session & Tokens"] } },
     async (req, reply) => {
+      // Business sessions: membership and permissions fresh from the database (ADR 0005 §5).
+      if (req.tokenPayload?.type === "member") {
+        return reply.status(200).send({ authenticated: true, ...(await opts.memberMe(req.user!.member_id!, req.user!.product ?? null) as object) });
+      }
       // Public users: products also need the profile (name, phone) the auth service owns.
       if (req.tokenPayload?.type !== "user" || !req.user?.email) {
         return reply.status(200).send({ user: req.user, authenticated: true });

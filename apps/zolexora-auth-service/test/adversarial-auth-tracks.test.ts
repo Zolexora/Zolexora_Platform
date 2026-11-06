@@ -4,8 +4,9 @@ import { InMemoryAuthRepository } from "./helpers/in-memory-auth.repository.js";
 import { BLOCKED_WEBMAIL_DOMAINS } from "@zolexora/utils";
 
 // Employee provisioning requires an org admin (or platform admin) token.
+// Employees are invited (ADR 0005 §6.2); a platform admin can invite into any business.
 const orgAdminAuth = () => ({
-  authorization: `Bearer ${testTokens().signJwt({ uid: "emp_admin_1", zolexora_id: "ZX-4B8T-9M2K-7Y4X", org_id: "ZX-ORG-4B8T-9M2K-7Y4X", role: "admin", permissions: ["*"] })}`,
+  authorization: `Bearer ${testTokens().signJwt({ uid: "00000000-0000-4000-8000-000000000201", is_platform_admin: true, type: "platform_admin" })}`,
 });
 
 
@@ -153,13 +154,9 @@ describe("Milestone 2 Adversarial & Empirical Probing: Authentication Tracks", (
         // Lowercase
         const resLower = await app.inject({
           method: "POST",
-          url: "/api/v1/auth/employee/create",
+          url: "/api/v1/organizations/ZX-ORG-4B8T-9M2K-7Y4X/invites",
           headers: orgAdminAuth(),
-          payload: {
-            org_id: VALID_ORG,
-            email: `employee@${domain}`,
-            password: VALID_EMP_PASS,
-          },
+          payload: { kind: "employee", email: `employee@${domain}` },
         });
         expect(resLower.statusCode).toBe(400);
         expect(resLower.json().code).toBe("AUTH_WEBMAIL_DOMAIN_FORBIDDEN");
@@ -167,13 +164,9 @@ describe("Milestone 2 Adversarial & Empirical Probing: Authentication Tracks", (
         // Uppercase
         const resUpper = await app.inject({
           method: "POST",
-          url: "/api/v1/auth/employee/create",
+          url: "/api/v1/organizations/ZX-ORG-4B8T-9M2K-7Y4X/invites",
           headers: orgAdminAuth(),
-          payload: {
-            org_id: VALID_ORG,
-            email: `EMPLOYEE@${domain.toUpperCase()}`,
-            password: VALID_EMP_PASS,
-          },
+          payload: { kind: "employee", email: `EMPLOYEE@${domain.toUpperCase()}` },
         });
         expect(resUpper.statusCode).toBe(400);
         expect(resUpper.json().code).toBe("AUTH_WEBMAIL_DOMAIN_FORBIDDEN");
@@ -182,13 +175,9 @@ describe("Milestone 2 Adversarial & Empirical Probing: Authentication Tracks", (
         const mixed = domain.slice(0, 2).toUpperCase() + domain.slice(2);
         const resMixed = await app.inject({
           method: "POST",
-          url: "/api/v1/auth/employee/create",
+          url: "/api/v1/organizations/ZX-ORG-4B8T-9M2K-7Y4X/invites",
           headers: orgAdminAuth(),
-          payload: {
-            org_id: VALID_ORG,
-            email: `user@${mixed}`,
-            password: VALID_EMP_PASS,
-          },
+          payload: { kind: "employee", email: `user@${mixed}` },
         });
         expect(resMixed.statusCode).toBe(400);
         expect(resMixed.json().code).toBe("AUTH_WEBMAIL_DOMAIN_FORBIDDEN");
@@ -199,13 +188,9 @@ describe("Milestone 2 Adversarial & Empirical Probing: Authentication Tracks", (
       // 1. Subdomain evasion (e.g. user@mail.gmail.com)
       const resSubdomain = await app.inject({
         method: "POST",
-        url: "/api/v1/auth/employee/create",
+        url: "/api/v1/organizations/ZX-ORG-4B8T-9M2K-7Y4X/invites",
           headers: orgAdminAuth(),
-        payload: {
-          org_id: VALID_ORG,
-          email: "user@mail.gmail.com",
-          password: VALID_EMP_PASS,
-        },
+        payload: { kind: "employee", email: "user@mail.gmail.com" },
       });
       // Documenting whether subdomains bypass exact string matching
       const subdomainBlocked = resSubdomain.statusCode === 400;
@@ -213,13 +198,9 @@ describe("Milestone 2 Adversarial & Empirical Probing: Authentication Tracks", (
       // 2. Legitimate corporate domain with 'gmail' in the name (must NOT be blocked)
       const resLegit = await app.inject({
         method: "POST",
-        url: "/api/v1/auth/employee/create",
+        url: "/api/v1/organizations/ZX-ORG-4B8T-9M2K-7Y4X/invites",
           headers: orgAdminAuth(),
-        payload: {
-          org_id: VALID_ORG,
-          email: "contact@notgmail.com",
-          password: VALID_EMP_PASS,
-        },
+        payload: { kind: "employee", email: "contact@notgmail.com" },
       });
       expect(resLegit.statusCode).toBe(201);
       expect(resLegit.json().success).toBe(true);

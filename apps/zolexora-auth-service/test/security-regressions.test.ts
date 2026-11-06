@@ -5,6 +5,7 @@ import { TURNSTILE, buildTestApp, testTokens } from "./helpers/fakes.js";
 import { InMemoryAuthRepository, SEED, TEST_PASSWORDS } from "./helpers/in-memory-auth.repository.js";
 import { fakeS3Objects } from "./setup.js";
 import { env } from "../src/config/env.js";
+import { PEOPLE, addPerson, adminAuth, dispatcherAuth, userAuth } from "./helpers/business.js";
 
 const ORG = SEED.defaultOrg;
 const bearer = (claims: Record<string, any>) => ({ authorization: `Bearer ${testTokens().signJwt(claims)}` });
@@ -26,30 +27,30 @@ describe("Security regressions", () => {
     }
   });
 
-  describe("#3 employee provisioning", () => {
-    const payload = { org_id: ORG, email: "new.hire@acme-corp.com", password: TEST_PASSWORDS.standard };
+  describe("#3 employee provisioning (invite links only)", () => {
+    const invites = `/api/v1/organizations/${ORG}/invites`;
+    const payload = { kind: "employee", email: "new.hire@acme-corp.com" };
 
     it("requires authentication", async () => {
-      const res = await app.inject({ method: "POST", url: "/api/v1/auth/employee/create", payload });
+      const res = await app.inject({ method: "POST", url: invites, payload });
       expect(res.statusCode).toBe(401);
     });
 
-    it("rejects members and admins of other organisations", async () => {
-      for (const claims of [
-        { uid: "emp_m", org_id: ORG, role: "member" },
-        { uid: "emp_o", org_id: SEED.secondOrg, role: "admin" },
-      ]) {
-        const res = await app.inject({ method: "POST", url: "/api/v1/auth/employee/create", headers: bearer(claims), payload });
+    it("rejects members without invite rights and admins of other businesses", async () => {
+      await addPerson(repo, SEED.ids.defaultOrg, PEOPLE.manager, "member");
+      await addPerson(repo, SEED.ids.secondOrg, PEOPLE.consumer, "admin");
+      for (const who of [PEOPLE.manager, PEOPLE.consumer]) {
+        const res = await app.inject({ method: "POST", url: invites, headers: userAuth(who), payload });
         expect(res.statusCode).toBe(403);
       }
+      // Forged claims for a non-existent employee get nowhere either.
+      const forged = await app.inject({ method: "POST", url: invites, headers: bearer({ uid: "emp_a", org_id: ORG, role: "owner", permissions: ["*"], type: "employee" }), payload });
+      expect(forged.statusCode).toBe(403);
     });
 
     it("never overwrites an existing employee (no password/role takeover)", async () => {
       const res = await app.inject({
-        method: "POST",
-        url: "/api/v1/auth/employee/create",
-        headers: bearer({ uid: "emp_a", org_id: ORG, role: "admin", permissions: ["*"] }),
-        payload: { org_id: ORG, email: "dispatcher@zolexora.com", password: "AttackerChosenPass123!", role: "admin" },
+        method: "POST", url: invites, headers: adminAuth(), payload: { kind: "employee", email: "dispatcher@zolexora.com" },
       });
       expect(res.statusCode).toBe(409);
       const emp = await repo.getEmployeeByOrgAndIdentifier(ORG, "dispatcher@zolexora.com");
@@ -58,23 +59,18 @@ describe("Security regressions", () => {
     });
 
     it("does not auto-create unknown organisations", async () => {
-      const res = await app.inject({
-        method: "POST",
-        url: "/api/v1/auth/employee/create",
-        headers: bearer({ uid: "adm", is_platform_admin: true }),
-        payload: { ...payload, org_id: "ZX-ORG-AAAA-BBBB-CCCC" },
-      });
+      const res = await app.inject({ method: "POST", url: "/api/v1/organizations/ZX-ORG-AAAA-BBBB-CCCC/invites", headers: adminAuth(), payload });
       expect(res.statusCode).toBe(404);
     });
 
-    it("cannot grant permissions the caller does not hold", async () => {
-      const res = await app.inject({
-        method: "POST",
-        url: "/api/v1/auth/employee/create",
-        headers: bearer({ uid: "emp_a", org_id: ORG, role: "admin", permissions: ["trips:read"] }),
-        payload: { ...payload, permissions: ["billing:write"] },
-      });
+    it("cannot grant a role the caller does not hold (manager inviting an admin)", async () => {
+      const roles = (await app.inject({ method: "GET", url: `/api/v1/organizations/${ORG}/roles`, headers: adminAuth() })).json().roles;
+      const admin = roles.find((r: any) => r.key === "admin");
+      const res = await app.inject({ method: "POST", url: invites, headers: dispatcherAuth(), payload: { ...payload, org_role_id: admin.id } });
       expect(res.statusCode).toBe(403);
+      // A plain member invite is fine for a manager.
+      const ok = await app.inject({ method: "POST", url: invites, headers: dispatcherAuth(), payload });
+      expect(ok.statusCode).toBe(201);
     });
   });
 
@@ -164,7 +160,7 @@ describe("Security regressions", () => {
   });
 
   it("#Broken password reset emails a code and the confirmed reset revokes old sessions", async () => {
-    const oldToken = testTokens().signJwt({ uid: "usr_9981", iat: Math.floor(Date.now() / 1000) - 5 });
+    const oldToken = testTokens().signJwt({ uid: SEED.ids.consumer, iat: Math.floor(Date.now() / 1000) - 5 });
     const req = await app.inject({
       method: "POST",
       url: "/api/v1/auth/public/reset-password",

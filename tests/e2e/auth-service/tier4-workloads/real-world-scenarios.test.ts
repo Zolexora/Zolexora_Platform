@@ -1,3 +1,4 @@
+import { TEST_PRODUCT_KEYS } from "../../../../apps/zolexora-auth-service/test/helpers/test-env";
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
 import { TestHarness, createTestZolexoraFetch } from "../helpers/http-client";
 import { FIXTURES } from "../helpers/fixtures";
@@ -89,38 +90,37 @@ describe("Tier 4: Real-World Workload Scenarios (5 Comprehensive Workloads)", ()
     const orgId = FIXTURES.ids.validOrg;
     expect(isValidZolexoraOrgId(orgId)).toBe(true);
 
-    // Step 1: Attempt to create employee with public webmail -> REJECTED
-    const webmailRes = await fetch(`${harness.baseUrl}/api/v1/auth/employee/create`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...harness.orgAdminAuth() },
-      body: JSON.stringify({
-        org_id: orgId,
-        email: "driver.bob@yahoo.com",
-        password: FIXTURES.passwords.standard,
-      }),
-    });
+    // Step 1: Inviting an employee with public webmail -> REJECTED
+    const webmailRes = await harness.inviteEmployee(orgId, "driver.bob@yahoo.com", FIXTURES.passwords.standard);
     expect(webmailRes.status).toBe(400);
     const webmailData = await webmailRes.json();
     expect(webmailData.code).toBe("AUTH_WEBMAIL_DOMAIN_FORBIDDEN");
 
-    // Step 2: Provision employee with corporate domain -> SUCCESS (Zero friction)
-    const corporateEmail = "driver.bob@speedy-freight.com";
-    const createRes = await fetch(`${harness.baseUrl}/api/v1/auth/employee/create`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...harness.orgAdminAuth() },
-      body: JSON.stringify({
-        org_id: orgId,
-        email: corporateEmail,
-        password: FIXTURES.passwords.standard,
-        role: "dispatcher",
-        permissions: ["fleet:read", "trips:create", "trips:update"],
-      }),
+    // Step 2: TMS registers its permissions; the business creates a TMS "Dispatcher" role
+    const catalogRes = await fetch(`${harness.baseUrl}/api/v1/catalog/tms`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", "X-Product-Key": TEST_PRODUCT_KEYS.tms },
+      body: JSON.stringify({ permissions: [
+        { key: "tms:fleet:view", description: "See the fleet" },
+        { key: "tms:trips:create", description: "Create trips" },
+        { key: "tms:trips:update", description: "Update trips" },
+      ] }),
     });
-    expect(createRes.status).toBe(201);
-    const createData = await createRes.json();
-    expect(createData.employee.status).toBe("active");
+    expect(catalogRes.status).toBe(200);
+    const roleRes = await fetch(`${harness.baseUrl}/api/v1/organizations/${orgId}/roles`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...harness.platformAdminAuth() },
+      body: JSON.stringify({ scope: "tms", name: "Dispatcher", permissions: ["tms:fleet:view", "tms:trips:create", "tms:trips:update"] }),
+    });
+    expect(roleRes.status).toBe(201);
+    const dispatcherRole = (await roleRes.json()).role.id;
 
-    // Step 3: Employee logs in directly without OTP or mobile challenge
+    // Step 3: Invite with that TMS role; the employee accepts and sets a password (zero friction)
+    const corporateEmail = "driver.bob@speedy-freight.com";
+    const createRes = await harness.inviteEmployee(orgId, corporateEmail, FIXTURES.passwords.standard, { product_roles: { tms: dispatcherRole } });
+    expect(createRes.status).toBe(201);
+
+    // Step 3b: The employee logs in to TMS; the token carries only org-level and TMS permissions
     const empLoginRes = await fetch(`${harness.baseUrl}/api/v1/auth/employee/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -136,8 +136,8 @@ describe("Tier 4: Real-World Workload Scenarios (5 Comprehensive Workloads)", ()
     const empLoginData = await empLoginRes.json();
     expect(empLoginData.claims.zolexora_id).toBeDefined();
     expect(empLoginData.claims.org_id).toBe(orgId);
-    expect(empLoginData.claims.role).toBe("dispatcher");
-    expect(empLoginData.claims.permissions).toContain("trips:create");
+    expect(empLoginData.claims.role).toBe("member");
+    expect(empLoginData.claims.permissions).toContain("tms:trips:create");
 
     // Step 4: Upload organization logo to Cloudinary
     const logoRes = await fetch(`${harness.baseUrl}/api/v1/storage/logos/upload`, {

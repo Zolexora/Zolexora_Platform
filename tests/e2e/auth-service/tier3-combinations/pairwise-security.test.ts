@@ -115,17 +115,8 @@ describe("Tier 3: Cross-Feature Pairwise Security Combinations (8 Tests)", () =>
   });
 
   it("T3.04: Valid Turnstile token does not bypass Webmail Domain Blocking", async () => {
-    // Attempting to provision employee with @gmail.com but providing a valid Turnstile token
-    const res = await fetch(`${harness.baseUrl}/api/v1/auth/employee/create`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...harness.orgAdminAuth() },
-      body: JSON.stringify({
-        org_id: FIXTURES.ids.validOrg,
-        email: "sneaky.employee@gmail.com",
-        password: FIXTURES.passwords.standard,
-        turnstile_token: FIXTURES.turnstile.valid, // Valid Turnstile
-      }),
-    });
+    // Inviting an employee with @gmail.com: nothing about the request bypasses the domain rule
+    const res = await harness.inviteEmployee(FIXTURES.ids.validOrg, "sneaky.employee@gmail.com", FIXTURES.passwords.standard);
 
     expect(res.status).toBe(400);
     const data = await res.json();

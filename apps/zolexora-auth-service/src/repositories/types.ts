@@ -128,6 +128,7 @@ export interface IAuthRepository {
     actorId: string,
   ): Promise<{ target_id: string; revoked_at: number }>;
   isTokenRevoked(uid: string, jti: string, issuedAtSeconds: number): Promise<boolean>;
+  isSessionActive(sessionId: string): Promise<boolean>;
 
   // KYC Storage
   saveKycDocument(doc: KycDocumentRecord): Promise<KycDocumentRecord>;

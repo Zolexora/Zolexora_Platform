@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { IAuthRepository } from "../repositories/types.js";
-import { TokenService, TokenPayload } from "../services/token.service.js";
+import { TokenService, TokenPayload, NON_ACCESS_TYPES } from "../services/token.service.js";
 import { AppError } from "../plugins/error-handler.js";
 
 declare module "fastify" {
@@ -13,6 +13,13 @@ declare module "fastify" {
       org_id?: string;
       permissions?: string[];
       is_platform_admin?: boolean;
+      // Business-session tokens (type "member")
+      member_id?: string;
+      user_id?: string;
+      employee_id?: string;
+      product?: string;
+      session_id?: string;
+      mfa?: boolean;
     };
     tokenPayload?: TokenPayload;
   }
@@ -32,7 +39,11 @@ export function createAuthMiddleware(opts: { tokenService: TokenService; repo: I
     if (!result.valid || !result.payload) throw unauthorized("AUTH_UNAUTHORIZED", "Invalid or forged token signature");
 
     const p = result.payload;
+    if (p.type && NON_ACCESS_TYPES.includes(p.type)) throw unauthorized("AUTH_UNAUTHORIZED", "Not an access token");
     if (await opts.repo.isTokenRevoked(p.uid, p.jti, p.iat)) {
+      throw unauthorized("AUTH_TOKEN_REVOKED", "Session was invalidated");
+    }
+    if (p.type === "member" && (!p.sid || !p.member_id || !(await opts.repo.isSessionActive(p.sid)))) {
       throw unauthorized("AUTH_TOKEN_REVOKED", "Session was invalidated");
     }
 
@@ -44,7 +55,13 @@ export function createAuthMiddleware(opts: { tokenService: TokenService; repo: I
       role: p.role,
       org_id: p.org_id,
       permissions: p.permissions,
-      is_platform_admin: p.is_platform_admin === true,
+      is_platform_admin: p.type !== "member" && p.is_platform_admin === true,
+      member_id: p.member_id,
+      user_id: p.user_id,
+      employee_id: p.employee_id,
+      product: p.product,
+      session_id: p.sid,
+      mfa: p.mfa === true,
     };
   };
 }
