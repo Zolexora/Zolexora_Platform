@@ -5,12 +5,14 @@ on:
     branches: [main]
     paths:
       - 'products/zolexora-ims/**'
+      - 'packages/**'
       - 'pnpm-lock.yaml'
       - '.github/workflows/zolexora-ims-ci.yml'
       - '.github/actions/**'
   pull_request:
     paths:
       - 'products/zolexora-ims/**'
+      - 'packages/**'
       - 'pnpm-lock.yaml'
       - '.github/workflows/zolexora-ims-ci.yml'
       - '.github/actions/**'

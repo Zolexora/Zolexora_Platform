@@ -439,9 +439,6 @@ Zolexora_Platform/
 │   ├── zolexora-ims/
 │   │   ├── apps/
 │   │   │   └── ims-user/  (58 files)
-│   │   ├── docs/
-│   │   │   ├── planning/  (2 files)
-│   │   │   └── security/  (2 files)
 │   │   ├── scripts/
 │   │   │   ├── check-health.sh
 │   │   │   ├── db-ops.sh
@@ -450,7 +447,7 @@ Zolexora_Platform/
 │   │   │   ├── run-all-tests.sh
 │   │   │   └── setup.sh
 │   │   ├── services/
-│   │   │   └── user-api/  (19 files)
+│   │   │   └── user-api/  (21 files)
 │   │   ├── .gitignore
 │   │   ├── .infisical.json
 │   │   ├── compose.yaml
