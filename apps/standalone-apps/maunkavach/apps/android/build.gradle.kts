@@ -154,7 +154,7 @@ dependencies {
 
     implementation("androidx.fragment:fragment-ktx:1.8.2")
     implementation("androidx.biometric:biometric:1.1.0")
-    implementation("androidx.security:security-crypto:1.1.0-alpha06") // EncryptedSharedPreferences wrapper over Keystore
+    implementation("androidx.security:security-crypto:1.1.0") // EncryptedSharedPreferences wrapper over Keystore
     implementation("androidx.camera:camera-camera2:1.3.4")
     implementation("androidx.camera:camera-lifecycle:1.3.4")
     implementation("androidx.camera:camera-view:1.3.4")
