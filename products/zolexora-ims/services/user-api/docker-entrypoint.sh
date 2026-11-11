@@ -26,5 +26,5 @@ if [ -n "${missing}" ]; then
 fi
 
 mkdir -p "$(dirname "${DATABASE_PATH}")"
-litestream restore -config "${CONFIG}" -if-db-not-exists -if-replica-exists "${DATABASE_PATH}"
-exec litestream replicate -config "${CONFIG}" -exec "${API}"
+# Only one API per backup path (backup_lock.py): restore and replicate only while holding the bucket lock.
+exec python /app/backup_lock.py sh -c 'litestream restore -config "$1" -if-db-not-exists -if-replica-exists "$2" && exec litestream replicate -config "$1" -exec "$3"' _ "${CONFIG}" "${DATABASE_PATH}" "${API}"

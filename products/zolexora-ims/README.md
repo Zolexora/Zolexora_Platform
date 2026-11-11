@@ -80,6 +80,13 @@ the file is missing (new server, lost disk, host without a disk), then runs unde
 change to the bucket within about a second and pushes the last changes on shutdown. Point-in-time recovery:
 `scripts/db-ops.sh restore-points`, then `scripts/db-ops.sh restore-to 2026-11-11T09:30:00Z`. Use a bucket only IMS
 writes to, one `IMS_BACKUP_S3_PATH` per database (e.g. `prod`, `staging`), and never two running APIs on one path.
+
+**One API per database (enforced).** The API holds a lock object, `<IMS_BACKUP_S3_PATH>.ims-api.lock`, in the bucket
+while it runs ([backup_lock.py](services/user-api/backup_lock.py)) and restores the database only once it has the
+lock. A second API on the same path, from an overlapping ("zero-downtime" or rolling) deploy or a second instance,
+waits up to 2 minutes, then exits with an error, so such a deploy fails instead of splitting sales between two
+copies. Deploy by stopping the old container first; a crashed API's lock is taken over after 90 s. The store must
+support conditional writes (`If-Match` / `If-None-Match`): AWS S3, Cloudflare R2 and MinIO do.
 `scripts/db-ops.sh backup` still writes a plain SQL dump for keeping elsewhere.
 
 ## Payment gateway secrets (vault)
