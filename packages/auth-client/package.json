@@ -43,6 +43,12 @@
       "require": "./dist/public-sign-in.cjs",
       "default": "./dist/public-sign-in.js"
     },
+    "./business-session": {
+      "types": "./dist/business-session.d.ts",
+      "import": "./dist/business-session.js",
+      "require": "./dist/business-session.cjs",
+      "default": "./dist/business-session.js"
+    },
     "./package.json": "./package.json"
   },
   "typesVersions": {
@@ -58,6 +64,9 @@
       ],
       "public-sign-in": [
         "./dist/public-sign-in.d.ts"
+      ],
+      "business-session": [
+        "./dist/business-session.d.ts"
       ]
     }
   },
