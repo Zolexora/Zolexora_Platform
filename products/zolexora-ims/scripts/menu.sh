@@ -30,7 +30,7 @@ show_menu() {
   echo -e "${BOLD}Select an operation:${NC}\n"
   echo -e "  ${CYAN}[2]${NC} 🩺 Run System Health Check       (Probe all APIs, frontends & latency)"
   echo -e "  ${CYAN}[3]${NC} 🐳 Docker Container Operations   (Start, stop, pull, status, logs — GHCR images)"
-  echo -e "  ${CYAN}[4]${NC} 📦 Database Migrations & Seeds   (Cloudflare D1 schema, tables & seed)"
+  echo -e "  ${CYAN}[4]${NC} 📦 Database (SQLite)             (status, query, backup, restore)"
   echo -e "  ${CYAN}[5]${NC} 🧪 Run Production Quality Gates  (Pytest suite, TypeScript, build tests)"
   echo -e "  ${CYAN}[6]${NC} 🔐 Audit Environment & Secrets   (Check .env.local, generate keys)"
   echo -e "  ${CYAN}[7]${NC} ⚡ Start Local Monorepo Dev      (Run native Vite & FastAPI dev processes)"
@@ -55,10 +55,9 @@ run_action() {
       ;;
     4)
       echo ""
-      echo -e "${BOLD}Database Subcommands:${NC} migrate | seed | status | backup"
-      read -r -p "Enter database command [status]: " dbcmd
-      dbcmd="${dbcmd:-status}"
-      "${SCRIPT_DIR}/db-ops.sh" "${dbcmd}"
+      echo -e "${BOLD}Database Subcommands:${NC} status | backup | query <sql> | restore <file>"
+      read -r -p "Enter database command [status]: " dbcmd dbarg
+      "${SCRIPT_DIR}/db-ops.sh" "${dbcmd:-status}" ${dbarg:+"$dbarg"}
       ;;
     5)
       echo ""
@@ -66,7 +65,7 @@ run_action() {
       ;;
     6)
       echo ""
-      bash "${ROOT_DIR}/../../scripts/setup/with-infisical.sh" "${ROOT_DIR}" bash -c 'for v in AUTH_SERVICE_URL IMS_PRODUCT_KEY CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_API_TOKEN CLOUDFLARE_D1_DATABASE_ID AUTH_SERVICE_PUBLIC_URL TURNSTILE_SITE_KEY NEXT_PUBLIC_IMS_CLIENT_FIREBASE_API_KEY NEXT_PUBLIC_IMS_CLIENT_FIREBASE_AUTH_DOMAIN NEXT_PUBLIC_IMS_CLIENT_FIREBASE_APP_ID NEXT_PUBLIC_FIREBASE_PROJECT_ID; do [ -n "${!v:-}" ] && echo "ok  $v" || echo "MISSING $v"; done'
+      bash "${ROOT_DIR}/../../scripts/setup/with-infisical.sh" "${ROOT_DIR}" bash -c 'for v in AUTH_SERVICE_URL IMS_PRODUCT_KEY AUTH_SERVICE_PUBLIC_URL TURNSTILE_SITE_KEY NEXT_PUBLIC_IMS_CLIENT_FIREBASE_API_KEY NEXT_PUBLIC_IMS_CLIENT_FIREBASE_AUTH_DOMAIN NEXT_PUBLIC_IMS_CLIENT_FIREBASE_APP_ID NEXT_PUBLIC_FIREBASE_PROJECT_ID; do [ -n "${!v:-}" ] && echo "ok  $v" || echo "MISSING $v"; done'
       ;;
     7)
       echo ""

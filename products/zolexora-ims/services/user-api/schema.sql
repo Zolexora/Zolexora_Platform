@@ -1,4 +1,4 @@
--- Zolexora IMS schema (Cloudflare D1 / SQLite). Applied by the backend on start; idempotent.
+-- Zolexora IMS schema (SQLite, file at DATABASE_PATH). Applied by the backend on start; idempotent.
 -- Every row belongs to one business: org_id is the Zolexora business id (ZX-ORG-…) from the auth
 -- service, and every primary key starts with org_id so one business can never overwrite another's
 -- rows. Businesses, people and roles live in the auth service, not here.

@@ -438,10 +438,7 @@ Zolexora_Platform/
 │   │   └── README.md
 │   ├── zolexora-ims/
 │   │   ├── apps/
-│   │   │   └── ims-user/  (57 files)
-│   │   ├── database/
-│   │   │   ├── one-time-reset-demo-schema.sql
-│   │   │   └── wrangler.toml
+│   │   │   └── ims-user/  (58 files)
 │   │   ├── docs/
 │   │   │   ├── planning/  (2 files)
 │   │   │   └── security/  (2 files)
@@ -453,7 +450,7 @@ Zolexora_Platform/
 │   │   │   ├── run-all-tests.sh
 │   │   │   └── setup.sh
 │   │   ├── services/
-│   │   │   └── user-api/  (19 files)
+│   │   │   └── user-api/  (18 files)
 │   │   ├── .gitignore
 │   │   ├── .infisical.json
 │   │   ├── compose.yaml

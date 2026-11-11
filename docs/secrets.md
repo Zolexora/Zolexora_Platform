@@ -41,7 +41,7 @@ Names only. Add any missing key to the product's Infisical folder (project `c4ac
 
 ### zolexora-ims — `/Zolexora_IMS`
 
-- **user-backend**: `ENVIRONMENT`, `HOST`, `PORT`, `LOG_LEVEL`, `CORS_ALLOWED_ORIGINS`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_D1_DATABASE_ID`, `CLOUDFLARE_API_TOKEN`, `DEFAULT_CURRENCY`, `AUTH_SERVICE_URL`, `IMS_PRODUCT_KEY` (same value as the `ims` entry in the auth service's `CATALOG_PRODUCT_KEYS`)
+- **user-backend**: `ENVIRONMENT`, `HOST`, `PORT`, `LOG_LEVEL`, `CORS_ALLOWED_ORIGINS`, `DEFAULT_CURRENCY`, `AUTH_SERVICE_URL`, `IMS_PRODUCT_KEY` (same value as the `ims` entry in the auth service's `CATALOG_PRODUCT_KEYS`). The database is a SQLite file at `DATABASE_PATH` (`/data/ims.db`, set by the image; not a secret).
 - **user-frontend**: `AUTH_SERVICE_PUBLIC_URL`, `TURNSTILE_SITE_KEY`, `NEXT_PUBLIC_IMS_CLIENT_FIREBASE_API_KEY`, `NEXT_PUBLIC_IMS_CLIENT_FIREBASE_AUTH_DOMAIN`, `NEXT_PUBLIC_IMS_CLIENT_FIREBASE_APP_ID`, `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
 
 ### zolexora-marketplace — `/Zolexora_Marketplace`

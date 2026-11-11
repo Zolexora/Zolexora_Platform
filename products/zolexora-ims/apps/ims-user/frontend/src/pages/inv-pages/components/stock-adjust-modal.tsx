@@ -196,7 +196,7 @@ export default function StockAdjustModal({
               className="flex items-center gap-1.5 px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl shadow-lg shadow-indigo-600/30 transition disabled:opacity-50"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-              <span>{loading ? 'Updating D1...' : 'Confirm Adjustment'}</span>
+              <span>{loading ? 'Updating...' : 'Confirm Adjustment'}</span>
             </button>
           </div>
         </form>

@@ -77,7 +77,7 @@ app.add_middleware(
 @app.get("/health")
 @app.get("/api/v1/health")
 async def health():
-    return {"status": "healthy", "service": "ims-user-api", "database": "Cloudflare D1"}
+    return {"status": "healthy", "service": "ims-user-api", "database": "SQLite"}
 
 
 # --- Dashboard ---
@@ -200,14 +200,14 @@ async def update_item(item_code: str, item: ItemUpdate, user: UserProfile = Depe
 STOCK_COLUMNS = {"S_001": "stock_s_001", "S_002": "stock_s_002"}
 
 
-async def _move_stock(org_id: str, item_code: str, store_code: Optional[str], change: float, now: str) -> None:
+async def _move_stock(org_id: str, item_code: str, store_code: Optional[str], change: float, now: str, conn=db) -> None:
     """Relative update, so two tills or screens never overwrite each other's count. Never below zero."""
     col = STOCK_COLUMNS.get(store_code or "", "central_stock")
-    await db.execute(
+    await conn.execute(
         f"UPDATE products SET {col} = MAX(0, {col} + ?), last_updated = ? WHERE org_id = ? AND item_code = ?;",
         [change, now, org_id, item_code],
     )
-    await db.execute(
+    await conn.execute(
         "UPDATE products SET total_stock = stock_s_001 + stock_s_002 + central_stock, "
         "total_valuation = ROUND((stock_s_001 + stock_s_002 + central_stock) * rate, 2) WHERE org_id = ? AND item_code = ?;",
         [org_id, item_code],
@@ -320,16 +320,21 @@ async def record_sale(sale: SaleRequest, user: UserProfile = Depends(require("im
         payment_status = "Paid" if pay["status"] == "PAID" else "Confirmed by cashier"
 
     now, date_str = now_utc_iso(), today_utc_str()
-    for item, prod, amount in zip(sale.items, prods, amounts):
-        await db.execute(
-            "INSERT INTO selling_point_sales (id, org_id, timestamp, date, selling_point_code, selling_point_name, bill_no, "
-            "customer_name, item_code, item_name, category, quantity, uom, rate, tax_percent, total_amount, payment_mode, "
-            "payment_status, payment_id, cashier, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
-            [generate_id("SALE"), user.org_id, now, date_str, sp["code"], sp["name"], bill_no, sale.customer_name,
-             item.item_code, prod["description"], prod["category"], item.quantity, prod["uom"], prod["rate"],
-             prod["tax_percent"], amount, sale.payment_mode, payment_status, sale.payment_id, user.name, sale.notes],
-        )
-        await _move_stock(user.org_id, item.item_code, sp.get("assigned_store_code"), -item.quantity, now)
+    # The whole bill is saved or none of it is; the bill-number check is repeated inside the
+    # transaction so two tills submitting the same bill cannot both write it.
+    async with db.transaction() as tx:
+        if await tx.fetch_one("SELECT id FROM selling_point_sales WHERE org_id = ? AND bill_no = ? LIMIT 1;", [user.org_id, bill_no]):
+            raise HTTPException(status_code=409, detail=f"Bill {bill_no} is already recorded")
+        for item, prod, amount in zip(sale.items, prods, amounts):
+            await tx.execute(
+                "INSERT INTO selling_point_sales (id, org_id, timestamp, date, selling_point_code, selling_point_name, bill_no, "
+                "customer_name, item_code, item_name, category, quantity, uom, rate, tax_percent, total_amount, payment_mode, "
+                "payment_status, payment_id, cashier, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
+                [generate_id("SALE"), user.org_id, now, date_str, sp["code"], sp["name"], bill_no, sale.customer_name,
+                 item.item_code, prod["description"], prod["category"], item.quantity, prod["uom"], prod["rate"],
+                 prod["tax_percent"], amount, sale.payment_mode, payment_status, sale.payment_id, user.name, sale.notes],
+            )
+            await _move_stock(user.org_id, item.item_code, sp.get("assigned_store_code"), -item.quantity, now, tx)
 
     return {"success": True, "bill_no": bill_no, "total_amount": total, "payment_status": payment_status}
 

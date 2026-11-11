@@ -8,7 +8,7 @@
 #     ZolexoraMarketplace — Ecom marketplace app (FastAPI/Python, Next.js, Expo/EAS)
 #     TheTextileCare      — Laundry app (FastAPI/Python, Next.js, Expo)
 #     ZolexoraTMS         — Transport management (FastAPI/Python, Next.js, Supabase)
-#     ZolexoraIMS         — Inventory & POS (React/Vite, FastAPI, Cloudflare D1)
+#     ZolexoraIMS         — Inventory & POS (React/Vite, FastAPI, SQLite)
 #     ZolexoraAI          — AI product (FastAPI/Python, Celery)
 #     ZolexoraEngage      — Engagement platform (pnpm/TS)
 #     ClarityFi           — Fintech (pnpm/TS, Expo)
@@ -21,7 +21,7 @@
 #     pnpm (latest)       — JS package manager (all products)
 #     turbo               — Monorepo task runner
 #     expo-cli + eas-cli  — Expo / React Native builds
-#     wrangler            — Cloudflare CLI (ZolexoraIMS D1)
+#     wrangler            — Cloudflare CLI (packages/api-shield)
 #     firebase-tools      — Firebase hosting / functions (root firebase.json)
 #     supabase CLI        — Supabase (ZolexoraTMS, infrastructure/supabase)
 #     agy (Antigravity)   — AI coding assistant CLI
@@ -134,7 +134,7 @@ else
 fi
 
 # =============================================================================
-# 6. Wrangler — Cloudflare CLI (ZolexoraIMS D1 database)
+# 6. Wrangler — Cloudflare CLI (packages/api-shield Workers)
 # =============================================================================
 log "[6/11] wrangler (Cloudflare Workers)"
 if ! command -v wrangler > /dev/null 2>&1; then

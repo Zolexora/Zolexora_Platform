@@ -136,7 +136,7 @@ export default function PosSettings() {
   const [receiptFooter, setReceiptFooter] = useState<string>('Thank you for dining with Zolexora! Have a great day.');
   const [serviceChargePercent, setServiceChargePercent] = useState<number>(0);
 
-  // D1 Edge Cache
+  // Offline cache
   const [offlineSyncEnabled, setOfflineSyncEnabled] = useState<boolean>(true);
   const [edgeLatency, setEdgeLatency] = useState<number>(18);
   const [testingConnection, setTestingConnection] = useState<boolean>(false);
@@ -885,14 +885,14 @@ export default function PosSettings() {
           </div>
         </div>
 
-        {/* Section 4: Cloudflare D1 Edge Connectivity & Offline Mode */}
+        {/* Section 4: Connectivity & Offline Mode */}
         <div className="bg-slate-900/40 border border-white/10 rounded-2xl p-5 space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-white/5">
             <div className="flex items-center gap-2.5">
               <Database className="w-5 h-5 text-cyan-400" />
               <div>
                 <h2 className="text-sm font-bold text-white">Edge Sync & Offline Cache Mode</h2>
-                <p className="text-[11px] text-slate-400">Cloudflare D1 transactional sync and offline fallback</p>
+                <p className="text-[11px] text-slate-400">Server connection and offline mode</p>
               </div>
             </div>
             <button
@@ -909,7 +909,7 @@ export default function PosSettings() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
             <div className="p-3 bg-white/5 rounded-xl border border-white/5 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-slate-400">Cloudflare D1 Status:</span>
+                <span className="text-slate-400">Database:</span>
                 <span className="inline-flex items-center gap-1.5 text-emerald-400 font-bold">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                   ONLINE

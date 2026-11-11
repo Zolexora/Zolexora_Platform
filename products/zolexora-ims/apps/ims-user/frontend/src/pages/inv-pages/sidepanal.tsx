@@ -161,7 +161,7 @@ export default function Sidepanal() {
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-1.5 text-[11px]">
               <Database className="w-3 h-3 text-indigo-400" />
-              <span>Cloudflare D1</span>
+              <span>SQLite</span>
             </span>
             <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 font-medium">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>

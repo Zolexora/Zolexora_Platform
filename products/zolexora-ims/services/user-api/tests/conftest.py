@@ -4,10 +4,8 @@ import tempfile
 
 import pytest
 
-# A fresh local database per test run; never Cloudflare D1.
-os.environ["LOCAL_SQLITE_PATH"] = os.path.join(tempfile.mkdtemp(prefix="ims-test-"), "ims.db")
-for _k in ("CLOUDFLARE_ACCOUNT_ID", "CLOUDFLARE_D1_DATABASE_ID", "CLOUDFLARE_API_TOKEN"):
-    os.environ.pop(_k, None)
+# A fresh SQLite file per test run.
+os.environ["DATABASE_PATH"] = os.path.join(tempfile.mkdtemp(prefix="ims-test-"), "ims.db")
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 

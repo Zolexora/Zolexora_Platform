@@ -377,7 +377,7 @@ export default function PurchaseEntry({ onSuccess, onCancel, isModal = false }: 
               className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-emerald-600/30 transition disabled:opacity-50"
             >
               <Save className="w-4 h-4" />
-              <span>{submitting ? 'Updating Balances in D1...' : 'Book Goods Receipt'}</span>
+              <span>{submitting ? 'Updating balances...' : 'Book Goods Receipt'}</span>
             </button>
           </div>
         </div>

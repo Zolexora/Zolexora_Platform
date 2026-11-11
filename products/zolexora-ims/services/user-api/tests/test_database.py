@@ -1,29 +1,40 @@
 import asyncio
 
-import httpx
 import pytest
 
-import d1_adapter
-from d1_adapter import D1Adapter, DatabaseError
+from database import Database, DatabaseError
 
 
-def test_not_configured_is_an_error():
-    db = D1Adapter(account_id="", database_id="", api_token="", sqlite_path="")
-    with pytest.raises(DatabaseError, match="Database not configured"):
-        asyncio.run(db.init())
+def test_path_is_required(monkeypatch):
+    monkeypatch.delenv("DATABASE_PATH", raising=False)
+    with pytest.raises(DatabaseError, match="DATABASE_PATH"):
+        asyncio.run(Database().init())
 
 
-def test_d1_errors_are_raised_not_hidden(monkeypatch, tmp_path):
-    calls = []
+def test_creates_the_file_and_folder_and_uses_wal(tmp_path):
+    db = Database(str(tmp_path / "data" / "ims.db"))
 
-    def handler(request):
-        calls.append(request)
-        return httpx.Response(200, json={"success": False, "errors": [{"message": "boom"}]})
+    async def run():
+        await db.init()
+        await db.init()  # idempotent
+        return (await db.fetch_one("PRAGMA journal_mode;"))["journal_mode"]
 
-    real = httpx.AsyncClient
-    monkeypatch.setattr(d1_adapter.httpx, "AsyncClient", lambda **kw: real(transport=httpx.MockTransport(handler), **kw))
-    db = D1Adapter(account_id="acc", database_id="db", api_token="tok", sqlite_path="")
-    with pytest.raises(DatabaseError, match="boom"):
-        asyncio.run(db.execute("INSERT INTO settings (org_id, key) VALUES (?, ?);", ["o", "k"]))
-    assert len(calls) == 1 and calls[0].headers["Authorization"] == "Bearer tok"
-    assert not list(tmp_path.iterdir())  # nothing written locally
+    assert asyncio.run(run()) == "wal"
+    assert (tmp_path / "data" / "ims.db").exists()
+
+
+def test_transaction_is_all_or_nothing(tmp_path):
+    db = Database(str(tmp_path / "ims.db"))
+    insert = "INSERT INTO settings (org_id, key, value) VALUES (?, ?, ?);"
+
+    async def run():
+        await db.init()
+        with pytest.raises(RuntimeError):
+            async with db.transaction() as tx:
+                await tx.execute(insert, ["o", "a", "1"])
+                raise RuntimeError("fail half way")
+        async with db.transaction() as tx:
+            await tx.execute(insert, ["o", "b", "2"])
+        return [r["key"] for r in await db.query("SELECT key FROM settings WHERE org_id = 'o';")]
+
+    assert asyncio.run(run()) == ["b"]

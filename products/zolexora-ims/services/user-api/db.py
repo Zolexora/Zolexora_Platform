@@ -1,7 +1,6 @@
 try:
-    from .d1_adapter import D1Adapter
+    from .database import Database
 except ImportError:
-    from d1_adapter import D1Adapter
+    from database import Database
 
-# Global database adapter singleton
-db = D1Adapter()
+db = Database()

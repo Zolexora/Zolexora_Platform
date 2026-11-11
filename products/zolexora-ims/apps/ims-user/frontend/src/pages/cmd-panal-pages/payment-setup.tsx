@@ -203,7 +203,7 @@ export default function OrgPaymentSetup() {
         <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center justify-between animate-fadeIn">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-            <span>Payment credentials securely encrypted and persisted in Cloudflare D1 / SQLite database.</span>
+            <span>Credentials are stored in this business's IMS database and are never shown again after saving.</span>
           </div>
         </div>
       )}

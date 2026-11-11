@@ -118,7 +118,7 @@ export default function Products() {
           <button
             onClick={fetchProducts}
             className="p-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-slate-300 transition"
-            title="Refresh from D1"
+            title="Refresh"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-indigo-400' : ''}`} />
           </button>

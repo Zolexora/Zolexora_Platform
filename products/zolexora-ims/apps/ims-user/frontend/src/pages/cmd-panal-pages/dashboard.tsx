@@ -256,7 +256,7 @@ export default function CmdDashboard() {
               <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
               <div>
                 <div className="font-semibold text-white">Encrypted Local Persistence</div>
-                <div className="text-[11px] text-slate-400">Cloudflare D1 database with SQLite fallback</div>
+                <div className="text-[11px] text-slate-400">SQLite database</div>
               </div>
             </div>
 

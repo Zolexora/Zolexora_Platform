@@ -7,7 +7,8 @@ FROM python:3.11-slim AS runtime
 # Prevent Python from writing .pyc files and buffer stdout/stderr
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PORT=4050
+    PORT=4050 \
+    DATABASE_PATH=/data/ims.db
 
 WORKDIR /app
 
@@ -25,7 +26,8 @@ RUN pip install --no-cache-dir --upgrade pip && \
 COPY products/zolexora-ims/services/user-api/ .
 
 # Create a non-root user for container security
-RUN useradd -m -u 1001 appuser && chown -R appuser:appuser /app
+# The SQLite database lives in /data: mount a persistent disk or volume there on any host.
+RUN useradd -m -u 1001 appuser && mkdir -p /data && chown -R appuser:appuser /app /data
 USER appuser
 
 EXPOSE 4050

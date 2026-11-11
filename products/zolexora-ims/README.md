@@ -1,13 +1,12 @@
 # Zolexora IMS
 
 Inventory and point of sale for businesses on the Zolexora platform. People sign in through the
-Zolexora auth service; each business's data lives in Cloudflare D1, keyed by its Zolexora business id.
+Zolexora auth service; each business's data lives in one SQLite database, keyed by its Zolexora business id.
 
 | Part | Path | Image |
 | --- | --- | --- |
 | Web app (React + Vite, served by nginx) | `apps/ims-user/frontend` | `ghcr.io/zolexora/zolexora-ims-user-frontend` |
 | API (FastAPI) | `services/user-api` | `ghcr.io/zolexora/zolexora-ims-user-backend` |
-| D1 database config | `database/` | — (tables come from `services/user-api/schema.sql`) |
 
 Secrets come only from Infisical (`/Zolexora_IMS`); see [docs/secrets.md](../../docs/secrets.md).
 
@@ -36,7 +35,7 @@ Run the two images and give them this environment (values from Infisical):
 
 | Variable | What |
 | --- | --- |
-| `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_D1_DATABASE_ID`, `CLOUDFLARE_API_TOKEN` | The IMS D1 database |
+| `DATABASE_PATH` | SQLite file; the image sets `/data/ims.db`. **Mount a persistent disk or volume at `/data`**, or data is lost when the container is replaced |
 | `AUTH_SERVICE_URL` | Auth service base URL as the API reaches it |
 | `IMS_PRODUCT_KEY` | Product key for registering the `ims:*` permission catalog |
 
@@ -59,10 +58,14 @@ service to a given image tag. Check any deployment with `IMS_URL=https://<web ho
 | Script | Does |
 | --- | --- |
 | `scripts/docker-start.sh` | Start / stop / pull the local stack |
-| `scripts/db-ops.sh` | D1 `status`, `query`, `backup`, `restore` (backups go to `~/zolexora-ims-backups`) |
+| `scripts/db-ops.sh` | SQLite `status`, `query`, `backup`, `restore` on the running stack (backups go to `~/zolexora-ims-backups`) |
 | `scripts/check-health.sh` | Probe the web app and API |
 | `scripts/run-all-tests.sh` | Backend tests, typecheck, build |
 | `scripts/setup.sh`, `scripts/menu.sh` | First-time setup and a menu over the above |
 
-`database/one-time-reset-demo-schema.sql` drops every IMS table. It was only for clearing the old demo database;
-never run it against real data.
+## Database
+
+SQLite, one file for all businesses (every row and key starts with `org_id`). The API creates the tables on start
+from `services/user-api/schema.sql` and runs in WAL mode; a sale is written in one transaction. Locally the file is
+on the `ims-data` Docker volume (kept by `stop`, `docker:clean` and `docker:prune`). SQLite allows one writer, so
+run **one API instance** per database file; take backups with `scripts/db-ops.sh backup` (or snapshot the disk).

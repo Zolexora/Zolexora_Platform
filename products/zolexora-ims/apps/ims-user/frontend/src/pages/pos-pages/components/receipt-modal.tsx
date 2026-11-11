@@ -163,7 +163,7 @@ export default function ReceiptModal({ receipt, onClose }: ReceiptModalProps) {
 
           <div className="text-center pt-2 text-[10px] text-slate-500 print:text-slate-600">
             <p>Thank you for shopping with us!</p>
-            <p>Cloudflare D1 Synchronized • Zolexora POS</p>
+            <p>Zolexora POS</p>
           </div>
         </div>
 

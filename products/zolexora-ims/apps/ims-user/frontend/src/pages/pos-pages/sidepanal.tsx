@@ -116,7 +116,7 @@ export default function PosSidepanal({
               </span>
               <span className="inline-flex items-center gap-1 text-emerald-400">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                D1 Connected
+                Connected
               </span>
             </div>
           </div>
@@ -176,7 +176,7 @@ export default function PosSidepanal({
               <Clock className="w-3 h-3 text-slate-500" />
               <span>Terminal</span>
             </span>
-            <span className="text-slate-300 font-mono text-[10px]">TERM-SP001-D1</span>
+            <span className="text-slate-300 font-mono text-[10px]">TERM-SP001</span>
           </div>
         </div>
       </div>

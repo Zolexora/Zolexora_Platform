@@ -64,7 +64,7 @@ export default function Dashboard() {
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Inventory Operations Dashboard</h1>
           <p className="text-xs text-slate-400 mt-1">
-            Real-time stock valuation, multi-store balances, material requisitions, and D1 edge telemetry
+            Real-time stock valuation, multi-store balances, and material requisitions
           </p>
         </div>
 
@@ -138,7 +138,7 @@ export default function Dashboard() {
           <div className="text-2xl font-extrabold text-white font-mono">
             {metrics.activeStores} Sites / {metrics.activeSellingPoints} POS
           </div>
-          <div className="text-[11px] text-slate-400">Connected D1 nodes</div>
+          <div className="text-[11px] text-slate-400">Database</div>
         </div>
       </div>
 

@@ -156,9 +156,9 @@ else
 fi
 
 # ------------------------------------------------------------------------------
-# STEP 5: Essential Developer & Cloud CLIs (GitHub, Cloudflare, Render, Supabase)
+# STEP 5: GitHub CLI (images are built by GitHub CI and pulled from GHCR)
 # ------------------------------------------------------------------------------
-log_step "Step 5: Provisioning Essential Cloud & Developer CLIs"
+log_step "Step 5: GitHub CLI"
 
 # 1. GitHub CLI (gh)
 if command -v gh &>/dev/null; then
@@ -177,39 +177,6 @@ else
     brew install gh
   fi
   log_success "GitHub CLI installed."
-fi
-
-# 2. Cloudflare Wrangler CLI
-if command -v wrangler &>/dev/null || pnpm dlx wrangler --version &>/dev/null 2>&1; then
-  log_success "Cloudflare Wrangler CLI: ${BOLD}Available via pnpm/wrangler${RESET}"
-else
-  log_info "Installing Wrangler CLI..."
-  pnpm add -g wrangler 2>/dev/null || npm install -g wrangler
-  log_success "Wrangler CLI installed."
-fi
-
-# 3. Render CLI
-if command -v render &>/dev/null || [ -f "$HOME/.local/bin/render" ]; then
-  export PATH="$HOME/.local/bin:$PATH"
-  RENDER_VER=$(render --version 2>/dev/null || echo "Render CLI")
-  log_success "Render CLI: ${BOLD}${RENDER_VER}${RESET}"
-else
-  log_info "Installing Render CLI..."
-  curl -fsSL https://render.com/install.sh | bash 2>/dev/null || true
-  export PATH="$HOME/.local/bin:$PATH"
-  if command -v render &>/dev/null; then
-    log_success "Render CLI successfully installed."
-  fi
-fi
-
-# 4. Supabase CLI
-if command -v supabase &>/dev/null; then
-  SUPA_VER=$(supabase --version 2>/dev/null || echo "Supabase CLI")
-  log_success "Supabase CLI: ${BOLD}${SUPA_VER}${RESET}"
-else
-  log_info "Installing Supabase CLI via pnpm..."
-  pnpm add -g supabase 2>/dev/null || true
-  log_success "Supabase CLI ready."
 fi
 
 # ------------------------------------------------------------------------------
@@ -243,11 +210,11 @@ log_success "Frontend packages installed cleanly."
 # STEP 8: Interactive Terminal Auth Wizard (Cloud Services)
 # ------------------------------------------------------------------------------
 log_step "Step 8: Interactive Terminal Authentication & Cloud Login"
-echo -e "${DIM}  We will now verify your terminal sessions for GitHub, Cloudflare, Render & Supabase.${RESET}"
+echo -e "${DIM}  We will now verify your GitHub session (secrets come from Infisical).${RESET}"
 echo -e "${DIM}  You can log in directly right now or skip if you already have valid tokens.${RESET}\n"
 
 # 1. GitHub Login Check
-echo -e "${BOLD}[1/4] GitHub Authentication (gh)${RESET}"
+echo -e "${BOLD}GitHub Authentication (gh)${RESET}"
 if gh auth status &>/dev/null; then
   GH_USER=$(gh api user -q .login 2>/dev/null || echo "Authenticated")
   log_success "GitHub logged in as: ${BOLD}${GH_USER}${RESET}"
@@ -261,39 +228,7 @@ else
   fi
 fi
 
-# 2. Cloudflare Wrangler Login Check
-echo ""
-echo -e "${BOLD}[2/4] Cloudflare Edge & D1 Database (wrangler)${RESET}"
-if npx wrangler whoami &>/dev/null; then
-  log_success "Cloudflare Wrangler: ${BOLD}Authenticated${RESET}"
-else
-  echo -e "  ${YELLOW}Wrangler is not logged in.${RESET}"
-  read -p "  Would you like to log in to Cloudflare now via browser? (y/N): " do_cf_login
-  if [[ "$do_cf_login" =~ ^[Yy]$ ]]; then
-    npx wrangler login
-  else
-    log_warn "Skipped Cloudflare login. You can run 'npx wrangler login' anytime."
-  fi
-fi
-
-# 3. Render Cloud Login Check
-echo ""
-echo -e "${BOLD}[3/4] Render Cloud Platform (render)${RESET}"
-if command -v render &>/dev/null; then
-  if render whoami &>/dev/null; then
-    log_success "Render CLI: ${BOLD}Authenticated${RESET}"
-  else
-    echo -e "  ${YELLOW}Render CLI is not logged in.${RESET}"
-    read -p "  Would you like to log in to Render now? (y/N): " do_render_login
-    if [[ "$do_render_login" =~ ^[Yy]$ ]]; then
-      render login
-    else
-      log_warn "Skipped Render login. You can run 'render login' later."
-    fi
-  fi
-fi
-
-# 4. Secrets: injected at runtime from Infisical (/Zolexora_IMS). No .env files.
+# Secrets: injected at runtime from Infisical (/Zolexora_IMS). No .env files.
 
 # ------------------------------------------------------------------------------
 # STEP 9: Self-Test & Quality Verification

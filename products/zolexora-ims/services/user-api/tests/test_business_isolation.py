@@ -1,5 +1,4 @@
 """Two businesses on one IMS: neither can see or overwrite the other's data."""
-import asyncio
 import hashlib
 import hmac
 import json
@@ -10,7 +9,6 @@ from starlette.testclient import TestClient
 from auth import get_current_user
 from catalog import PERMISSIONS
 from conftest import member
-from d1_adapter import D1Adapter
 from main import app
 
 A, B = "ZX-ORG-AAAA-0000-0001", "ZX-ORG-BBBB-0000-0002"
@@ -93,18 +91,3 @@ def test_aggregator_webhook_goes_to_the_named_business_only(client):
     assert client.delete("/api/v1/aggregator/orders").status_code == 200
     act_as(A)
     assert [o["id"] for o in client.get("/api/v1/aggregator/orders").json()] == ["SW-1"]
-
-
-def test_refuses_to_start_on_old_demo_schema(tmp_path):
-    import aiosqlite
-
-    path = str(tmp_path / "old.db")
-
-    async def run():
-        async with aiosqlite.connect(path) as conn:
-            await conn.execute("CREATE TABLE organizations (id TEXT PRIMARY KEY);")
-            await conn.commit()
-        await D1Adapter(account_id="", database_id="", api_token="", sqlite_path=path).init()
-
-    with pytest.raises(RuntimeError, match="one-time-reset-demo-schema"):
-        asyncio.run(run())

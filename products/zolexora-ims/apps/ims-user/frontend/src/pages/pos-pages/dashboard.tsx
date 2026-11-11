@@ -172,7 +172,7 @@ export default function POSTerminal() {
     return () => clearInterval(timer);
   }, []);
 
-  // Fetch Inventory from D1
+  // Fetch inventory
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -771,10 +771,10 @@ export default function POSTerminal() {
             <Keyboard className="w-3.5 h-3.5" />
           </button>
 
-          {/* D1 Sync Refresh */}
+          {/* Refresh */}
           <button
             onClick={fetchData}
-            title="Refresh D1 stock ledger"
+            title="Refresh stock"
             className="p-1.5 bg-white/5 hover:bg-white/10 rounded-xl border border-white/10 text-slate-400 hover:text-white transition"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-indigo-400' : ''}`} />

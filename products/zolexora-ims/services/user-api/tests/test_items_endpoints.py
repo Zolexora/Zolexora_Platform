@@ -19,7 +19,7 @@ def test_user_api_health():
         data = resp.json()
         assert data["status"] == "healthy"
         assert data["service"] == "ims-user-api"
-        assert data["database"] == "Cloudflare D1"
+        assert data["database"] == "SQLite"
 
 
 def test_unauthenticated_items_access_denied():

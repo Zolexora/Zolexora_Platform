@@ -4,11 +4,11 @@ services:
     pull_policy: missing
     container_name: ims-user-backend
     environment:
-    - CLOUDFLARE_ACCOUNT_ID=${CLOUDFLARE_ACCOUNT_ID:?CLOUDFLARE_ACCOUNT_ID missing - run via scripts/setup/with-infisical.sh}
-    - CLOUDFLARE_D1_DATABASE_ID=${CLOUDFLARE_D1_DATABASE_ID:?CLOUDFLARE_D1_DATABASE_ID missing - run via scripts/setup/with-infisical.sh}
-    - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN:?CLOUDFLARE_API_TOKEN missing - run via scripts/setup/with-infisical.sh}
     - AUTH_SERVICE_URL=${AUTH_SERVICE_URL:?AUTH_SERVICE_URL missing - run via scripts/setup/with-infisical.sh}
     - IMS_PRODUCT_KEY=${IMS_PRODUCT_KEY:?IMS_PRODUCT_KEY missing - run via scripts/setup/with-infisical.sh}
+    volumes:
+    - ims-data:/data
+    restart: unless-stopped
     extra_hosts:
     - "host.docker.internal:host-gateway"
     deploy:
@@ -54,3 +54,6 @@ services:
       timeout: 5s
       retries: 3
       start_period: 5s
+
+volumes:
+  ims-data:

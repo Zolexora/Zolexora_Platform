@@ -368,7 +368,7 @@ export default function IssuanceEntry({ onSuccess, onCancel, isModal = false }: 
               className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-indigo-600/30 transition disabled:opacity-50"
             >
               <Save className="w-4 h-4" />
-              <span>{submitting ? 'Deducting Stock from D1...' : 'Authorize & Issue Stock'}</span>
+              <span>{submitting ? 'Deducting stock...' : 'Authorize & Issue Stock'}</span>
             </button>
           </div>
         </div>

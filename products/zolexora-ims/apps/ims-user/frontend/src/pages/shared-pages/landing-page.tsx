@@ -28,7 +28,7 @@ export default function LandingPage() {
             <div className="font-bold text-sm tracking-wide text-white flex items-center gap-2">
               ZOLEXORA IMS
               <span className="text-[10px] px-2 py-0.5 rounded-full font-mono bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-semibold">
-                v2.0 D1 Edge
+                v2.0
               </span>
             </div>
             <div className="text-[11px] text-slate-400">Enterprise Retail & Inventory Operations</div>
@@ -70,7 +70,7 @@ export default function LandingPage() {
       <section className="relative pt-20 pb-16 px-6 max-w-6xl mx-auto text-center space-y-8">
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-600/15 border border-indigo-500/30 text-indigo-300 text-xs font-medium">
           <Zap className="w-3.5 h-3.5 text-indigo-400 animate-pulse" />
-          <span>Cloudflare D1 Relational Engine & Supabase Auth</span>
+          <span>SQLite database & Zolexora sign-in</span>
         </div>
 
         <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white tracking-tight max-w-4xl mx-auto leading-tight">
@@ -108,7 +108,7 @@ export default function LandingPage() {
           <div className="p-4 bg-[#0f111c] border border-white/5 rounded-2xl space-y-1 shadow-md">
             <div className="text-[11px] text-slate-400 flex items-center gap-1.5">
               <Zap className="w-3.5 h-3.5 text-amber-400" />
-              <span>D1 Edge Latency</span>
+              <span>API latency</span>
             </div>
             <div className="text-2xl font-black text-white font-mono">&lt; 15 ms</div>
             <div className="text-[10px] text-emerald-400">Global Cloudflare Mesh</div>
@@ -137,7 +137,7 @@ export default function LandingPage() {
               <Lock className="w-3.5 h-3.5 text-emerald-400" />
               <span>Auth Architecture</span>
             </div>
-            <div className="text-2xl font-black text-white font-mono">Supabase + KV</div>
+            <div className="text-2xl font-black text-white font-mono">Zolexora Auth</div>
             <div className="text-[10px] text-emerald-400">Cryptographic 7-Day TTL</div>
           </div>
         </div>
@@ -192,7 +192,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-emerald-400"></div>
-            <span>All Systems Operational • Cloudflare D1 + Render</span>
+            <span>All Systems Operational</span>
           </div>
 
           <div className="flex items-center gap-6">

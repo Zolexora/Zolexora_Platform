@@ -151,7 +151,7 @@ export default function Profile() {
         <div className="p-4 bg-white/2 border border-white/5 rounded-xl space-y-2 text-xs">
           <div className="font-semibold text-slate-300 flex items-center gap-2">
             <Lock className="w-4 h-4 text-emerald-400" />
-            <span>Supabase Auth & Cloudflare Edge Token</span>
+            <span>Zolexora business session</span>
           </div>
           <p className="text-[11px] text-slate-400">
             Authentication sessions are cryptographically signed and edge-cached with 7-day TTL on Cloudflare KV.

@@ -109,7 +109,7 @@ export default function SKUaddition({ onSuccess, onCancel, isModal = false }: SK
       }
 
       const created = await res.json();
-      setSuccessMsg(`SKU ${created.item_code} successfully added to Cloudflare D1 inventory!`);
+      setSuccessMsg(`SKU ${created.item_code} added to inventory.`);
       if (onSuccess) {
         onSuccess(created);
       } else {
@@ -428,7 +428,7 @@ export default function SKUaddition({ onSuccess, onCancel, isModal = false }: SK
               className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-indigo-600/30 transition disabled:opacity-50"
             >
               <Save className="w-4 h-4" />
-              <span>{submitting ? 'Registering SKU in D1...' : 'Save & Commit SKU'}</span>
+              <span>{submitting ? 'Saving SKU...' : 'Save & Commit SKU'}</span>
             </button>
           </div>
         </div>
