@@ -23,7 +23,7 @@ export default function OrgPaymentSetup() {
 
   // Payment Gateway & Rails State
   const [paymentGateway, setPaymentGateway] = useState<string>('upi_qr');
-  const [upiHandle, setUpiHandle] = useState<string>('zolexora@icici');
+  const [upiHandle, setUpiHandle] = useState<string>('');
   const [merchantName, setMerchantName] = useState<string>('Zolexora Retail Operations');
   const [mcc, setMcc] = useState<string>('5812');
   const [razorpayKeyId, setRazorpayKeyId] = useState<string>('');
@@ -59,7 +59,7 @@ export default function OrgPaymentSetup() {
         const data = await res.json();
         if (data && data.config) {
           const cfg = data.config;
-          setUpiHandle(cfg.upi_handle || 'zolexora@icici');
+          setUpiHandle(cfg.upi_handle || '');
           setMerchantName(cfg.merchant_name || 'Zolexora Retail Operations');
           setMcc(cfg.merchant_category_code || '5812');
           setPaymentGateway(cfg.payment_gateway || 'upi_qr');

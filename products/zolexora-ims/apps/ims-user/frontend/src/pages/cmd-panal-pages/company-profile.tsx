@@ -19,7 +19,7 @@ export default function OrgCompanyProfile() {
 
   const [legalName, setLegalName] = useState('Zolexora Retail Operations Pvt Ltd');
   const [tradeName, setTradeName] = useState('Zolexora Artisan Roasters');
-  const [gstin, setGstin] = useState('27AABCZ1234F1Z8');
+  const [gstin, setGstin] = useState('');
   const [pan, setPan] = useState('AABCZ1234F');
   const [storeAddress, setStoreAddress] = useState('Shop 4, Ground Floor, Cyber City Boulevard, Mumbai, Maharashtra 400051');
   const [phoneOnReceipt, setPhoneOnReceipt] = useState('+91 98765 43210');
@@ -43,7 +43,7 @@ export default function OrgCompanyProfile() {
         if (data && data.settings) {
           const s = data.settings;
           setLegalName(s.store_legal_name || 'Zolexora Retail Operations Pvt Ltd');
-          setGstin(s.gstin || '27AABCZ1234F1Z8');
+          setGstin(s.gstin || '');
           setStoreAddress(s.store_address || 'Shop 4, Ground Floor, Cyber City Boulevard, Mumbai');
           setPhoneOnReceipt(s.phone_on_receipt || '+91 98765 43210');
           setReceiptFooter(s.receipt_footer || 'Thank you for dining with Zolexora! Have a great day.');

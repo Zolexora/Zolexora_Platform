@@ -192,7 +192,7 @@ export default function CmdDashboard() {
             <div className="p-3 bg-black/30 rounded-xl border border-white/5 space-y-1">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Merchant VPA (UPI ID)</span>
               <div className="font-mono text-white text-sm font-semibold truncate">
-                {paymentConfig?.upi_handle || 'zolexora@icici'}
+                {paymentConfig?.upi_handle || 'Not set'}
               </div>
               <div className="text-[10px] text-emerald-400 flex items-center gap-1">
                 <CheckCircle2 className="w-3 h-3" />

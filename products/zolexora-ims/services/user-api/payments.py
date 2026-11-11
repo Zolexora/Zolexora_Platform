@@ -3,7 +3,6 @@ Zolexora IMS — Payment Gateway Integration Engine
 Supports: Razorpay, Cashfree Payments, NPCI Dynamic UPI QR, and Soundbox Confirmations.
 """
 
-import os
 import hmac
 import hashlib
 import urllib.parse
@@ -41,15 +40,19 @@ class CashfreeVerifyRequest(BaseModel):
 
 
 class PaymentEngine:
-    def __init__(self):
-        self.razorpay_key_id = os.getenv("RAZORPAY_KEY_ID")
-        self.razorpay_key_secret = os.getenv("RAZORPAY_KEY_SECRET")
-        self.razorpay_webhook_secret = os.getenv("RAZORPAY_WEBHOOK_SECRET")
+    """Gateway calls for one business, with that business's own saved credentials.
+    There is no platform fallback: a business without keys has no gateway."""
 
-        self.cashfree_app_id = os.getenv("CASHFREE_APP_ID")
-        self.cashfree_secret_key = os.getenv("CASHFREE_SECRET_KEY")
-        self.cashfree_env = os.getenv("CASHFREE_ENV", "TEST")
-        self.cashfree_webhook_secret = os.getenv("CASHFREE_WEBHOOK_SECRET")
+    def __init__(self, cfg: Optional[Dict[str, Any]] = None):
+        cfg = cfg or {}
+        self.razorpay_key_id = cfg.get("razorpay_key_id")
+        self.razorpay_key_secret = cfg.get("razorpay_key_secret")
+        self.razorpay_webhook_secret = cfg.get("razorpay_webhook_secret")
+
+        self.cashfree_app_id = cfg.get("cashfree_app_id")
+        self.cashfree_secret_key = cfg.get("cashfree_secret_key")
+        self.cashfree_env = cfg.get("cashfree_env") or "TEST"
+        self.cashfree_webhook_secret = cfg.get("cashfree_webhook_secret")
 
     # --------------------------------------------------------------------------
     # RAZORPAY INTEGRATION
@@ -171,4 +174,3 @@ class PaymentEngine:
         }
 
 
-payment_engine = PaymentEngine()

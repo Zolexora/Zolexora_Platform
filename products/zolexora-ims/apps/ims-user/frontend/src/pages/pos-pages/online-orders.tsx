@@ -87,7 +87,7 @@ interface ChannelConfigItem {
 
 export default function PosOnlineOrders() {
   const navigate = useNavigate();
-  const { authFetch } = useAuth();
+  const { authFetch, org } = useAuth();
 
   const [orders, setOrders] = useState<AggregatorOrder[]>([]);
   const [activeTab, setActiveTab] = useState<string>('All');
@@ -173,14 +173,9 @@ export default function PosOnlineOrders() {
   const [checkBillAmount, setCheckBillAmount] = useState<number>(1450);
   const [verifyResult, setVerifyResult] = useState<any>(null);
 
-  const getWebhookUrl = (channelId: string) => {
-    const origin = window.location.origin;
-    // In dev codespaces, port 3000 routes to 4050 via proxy or direct backend URL
-    const backendBase = origin.includes('app.github.dev')
-      ? origin.replace('-3000.', '-4050.')
-      : 'http://127.0.0.1:4050';
-    return `${backendBase}/api/v1/aggregator/webhook/${channelId}`;
-  };
+  // Each business has its own webhook URL; the backend only accepts channels this business connected.
+  const getWebhookUrl = (channelId: string) =>
+    `${window.location.origin}/api/v1/aggregator/webhook/${channelId}/${org?.zolexora_org_id ?? ''}`;
 
   const fetchLiveState = async () => {
     try {

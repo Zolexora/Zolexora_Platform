@@ -35,139 +35,34 @@ class D1Adapter:
             "LOCAL_SQLITE_PATH",
             os.path.join(os.path.dirname(__file__), "data", "zolexora.db")
         )
-        self.schema_path = schema_path or os.path.join(
-            os.path.dirname(__file__), "../migrations/0001_initial_schema.sql"
-        )
+        self.schema_path = schema_path or os.path.join(os.path.dirname(__file__), "schema.sql")
+
+    def _schema_statements(self) -> List[str]:
+        with open(self.schema_path, "r", encoding="utf-8") as f:
+            sql = "\n".join(line for line in f.read().splitlines() if not line.lstrip().startswith("--"))
+        return [st.strip() + ";" for st in sql.split(";") if st.strip()]
 
     async def init(self):
-        """Initializes database schema and ensures all tables are created both locally and on D1."""
-        # 1. Always ensure local SQLite database has full schema and initial seeds
+        """Creates the business-scoped tables (schema.sql) on D1 and in local SQLite.
+        Refuses to start on the old demo schema (rows keyed globally, organizations table)."""
+        legacy = "SELECT name FROM sqlite_master WHERE type='table' AND name='organizations';"
+        hint = "Old IMS demo schema found. Run apps/ims-user/migrations/0002_drop_demo_schema.sql once"
+        statements = self._schema_statements()
+
         os.makedirs(os.path.dirname(self.sqlite_path), exist_ok=True)
         async with aiosqlite.connect(self.sqlite_path) as conn:
-            cursor = await conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='organizations';")
-            exists = await cursor.fetchone()
-            if not exists and os.path.exists(self.schema_path):
-                with open(self.schema_path, "r", encoding="utf-8") as f:
-                    schema_sql = f.read()
-                await conn.executescript(schema_sql)
-                await conn.commit()
-                logger.info("Initialized local SQLite database from schema: %s", self.sqlite_path)
-
-            # Ensure supplementary tables exist in local SQLite
-            await conn.execute("""
-                CREATE TABLE IF NOT EXISTS settings (
-                  key TEXT PRIMARY KEY,
-                  org_id TEXT NOT NULL,
-                  value TEXT,
-                  description TEXT
-                );
-            """)
-            await conn.execute("""
-                CREATE TABLE IF NOT EXISTS aggregator_orders (
-                  id TEXT PRIMARY KEY,
-                  org_id TEXT NOT NULL,
-                  platform TEXT NOT NULL,
-                  channel_color TEXT,
-                  source TEXT,
-                  customer_name TEXT,
-                  customer_phone TEXT,
-                  items_json TEXT NOT NULL,
-                  subtotal REAL NOT NULL,
-                  tax REAL NOT NULL,
-                  total_amount REAL NOT NULL,
-                  payment_status TEXT,
-                  status TEXT NOT NULL DEFAULT 'NEW',
-                  rider_json TEXT,
-                  prep_time_mins INTEGER DEFAULT 20,
-                  cancel_reason TEXT,
-                  received_at TEXT NOT NULL,
-                  updated_at TEXT NOT NULL
-                );
-            """)
-            await conn.execute("""
-                CREATE TABLE IF NOT EXISTS customers (
-                  phone TEXT PRIMARY KEY,
-                  org_id TEXT NOT NULL,
-                  name TEXT NOT NULL,
-                  email TEXT,
-                  tier TEXT DEFAULT 'Silver',
-                  loyalty_points INTEGER DEFAULT 0,
-                  total_orders INTEGER DEFAULT 0,
-                  total_spend REAL DEFAULT 0,
-                  created_at TEXT NOT NULL,
-                  last_visit TEXT
-                );
-            """)
-            await conn.execute("""
-                CREATE TABLE IF NOT EXISTS pos_tables (
-                  id TEXT PRIMARY KEY,
-                  org_id TEXT NOT NULL,
-                  number TEXT NOT NULL,
-                  section TEXT NOT NULL,
-                  capacity INTEGER NOT NULL DEFAULT 4,
-                  status TEXT NOT NULL DEFAULT 'Vacant',
-                  current_bill REAL DEFAULT 0.0,
-                  waiter TEXT,
-                  token TEXT,
-                  items_count INTEGER DEFAULT 0,
-                  seated_since TEXT,
-                  updated_at TEXT NOT NULL
-                );
-            """)
-            await conn.execute("""
-                CREATE TABLE IF NOT EXISTS cash_drawer_logs (
-                  id TEXT PRIMARY KEY,
-                  org_id TEXT NOT NULL,
-                  timestamp TEXT NOT NULL,
-                  type TEXT NOT NULL,
-                  amount REAL NOT NULL,
-                  reason TEXT,
-                  cashier TEXT,
-                  created_at TEXT NOT NULL
-                );
-            """)
+            if await (await conn.execute(legacy)).fetchone():
+                raise RuntimeError(f"{hint} (local SQLite: delete {self.sqlite_path}).")
+            for st in statements:
+                await conn.execute(st)
             await conn.commit()
 
-        # 2. If D1 is configured, verify and provision supplementary tables on D1
         if self.use_d1:
-            try:
-                logger.info("Verifying Cloudflare D1 database: %s", self.database_id)
-                supp_tables = [
-                    """CREATE TABLE IF NOT EXISTS settings (
-                      key TEXT PRIMARY KEY, org_id TEXT NOT NULL, value TEXT, description TEXT
-                    );""",
-                    """CREATE TABLE IF NOT EXISTS aggregator_orders (
-                      id TEXT PRIMARY KEY, org_id TEXT NOT NULL, platform TEXT NOT NULL,
-                      channel_color TEXT, source TEXT, customer_name TEXT, customer_phone TEXT,
-                      items_json TEXT NOT NULL, subtotal REAL NOT NULL, tax REAL NOT NULL,
-                      total_amount REAL NOT NULL, payment_status TEXT, status TEXT NOT NULL DEFAULT 'NEW',
-                      rider_json TEXT, prep_time_mins INTEGER DEFAULT 20, cancel_reason TEXT,
-                      received_at TEXT NOT NULL, updated_at TEXT NOT NULL
-                    );""",
-                    """CREATE TABLE IF NOT EXISTS customers (
-                      phone TEXT PRIMARY KEY, org_id TEXT NOT NULL, name TEXT NOT NULL,
-                      email TEXT, tier TEXT DEFAULT 'Silver', loyalty_points INTEGER DEFAULT 0,
-                      total_orders INTEGER DEFAULT 0, total_spend REAL DEFAULT 0,
-                      created_at TEXT NOT NULL, last_visit TEXT
-                    );""",
-                    """CREATE TABLE IF NOT EXISTS pos_tables (
-                      id TEXT PRIMARY KEY, org_id TEXT NOT NULL, number TEXT NOT NULL,
-                      section TEXT NOT NULL, capacity INTEGER NOT NULL DEFAULT 4,
-                      status TEXT NOT NULL DEFAULT 'Vacant', current_bill REAL DEFAULT 0.0,
-                      waiter TEXT, token TEXT, items_count INTEGER DEFAULT 0,
-                      seated_since TEXT, updated_at TEXT NOT NULL
-                    );""",
-                    """CREATE TABLE IF NOT EXISTS cash_drawer_logs (
-                      id TEXT PRIMARY KEY, org_id TEXT NOT NULL, timestamp TEXT NOT NULL,
-                      type TEXT NOT NULL, amount REAL NOT NULL, reason TEXT,
-                      cashier TEXT, created_at TEXT NOT NULL
-                    );"""
-                ]
-                for st in supp_tables:
-                    await self._execute_d1(st, [])
-                logger.info("Cloudflare D1 tables successfully verified.")
-            except Exception as e:
-                logger.warning("Cloudflare D1 initialization warning (will use SQLite fallback if needed): %s", e)
+            if await self._query_d1(legacy, []):
+                raise RuntimeError(f"{hint} on D1 database {self.database_id}.")
+            for st in statements:
+                await self._execute_d1(st, [])
+            logger.info("Cloudflare D1 schema verified: %s", self.database_id)
 
     async def query(self, sql: str, params: Optional[List[Any]] = None) -> List[Dict[str, Any]]:
         params = params or []

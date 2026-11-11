@@ -32,7 +32,7 @@ export default function PosSettings() {
   const [savedSuccess, setSavedSuccess] = useState<boolean>(false);
 
   // Merchant Payment Handle & Gateway state
-  const [upiHandle, setUpiHandle] = useState<string>('zolexora@icici');
+  const [upiHandle, setUpiHandle] = useState<string>('');
   const [merchantName, setMerchantName] = useState<string>('Zolexora Retail Operations');
   const [mcc, setMcc] = useState<string>('5812');
   const [paymentGateway, setPaymentGateway] = useState<string>('upi_qr');
@@ -63,7 +63,7 @@ export default function PosSettings() {
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data) {
-          setUpiHandle(data.upi_handle || 'zolexora@icici');
+          setUpiHandle(data.upi_handle || '');
           setMerchantName(data.merchant_name || 'Zolexora Retail Operations');
           setMcc(data.merchant_category_code || '5812');
           setPaymentGateway(data.payment_gateway || 'upi_qr');
@@ -124,7 +124,7 @@ export default function PosSettings() {
 
   // Bill Header / Footer Customization
   const [storeLegalName, setStoreLegalName] = useState<string>('Zolexora Retail Operations Pvt Ltd');
-  const [gstin, setGstin] = useState<string>('27AABCZ1234F1Z8');
+  const [gstin, setGstin] = useState<string>('');
   const [storeAddress, setStoreAddress] = useState<string>('Shop 4, Ground Floor, Cyber City Boulevard, Mumbai');
   const [phoneOnReceipt, setPhoneOnReceipt] = useState<string>('+91 98765 43210');
   const [receiptFooter, setReceiptFooter] = useState<string>('Thank you for dining with Zolexora! Have a great day.');

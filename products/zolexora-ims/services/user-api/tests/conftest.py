@@ -1,7 +1,13 @@
 import os
 import sys
+import tempfile
 
 import pytest
+
+# A fresh local database per test run; never Cloudflare D1.
+os.environ["LOCAL_SQLITE_PATH"] = os.path.join(tempfile.mkdtemp(prefix="ims-test-"), "ims.db")
+for _k in ("CLOUDFLARE_ACCOUNT_ID", "CLOUDFLARE_D1_DATABASE_ID", "CLOUDFLARE_API_TOKEN"):
+    os.environ.pop(_k, None)
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -12,7 +18,7 @@ from models import UserProfile  # noqa: E402
 
 
 def member(*permissions: str, org_id: str = "ZX-ORG-TEST-0001-AAAA") -> UserProfile:
-    return UserProfile(id="mem_1", org_id=org_id, email="owner@example.com", name="Owner", role="owner", permissions=list(permissions))
+    return UserProfile(id="mem_1", org_id=org_id, org_name="Test Business", email="owner@example.com", name="Owner", role="owner", permissions=list(permissions))
 
 
 @pytest.fixture

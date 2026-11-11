@@ -47,7 +47,7 @@ export default function UpiQrModal({
   const [editingHandle, setEditingHandle] = useState(false);
 
   // Dynamic Payment Handle & Gateway State
-  const [upiHandle, setUpiHandle] = useState<string>('zolexora@icici');
+  const [upiHandle, setUpiHandle] = useState<string>('');
   const [merchantName, setMerchantName] = useState<string>('Zolexora Retail Operations');
   const [mcc, setMcc] = useState<string>('5812');
   const [soundboxEnabled, setSoundboxEnabled] = useState<boolean>(true);
@@ -65,8 +65,8 @@ export default function UpiQrModal({
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data) {
-          setUpiHandle(data.upi_handle || 'zolexora@icici');
-          setMerchantName(data.merchant_name || 'Zolexora Retail Operations');
+          setUpiHandle(data.upi_handle || '');
+          setMerchantName(data.merchant_name || '');
           setMcc(data.merchant_category_code || '5812');
           setSoundboxEnabled(data.soundbox_enabled ?? true);
           setRazorpayKeyId(data.razorpay_key_id || '');
@@ -390,11 +390,17 @@ export default function UpiQrModal({
             <>
               {/* QR Code Container */}
               <div className="p-2.5 bg-white rounded-2xl shadow-xl shadow-emerald-500/10 border-2 border-emerald-500/40 relative group">
-                <img
-                  src={qrSvgUrl}
-                  alt="UPI QR Code"
-                  className="w-40 h-40 rounded-lg object-contain"
-                />
+                {upiHandle ? (
+                  <img
+                    src={qrSvgUrl}
+                    alt="UPI QR Code"
+                    className="w-40 h-40 rounded-lg object-contain"
+                  />
+                ) : (
+                  <div className="w-40 h-40 flex items-center justify-center text-center text-[11px] font-semibold text-slate-700 p-3">
+                    No UPI handle set for this business. Add it under Command Panel → Payments.
+                  </div>
+                )}
                 <div className="absolute inset-x-0 bottom-1 flex items-center justify-center">
                   <span className="text-[8px] font-extrabold tracking-widest text-slate-800 uppercase bg-white/95 px-2 py-0.5 rounded shadow-xs">
                     Scan with any UPI App

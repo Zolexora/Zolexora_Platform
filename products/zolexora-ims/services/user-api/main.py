@@ -28,7 +28,7 @@ try:
         PosTableModel, CashDrawerLogModel
     )
     from .payments import (
-        payment_engine, RazorpayOrderRequest, RazorpayVerifyRequest,
+        PaymentEngine, RazorpayOrderRequest, RazorpayVerifyRequest,
         CashfreeOrderRequest, CashfreeVerifyRequest
     )
 except ImportError:
@@ -43,7 +43,7 @@ except ImportError:
         PosTableModel, CashDrawerLogModel
     )
     from payments import (
-        payment_engine, RazorpayOrderRequest, RazorpayVerifyRequest,
+        PaymentEngine, RazorpayOrderRequest, RazorpayVerifyRequest,
         CashfreeOrderRequest, CashfreeVerifyRequest
     )
 
@@ -81,19 +81,7 @@ app.add_middleware(
 @app.get("/health")
 @app.get("/api/v1/health")
 async def health():
-    items_count = 0
-    try:
-        row = await db.fetch_one("SELECT count(*) as count FROM products;")
-        if row:
-            items_count = row.get("count", 0)
-    except Exception:
-        pass
-    return {
-        "status": "healthy",
-        "service": "ims-user-api",
-        "database": "Cloudflare D1",
-        "products_count": items_count
-    }
+    return {"status": "healthy", "service": "ims-user-api", "database": "Cloudflare D1"}
 
 
 # --- Dashboard ---
@@ -172,7 +160,7 @@ async def get_item(item_code: str, user: UserProfile = Depends(require("ims:item
 
 @app.post("/api/v1/items", response_model=ItemResponse, status_code=201)
 async def create_item(item: ItemCreate, user: UserProfile = Depends(require("ims:items:manage"))):
-    exists = await db.fetch_one("SELECT item_code FROM products WHERE item_code = ?;", [item.item_code])
+    exists = await db.fetch_one("SELECT item_code FROM products WHERE org_id = ? AND item_code = ?;", [user.org_id, item.item_code])
     if exists:
         raise HTTPException(status_code=400, detail="Item code already exists")
 
@@ -277,13 +265,13 @@ async def record_sale(sale: SaleRequest, user: UserProfile = Depends(require("im
     now = now_utc_iso()
     date_str = today_utc_str()
     bill_no = sale.bill_no or f"BILL-{generate_id('')}"
-    sp = await db.fetch_one("SELECT * FROM selling_points WHERE code = ?;", [sale.selling_point_code])
+    sp = await db.fetch_one("SELECT * FROM selling_points WHERE org_id = ? AND code = ?;", [user.org_id, sale.selling_point_code])
     sp_name = sp["name"] if sp else "Counter"
     assigned_store = sp.get("assigned_store_code", "S_001") if sp else "S_001"
 
     total_bill = 0.0
     for item in sale.items:
-        prod = await db.fetch_one("SELECT * FROM products WHERE item_code = ?;", [item.item_code])
+        prod = await db.fetch_one("SELECT * FROM products WHERE org_id = ? AND item_code = ?;", [user.org_id, item.item_code])
         if not prod:
             continue
         amount = round(item.quantity * item.rate * (1 + item.tax_percent / 100), 2)
@@ -314,8 +302,8 @@ async def record_sale(sale: SaleRequest, user: UserProfile = Depends(require("im
         new_val = round(new_total * prod["rate"], 2)
 
         await db.execute(
-            f"UPDATE products SET {stock_col} = ?, total_stock = ?, total_valuation = ?, last_updated = ? WHERE item_code = ?;",
-            [new_store_stock, new_total, new_val, now, item.item_code]
+            f"UPDATE products SET {stock_col} = ?, total_stock = ?, total_valuation = ?, last_updated = ? WHERE org_id = ? AND item_code = ?;",
+            [new_store_stock, new_total, new_val, now, user.org_id, item.item_code]
         )
 
     return {"success": True, "bill_no": bill_no, "total_amount": round(total_bill, 2)}
@@ -384,27 +372,35 @@ _aggregator_platforms = [
 ]
 
 
-# --- Database Helpers for Aggregators ---
-async def _get_aggregator_configs_from_db() -> dict:
-    row = await db.fetch_one("SELECT value FROM settings WHERE key = 'AGGREGATOR_CONFIGS';")
+# --- Per-business settings (settings table, keyed by org_id + key) ---
+async def _get_setting(org_id: str, key: str) -> Optional[dict]:
+    row = await db.fetch_one("SELECT value FROM settings WHERE org_id = ? AND key = ?;", [org_id, key])
     if row and row.get("value"):
         try:
             return json.loads(row["value"])
         except Exception:
             pass
-    return {}
+    return None
 
 
-async def _save_aggregator_configs_to_db(configs: dict):
-    val = json.dumps(configs)
+async def _save_setting(org_id: str, key: str, value: dict, description: str) -> None:
     await db.execute(
-        "INSERT INTO settings (key, org_id, value, description) VALUES ('AGGREGATOR_CONFIGS', 'ORG_ZOLEXORA_001', ?, 'Online aggregator channel configurations') ON CONFLICT(key) DO UPDATE SET value = excluded.value;",
-        [val]
+        "INSERT INTO settings (org_id, key, value, description) VALUES (?, ?, ?, ?) "
+        "ON CONFLICT(org_id, key) DO UPDATE SET value = excluded.value;",
+        [org_id, key, json.dumps(value), description],
     )
 
 
-async def _get_aggregator_orders_from_db() -> list:
-    rows = await db.query("SELECT * FROM aggregator_orders ORDER BY received_at DESC LIMIT 100;")
+async def _get_aggregator_configs_from_db(org_id: str) -> dict:
+    return await _get_setting(org_id, "AGGREGATOR_CONFIGS") or {}
+
+
+async def _save_aggregator_configs_to_db(org_id: str, configs: dict):
+    await _save_setting(org_id, "AGGREGATOR_CONFIGS", configs, "Online aggregator channel configurations")
+
+
+async def _get_aggregator_orders_from_db(org_id: str) -> list:
+    rows = await db.query("SELECT * FROM aggregator_orders WHERE org_id = ? ORDER BY received_at DESC LIMIT 100;", [org_id])
     orders = []
     for r in rows:
         items = json.loads(r["items_json"]) if r.get("items_json") else []
@@ -433,8 +429,9 @@ async def _get_aggregator_orders_from_db() -> list:
 
 @app.get("/api/v1/aggregator/platforms")
 async def get_platforms(user: UserProfile = Depends(require("ims:orders:view", "ims:pos:manage"))):
-    configs = await _get_aggregator_configs_from_db()
-    for p in _aggregator_platforms:
+    configs = await _get_aggregator_configs_from_db(user.org_id)
+    platforms = [dict(p) for p in _aggregator_platforms]
+    for p in platforms:
         pid = p["id"]
         saved = configs.get(pid, {})
         p["connected"] = bool(saved.get("outlet_id"))
@@ -443,22 +440,22 @@ async def get_platforms(user: UserProfile = Depends(require("ims:orders:view", "
         p["auto_accept"] = saved.get("auto_accept", False)
         
         active = await db.fetch_one(
-            "SELECT count(*) as c FROM aggregator_orders WHERE (lower(platform) LIKE ? OR lower(source) = ?) AND status NOT IN ('DISPATCHED', 'CANCELLED');",
-            [f"%{pid}%", pid]
+            "SELECT count(*) as c FROM aggregator_orders WHERE org_id = ? AND (lower(platform) LIKE ? OR lower(source) = ?) AND status NOT IN ('DISPATCHED', 'CANCELLED');",
+            [user.org_id, f"%{pid}%", pid]
         )
         p["active_orders"] = active["c"] if active else 0
-    return _aggregator_platforms
+    return platforms
 
 
 @app.get("/api/v1/aggregator/config")
 async def get_aggregator_configs(request: Request, user: UserProfile = Depends(require("ims:orders:view", "ims:pos:manage"))):
     base_url = str(request.base_url).rstrip("/")
     configs = []
-    saved_configs = await _get_aggregator_configs_from_db()
+    saved_configs = await _get_aggregator_configs_from_db(user.org_id)
     for p in _aggregator_platforms:
         pid = p["id"]
         saved = saved_configs.get(pid, {})
-        webhook_url = f"{base_url}/api/v1/aggregator/webhook/{pid}"
+        webhook_url = f"{base_url}/api/v1/aggregator/webhook/{pid}/{user.org_id}"
         configs.append({
             "platform_id": pid,
             "name": p["name"],
@@ -488,7 +485,7 @@ async def save_aggregator_config(platform_id: str, config: AggregatorChannelConf
     if not config.outlet_id or not config.outlet_id.strip():
         raise HTTPException(status_code=400, detail="Store/Outlet ID is mandatory to link channel")
 
-    configs = await _get_aggregator_configs_from_db()
+    configs = await _get_aggregator_configs_from_db(user.org_id)
     configs[pid] = {
         "outlet_id": config.outlet_id.strip(),
         "api_key": config.api_key.strip() if config.api_key else None,
@@ -498,7 +495,7 @@ async def save_aggregator_config(platform_id: str, config: AggregatorChannelConf
         "status": "Online",
         "connected_at": now_utc_iso()
     }
-    await _save_aggregator_configs_to_db(configs)
+    await _save_aggregator_configs_to_db(user.org_id, configs)
 
     return {
         "success": True,
@@ -520,9 +517,9 @@ async def disconnect_aggregator_config(platform_id: str, user: UserProfile = Dep
     if not target_platform:
         raise HTTPException(status_code=404, detail=f"Platform '{platform_id}' not found")
 
-    configs = await _get_aggregator_configs_from_db()
+    configs = await _get_aggregator_configs_from_db(user.org_id)
     configs.pop(pid, None)
-    await _save_aggregator_configs_to_db(configs)
+    await _save_aggregator_configs_to_db(user.org_id, configs)
 
     return {
         "success": True,
@@ -537,46 +534,49 @@ async def toggle_platform(platform_id: str, user: UserProfile = Depends(require(
     if not target_platform:
         raise HTTPException(status_code=404, detail="Platform not found")
 
-    configs = await _get_aggregator_configs_from_db()
+    configs = await _get_aggregator_configs_from_db(user.org_id)
     cfg = configs.get(pid)
     if not cfg or not cfg.get("outlet_id"):
         raise HTTPException(status_code=400, detail="Cannot toggle status: Channel is not configured yet. Complete setup first.")
 
     new_status = "Paused" if cfg.get("status") == "Online" else "Online"
     cfg["status"] = new_status
-    await _save_aggregator_configs_to_db(configs)
+    await _save_aggregator_configs_to_db(user.org_id, configs)
 
     return {"success": True, "platform": {**target_platform, "connected": True, "status": new_status, "outlet_id": cfg.get("outlet_id")}}
 
 
 @app.get("/api/v1/aggregator/orders")
 async def get_aggregator_orders(user: UserProfile = Depends(require("ims:orders:view"))):
-    return await _get_aggregator_orders_from_db()
+    return await _get_aggregator_orders_from_db(user.org_id)
 
 
 @app.delete("/api/v1/aggregator/orders")
 async def clear_aggregator_orders(user: UserProfile = Depends(require("ims:pos:manage"))):
-    await db.execute("DELETE FROM aggregator_orders;")
+    await db.execute("DELETE FROM aggregator_orders WHERE org_id = ?;", [user.org_id])
     return {"success": True, "message": "All orders cleared from database"}
 
 
 @app.post("/api/v1/aggregator/orders/{order_id}/status")
 async def update_order_status(order_id: str, body: AggregatorStatusUpdate, user: UserProfile = Depends(require("ims:orders:manage"))):
-    order = await db.fetch_one("SELECT * FROM aggregator_orders WHERE id = ?;", [order_id])
+    order = await db.fetch_one("SELECT * FROM aggregator_orders WHERE org_id = ? AND id = ?;", [user.org_id, order_id])
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
 
     await db.execute(
-        "UPDATE aggregator_orders SET status = ?, prep_time_mins = COALESCE(?, prep_time_mins), cancel_reason = COALESCE(?, cancel_reason), updated_at = ? WHERE id = ?;",
-        [body.status, body.prep_time_mins, body.reason, now_utc_iso(), order_id]
+        "UPDATE aggregator_orders SET status = ?, prep_time_mins = COALESCE(?, prep_time_mins), cancel_reason = COALESCE(?, cancel_reason), updated_at = ? WHERE org_id = ? AND id = ?;",
+        [body.status, body.prep_time_mins, body.reason, now_utc_iso(), user.org_id, order_id]
     )
     return {"success": True, "order_id": order_id, "status": body.status}
 
 
 # --- Production Webhook Receiver (Ingests Real Swiggy, Zomato, UrbanPiper & ONDC Orders) ---
-@app.post("/api/v1/aggregator/webhook/{channel}")
-async def receive_aggregator_webhook(channel: str, request: Request):
+@app.post("/api/v1/aggregator/webhook/{channel}/{org_id}")
+async def receive_aggregator_webhook(channel: str, org_id: str, request: Request):
     channel = channel.lower()
+    # Signature checks per channel come with the payments work; until then only connected channels.
+    if not (await _get_aggregator_configs_from_db(org_id)).get(channel, {}).get("outlet_id"):
+        raise HTTPException(status_code=404, detail="Channel not connected")
     try:
         payload = await request.json()
     except Exception:
@@ -639,10 +639,10 @@ async def receive_aggregator_webhook(channel: str, request: Request):
     await db.execute(
         """INSERT INTO aggregator_orders 
         (id, org_id, platform, channel_color, source, customer_name, customer_phone, items_json, subtotal, tax, total_amount, payment_status, status, rider_json, prep_time_mins, received_at, updated_at)
-        VALUES (?, 'ORG_ZOLEXORA_001', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'NEW', ?, ?, ?, ?)
-        ON CONFLICT(id) DO UPDATE SET status = excluded.status, updated_at = excluded.updated_at;""",
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'NEW', ?, ?, ?, ?)
+        ON CONFLICT(org_id, id) DO UPDATE SET status = excluded.status, updated_at = excluded.updated_at;""",
         [
-            raw_id, channel_display[0], channel_display[1], channel,
+            raw_id, org_id, channel_display[0], channel_display[1], channel,
             cust_name, cust_phone, json.dumps(parsed_items),
             subtotal, tax, total_amount, pmt_status,
             json.dumps(rider_info), prep_time, now_utc_iso(), now_utc_iso()
@@ -688,10 +688,10 @@ async def send_test_webhook_order(body: TestWebhookRequest, user: UserProfile = 
     await db.execute(
         """INSERT INTO aggregator_orders 
         (id, org_id, platform, channel_color, source, customer_name, customer_phone, items_json, subtotal, tax, total_amount, payment_status, status, rider_json, prep_time_mins, received_at, updated_at)
-        VALUES (?, 'ORG_ZOLEXORA_001', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'NEW', ?, ?, ?, ?)
-        ON CONFLICT(id) DO UPDATE SET status = excluded.status, updated_at = excluded.updated_at;""",
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'NEW', ?, ?, ?, ?)
+        ON CONFLICT(org_id, id) DO UPDATE SET status = excluded.status, updated_at = excluded.updated_at;""",
         [
-            order_code, channel_display[0], channel_display[1], body.platform.lower(),
+            order_code, user.org_id, channel_display[0], channel_display[1], body.platform.lower(),
             body.customer_name or "Live Test Customer", body.customer_phone or "+91 98765 43210",
             json.dumps(parsed_items), subtotal, tax, total_amount, f"Pre-paid ({channel_display[0]} Online)",
             json.dumps(rider_info), 15, now_utc_iso(), now_utc_iso()
@@ -757,91 +757,55 @@ async def verify_dining_benefit(body: DiningBenefitVerify, user: UserProfile = D
 
 
 # --- Database-Backed Payment Handles, Terminal Settings & Customers ---
-async def _get_payment_handle_from_db() -> dict:
-    row = await db.fetch_one("SELECT value FROM settings WHERE key = 'PAYMENT_HANDLE_CONFIG';")
-    if row and row.get("value"):
-        try:
-            cfg = json.loads(row["value"])
-            # Synchronize payment engine
-            payment_engine.razorpay_key_id = cfg.get("razorpay_key_id")
-            payment_engine.razorpay_key_secret = cfg.get("razorpay_key_secret")
-            payment_engine.cashfree_app_id = cfg.get("cashfree_app_id")
-            payment_engine.cashfree_secret_key = cfg.get("cashfree_secret_key")
-            payment_engine.cashfree_env = cfg.get("cashfree_env", "TEST")
-            return cfg
-        except Exception:
-            pass
-
-    default_config = {
-        "upi_handle": os.getenv("DEFAULT_UPI_HANDLE", "zolexora@icici"),
-        "merchant_name": os.getenv("DEFAULT_MERCHANT_NAME", "Zolexora Retail Operations"),
+async def _get_payment_handle_from_db(user: UserProfile) -> dict:
+    """This business's payment settings. A new business starts with none (no platform keys or UPI handle)."""
+    return await _get_setting(user.org_id, "PAYMENT_HANDLE_CONFIG") or {
+        "upi_handle": "",
+        "merchant_name": user.org_name,
         "merchant_category_code": "5812",
         "payment_gateway": "upi_qr",
-        "razorpay_key_id": os.getenv("RAZORPAY_KEY_ID"),
-        "razorpay_key_secret": os.getenv("RAZORPAY_KEY_SECRET"),
-        "cashfree_app_id": os.getenv("CASHFREE_APP_ID"),
-        "cashfree_secret_key": os.getenv("CASHFREE_SECRET_KEY"),
-        "cashfree_env": os.getenv("CASHFREE_ENV", "TEST"),
-        "stripe_publishable_key": os.getenv("STRIPE_PUBLISHABLE_KEY"),
-        "edc_terminal_id": os.getenv("EDC_TERMINAL_ID", "PINE_EDC_01"),
         "soundbox_enabled": True,
         "auto_settle": True,
-        "updated_at": now_utc_iso()
     }
-    await _save_payment_handle_to_db(default_config)
-    return default_config
 
 
-async def _save_payment_handle_to_db(config: dict):
-    val = json.dumps(config)
-    await db.execute(
-        "INSERT INTO settings (key, org_id, value, description) VALUES ('PAYMENT_HANDLE_CONFIG', 'ORG_ZOLEXORA_001', ?, 'Active payment handle and merchant gateway settings') ON CONFLICT(key) DO UPDATE SET value = excluded.value;",
-        [val]
-    )
+async def _save_payment_handle_to_db(user: UserProfile, config: dict):
+    await _save_setting(user.org_id, "PAYMENT_HANDLE_CONFIG", config, "Payment handle and gateway settings")
 
 
-async def _get_terminal_settings_from_db() -> dict:
-    row = await db.fetch_one("SELECT value FROM settings WHERE key = 'TERMINAL_SETTINGS';")
-    if row and row.get("value"):
-        try:
-            return json.loads(row["value"])
-        except Exception:
-            pass
-    default_settings = {
+async def _payment_engine(user: UserProfile) -> PaymentEngine:
+    return PaymentEngine(await _get_payment_handle_from_db(user))
+
+
+async def _get_terminal_settings_from_db(user: UserProfile) -> dict:
+    return await _get_setting(user.org_id, "TERMINAL_SETTINGS") or {
         "printer_interface": "network",
-        "printer_ip": "192.168.1.180",
+        "printer_ip": "",
         "printer_port": "9100",
         "paper_width": "80mm",
         "auto_cut_paper": True,
         "drawer_kick_on_cash": True,
-        "kot_printer_ip": "192.168.1.185",
+        "kot_printer_ip": "",
         "auto_print_kot_on_hold": True,
         "large_token_font": True,
-        "store_legal_name": "Zolexora Retail Operations Pvt Ltd",
-        "gstin": "27AABCZ1234F1Z8",
-        "store_address": "Shop 4, Ground Floor, Cyber City Boulevard, Mumbai",
-        "phone_on_receipt": "+91 98765 43210",
-        "receipt_footer": "Thank you for dining with Zolexora! Have a great day.",
+        "store_legal_name": user.org_name,
+        "gstin": "",
+        "store_address": "",
+        "phone_on_receipt": "",
+        "receipt_footer": "Thank you! Visit again.",
         "service_charge_percent": 0.0,
         "soundbox_enabled": True,
-        "updated_at": now_utc_iso()
     }
-    await _save_terminal_settings_to_db(default_settings)
-    return default_settings
 
 
-async def _save_terminal_settings_to_db(settings: dict):
-    val = json.dumps(settings)
-    await db.execute(
-        "INSERT INTO settings (key, org_id, value, description) VALUES ('TERMINAL_SETTINGS', 'ORG_ZOLEXORA_001', ?, 'Hardware printer, tax metadata and receipt styling') ON CONFLICT(key) DO UPDATE SET value = excluded.value;",
-        [val]
-    )
+async def _save_terminal_settings_to_db(user: UserProfile, settings: dict):
+    await _save_setting(user.org_id, "TERMINAL_SETTINGS", settings, "Printers, tax details and receipt styling")
 
 
 @app.get("/api/v1/payment/handle")
 async def get_payment_handle(user: UserProfile = Depends(require("ims:pos:sell", "ims:payments:manage"))):
     """Returns active merchant payment handle and accepted payment rails from database."""
-    current_config = await _get_payment_handle_from_db()
+    current_config = await _get_payment_handle_from_db(user)
     safe_config = dict(current_config)
     if safe_config.get("razorpay_key_secret"):
         safe_config["has_razorpay_secret"] = True
@@ -862,7 +826,7 @@ async def update_payment_handle(config: PaymentHandleConfig, user: UserProfile =
             detail="Invalid UPI VPA handle format. Must be in the format 'username@bank' (e.g. merchant@icici, store@okhdfcbank)."
         )
 
-    current = await _get_payment_handle_from_db()
+    current = await _get_payment_handle_from_db(user)
     updated = {
         "upi_handle": handle,
         "merchant_name": config.merchant_name.strip(),
@@ -880,19 +844,12 @@ async def update_payment_handle(config: PaymentHandleConfig, user: UserProfile =
         "updated_at": now_utc_iso()
     }
 
-    await _save_payment_handle_to_db(updated)
-
-    # Sync engine credentials
-    payment_engine.razorpay_key_id = updated.get("razorpay_key_id")
-    payment_engine.razorpay_key_secret = updated.get("razorpay_key_secret")
-    payment_engine.cashfree_app_id = updated.get("cashfree_app_id")
-    payment_engine.cashfree_secret_key = updated.get("cashfree_secret_key")
-    payment_engine.cashfree_env = updated.get("cashfree_env", "TEST")
+    await _save_payment_handle_to_db(user, updated)
 
     return {
         "success": True,
-        "message": f"Payment settings persisted to database and active across all POS terminals",
-        "config": await get_payment_handle()
+        "message": "Payment settings saved for this business",
+        "config": await get_payment_handle(user)
     }
 
 
@@ -900,7 +857,7 @@ async def update_payment_handle(config: PaymentHandleConfig, user: UserProfile =
 @app.get("/api/v1/settings/terminal")
 async def get_terminal_settings(user: UserProfile = Depends(require("ims:pos:sell", "ims:pos:manage"))):
     """Returns counter thermal printers, KOT routing, and invoice styling from database."""
-    return await _get_terminal_settings_from_db()
+    return await _get_terminal_settings_from_db(user)
 
 
 @app.post("/api/v1/settings/terminal")
@@ -908,7 +865,7 @@ async def update_terminal_settings(body: TerminalSettingsConfig, user: UserProfi
     """Persists counter thermal printers, KOT routing, and invoice styling into database."""
     data = body.dict()
     data["updated_at"] = now_utc_iso()
-    await _save_terminal_settings_to_db(data)
+    await _save_terminal_settings_to_db(user, data)
     return {
         "success": True,
         "message": "Terminal and store settings successfully saved to database",
@@ -920,7 +877,7 @@ async def update_terminal_settings(body: TerminalSettingsConfig, user: UserProfi
 @app.get("/api/v1/customers")
 async def get_all_customers(user: UserProfile = Depends(require("ims:customers:manage", "ims:pos:sell"))):
     """Returns all customer profiles and loyalty tiers from database."""
-    return await db.query("SELECT * FROM customers ORDER BY total_spend DESC, loyalty_points DESC;")
+    return await db.query("SELECT * FROM customers WHERE org_id = ? ORDER BY total_spend DESC, loyalty_points DESC;", [user.org_id])
 
 
 @app.get("/api/v1/customers/{phone}")
@@ -928,8 +885,8 @@ async def get_customer_by_phone(phone: str, user: UserProfile = Depends(require(
     """Fetches customer CRM profile and loyalty points by mobile number from database."""
     cleaned = "".join(ch for ch in phone if ch.isdigit() or ch == "+")
     row = await db.fetch_one(
-        "SELECT * FROM customers WHERE phone = ? OR phone LIKE ?;",
-        [cleaned, f"%{cleaned[-10:]}%"]
+        "SELECT * FROM customers WHERE org_id = ? AND (phone = ? OR phone LIKE ?);",
+        [user.org_id, cleaned, f"%{cleaned[-10:]}%"]
     )
     if not row:
         raise HTTPException(status_code=404, detail="Customer not found in database")
@@ -943,8 +900,8 @@ async def upsert_customer(cust: CustomerModel, user: UserProfile = Depends(requi
     await db.execute(
         """INSERT INTO customers 
         (phone, org_id, name, email, tier, loyalty_points, total_orders, total_spend, created_at, last_visit)
-        VALUES (?, 'ORG_ZOLEXORA_001', ?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(phone) DO UPDATE SET 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(org_id, phone) DO UPDATE SET 
             name = excluded.name, 
             email = COALESCE(excluded.email, customers.email),
             tier = excluded.tier,
@@ -953,19 +910,19 @@ async def upsert_customer(cust: CustomerModel, user: UserProfile = Depends(requi
             total_spend = customers.total_spend + excluded.total_spend,
             last_visit = excluded.last_visit;""",
         [
-            cust.phone, cust.name, cust.email, cust.tier or "Silver",
+            cust.phone, user.org_id, cust.name, cust.email, cust.tier or "Silver",
             cust.loyalty_points or 0, cust.total_orders or 1,
             cust.total_spend or 0.0, now, now
         ]
     )
-    return await db.fetch_one("SELECT * FROM customers WHERE phone = ?;", [cust.phone])
+    return await db.fetch_one("SELECT * FROM customers WHERE org_id = ? AND phone = ?;", [user.org_id, cust.phone])
 
 
 # --- POS Tables Endpoints ---
 @app.get("/api/v1/tables")
 async def get_pos_tables(user: UserProfile = Depends(require("ims:pos:sell"))):
     """Returns all restaurant/cafe dining tables and their current status from database."""
-    return await db.query("SELECT * FROM pos_tables ORDER BY number ASC;")
+    return await db.query("SELECT * FROM pos_tables WHERE org_id = ? ORDER BY number ASC;", [user.org_id])
 
 
 @app.post("/api/v1/tables")
@@ -975,8 +932,8 @@ async def upsert_pos_table(body: PosTableModel, user: UserProfile = Depends(requ
     await db.execute(
         """INSERT INTO pos_tables 
         (id, org_id, number, section, capacity, status, current_bill, waiter, token, items_count, seated_since, updated_at)
-        VALUES (?, 'ORG_ZOLEXORA_001', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(id) DO UPDATE SET
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(org_id, id) DO UPDATE SET
             number = excluded.number,
             section = excluded.section,
             capacity = excluded.capacity,
@@ -988,12 +945,12 @@ async def upsert_pos_table(body: PosTableModel, user: UserProfile = Depends(requ
             seated_since = excluded.seated_since,
             updated_at = excluded.updated_at;""",
         [
-            body.id, body.number, body.section, body.capacity, body.status,
+            body.id, user.org_id, body.number, body.section, body.capacity, body.status,
             body.current_bill or 0.0, body.waiter, body.token,
             body.items_count or 0, body.seated_since, now
         ]
     )
-    return await db.fetch_one("SELECT * FROM pos_tables WHERE id = ?;", [body.id])
+    return await db.fetch_one("SELECT * FROM pos_tables WHERE org_id = ? AND id = ?;", [user.org_id, body.id])
 
 
 @app.post("/api/v1/tables/{table_id}/status")
@@ -1014,17 +971,17 @@ async def update_pos_table_status(table_id: str, payload: Dict[str, Any], user: 
             items_count = COALESCE(?, items_count),
             seated_since = COALESCE(?, seated_since),
             updated_at = ?
-        WHERE id = ?;""",
-        [status, current_bill, token, items_count, seated_since, now, table_id]
+        WHERE org_id = ? AND id = ?;""",
+        [status, current_bill, token, items_count, seated_since, now, user.org_id, table_id]
     )
-    return await db.fetch_one("SELECT * FROM pos_tables WHERE id = ?;", [table_id])
+    return await db.fetch_one("SELECT * FROM pos_tables WHERE org_id = ? AND id = ?;", [user.org_id, table_id])
 
 
 # --- POS Cash Drawer Endpoints ---
 @app.get("/api/v1/cash-drawer/logs")
 async def get_cash_drawer_logs(user: UserProfile = Depends(require("ims:cash:manage"))):
     """Returns shift cash drawer transaction logs from database."""
-    return await db.query("SELECT * FROM cash_drawer_logs ORDER BY created_at DESC LIMIT 100;")
+    return await db.query("SELECT * FROM cash_drawer_logs WHERE org_id = ? ORDER BY created_at DESC LIMIT 100;", [user.org_id])
 
 
 @app.post("/api/v1/cash-drawer/logs")
@@ -1036,10 +993,10 @@ async def add_cash_drawer_log(body: CashDrawerLogModel, user: UserProfile = Depe
     ts = body.timestamp or now[11:16]
     await db.execute(
         """INSERT INTO cash_drawer_logs (id, org_id, timestamp, type, amount, reason, cashier, created_at)
-        VALUES (?, 'ORG_ZOLEXORA_001', ?, ?, ?, ?, ?, ?);""",
-        [log_id, ts, body.type, body.amount, body.reason, body.cashier, now]
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?);""",
+        [log_id, user.org_id, ts, body.type, body.amount, body.reason, body.cashier, now]
     )
-    return await db.fetch_one("SELECT * FROM cash_drawer_logs WHERE id = ?;", [log_id])
+    return await db.fetch_one("SELECT * FROM cash_drawer_logs WHERE org_id = ? AND id = ?;", [user.org_id, log_id])
 
 
 @app.post("/api/v1/cash-drawer/close-shift")
@@ -1057,8 +1014,8 @@ async def close_cash_drawer_shift(payload: Dict[str, Any], user: UserProfile = D
     
     await db.execute(
         """INSERT INTO cash_drawer_logs (id, org_id, timestamp, type, amount, reason, cashier, created_at)
-        VALUES (?, 'ORG_ZOLEXORA_001', ?, 'Shift Close', ?, ?, ?, ?);""",
-        [log_id, now[11:16], discrepancy, reason, cashier, now]
+        VALUES (?, ?, ?, 'Shift Close', ?, ?, ?, ?);""",
+        [log_id, user.org_id, now[11:16], discrepancy, reason, cashier, now]
     )
     return {
         "success": True,
@@ -1085,9 +1042,7 @@ async def get_sales_reports(range: str = "Today", user: UserProfile = Depends(re
     else:
         date_cond = "1=1"
 
-    rows = await db.query(f"SELECT * FROM selling_point_sales WHERE {date_cond};")
-    if not rows:
-        rows = await db.query("SELECT * FROM selling_point_sales ORDER BY timestamp DESC LIMIT 50;")
+    rows = await db.query(f"SELECT * FROM selling_point_sales WHERE org_id = ? AND {date_cond};", [user.org_id])
 
     gross_sales = sum(r.get("total_amount", 0.0) for r in rows)
     taxes = sum(round(r.get("total_amount", 0.0) * (r.get("tax_percent", 0.0) / 100.0), 2) for r in rows)
@@ -1180,9 +1135,11 @@ async def get_sales_reports(range: str = "Today", user: UserProfile = Depends(re
 @app.post("/api/v1/payment/generate-dynamic-qr")
 async def generate_dynamic_upi_qr(body: GenerateDynamicQrRequest, user: UserProfile = Depends(require("ims:pos:sell"))):
     """Generates an NPCI-compliant dynamic UPI payment URL, high-res QR code, and app intent links."""
-    handle_config = await _get_payment_handle_from_db()
-    handle = handle_config.get("upi_handle", "zolexora@icici")
-    merchant_name = handle_config.get("merchant_name", "Zolexora Retail Terminal")
+    handle_config = await _get_payment_handle_from_db(user)
+    handle = handle_config.get("upi_handle")
+    if not handle:
+        raise HTTPException(status_code=400, detail="Set up this business's UPI handle first (Command Panel → Payments).")
+    merchant_name = handle_config.get("merchant_name") or user.org_name
     mcc = handle_config.get("merchant_category_code", "5812")
     amount = max(0.01, round(body.amount, 2))
     bill_no = body.bill_no.strip()
@@ -1240,12 +1197,12 @@ async def verify_payment_settlement(body: PaymentVerifyRequest, user: UserProfil
 # --- Razorpay Payment Gateway Endpoints ---
 @app.post("/api/v1/payment/razorpay/create-order")
 async def create_razorpay_order_endpoint(body: RazorpayOrderRequest, user: UserProfile = Depends(require("ims:pos:sell"))):
-    return payment_engine.create_razorpay_order(body)
+    return (await _payment_engine(user)).create_razorpay_order(body)
 
 
 @app.post("/api/v1/payment/razorpay/verify-payment")
 async def verify_razorpay_payment_endpoint(body: RazorpayVerifyRequest, user: UserProfile = Depends(require("ims:pos:sell"))):
-    return payment_engine.verify_razorpay_payment(body)
+    return (await _payment_engine(user)).verify_razorpay_payment(body)
 
 
 @app.post("/api/v1/payment/razorpay/webhook")
@@ -1265,7 +1222,7 @@ async def razorpay_webhook(request: Request):
 # --- Cashfree Payment Gateway Endpoints ---
 @app.post("/api/v1/payment/cashfree/create-order")
 async def create_cashfree_order_endpoint(body: CashfreeOrderRequest, user: UserProfile = Depends(require("ims:pos:sell", "ims:payments:manage"))):
-    return payment_engine.create_cashfree_order(body)
+    return (await _payment_engine(user)).create_cashfree_order(body)
 
 
 @app.post("/api/v1/payment/cashfree/verify-payment")
