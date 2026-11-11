@@ -1,4 +1,4 @@
-# Build context: repo root (docker build -f products/zolexora-ims/apps/ims-user/frontend/Dockerfile .)
+# Built only by GitHub CI (zolexora-ims-docker.yml) with the repo root as context.
 FROM node:22-alpine AS builder
 WORKDIR /app
 
@@ -16,14 +16,16 @@ RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
 # Builds the app and the workspace packages it uses (auth-client, utils)
 RUN pnpm --filter "@zolexora/ims-user-frontend..." build
 
+# Runs anywhere: PORT (default 3000) and IMS_API_URL (the backend's base URL) are read at start.
 FROM nginx:alpine
-RUN rm -rf /usr/share/nginx/html/*
+ENV PORT=3000
+RUN rm -rf /usr/share/nginx/html/* /etc/nginx/conf.d/default.conf
 COPY --from=builder /app/products/zolexora-ims/apps/ims-user/frontend/dist /usr/share/nginx/html
-COPY products/zolexora-ims/apps/ims-user/frontend/nginx.conf /etc/nginx/conf.d/default.conf
+COPY products/zolexora-ims/apps/ims-user/frontend/nginx/default.conf.template /etc/nginx/templates/default.conf.template
 COPY products/zolexora-ims/docker-entrypoint-env.sh /docker-entrypoint.d/40-env-config.sh
 RUN chmod +x /docker-entrypoint.d/40-env-config.sh
 
 EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/healthz || exit 1
+  CMD wget --no-verbose --tries=1 --spider "http://127.0.0.1:${PORT}/healthz" || exit 1

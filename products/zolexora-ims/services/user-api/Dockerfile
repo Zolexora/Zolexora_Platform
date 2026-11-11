@@ -1,4 +1,4 @@
-# Build context: repo root (docker build -f products/zolexora-ims/services/user-api/Dockerfile .)
+# Built only by GitHub CI (zolexora-ims-docker.yml) with the repo root as context.
 # ------------------------------------------------------------------------------
 # Stage 1: Build & Runtime Base for Zolexora IMS User Backend
 # ------------------------------------------------------------------------------
@@ -32,7 +32,7 @@ EXPOSE 4050
 
 # Health check against active FastAPI /health endpoint
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:4050/health || exit 1
+  CMD curl -f "http://localhost:${PORT}/health" || exit 1
 
-# Start Uvicorn ASGI server
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "4050"]
+# Listens on $PORT (default 4050) so hosts that assign a port (Render, Fly, …) can run the same image.
+CMD ["sh", "-c", "exec uvicorn main:app --host 0.0.0.0 --port ${PORT}"]

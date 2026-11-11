@@ -106,5 +106,5 @@ def test_refuses_to_start_on_old_demo_schema(tmp_path):
             await conn.commit()
         await D1Adapter(account_id="", database_id="", api_token="", sqlite_path=path).init()
 
-    with pytest.raises(RuntimeError, match="0002_drop_demo_schema"):
+    with pytest.raises(RuntimeError, match="one-time-reset-demo-schema"):
         asyncio.run(run())

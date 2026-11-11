@@ -28,7 +28,12 @@ services:
     image: ${IMS_USER_FRONTEND_IMAGE:-ghcr.io/zolexora/zolexora-ims-user-frontend:latest}
     pull_policy: missing
     container_name: ims-user-frontend
+    depends_on:
+    - ims-user-backend
+    ports:
+    - "${IMS_PORT:-3072}:3000"
     environment:
+    - IMS_API_URL=http://ims-user-backend:4050
     - AUTH_SERVICE_PUBLIC_URL=${AUTH_SERVICE_PUBLIC_URL:?AUTH_SERVICE_PUBLIC_URL missing - run via scripts/setup/with-infisical.sh}
     - TURNSTILE_SITE_KEY=${TURNSTILE_SITE_KEY:?TURNSTILE_SITE_KEY missing - run via scripts/setup/with-infisical.sh}
     - NEXT_PUBLIC_IMS_CLIENT_FIREBASE_API_KEY=${NEXT_PUBLIC_IMS_CLIENT_FIREBASE_API_KEY:?NEXT_PUBLIC_IMS_CLIENT_FIREBASE_API_KEY missing - run via scripts/setup/with-infisical.sh}
@@ -49,26 +54,3 @@ services:
       timeout: 5s
       retries: 3
       start_period: 5s
-  nginx:
-    image: ${IMS_NGINX_IMAGE:-ghcr.io/zolexora/zolexora-ims-nginx:latest}
-    pull_policy: missing
-    container_name: ims-nginx
-    ports:
-    - "3072:80"
-    depends_on:
-    - ims-user-backend
-    - ims-user-frontend
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 512M
-        reservations:
-          cpus: '0.1'
-          memory: 128M
-    healthcheck:
-      test: ["CMD-SHELL", "curl -sf --max-time 5 -H \"Host: app.localhost\" http://127.0.0.1/ -o /dev/null && exit 0 || exit 1"]
-      interval: 15s
-      timeout: 10s
-      retries: 3
-      start_period: 15s

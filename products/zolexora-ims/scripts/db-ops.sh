@@ -19,20 +19,19 @@ BOLD='\033[1m'
 NC='\033[0m'
 
 DB_NAME="zolexora-ims-1-db"
-MIGRATIONS_DIR="${ROOT_DIR}/database/migrations"
-BACKUPS_DIR="${ROOT_DIR}/backups"
+BACKUPS_DIR="${IMS_BACKUPS_DIR:-${HOME}/zolexora-ims-backups}"  # business data: kept outside the repo
 MODE="--local"
 
 print_help() {
   echo -e "${CYAN}${BOLD}╔══════════════════════════════════════════════════════════════════════╗${NC}"
-  echo -e "${CYAN}${BOLD}║           ZOLEXORA IMS — DATABASE OPERATIONS & MIGRATIONS            ║${NC}"
+  echo -e "${CYAN}${BOLD}║           ZOLEXORA IMS — DATABASE OPERATIONS                        ║${NC}"
   echo -e "${CYAN}${BOLD}║                Cloudflare D1 Serverless SQL Engine                   ║${NC}"
   echo -e "${CYAN}${BOLD}╚══════════════════════════════════════════════════════════════════════╝${NC}"
   echo -e "${BOLD}Usage:${NC} ./products/zolexora-ims/scripts/db-ops.sh <command> [options]"
   echo ""
+  echo "Tables are created by the IMS backend on start (services/user-api/schema.sql); there are no migrations."
+  echo ""
   echo -e "${BOLD}Commands:${NC}"
-  echo "  migrate           Apply all SQL migration files to D1 database"
-  echo "  seed              Populate catalog, categories, POS tables, and aggregators"
   echo "  status            Display active tables, schema details, and row counts"
   echo "  query <sql>       Execute an arbitrary SQL query against D1"
   echo "  backup            Export database state to timestamped SQL backup"
@@ -44,82 +43,19 @@ print_help() {
   echo "  --local           Target local SQLite / D1 simulator (default)"
   echo ""
   echo -e "${BOLD}Examples:${NC}"
-  echo "  ./products/zolexora-ims/scripts/db-ops.sh migrate --local"
-  echo "  ./products/zolexora-ims/scripts/db-ops.sh seed --local"
-  echo "  ./products/zolexora-ims/scripts/db-ops.sh query \"SELECT name, price, stock FROM products;\""
+  echo "  ./products/zolexora-ims/scripts/db-ops.sh status --remote"
+  echo "  ./products/zolexora-ims/scripts/db-ops.sh query \"SELECT org_id, item_code, total_stock FROM products LIMIT 5;\""
   echo "  ./products/zolexora-ims/scripts/db-ops.sh backup"
   exit 0
 }
 
 # Check wrangler runner
+# Wrangler runs from database/ (its wrangler.toml names the D1 database) with the Cloudflare
+# credentials from Infisical; --remote needs them, --local does not.
 get_wrangler() {
-  if command -v pnpm >/dev/null 2>&1; then
-    echo "pnpm exec wrangler"
-  else
-    echo "npx wrangler"
-  fi
+  echo "bash ${ROOT_DIR}/../../scripts/setup/with-infisical.sh ${ROOT_DIR} pnpm exec wrangler"
 }
-
-cmd_migrate() {
-  local target_mode="${1:-$MODE}"
-  local wrangler_cmd
-  wrangler_cmd=$(get_wrangler)
-
-  echo -e "${BLUE}${BOLD}📦 Applying database migrations from ${MIGRATIONS_DIR}...${NC}"
-  echo -e "  • Target: ${CYAN}${DB_NAME} (${target_mode})${NC}"
-
-  if [[ ! -d "${MIGRATIONS_DIR}" ]]; then
-    echo -e "${RED}❌ Migrations directory not found: ${MIGRATIONS_DIR}${NC}"
-    exit 1
-  fi
-
-  for file in "${MIGRATIONS_DIR}"/*.sql; do
-    if [[ -f "$file" ]]; then
-      echo -e "  • Executing: ${YELLOW}$(basename "$file")${NC}"
-      $wrangler_cmd d1 execute "${DB_NAME}" ${target_mode} --file="$file" --yes || {
-        echo -e "${YELLOW}⚠️ Notice: D1 local execute exited. If running first time, database will initialize.${NC}"
-      }
-    fi
-  done
-  echo -e "${GREEN}✓ Migrations executed successfully.${NC}"
-}
-
-cmd_seed() {
-  local target_mode="${1:-$MODE}"
-  local wrangler_cmd
-  wrangler_cmd=$(get_wrangler)
-  local seed_file="/tmp/zolexora_seed.sql"
-
-  echo -e "${BLUE}${BOLD}🌱 Generating & applying enterprise seed data...${NC}"
-
-  cat << 'EOF' > "${seed_file}"
--- Demo Organization
-INSERT OR REPLACE INTO organizations (id, name, industry, owner_email, currency, status, created_at)
-VALUES ('org-demo-001', 'Zolexora Artisan Roasters', 'Specialty Cafe & Eatery', 'owner@zolexora.com', '₹', 'Active', CURRENT_TIMESTAMP);
-
--- Sample Stores & Outlets
-INSERT OR REPLACE INTO stores (code, org_id, name, type, status, description)
-VALUES ('STORE-MAIN', 'org-demo-001', 'Flagship Roastery Store', 'Warehouse', 'Active', 'Central roasting warehouse');
-
-INSERT OR REPLACE INTO selling_points (code, org_id, name, assigned_store_code, type, status)
-VALUES ('POS-COUNTER-1', 'org-demo-001', 'Main Coffee Bar Terminal', 'STORE-MAIN', 'POS Register', 'Active');
-
--- High Selling Menu Items
-INSERT OR REPLACE INTO products (id, org_id, name, category, barcode, cost_price, selling_price, stock, min_threshold, status, created_at)
-VALUES 
-  ('PROD-001', 'org-demo-001', 'Oat Milk Flat White', 'Beverages', '890123456701', 90.0, 240.0, 150, 20, 'Active', CURRENT_TIMESTAMP),
-  ('PROD-002', 'org-demo-001', 'Butter Croissant Flaky', 'Bakery', '890123456702', 45.0, 160.0, 48, 10, 'Active', CURRENT_TIMESTAMP),
-  ('PROD-003', 'org-demo-001', 'Truffle Mushroom Panini', 'Food', '890123456703', 120.0, 320.0, 35, 5, 'Active', CURRENT_TIMESTAMP),
-  ('PROD-004', 'org-demo-001', 'Classic Cold Brew 300ml', 'Beverages', '890123456704', 70.0, 220.0, 80, 15, 'Active', CURRENT_TIMESTAMP),
-  ('PROD-005', 'org-demo-001', 'Signature Basque Cheesecake', 'Desserts', '890123456705', 110.0, 280.0, 24, 5, 'Active', CURRENT_TIMESTAMP);
-EOF
-
-  $wrangler_cmd d1 execute "${DB_NAME}" ${target_mode} --file="${seed_file}" --yes || {
-    echo -e "${YELLOW}⚠️ Seed script applied to local/memory state.${NC}"
-  }
-  rm -f "${seed_file}"
-  echo -e "${GREEN}✓ Seed data successfully populated!${NC}"
-}
+cd "${ROOT_DIR}/database"
 
 cmd_status() {
   local target_mode="${1:-$MODE}"
@@ -158,10 +94,10 @@ cmd_backup() {
   local backup_file="${BACKUPS_DIR}/d1_backup_${timestamp}.sql"
 
   echo -e "${BLUE}${BOLD}💾 Creating snapshot backup to: ${backup_file}...${NC}"
-  $wrangler_cmd d1 export "${DB_NAME}" ${target_mode} --output="${backup_file}" 2>/dev/null || {
-    # Fallback schema export
-    echo "-- Zolexora IMS D1 Snapshot: ${timestamp}" > "${backup_file}"
-    $wrangler_cmd d1 execute "${DB_NAME}" ${target_mode} --command="SELECT sql FROM sqlite_master WHERE sql IS NOT NULL;" --yes >> "${backup_file}" 2>/dev/null || true
+  $wrangler_cmd d1 export "${DB_NAME}" ${target_mode} --output="${backup_file}" || {
+    rm -f "${backup_file}"
+    echo -e "${RED}❌ Backup failed (wrangler d1 export).${NC}"
+    exit 1
   }
   echo -e "${GREEN}✓ Backup snapshot created successfully at ${backup_file}.${NC}"
 }
@@ -196,12 +132,6 @@ for arg in "$@"; do
 done
 
 case "${COMMAND}" in
-  migrate)
-    cmd_migrate "${MODE}"
-    ;;
-  seed)
-    cmd_seed "${MODE}"
-    ;;
   status)
     cmd_status "${MODE}"
     ;;
@@ -220,5 +150,6 @@ case "${COMMAND}" in
   *)
     echo -e "${RED}Unknown command: ${COMMAND}${NC}\n"
     print_help
+    exit 1
     ;;
 esac

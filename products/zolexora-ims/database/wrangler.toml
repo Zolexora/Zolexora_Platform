@@ -1,11 +1,11 @@
 # Wrangler config for the IMS D1 database only (no Worker). Used for one-off SQL, e.g.:
 #   cd products/zolexora-ims/database
-#   pnpm exec wrangler d1 execute zolexora-ims-1-db --remote --file=migrations/0002_drop_demo_schema.sql
-# Tables are created by the IMS backend from services/user-api/schema.sql on start.
+#   pnpm exec wrangler d1 execute zolexora-ims-1-db --remote --command="SELECT name FROM sqlite_master"
+# Tables are created by the IMS backend from services/user-api/schema.sql on start (no migrations).
+# one-time-reset-demo-schema.sql drops every table: only for the old demo database, run it by hand once.
 name = "zolexora-ims-db"
 
 [[d1_databases]]
 binding = "DB"
 database_name = "zolexora-ims-1-db"
 database_id = "63b1b80b-ee96-4948-acce-c96d6ac65f61"
-migrations_dir = "migrations"

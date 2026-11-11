@@ -2,7 +2,7 @@
 # ==============================================================================
 # Zolexora IMS — Full-Stack Quality Gate & CI/CD Test Runner
 # Executes backend tests, TypeScript checks, security audits, and bundle builds
-# Usage: ./products/zolexora-ims/scripts/test-all.sh [OPTIONS]
+# Usage: ./products/zolexora-ims/scripts/run-all-tests.sh [OPTIONS]
 # ==============================================================================
 
 set -eo pipefail
@@ -73,13 +73,9 @@ main() {
   run_step "Auditing Working Tree for Unprotected Secrets" \
     "! git status --porcelain | grep -E '\.env|\.pem|\.key' | grep -v '\.example'"
 
-  # 5. Render Blueprint Validation
-  run_step "Validating Infrastructure as Code (render.yaml)" \
-    "render blueprints validate ${ROOT_DIR}/infra/render/render.yaml"
-
-  # 6. Production Frontend Build Compilation
-  run_step "Compiling Monorepo Frontend Production Bundles" \
-    "cd ${ROOT_DIR} && pnpm --filter '@zolexora/*' build"
+  # 5. Production Frontend Build
+  run_step "Building the IMS frontend" \
+    "cd ${ROOT_DIR} && pnpm build"
 
   # Final Summary Report
   local TOTAL_END

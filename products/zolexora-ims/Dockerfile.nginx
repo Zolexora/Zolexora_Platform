@@ -1,3 +1,0 @@
-# Build context: repo root (docker build -f products/zolexora-ims/Dockerfile.nginx .)
-FROM nginx:alpine
-COPY products/zolexora-ims/nginx-conf.d/ /etc/nginx/conf.d/

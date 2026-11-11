@@ -28,7 +28,6 @@ show_menu() {
   echo "╚══════════════════════════════════════════════════════════════════════╝"
   echo -e "${NC}"
   echo -e "${BOLD}Select an operation:${NC}\n"
-  echo -e "  ${CYAN}[1]${NC} 🚀 Deploy Application Stack     (Render, Cloudflare Pages, Docker)"
   echo -e "  ${CYAN}[2]${NC} 🩺 Run System Health Check       (Probe all APIs, frontends & latency)"
   echo -e "  ${CYAN}[3]${NC} 🐳 Docker Container Operations   (Start, stop, pull, status, logs — GHCR images)"
   echo -e "  ${CYAN}[4]${NC} 📦 Database Migrations & Seeds   (Cloudflare D1 schema, tables & seed)"
@@ -44,13 +43,9 @@ show_menu() {
 run_action() {
   local choice="$1"
   case "$choice" in
-    1)
-      echo ""
-      "${SCRIPT_DIR}/deploy.sh"
-      ;;
     2)
       echo ""
-      "${SCRIPT_DIR}/health-check.sh"
+      "${SCRIPT_DIR}/check-health.sh"
       ;;
     3)
       echo ""
@@ -67,7 +62,7 @@ run_action() {
       ;;
     5)
       echo ""
-      "${SCRIPT_DIR}/test-all.sh"
+      "${SCRIPT_DIR}/run-all-tests.sh"
       ;;
     6)
       echo ""

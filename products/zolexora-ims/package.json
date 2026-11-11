@@ -9,14 +9,12 @@
     "dev:user:backend": "cd services/user-api && uvicorn main:app --reload --port 4050",
     "build": "pnpm --filter \"@zolexora/ims-user-frontend...\" build",
     "test:backend": "cd services/user-api && pytest tests",
-    "test:all": "bash scripts/test-all.sh",
-    "deploy": "bash scripts/deploy.sh",
-    "deploy:frontends": "bash scripts/deploy-frontends-cloudflare.sh",
-    "health": "bash scripts/health-check.sh",
+    "test:all": "bash scripts/run-all-tests.sh",
+    "health": "bash scripts/check-health.sh",
     "docker:up": "bash scripts/docker-start.sh start",
     "docker:down": "bash scripts/docker-start.sh stop",
-    "db:migrate": "bash scripts/db-ops.sh migrate",
-    "db:seed": "bash scripts/db-ops.sh seed",
+    "db:status": "bash scripts/db-ops.sh status",
+    "db:backup": "bash scripts/db-ops.sh backup",
     "menu": "bash scripts/menu.sh"
   },
   "devDependencies": {

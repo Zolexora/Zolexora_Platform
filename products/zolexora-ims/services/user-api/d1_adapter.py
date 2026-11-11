@@ -15,7 +15,7 @@ logger = logging.getLogger("zolexora.ims.db")
 SCHEMA_PATH = os.path.join(os.path.dirname(__file__), "schema.sql")
 LEGACY_CHECK = "SELECT name FROM sqlite_master WHERE type='table' AND name='organizations';"
 LEGACY_HINT = (
-    "Old IMS demo schema found. Run products/zolexora-ims/database/migrations/0002_drop_demo_schema.sql once"
+    "Old IMS demo schema found. Run products/zolexora-ims/database/one-time-reset-demo-schema.sql once"
 )
 
 

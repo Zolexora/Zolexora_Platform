@@ -32,9 +32,5 @@ jobs:
           {
             "service": "user-frontend",
             "file": "products/zolexora-ims/apps/ims-user/frontend/Dockerfile"
-          },
-          {
-            "service": "nginx",
-            "file": "products/zolexora-ims/Dockerfile.nginx"
           }
         ]

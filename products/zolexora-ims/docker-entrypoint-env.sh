@@ -2,6 +2,7 @@
 # Writes window.__ENV__ (served as /env-config.js) from the container environment, which compose
 # fills from Infisical. Only public, browser-safe keys are exposed; values are JSON-escaped.
 set -eu
+: "${IMS_API_URL:?IMS_API_URL (the IMS backend base URL, e.g. http://ims-user-backend:4050) is required}"
 out=/usr/share/nginx/html/env-config.js
 {
   echo "window.__ENV__ = {"

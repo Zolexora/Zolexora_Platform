@@ -2,7 +2,7 @@
 # ==============================================================================
 # Zolexora IMS — Service Health & Smoke Test Monitor
 # Probes backends, frontends, APIs, and databases with latency benchmarking
-# Usage: ./products/zolexora-ims/scripts/health-check.sh [OPTIONS]
+# Usage: ./products/zolexora-ims/scripts/check-health.sh [OPTIONS]
 # ==============================================================================
 
 set -eo pipefail
@@ -21,7 +21,7 @@ JSON_OUTPUT=false
 TIMEOUT=3
 
 print_help() {
-  echo -e "${BOLD}Usage:${NC} ./products/zolexora-ims/scripts/health-check.sh [OPTIONS]"
+  echo -e "${BOLD}Usage:${NC} ./products/zolexora-ims/scripts/check-health.sh [OPTIONS]"
   echo ""
   echo -e "${BOLD}Options:${NC}"
   echo "  -w, --watch           Run continuous monitor loop"
@@ -86,10 +86,14 @@ run_check() {
   timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
   # Define targets: NAME | URL | EXPECTED_CODE
+  # IMS_URL: any deployment (default: the local Docker stack). The API is checked through the
+  # frontend's /api proxy, which is how browsers reach it.
+  local base="${IMS_URL:-http://127.0.0.1:${IMS_PORT:-3072}}"
+  base="${base%/}"
   local targets=(
-    "User Core API (FastAPI)|http://127.0.0.1:8000/health|200"
-    "Aggregator API (Swiggy/Zomato)|http://127.0.0.1:8000/api/v1/aggregator/platforms|200"
-    "User POS & Inventory Web|http://127.0.0.1:3000|200"
+    "IMS web app|${base}/|200"
+    "IMS web container|${base}/healthz|200"
+    "IMS API (via /api proxy)|${base}/api/v1/health|200"
   )
 
   if [[ "${JSON_OUTPUT}" == "true" ]]; then

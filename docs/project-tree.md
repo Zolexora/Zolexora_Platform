@@ -438,28 +438,17 @@ Zolexora_Platform/
 │   │   └── README.md
 │   ├── zolexora-ims/
 │   │   ├── apps/
-│   │   │   └── ims-user/  (58 files)
+│   │   │   └── ims-user/  (57 files)
 │   │   ├── database/
-│   │   │   ├── migrations/  (1 files)
+│   │   │   ├── one-time-reset-demo-schema.sql
 │   │   │   └── wrangler.toml
 │   │   ├── docs/
 │   │   │   ├── planning/  (2 files)
 │   │   │   └── security/  (2 files)
-│   │   ├── infra/
-│   │   │   ├── cloudflare-pages/  (1 files)
-│   │   │   ├── fly/  (1 files)
-│   │   │   ├── koyeb/  (1 files)
-│   │   │   └── render/  (1 files)
-│   │   ├── nginx-conf.d/
-│   │   │   └── default.conf
 │   │   ├── scripts/
 │   │   │   ├── check-health.sh
 │   │   │   ├── db-ops.sh
-│   │   │   ├── deploy-frontends-cloudflare.sh
-│   │   │   ├── deploy-oracle-vps.sh
-│   │   │   ├── deploy.sh
 │   │   │   ├── docker-start.sh
-│   │   │   ├── mcp-payments-server.py
 │   │   │   ├── menu.sh
 │   │   │   ├── run-all-tests.sh
 │   │   │   └── setup.sh
@@ -469,7 +458,6 @@ Zolexora_Platform/
 │   │   ├── .infisical.json
 │   │   ├── compose.yaml
 │   │   ├── docker-entrypoint-env.sh
-│   │   ├── Dockerfile.nginx
 │   │   ├── package.json
 │   │   └── README.md
 │   ├── zolexora-ironclub/
@@ -697,6 +685,7 @@ Zolexora_Platform/
 │   │   └── start-all-products-dev.sh
 │   ├── docker/
 │   │   ├── configure-frappe-common-site.sh
+│   │   ├── product-stack.sh
 │   │   ├── prune-except-devcontainer.sh
 │   │   └── yarn-wrapper.sh
 │   ├── ports/
