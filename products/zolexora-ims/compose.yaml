@@ -57,6 +57,10 @@ services:
     container_name: ims-user-backend
     environment:
     - DATABASE_URL=postgresql://ims:${POSTGRES_PASSWORD}@postgres:5432/ims
+    - AUTH_SERVICE_URL=${AUTH_SERVICE_URL:?AUTH_SERVICE_URL missing - run via scripts/setup/with-infisical.sh}
+    - IMS_PRODUCT_KEY=${IMS_PRODUCT_KEY:?IMS_PRODUCT_KEY missing - run via scripts/setup/with-infisical.sh}
+    extra_hosts:
+    - "host.docker.internal:host-gateway"
     depends_on:
       postgres:
         condition: service_healthy

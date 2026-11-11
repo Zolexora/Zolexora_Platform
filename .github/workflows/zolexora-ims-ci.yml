@@ -42,4 +42,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-node
-      - run: pnpm --filter @zolexora/ims-user-frontend --filter @zolexora/ims-admin-frontend build
+      - run: pnpm --filter "@zolexora/ims-user-frontend..." --filter @zolexora/ims-admin-frontend build

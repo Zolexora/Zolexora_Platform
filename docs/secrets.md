@@ -26,7 +26,7 @@ Names only. Add any missing key to the product's Infisical folder (project `c4ac
 
 ### zolexora-auth-service — project `188824cd…`, path `/`
 
-- **businesses, roles, sessions (ADR 0004/0005)**: `AUTH_ENCRYPTION_KEY` (base64 of 32 bytes; encrypts PAN, GSTIN, bank numbers, MFA secrets), `AUTH_SIGNING_PRIVATE_KEY` (ES256 P-256 PKCS#8 PEM; public half served at `/.well-known/jwks.json`), `INVITE_ACCEPT_URL`, `PWNED_PASSWORDS_API_URL` (`https://api.pwnedpasswords.com/range`), `CATALOG_PRODUCT_KEYS` (`tms=<secret>,marketplace=<secret>`, each secret ≥ 32 chars)
+- **businesses, roles, sessions (ADR 0004/0005)**: `AUTH_ENCRYPTION_KEY` (base64 of 32 bytes; encrypts PAN, GSTIN, bank numbers, MFA secrets), `AUTH_SIGNING_PRIVATE_KEY` (ES256 P-256 PKCS#8 PEM; public half served at `/.well-known/jwks.json`), `INVITE_ACCEPT_URL`, `PWNED_PASSWORDS_API_URL` (`https://api.pwnedpasswords.com/range`), `CATALOG_PRODUCT_KEYS` (`tms=<secret>,marketplace=<secret>,ims=<secret>`, each secret ≥ 32 chars)
 - **verification providers**: `IDENTITY_VERIFICATION_PROVIDER`, `PAN_VERIFICATION_PROVIDER`, `GST_VERIFICATION_PROVIDER`, `REGISTRATION_VERIFICATION_PROVIDER`, `AUTHORITY_VERIFICATION_PROVIDER` (each `false` or an ordered list), `BANK_VERIFICATION_PROVIDER` (`false`, `cashfree`, `digio`), `BANK_VERIFICATION_METHODS`
 - **only when a provider uses them**: `UIDAI_OFFLINE_EKYC_CERT`, `DIGIO_BASE_URL`, `DIGIO_CLIENT_ID`, `DIGIO_CLIENT_SECRET`, `DIGIO_IDENTITY_TEMPLATE`, `DIGIO_PAN_TEMPLATE`, `DIGIO_REVERSE_PENNY_DROP_TEMPLATE`, `DIGIO_PENNY_DROP_TEMPLATE`, `CASHFREE_VERIFICATION_BASE_URL`, `CASHFREE_VERIFICATION_CLIENT_ID`, `CASHFREE_VERIFICATION_CLIENT_SECRET`, `GST_CLEARTAX_BASE_URL`, `GST_CLEARTAX_AUTH_TOKEN`, `GST_CLEARTAX_TAXABLE_ENTITY_ID`
 - Generate keys locally and paste them into Infisical: `openssl rand -base64 32` and `openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:P-256`. Never commit or print them.
@@ -42,7 +42,7 @@ Names only. Add any missing key to the product's Infisical folder (project `c4ac
 ### zolexora-ims — `/Zolexora_IMS`
 
 - **admin-backend**: `ENVIRONMENT`, `HOST`, `PORT`, `LOG_LEVEL`, `JWT_SECRET`, `JWT_ALGORITHM`, `CORS_ALLOWED_ORIGINS`, `SUPERADMIN_EMAIL`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_D1_DATABASE_ID`, `CLOUDFLARE_API_TOKEN`
-- **user-backend**: `ENVIRONMENT`, `HOST`, `PORT`, `LOG_LEVEL`, `JWT_SECRET`, `JWT_ALGORITHM`, `JWT_ACCESS_TOKEN_EXPIRE_MINUTES`, `CORS_ALLOWED_ORIGINS`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_D1_DATABASE_ID`, `CLOUDFLARE_API_TOKEN`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY`, `DEFAULT_ORG_ID`, `DEFAULT_CURRENCY`, `SUPERADMIN_EMAIL`
+- **user-backend**: `ENVIRONMENT`, `HOST`, `PORT`, `LOG_LEVEL`, `CORS_ALLOWED_ORIGINS`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_D1_DATABASE_ID`, `CLOUDFLARE_API_TOKEN`, `DEFAULT_CURRENCY`, `AUTH_SERVICE_URL`, `IMS_PRODUCT_KEY` (same value as the `ims` entry in the auth service's `CATALOG_PRODUCT_KEYS`)
 - **user-frontend**: `AUTH_SERVICE_PUBLIC_URL`, `TURNSTILE_SITE_KEY`, `NEXT_PUBLIC_IMS_CLIENT_FIREBASE_API_KEY`, `NEXT_PUBLIC_IMS_CLIENT_FIREBASE_AUTH_DOMAIN`, `NEXT_PUBLIC_IMS_CLIENT_FIREBASE_APP_ID`, `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
 
 ### zolexora-marketplace — `/Zolexora_Marketplace`

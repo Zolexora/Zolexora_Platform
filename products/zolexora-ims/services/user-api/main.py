@@ -10,21 +10,16 @@ from fastapi.middleware.cors import CORSMiddleware
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../shared")))
 try:
     from utils import now_utc_iso, today_utc_str, generate_id
-    from security import create_jwt_token, verify_password
 except ImportError:
     from datetime import datetime, timezone
-    import hashlib, hmac
     def now_utc_iso(): return datetime.now(timezone.utc).isoformat()
     def today_utc_str(): return datetime.now(timezone.utc).strftime("%Y-%m-%d")
     def generate_id(p="ID"): return f"{p}_12345"
-    def create_jwt_token(p): raise RuntimeError("Security module required")
-    def verify_password(p, h):
-        if not p or not h: return False
-        return hmac.compare_digest(hashlib.sha256(p.encode()).hexdigest(), h)
 
 try:
     from .db import db
-    from .auth import get_current_user
+    from .auth import get_current_user, require
+    from .catalog import register_catalog
     from .models import (
         ItemCreate, ItemResponse, ItemUpdate, SaleRequest, StockAdjustRequest,
         DashboardMetrics, UserProfile, AggregatorStatusUpdate, DiningBenefitVerify,
@@ -38,7 +33,8 @@ try:
     )
 except ImportError:
     from db import db
-    from auth import get_current_user
+    from auth import get_current_user, require
+    from catalog import register_catalog
     from models import (
         ItemCreate, ItemResponse, ItemUpdate, SaleRequest, StockAdjustRequest,
         DashboardMetrics, UserProfile, AggregatorStatusUpdate, DiningBenefitVerify,
@@ -55,6 +51,7 @@ except ImportError:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await db.init()
+    await register_catalog()
     yield
 
 
@@ -101,7 +98,7 @@ async def health():
 
 # --- Dashboard ---
 @app.get("/api/v1/dashboard/metrics", response_model=DashboardMetrics)
-async def get_metrics(user: UserProfile = Depends(get_current_user)):
+async def get_metrics(user: UserProfile = Depends(require("ims:dashboard:view"))):
     org_id = user.org_id
     today = today_utc_str()
 
@@ -147,7 +144,7 @@ async def get_metrics(user: UserProfile = Depends(get_current_user)):
 async def list_items(
     search: Optional[str] = None,
     category: Optional[str] = None,
-    user: UserProfile = Depends(get_current_user)
+    user: UserProfile = Depends(require("ims:items:view"))
 ):
     sql = "SELECT * FROM products WHERE org_id = ?"
     params = [user.org_id]
@@ -166,7 +163,7 @@ async def list_items(
 
 
 @app.get("/api/v1/items/{item_code}", response_model=ItemResponse)
-async def get_item(item_code: str, user: UserProfile = Depends(get_current_user)):
+async def get_item(item_code: str, user: UserProfile = Depends(require("ims:items:view"))):
     row = await db.fetch_one("SELECT * FROM products WHERE item_code = ? AND org_id = ?;", [item_code, user.org_id])
     if not row:
         raise HTTPException(status_code=404, detail="Item not found")
@@ -174,7 +171,7 @@ async def get_item(item_code: str, user: UserProfile = Depends(get_current_user)
 
 
 @app.post("/api/v1/items", response_model=ItemResponse, status_code=201)
-async def create_item(item: ItemCreate, user: UserProfile = Depends(get_current_user)):
+async def create_item(item: ItemCreate, user: UserProfile = Depends(require("ims:items:manage"))):
     exists = await db.fetch_one("SELECT item_code FROM products WHERE item_code = ?;", [item.item_code])
     if exists:
         raise HTTPException(status_code=400, detail="Item code already exists")
@@ -200,7 +197,7 @@ async def create_item(item: ItemCreate, user: UserProfile = Depends(get_current_
 
 
 @app.put("/api/v1/items/{item_code}", response_model=ItemResponse)
-async def update_item(item_code: str, item: ItemUpdate, user: UserProfile = Depends(get_current_user)):
+async def update_item(item_code: str, item: ItemUpdate, user: UserProfile = Depends(require("ims:items:manage"))):
     existing = await get_item(item_code, user)
     updates = item.model_dump(exclude_unset=True)
     if not updates:
@@ -217,7 +214,7 @@ async def update_item(item_code: str, item: ItemUpdate, user: UserProfile = Depe
 
 
 @app.post("/api/v1/items/{item_code}/adjust", response_model=ItemResponse)
-async def adjust_stock(item_code: str, req: StockAdjustRequest, user: UserProfile = Depends(get_current_user)):
+async def adjust_stock(item_code: str, req: StockAdjustRequest, user: UserProfile = Depends(require("ims:stock:adjust", "ims:purchases:create", "ims:issuance:create", "ims:pos:sell"))):
     existing = await get_item(item_code, user)
     stock_col = "stock_s_001" if req.store_code == "S_001" else ("stock_s_002" if req.store_code == "S_002" else "central_stock")
     cur_stock = getattr(existing, stock_col, 0.0) or 0.0
@@ -238,7 +235,7 @@ async def adjust_stock(item_code: str, req: StockAdjustRequest, user: UserProfil
 
 
 @app.delete("/api/v1/items/{item_code}")
-async def delete_item(item_code: str, user: UserProfile = Depends(get_current_user)):
+async def delete_item(item_code: str, user: UserProfile = Depends(require("ims:items:manage"))):
     await db.execute("DELETE FROM products WHERE item_code = ? AND org_id = ?;", [item_code, user.org_id])
     return {"success": True, "message": f"Item {item_code} deleted"}
 
@@ -256,13 +253,13 @@ async def list_selling_points(user: UserProfile = Depends(get_current_user)):
 
 # --- Suppliers ---
 @app.get("/api/v1/suppliers")
-async def list_suppliers(user: UserProfile = Depends(get_current_user)):
+async def list_suppliers(user: UserProfile = Depends(require("ims:suppliers:view"))):
     return await db.query("SELECT * FROM suppliers WHERE org_id = ? ORDER BY code ASC;", [user.org_id])
 
 
 # --- Transactions & POS ---
 @app.get("/api/v1/transactions")
-async def list_transactions(limit: int = 50, user: UserProfile = Depends(get_current_user)):
+async def list_transactions(limit: int = 50, user: UserProfile = Depends(require("ims:reports:view", "ims:orders:view", "ims:items:view"))):
     sales = await db.query(
         "SELECT id, timestamp, 'SALE' as txn_type, bill_no, customer_name, item_name, quantity, total_amount, payment_mode FROM selling_point_sales WHERE org_id = ? ORDER BY timestamp DESC LIMIT ?;",
         [user.org_id, limit]
@@ -276,7 +273,7 @@ async def list_transactions(limit: int = 50, user: UserProfile = Depends(get_cur
 
 
 @app.post("/api/v1/sales", status_code=201)
-async def record_sale(sale: SaleRequest, user: UserProfile = Depends(get_current_user)):
+async def record_sale(sale: SaleRequest, user: UserProfile = Depends(require("ims:pos:sell"))):
     now = now_utc_iso()
     date_str = today_utc_str()
     bill_no = sale.bill_no or f"BILL-{generate_id('')}"
@@ -435,7 +432,7 @@ async def _get_aggregator_orders_from_db() -> list:
 
 
 @app.get("/api/v1/aggregator/platforms")
-async def get_platforms():
+async def get_platforms(user: UserProfile = Depends(require("ims:orders:view", "ims:pos:manage"))):
     configs = await _get_aggregator_configs_from_db()
     for p in _aggregator_platforms:
         pid = p["id"]
@@ -454,7 +451,7 @@ async def get_platforms():
 
 
 @app.get("/api/v1/aggregator/config")
-async def get_aggregator_configs(request: Request):
+async def get_aggregator_configs(request: Request, user: UserProfile = Depends(require("ims:orders:view", "ims:pos:manage"))):
     base_url = str(request.base_url).rstrip("/")
     configs = []
     saved_configs = await _get_aggregator_configs_from_db()
@@ -482,7 +479,7 @@ async def get_aggregator_configs(request: Request):
 
 
 @app.post("/api/v1/aggregator/config/{platform_id}")
-async def save_aggregator_config(platform_id: str, config: AggregatorChannelConfig):
+async def save_aggregator_config(platform_id: str, config: AggregatorChannelConfig, user: UserProfile = Depends(require("ims:pos:manage"))):
     pid = platform_id.lower()
     target_platform = next((p for p in _aggregator_platforms if p["id"] == pid), None)
     if not target_platform:
@@ -517,7 +514,7 @@ async def save_aggregator_config(platform_id: str, config: AggregatorChannelConf
 
 
 @app.delete("/api/v1/aggregator/config/{platform_id}")
-async def disconnect_aggregator_config(platform_id: str):
+async def disconnect_aggregator_config(platform_id: str, user: UserProfile = Depends(require("ims:pos:manage"))):
     pid = platform_id.lower()
     target_platform = next((p for p in _aggregator_platforms if p["id"] == pid), None)
     if not target_platform:
@@ -534,7 +531,7 @@ async def disconnect_aggregator_config(platform_id: str):
 
 
 @app.post("/api/v1/aggregator/platforms/{platform_id}/toggle")
-async def toggle_platform(platform_id: str):
+async def toggle_platform(platform_id: str, user: UserProfile = Depends(require("ims:pos:manage"))):
     pid = platform_id.lower()
     target_platform = next((p for p in _aggregator_platforms if p["id"] == pid), None)
     if not target_platform:
@@ -553,18 +550,18 @@ async def toggle_platform(platform_id: str):
 
 
 @app.get("/api/v1/aggregator/orders")
-async def get_aggregator_orders():
+async def get_aggregator_orders(user: UserProfile = Depends(require("ims:orders:view"))):
     return await _get_aggregator_orders_from_db()
 
 
 @app.delete("/api/v1/aggregator/orders")
-async def clear_aggregator_orders():
+async def clear_aggregator_orders(user: UserProfile = Depends(require("ims:pos:manage"))):
     await db.execute("DELETE FROM aggregator_orders;")
     return {"success": True, "message": "All orders cleared from database"}
 
 
 @app.post("/api/v1/aggregator/orders/{order_id}/status")
-async def update_order_status(order_id: str, body: AggregatorStatusUpdate):
+async def update_order_status(order_id: str, body: AggregatorStatusUpdate, user: UserProfile = Depends(require("ims:orders:manage"))):
     order = await db.fetch_one("SELECT * FROM aggregator_orders WHERE id = ?;", [order_id])
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
@@ -660,7 +657,7 @@ async def receive_aggregator_webhook(channel: str, request: Request):
 
 
 @app.post("/api/v1/aggregator/test-webhook")
-async def send_test_webhook_order(body: TestWebhookRequest):
+async def send_test_webhook_order(body: TestWebhookRequest, user: UserProfile = Depends(require("ims:pos:manage"))):
     """Allows organization owners to simulate real webhook arrival on their own account and save to DB."""
     import secrets
     order_code = f"{body.platform[:2].upper()}-{secrets.randbelow(8999) + 1000}"
@@ -709,7 +706,7 @@ async def send_test_webhook_order(body: TestWebhookRequest):
 
 
 @app.post("/api/v1/aggregator/dining-benefit/verify")
-async def verify_dining_benefit(body: DiningBenefitVerify):
+async def verify_dining_benefit(body: DiningBenefitVerify, user: UserProfile = Depends(require("ims:pos:sell"))):
     code = body.membership_code.strip().upper()
     bill = max(0.0, body.bill_amount)
     
@@ -842,7 +839,7 @@ async def _save_terminal_settings_to_db(settings: dict):
 
 
 @app.get("/api/v1/payment/handle")
-async def get_payment_handle():
+async def get_payment_handle(user: UserProfile = Depends(require("ims:pos:sell", "ims:payments:manage"))):
     """Returns active merchant payment handle and accepted payment rails from database."""
     current_config = await _get_payment_handle_from_db()
     safe_config = dict(current_config)
@@ -856,7 +853,7 @@ async def get_payment_handle():
 
 
 @app.post("/api/v1/payment/handle")
-async def update_payment_handle(config: PaymentHandleConfig):
+async def update_payment_handle(config: PaymentHandleConfig, user: UserProfile = Depends(require("ims:payments:manage"))):
     """Updates and persists the organization merchant payment handle and gateway settings in database."""
     handle = config.upi_handle.strip().lower()
     if "@" not in handle or len(handle) < 5:
@@ -901,13 +898,13 @@ async def update_payment_handle(config: PaymentHandleConfig):
 
 # --- Terminal Hardware & Store Customization Endpoints ---
 @app.get("/api/v1/settings/terminal")
-async def get_terminal_settings():
+async def get_terminal_settings(user: UserProfile = Depends(require("ims:pos:sell", "ims:pos:manage"))):
     """Returns counter thermal printers, KOT routing, and invoice styling from database."""
     return await _get_terminal_settings_from_db()
 
 
 @app.post("/api/v1/settings/terminal")
-async def update_terminal_settings(body: TerminalSettingsConfig):
+async def update_terminal_settings(body: TerminalSettingsConfig, user: UserProfile = Depends(require("ims:pos:manage"))):
     """Persists counter thermal printers, KOT routing, and invoice styling into database."""
     data = body.dict()
     data["updated_at"] = now_utc_iso()
@@ -921,13 +918,13 @@ async def update_terminal_settings(body: TerminalSettingsConfig):
 
 # --- CRM Customers Endpoints ---
 @app.get("/api/v1/customers")
-async def get_all_customers():
+async def get_all_customers(user: UserProfile = Depends(require("ims:customers:manage", "ims:pos:sell"))):
     """Returns all customer profiles and loyalty tiers from database."""
     return await db.query("SELECT * FROM customers ORDER BY total_spend DESC, loyalty_points DESC;")
 
 
 @app.get("/api/v1/customers/{phone}")
-async def get_customer_by_phone(phone: str):
+async def get_customer_by_phone(phone: str, user: UserProfile = Depends(require("ims:customers:manage", "ims:pos:sell"))):
     """Fetches customer CRM profile and loyalty points by mobile number from database."""
     cleaned = "".join(ch for ch in phone if ch.isdigit() or ch == "+")
     row = await db.fetch_one(
@@ -940,7 +937,7 @@ async def get_customer_by_phone(phone: str):
 
 
 @app.post("/api/v1/customers")
-async def upsert_customer(cust: CustomerModel):
+async def upsert_customer(cust: CustomerModel, user: UserProfile = Depends(require("ims:customers:manage", "ims:pos:sell"))):
     """Creates or updates customer profile and loyalty points in database."""
     now = now_utc_iso()
     await db.execute(
@@ -966,13 +963,13 @@ async def upsert_customer(cust: CustomerModel):
 
 # --- POS Tables Endpoints ---
 @app.get("/api/v1/tables")
-async def get_pos_tables():
+async def get_pos_tables(user: UserProfile = Depends(require("ims:pos:sell"))):
     """Returns all restaurant/cafe dining tables and their current status from database."""
     return await db.query("SELECT * FROM pos_tables ORDER BY number ASC;")
 
 
 @app.post("/api/v1/tables")
-async def upsert_pos_table(body: PosTableModel):
+async def upsert_pos_table(body: PosTableModel, user: UserProfile = Depends(require("ims:pos:sell", "ims:pos:manage"))):
     """Creates or updates a dining table in the database."""
     now = now_utc_iso()
     await db.execute(
@@ -1000,7 +997,7 @@ async def upsert_pos_table(body: PosTableModel):
 
 
 @app.post("/api/v1/tables/{table_id}/status")
-async def update_pos_table_status(table_id: str, payload: Dict[str, Any]):
+async def update_pos_table_status(table_id: str, payload: Dict[str, Any], user: UserProfile = Depends(require("ims:pos:sell"))):
     """Updates table status (Vacant, Occupied, Billed, Reserved) and running bill."""
     status = payload.get("status", "Vacant")
     current_bill = payload.get("current_bill", 0.0 if status == "Vacant" else None)
@@ -1025,13 +1022,13 @@ async def update_pos_table_status(table_id: str, payload: Dict[str, Any]):
 
 # --- POS Cash Drawer Endpoints ---
 @app.get("/api/v1/cash-drawer/logs")
-async def get_cash_drawer_logs():
+async def get_cash_drawer_logs(user: UserProfile = Depends(require("ims:cash:manage"))):
     """Returns shift cash drawer transaction logs from database."""
     return await db.query("SELECT * FROM cash_drawer_logs ORDER BY created_at DESC LIMIT 100;")
 
 
 @app.post("/api/v1/cash-drawer/logs")
-async def add_cash_drawer_log(body: CashDrawerLogModel):
+async def add_cash_drawer_log(body: CashDrawerLogModel, user: UserProfile = Depends(require("ims:cash:manage"))):
     """Inserts a pay-in, pay-out, cash-drop, or cash transaction into database."""
     import secrets
     now = now_utc_iso()
@@ -1046,7 +1043,7 @@ async def add_cash_drawer_log(body: CashDrawerLogModel):
 
 
 @app.post("/api/v1/cash-drawer/close-shift")
-async def close_cash_drawer_shift(payload: Dict[str, Any]):
+async def close_cash_drawer_shift(payload: Dict[str, Any], user: UserProfile = Depends(require("ims:cash:manage"))):
     """Records end-of-shift cash drawer reconciliation into database."""
     import secrets
     now = now_utc_iso()
@@ -1075,7 +1072,7 @@ async def close_cash_drawer_shift(payload: Dict[str, Any]):
 
 # --- POS Sales Analytics & Reports Endpoints ---
 @app.get("/api/v1/reports/sales")
-async def get_sales_reports(range: str = "Today"):
+async def get_sales_reports(range: str = "Today", user: UserProfile = Depends(require("ims:reports:view"))):
     """Computes real sales analytics directly from the selling_point_sales database table."""
     if range == "Today":
         date_cond = "date = date('now')"
@@ -1181,7 +1178,7 @@ async def get_sales_reports(range: str = "Today"):
 
 
 @app.post("/api/v1/payment/generate-dynamic-qr")
-async def generate_dynamic_upi_qr(body: GenerateDynamicQrRequest):
+async def generate_dynamic_upi_qr(body: GenerateDynamicQrRequest, user: UserProfile = Depends(require("ims:pos:sell"))):
     """Generates an NPCI-compliant dynamic UPI payment URL, high-res QR code, and app intent links."""
     handle_config = await _get_payment_handle_from_db()
     handle = handle_config.get("upi_handle", "zolexora@icici")
@@ -1221,7 +1218,7 @@ async def generate_dynamic_upi_qr(body: GenerateDynamicQrRequest):
 
 
 @app.post("/api/v1/payment/verify")
-async def verify_payment_settlement(body: PaymentVerifyRequest):
+async def verify_payment_settlement(body: PaymentVerifyRequest, user: UserProfile = Depends(require("ims:pos:sell"))):
     """Verifies and confirms settlement of payment against a bill."""
     import secrets
     txn_ref = body.transaction_ref or f"UPI-UTR-{secrets.randbelow(899999999) + 100000000}"
@@ -1242,12 +1239,12 @@ async def verify_payment_settlement(body: PaymentVerifyRequest):
 
 # --- Razorpay Payment Gateway Endpoints ---
 @app.post("/api/v1/payment/razorpay/create-order")
-async def create_razorpay_order_endpoint(body: RazorpayOrderRequest):
+async def create_razorpay_order_endpoint(body: RazorpayOrderRequest, user: UserProfile = Depends(require("ims:pos:sell"))):
     return payment_engine.create_razorpay_order(body)
 
 
 @app.post("/api/v1/payment/razorpay/verify-payment")
-async def verify_razorpay_payment_endpoint(body: RazorpayVerifyRequest):
+async def verify_razorpay_payment_endpoint(body: RazorpayVerifyRequest, user: UserProfile = Depends(require("ims:pos:sell"))):
     return payment_engine.verify_razorpay_payment(body)
 
 
@@ -1267,12 +1264,12 @@ async def razorpay_webhook(request: Request):
 
 # --- Cashfree Payment Gateway Endpoints ---
 @app.post("/api/v1/payment/cashfree/create-order")
-async def create_cashfree_order_endpoint(body: CashfreeOrderRequest):
+async def create_cashfree_order_endpoint(body: CashfreeOrderRequest, user: UserProfile = Depends(require("ims:pos:sell", "ims:payments:manage"))):
     return payment_engine.create_cashfree_order(body)
 
 
 @app.post("/api/v1/payment/cashfree/verify-payment")
-async def verify_cashfree_payment_endpoint(body: CashfreeVerifyRequest):
+async def verify_cashfree_payment_endpoint(body: CashfreeVerifyRequest, user: UserProfile = Depends(require("ims:pos:sell", "ims:payments:manage"))):
     return {
         "success": True,
         "order_id": body.order_id,

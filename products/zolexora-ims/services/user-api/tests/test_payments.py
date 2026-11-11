@@ -10,6 +10,11 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.
 from main import app
 
 
+@pytest.fixture(autouse=True)
+def _owner(as_owner):
+    return as_owner
+
+
 def test_payment_handle_get_and_update():
     with TestClient(app) as client:
         # GET default handle

@@ -10,8 +10,6 @@ from main import app
 from db import db
 
 
-from models import UserProfile
-from auth import get_current_user
 
 
 def test_user_api_health():
@@ -30,10 +28,10 @@ def test_unauthenticated_items_access_denied():
     with TestClient(app) as client:
         resp = client.get("/api/v1/items")
         assert resp.status_code == 401
-        assert resp.json()["detail"] == "Authentication credentials required"
+        assert resp.json()["detail"] == "Sign in required"
 
 
-def test_list_items(monkeypatch):
+def test_list_items(monkeypatch, as_member):
     mock_items = [
         {
             "item_code": "ITM_001",
@@ -55,19 +53,9 @@ def test_list_items(monkeypatch):
             "last_updated": "2026-09-04T00:00:00.000Z"
         }
     ]
-    monkeypatch.setattr(db, "query", AsyncMock(return_value=mock_items))
-    
-    mock_user = UserProfile(
-        id="USR_TEST_001",
-        org_id="ORG_ZOLEXORA_001",
-        email="test@zolexora.com",
-        name="Test User",
-        role="Store Incharge",
-        scope_type="ALL",
-        assigned_location="ALL",
-        status="Active"
-    )
-    app.dependency_overrides[get_current_user] = lambda: mock_user
+    user = as_member("ims:items:view")
+    query = AsyncMock(return_value=mock_items)
+    monkeypatch.setattr(db, "query", query)
 
     try:
         with TestClient(app) as client:
@@ -77,5 +65,7 @@ def test_list_items(monkeypatch):
             assert isinstance(items, list)
             assert len(items) == 1
             assert items[0]["item_code"] == "ITM_001"
+            # Scoped to the business in the session
+            assert query.call_args.args[1][0] == user.org_id
     finally:
         app.dependency_overrides.clear()

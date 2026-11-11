@@ -1,118 +1,108 @@
-import os
-import sys
-from typing import Optional
+"""Identity via the Zolexora auth service (ADR 0004/0005).
 
+Every request carries a business-session token from the auth service. IMS never verifies tokens
+itself: the auth service's /api/v1/auth/me checks signature, expiry and revocation and returns the
+member, the business (ZX-ORG id), the role and the ims:* permissions. Results are cached for
+CACHE_TTL_SECONDS so a page load doesn't call the auth service per request; a revoked session or a
+removed permission takes effect within that time.
+"""
+import hashlib
+import os
+import time
+from typing import Any, Dict, Optional, Tuple
+
+import httpx
 from fastapi import Depends, HTTPException, Security, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 try:
-    from .db import db
     from .models import UserProfile
 except ImportError:
-    from db import db
     from models import UserProfile
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../shared")))
-try:
-    from security import decode_any_jwt_token, decode_jwt_token, get_jwt_secret
-except ImportError:
-    import jwt
-    def decode_any_jwt_token(token, verify_signature=False):
-        return jwt.decode(token, options={"verify_signature": False})
+PRODUCT = "ims"
+CACHE_TTL_SECONDS = 30
+_CACHE_MAX = 10_000
+_cache: Dict[str, Tuple[float, Dict[str, Any]]] = {}
 
-security = HTTPBearer(auto_error=False)
+bearer = HTTPBearer(auto_error=False)
 
 
-async def get_current_user(
-    credentials: Optional[HTTPAuthorizationCredentials] = Security(security)
-) -> UserProfile:
-    """Authenticates the user via Supabase ES256 JWT or internal HS256 JWT. No bypasses permitted."""
-    if not credentials:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication credentials required"
-        )
+class AuthServiceUnavailable(Exception):
+    """Auth service not configured or unreachable (-> 503)."""
 
-    token = credentials.credentials
+
+def auth_service_url() -> str:
+    return (os.getenv("AUTH_SERVICE_URL") or "").strip().rstrip("/")
+
+
+async def introspect(token: str) -> Optional[Dict[str, Any]]:
+    """The auth service's view of a token, or None when it rejects it."""
+    key = hashlib.sha256(token.encode()).hexdigest()
+    now = time.monotonic()
+    hit = _cache.get(key)
+    if hit and hit[0] > now:
+        return hit[1]
+
+    base = auth_service_url()
+    if not base:
+        raise AuthServiceUnavailable("AUTH_SERVICE_URL is not set (Infisical)")
     try:
-        # Cryptographic signature verification is strictly enforced in all environments
-        payload = decode_any_jwt_token(token, verify_signature=True)
-        sub = payload.get("sub") or payload.get("user_id")
-        email = payload.get("email")
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            res = await client.get(f"{base}/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
+    except httpx.HTTPError as e:
+        raise AuthServiceUnavailable("Auth service unreachable") from e
+    if res.status_code in (401, 403):
+        return None
+    if res.status_code != 200:
+        raise AuthServiceUnavailable(f"Auth service returned {res.status_code}")
 
-        if not sub and not email:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token claims"
-            )
+    me = res.json() or {}
+    if len(_cache) >= _CACHE_MAX:
+        _cache.clear()
+    _cache[key] = (now + CACHE_TTL_SECONDS, me)
+    return me
 
-        # 1. Lookup user in D1
-        row = await db.fetch_one(
-            "SELECT * FROM users WHERE supabase_auth_id = ? OR email = ? OR id = ?;",
-            [sub, email, sub]
-        )
 
-        if row:
-            # Auto-link Supabase auth ID if missing
-            if not row.get("supabase_auth_id") and sub and "-" in str(sub):
-                try:
-                    await db.execute("UPDATE users SET supabase_auth_id = ? WHERE id = ?;", [sub, row["id"]])
-                except Exception:
-                    pass
+def _unauthorized(detail: str) -> HTTPException:
+    return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=detail, headers={"WWW-Authenticate": "Bearer"})
 
-            if row.get("status", "Active") == "Active":
-                return UserProfile(
-                    id=row["id"],
-                    org_id=row["org_id"],
-                    email=row["email"],
-                    name=row["name"],
-                    role=row["role"],
-                    scope_type=row.get("scope_type", "ALL"),
-                    assigned_location=row.get("assigned_location", "ALL"),
-                    location_name=row.get("location_name"),
-                    status=row.get("status", "Active"),
-                    supabase_auth_id=sub or row.get("supabase_auth_id")
-                )
 
-        # 2. Auto-provision newly registered Supabase user into D1
-        if email and sub:
-            super_email = (os.getenv("SUPERADMIN_EMAIL") or "").strip().lower()
-            role = "SuperAdmin" if (super_email and email.lower() == super_email) else "Store Incharge"
-            user_id = f"USR_SB_{str(sub)[:8].upper()}"
-            org_id = os.getenv("DEFAULT_ORG_ID", "ORG_ZOLEXORA_002")
-            user_meta = payload.get("user_metadata", {})
-            name = user_meta.get("name") or email.split("@")[0].capitalize()
-            now = os.getenv("NOW_ISO", "2026-09-05T00:00:00.000Z")
+async def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] = Security(bearer)) -> UserProfile:
+    """The signed-in member of one business, from an IMS business session."""
+    if not credentials:
+        raise _unauthorized("Sign in required")
+    try:
+        me = await introspect(credentials.credentials)
+    except AuthServiceUnavailable as e:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Sign-in service unavailable") from e
 
-            try:
-                await db.execute(
-                    """INSERT OR IGNORE INTO users 
-                       (id, org_id, email, password_hash, name, role, scope_type, assigned_location, status, supabase_auth_id, created_at)
-                       VALUES (?, ?, ?, 'supabase_managed', ?, ?, 'ALL', 'ALL', 'Active', ?, ?);""",
-                    [user_id, org_id, email, name, role, sub, now]
-                )
-                return UserProfile(
-                    id=user_id,
-                    org_id=org_id,
-                    email=email,
-                    name=name,
-                    role=role,
-                    scope_type="ALL",
-                    assigned_location="ALL",
-                    location_name="All Stores",
-                    status="Active",
-                    supabase_auth_id=sub
-                )
-            except Exception:
-                pass
-    except Exception:
-        pass
+    # Only business sessions opened for IMS: personal tokens and other products' sessions are refused.
+    user, org = (me or {}).get("user") or {}, (me or {}).get("org") or {}
+    if not me or not user.get("member_id") or not org.get("zolexora_org_id") or me.get("product") != PRODUCT:
+        raise _unauthorized("Invalid session")
+    if org.get("status") not in (None, "active"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="This business is not active")
 
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Invalid session or token"
+    email = user.get("email")
+    return UserProfile(
+        id=user["member_id"],
+        org_id=org["zolexora_org_id"],
+        org_name=org.get("name") or "",
+        email=email or "",
+        name=user.get("display_name") or (email.split("@")[0] if email else None) or user.get("phone_number") or "Staff",
+        role=me.get("role") or "member",
+        permissions=list(me.get("permissions") or []),
+        zolexora_id=user.get("zolexora_id"),
     )
 
 
-def require_superadmin(user: UserProfile = Depends(get_current_user)) -> UserProfile:
-    return user
+def require(*permissions: str):
+    """Dependency: signed in and holding at least one of `permissions`."""
+
+    async def check(user: UserProfile = Depends(get_current_user)) -> UserProfile:
+        if not any(p in user.permissions for p in permissions):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"Missing permission: {' or '.join(permissions)}")
+        return user
+
+    return check

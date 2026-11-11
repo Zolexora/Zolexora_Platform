@@ -3,16 +3,16 @@ from pydantic import BaseModel, Field
 
 
 class UserProfile(BaseModel):
-    id: str
-    org_id: str
-    email: str
+    """A member of one business, as the Zolexora auth service reports it."""
+    id: str  # auth-service member id
+    org_id: str  # ZX-ORG id
+    org_name: str = ""
+    email: str = ""
     name: str
     role: str
-    scope_type: str = "ALL"
+    permissions: List[str] = []
+    zolexora_id: Optional[str] = None
     assigned_location: str = "ALL"
-    location_name: Optional[str] = None
-    status: str = "Active"
-    supabase_auth_id: Optional[str] = None
 
 
 class ItemCreate(BaseModel):
