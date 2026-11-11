@@ -3,27 +3,18 @@ import { Link } from 'react-router-dom';
 import {
   Settings,
   Printer,
-  Wifi,
   Database,
   Store,
   CheckCircle2,
   Save,
   RefreshCw,
-  Sliders,
-  DollarSign,
-  FileText,
   ShieldCheck,
   Smartphone,
   Cpu,
-  Zap,
   QrCode,
-  CreditCard,
   Volume2,
   ExternalLink,
-  Key,
   Lock,
-  Play,
-  AlertCircle,
 } from 'lucide-react';
 import { useAuth } from '../../lib/auth-context';
 
@@ -41,22 +32,6 @@ export default function PosSettings() {
   const [testAmount, setTestAmount] = useState<number>(1.0);
   const [testQrUrl, setTestQrUrl] = useState<string>('');
 
-  // Razorpay Gateway state
-  const [razorpayKeyId, setRazorpayKeyId] = useState<string>('');
-  const [razorpayKeySecret, setRazorpayKeySecret] = useState<string>('');
-  const [hasRazorpaySecret, setHasRazorpaySecret] = useState<boolean>(false);
-  const [testingRazorpay, setTestingRazorpay] = useState<boolean>(false);
-
-  // Cashfree Gateway state
-  const [cashfreeAppId, setCashfreeAppId] = useState<string>('');
-  const [cashfreeSecretKey, setCashfreeSecretKey] = useState<string>('');
-  const [cashfreeEnv, setCashfreeEnv] = useState<string>('TEST');
-  const [hasCashfreeSecret, setHasCashfreeSecret] = useState<boolean>(false);
-  const [testingCashfree, setTestingCashfree] = useState<boolean>(false);
-
-  // Test feedback banner
-  const [gatewayTestResult, setGatewayTestResult] = useState<{ gateway: string; message: string; ok: boolean } | null>(null);
-
   // Load existing payment handle & terminal settings from backend
   useEffect(() => {
     authFetch('/api/v1/payment/handle')
@@ -66,14 +41,9 @@ export default function PosSettings() {
           setUpiHandle(data.upi_handle || '');
           setMerchantName(data.merchant_name || 'Zolexora Retail Operations');
           setMcc(data.merchant_category_code || '5812');
-          setPaymentGateway(data.payment_gateway || 'upi_qr');
+          setPaymentGateway(['razorpay', 'cashfree'].includes(data.payment_gateway) ? 'upi_qr' : data.payment_gateway || 'upi_qr');
           setEdcTerminalId(data.edc_terminal_id || 'PINE_EDC_01');
           setSoundboxEnabled(data.soundbox_enabled ?? true);
-          setRazorpayKeyId(data.razorpay_key_id || '');
-          setHasRazorpaySecret(data.has_razorpay_secret || false);
-          setCashfreeAppId(data.cashfree_app_id || '');
-          setCashfreeEnv(data.cashfree_env || 'TEST');
-          setHasCashfreeSecret(data.has_cashfree_secret || false);
         }
       })
       .catch(() => {});
@@ -153,72 +123,6 @@ export default function PosSettings() {
     }, 600);
   };
 
-  const handleTestRazorpay = async () => {
-    setTestingRazorpay(true);
-    setGatewayTestResult(null);
-    try {
-      const res = await authFetch('/api/v1/payment/razorpay/create-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount: testAmount || 1.0,
-          bill_no: `TEST_${Date.now()}`,
-          customer_phone: '9876543210',
-        }),
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setGatewayTestResult({
-          gateway: 'Razorpay',
-          message: `Order Created: ${data.order_id} (₹${data.amount}, ${data.gateway})`,
-          ok: true,
-        });
-      } else {
-        setGatewayTestResult({
-          gateway: 'Razorpay',
-          message: data.detail || 'Failed to create test order',
-          ok: false,
-        });
-      }
-    } catch (err: any) {
-      setGatewayTestResult({ gateway: 'Razorpay', message: err.message || 'Network error', ok: false });
-    }
-    setTestingRazorpay(false);
-  };
-
-  const handleTestCashfree = async () => {
-    setTestingCashfree(true);
-    setGatewayTestResult(null);
-    try {
-      const res = await authFetch('/api/v1/payment/cashfree/create-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount: testAmount || 1.0,
-          bill_no: `TEST_${Date.now()}`,
-          customer_phone: '9876543210',
-        }),
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setGatewayTestResult({
-          gateway: 'Cashfree',
-          message: `Session Created: ${data.order_id} (${data.gateway}, Env: ${data.environment})`,
-          ok: true,
-        });
-      } else {
-        setGatewayTestResult({
-          gateway: 'Cashfree',
-          message: data.detail || 'Failed to create test order',
-          ok: false,
-        });
-      }
-    } catch (err: any) {
-      setGatewayTestResult({ gateway: 'Cashfree', message: err.message || 'Network error', ok: false });
-    }
-    setTestingCashfree(false);
-  };
-
   const handleTestSoundbox = () => {
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
@@ -244,11 +148,6 @@ export default function PosSettings() {
             merchant_name: merchantName.trim(),
             merchant_category_code: mcc,
             payment_gateway: paymentGateway,
-            razorpay_key_id: razorpayKeyId.trim() || undefined,
-            razorpay_key_secret: razorpayKeySecret.trim() || undefined,
-            cashfree_app_id: cashfreeAppId.trim() || undefined,
-            cashfree_secret_key: cashfreeSecretKey.trim() || undefined,
-            cashfree_env: cashfreeEnv,
             edc_terminal_id: edcTerminalId.trim() || undefined,
             soundbox_enabled: soundboxEnabled,
             auto_settle: true,
@@ -350,7 +249,7 @@ export default function PosSettings() {
             <div className="flex items-center gap-2 text-purple-200">
               <Lock className="w-4 h-4 text-amber-400 flex-shrink-0" />
               <span>
-                <strong>Enterprise Security:</strong> Payment Rails, Bank VPA & API secrets are centrally managed under the Command Panel (Commander).
+                <strong>Command Panel:</strong> card & netbanking gateway connections (Razorpay, Cashfree) are managed there.
               </span>
             </div>
             <Link
@@ -361,35 +260,6 @@ export default function PosSettings() {
             </Link>
           </div>
 
-          {/* Test Feedback Banner if any */}
-          {gatewayTestResult && (
-            <div
-              className={`p-3 rounded-xl border flex items-center justify-between text-xs ${
-                gatewayTestResult.ok
-                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
-                  : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                {gatewayTestResult.ok ? (
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                ) : (
-                  <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0" />
-                )}
-                <span>
-                  <strong>[{gatewayTestResult.gateway}]</strong> {gatewayTestResult.message}
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setGatewayTestResult(null)}
-                className="text-slate-400 hover:text-white text-xs ml-2"
-              >
-                ✕
-              </button>
-            </div>
-          )}
-
           {/* Gateway Selector Tabs */}
           <div>
             <label className="block text-slate-300 mb-2 font-semibold text-xs">
@@ -398,14 +268,15 @@ export default function PosSettings() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
               {[
                 { id: 'upi_qr', name: 'Direct Dynamic UPI QR', desc: '0% MDR, Direct to Bank via NPCI' },
-                { id: 'razorpay', name: 'Razorpay PG', desc: 'Credit/Debit Cards, NetBanking, UPI' },
-                { id: 'cashfree', name: 'Cashfree Payments', desc: 'Drop Checkout, Multi-Rail Auto Settle' },
+                { id: 'razorpay', name: 'Razorpay PG', desc: 'Coming soon: connect in Command Panel', soon: true },
+                { id: 'cashfree', name: 'Cashfree Payments', desc: 'Coming soon: connect in Command Panel', soon: true },
               ].map((gw) => (
                 <button
                   type="button"
                   key={gw.id}
+                  disabled={'soon' in gw}
                   onClick={() => setPaymentGateway(gw.id)}
-                  className={`p-3 rounded-xl border text-left transition ${
+                  className={`p-3 rounded-xl border text-left transition disabled:opacity-50 disabled:cursor-not-allowed ${
                     paymentGateway === gw.id
                       ? 'bg-emerald-500/15 border-emerald-500 text-white shadow-md shadow-emerald-500/10'
                       : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10 hover:text-white'
@@ -497,109 +368,6 @@ export default function PosSettings() {
                     <span className="text-[10px] text-slate-500 mt-1 block">
                       For automated swipe push to PineLabs / Paytm card machines.
                     </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Razorpay Gateway Box */}
-              <div className="p-3.5 bg-black/30 rounded-xl border border-white/5 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-sky-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <CreditCard className="w-3.5 h-3.5" />
-                    <span>Razorpay Merchant Integration</span>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleTestRazorpay}
-                    disabled={testingRazorpay}
-                    className="px-2.5 py-1 rounded bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 text-[10px] font-bold border border-sky-500/30 flex items-center gap-1 transition"
-                  >
-                    <Play className="w-3 h-3" />
-                    <span>{testingRazorpay ? 'Testing Order...' : 'Test Razorpay Order'}</span>
-                  </button>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-slate-300 mb-1 font-semibold">
-                      Razorpay Key ID
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="rzp_test_... or rzp_live_..."
-                      value={razorpayKeyId}
-                      onChange={(e) => setRazorpayKeyId(e.target.value)}
-                      className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white font-mono focus:outline-none focus:border-sky-500 text-xs"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-slate-300 mb-1 font-semibold">
-                      Razorpay Key Secret
-                    </label>
-                    <input
-                      type="password"
-                      placeholder={hasRazorpaySecret ? '•••••••••••• (Secret Configured)' : 'Enter Razorpay Key Secret'}
-                      value={razorpayKeySecret}
-                      onChange={(e) => setRazorpayKeySecret(e.target.value)}
-                      className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white font-mono focus:outline-none focus:border-sky-500 text-xs"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Cashfree Payments Box */}
-              <div className="p-3.5 bg-black/30 rounded-xl border border-white/5 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-purple-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <CreditCard className="w-3.5 h-3.5" />
-                    <span>Cashfree Payments Integration</span>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleTestCashfree}
-                    disabled={testingCashfree}
-                    className="px-2.5 py-1 rounded bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 text-[10px] font-bold border border-purple-500/30 flex items-center gap-1 transition"
-                  >
-                    <Play className="w-3 h-3" />
-                    <span>{testingCashfree ? 'Testing Session...' : 'Test Cashfree Order'}</span>
-                  </button>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-slate-300 mb-1 font-semibold">
-                      Cashfree App ID
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. TEST101..."
-                      value={cashfreeAppId}
-                      onChange={(e) => setCashfreeAppId(e.target.value)}
-                      className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white font-mono focus:outline-none focus:border-purple-500 text-xs"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-slate-300 mb-1 font-semibold">
-                      Cashfree Secret Key
-                    </label>
-                    <input
-                      type="password"
-                      placeholder={hasCashfreeSecret ? '•••••••••••• (Secret Configured)' : 'Enter Secret Key'}
-                      value={cashfreeSecretKey}
-                      onChange={(e) => setCashfreeSecretKey(e.target.value)}
-                      className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white font-mono focus:outline-none focus:border-purple-500 text-xs"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-slate-300 mb-1 font-semibold">
-                      Environment
-                    </label>
-                    <select
-                      value={cashfreeEnv}
-                      onChange={(e) => setCashfreeEnv(e.target.value)}
-                      className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-purple-500 text-xs"
-                    >
-                      <option value="TEST">Sandbox (TEST)</option>
-                      <option value="PRODUCTION">Live (PRODUCTION)</option>
-                    </select>
                   </div>
                 </div>
               </div>

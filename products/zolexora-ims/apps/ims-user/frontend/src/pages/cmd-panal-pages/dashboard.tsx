@@ -91,7 +91,7 @@ export default function CmdDashboard() {
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
-                Bank Merchant VPAs, Razorpay/Cashfree API Secrets, RuPay CC & Instant Settle.
+                Bank Merchant VPAs, Razorpay/Cashfree Connections, RuPay CC & Instant Settle.
               </p>
             </div>
           </div>

@@ -96,7 +96,7 @@ class PaymentEngine:
     # --- Razorpay ---
     def _need_razorpay(self) -> None:
         if not (self.razorpay_key_id and self.razorpay_key_secret):
-            raise PaymentError(400, "Razorpay is not set up for this business (Command Panel → Payments).")
+            raise PaymentError(400, "Razorpay is not connected for this business yet.")
 
     async def create_razorpay_order(self, req: RazorpayOrderRequest) -> Dict[str, Any]:
         self._need_razorpay()
@@ -113,7 +113,7 @@ class PaymentEngine:
     # --- Cashfree ---
     def _cashfree_headers(self) -> Dict[str, str]:
         if not (self.cashfree_app_id and self.cashfree_secret_key):
-            raise PaymentError(400, "Cashfree is not set up for this business (Command Panel → Payments).")
+            raise PaymentError(400, "Cashfree is not connected for this business yet.")
         return {"x-client-id": self.cashfree_app_id, "x-client-secret": self.cashfree_secret_key, "x-api-version": CASHFREE_API_VERSION}
 
     async def create_cashfree_order(self, order_id: str, req: CashfreeOrderRequest) -> Dict[str, Any]:

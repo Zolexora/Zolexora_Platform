@@ -9,6 +9,7 @@ import httpx
 import pytest
 from starlette.testclient import TestClient
 
+import main
 import payments
 from auth import get_current_user
 from catalog import PERMISSIONS
@@ -16,8 +17,9 @@ from conftest import member
 from main import app
 
 ORG = "ZX-ORG-PAYS-0000-0001"
+HANDLE = {"upi_handle": "shop@icici", "merchant_name": "Shop"}
+# What a gateway connection will provide; injected through main._gateway_credentials.
 KEYS = {
-    "upi_handle": "shop@icici", "merchant_name": "Shop",
     "razorpay_key_id": "rzp_test_k", "razorpay_key_secret": "rzp_secret", "razorpay_webhook_secret": "rzp_hook",
     "cashfree_app_id": "cf_app", "cashfree_secret_key": "cf_secret", "cashfree_env": "TEST",
 }
@@ -30,6 +32,14 @@ def client():
     with TestClient(app) as c:
         yield c
     app.dependency_overrides.clear()
+
+
+@pytest.fixture(autouse=True)
+def connected(monkeypatch):
+    """This business has Razorpay and Cashfree connected (others have nothing)."""
+    async def creds(org_id):
+        return dict(KEYS) if org_id == ORG else {}
+    monkeypatch.setattr(main, "_gateway_credentials", creds)
 
 
 @pytest.fixture
@@ -52,17 +62,18 @@ def gateway(monkeypatch):
 
 
 def setup_keys(client, **overrides):
-    res = client.post("/api/v1/payment/handle", json={**KEYS, **overrides})
+    res = client.post("/api/v1/payment/handle", json={**HANDLE, **overrides})
     assert res.status_code == 200, res.text
     return res
 
 
-def test_handle_masks_secrets_and_validates(client):
-    cfg = setup_keys(client).json()["config"]
-    assert cfg["razorpay_key_secret"] == cfg["cashfree_secret_key"] == cfg["razorpay_webhook_secret"] == "••••••••"
-    # Saving the masked values back keeps the real ones
-    setup_keys(client, razorpay_key_secret="••••••••", razorpay_webhook_secret="••••••••")
+def test_handle_never_takes_gateway_keys_and_validates(client):
+    cfg = setup_keys(client, razorpay_key_id="rzp_x", razorpay_key_secret="pasted", cashfree_secret_key="pasted").json()["config"]
+    assert not {"razorpay_key_id", "razorpay_key_secret", "cashfree_secret_key"} & set(cfg)
     assert client.post("/api/v1/payment/handle", json={"upi_handle": "nobank"}).status_code == 400
+    # A business without a gateway connection cannot pick Razorpay/Cashfree for checkout
+    app.dependency_overrides[get_current_user] = lambda: member(*PERMISSIONS, org_id="ZX-ORG-NOKEYS-0000-0002")
+    assert client.post("/api/v1/payment/handle", json={**HANDLE, "payment_gateway": "razorpay"}).status_code == 400
 
 
 def test_dynamic_qr_uses_the_business_handle(client):
@@ -73,9 +84,7 @@ def test_dynamic_qr_uses_the_business_handle(client):
     assert data["qr_code_url"].startswith("data:image/svg+xml")  # made here, not by a third-party QR service
 
 
-def test_gateways_refuse_without_keys(client):
-    setup_keys(client, razorpay_key_id="", razorpay_key_secret="", cashfree_app_id="", cashfree_secret_key="")
-    # Empty strings are kept as "unchanged", so clear by saving a config without keys for a new business
+def test_gateways_refuse_without_a_connection(client):
     other = member(*PERMISSIONS, org_id="ZX-ORG-NOKEYS-0000-0002")
     app.dependency_overrides[get_current_user] = lambda: other
     assert client.post("/api/v1/payment/razorpay/create-order", json={"amount": 10, "bill_no": "B"}).status_code == 400

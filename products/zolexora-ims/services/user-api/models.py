@@ -147,12 +147,7 @@ class PaymentHandleConfig(BaseModel):
     merchant_name: str = ""
     merchant_category_code: str = "5812"  # MCC (5812: Restaurants, 5411: Groceries)
     payment_gateway: str = "upi_qr"  # upi_qr, razorpay, cashfree, stripe, paytm_edc, pinelabs
-    razorpay_key_id: Optional[str] = None
-    razorpay_key_secret: Optional[str] = None
-    razorpay_webhook_secret: Optional[str] = None
-    cashfree_app_id: Optional[str] = None
-    cashfree_secret_key: Optional[str] = None
-    cashfree_env: Optional[str] = "TEST"  # TEST or PRODUCTION
+    # No gateway keys: businesses never paste Razorpay/Cashfree secrets into IMS (see main._gateway_credentials).
     stripe_publishable_key: Optional[str] = None
     edc_terminal_id: Optional[str] = None
     soundbox_enabled: bool = True

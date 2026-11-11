@@ -800,7 +800,10 @@ async def verify_dining_benefit(body: DiningBenefitVerify, user: UserProfile = D
 # --- Database-Backed Payment Handles, Terminal Settings & Customers ---
 async def _get_payment_handle_from_db(user: UserProfile) -> dict:
     """This business's payment settings. A new business starts with none (no platform keys or UPI handle)."""
-    return await _get_setting(user.org_id, "PAYMENT_HANDLE_CONFIG") or {
+    cfg = await _get_setting(user.org_id, "PAYMENT_HANDLE_CONFIG")
+    if cfg:  # keys saved by older versions are never used or shown
+        return {k: v for k, v in cfg.items() if k not in GATEWAY_KEY_FIELDS}
+    return {
         "upi_handle": "",
         "merchant_name": user.org_name,
         "merchant_category_code": "5812",
@@ -814,8 +817,19 @@ async def _save_payment_handle_to_db(user: UserProfile, config: dict):
     await _save_setting(user.org_id, "PAYMENT_HANDLE_CONFIG", config, "Payment handle and gateway settings")
 
 
+GATEWAY_KEY_FIELDS = ("razorpay_key_id", "razorpay_key_secret", "razorpay_webhook_secret",
+                      "cashfree_app_id", "cashfree_secret_key", "cashfree_env")
+GATEWAYS_NOT_CONNECTED = "Razorpay and Cashfree are not available yet: businesses will connect their own account once Zolexora is an approved partner."
+
+
+async def _gateway_credentials(org_id: str) -> dict:
+    """Razorpay/Cashfree access for this business. Empty until gateway connections are built: both providers
+    require platforms to use their partner OAuth, so businesses never paste API secrets into IMS."""
+    return {}
+
+
 async def _payment_engine(user: UserProfile) -> PaymentEngine:
-    return PaymentEngine(await _get_payment_handle_from_db(user))
+    return PaymentEngine({**await _get_payment_handle_from_db(user), **await _gateway_credentials(user.org_id)})
 
 
 async def _get_terminal_settings_from_db(user: UserProfile) -> dict:
@@ -846,18 +860,7 @@ async def _save_terminal_settings_to_db(user: UserProfile, settings: dict):
 @app.get("/api/v1/payment/handle")
 async def get_payment_handle(user: UserProfile = Depends(require("ims:pos:sell", "ims:payments:manage"))):
     """Returns active merchant payment handle and accepted payment rails from database."""
-    current_config = await _get_payment_handle_from_db(user)
-    safe_config = dict(current_config)
-    if safe_config.get("razorpay_key_secret"):
-        safe_config["has_razorpay_secret"] = True
-        safe_config["razorpay_key_secret"] = "••••••••"
-    if safe_config.get("cashfree_secret_key"):
-        safe_config["has_cashfree_secret"] = True
-        safe_config["cashfree_secret_key"] = "••••••••"
-    if safe_config.get("razorpay_webhook_secret"):
-        safe_config["has_razorpay_webhook_secret"] = True
-        safe_config["razorpay_webhook_secret"] = "••••••••"
-    return safe_config
+    return await _get_payment_handle_from_db(user)
 
 
 @app.post("/api/v1/payment/handle")
@@ -870,18 +873,13 @@ async def update_payment_handle(config: PaymentHandleConfig, user: UserProfile =
             detail="Invalid UPI VPA handle format. Must be in the format 'username@bank' (e.g. merchant@icici, store@okhdfcbank)."
         )
 
-    current = await _get_payment_handle_from_db(user)
+    if config.payment_gateway in ("razorpay", "cashfree") and not await _gateway_credentials(user.org_id):
+        raise HTTPException(status_code=400, detail=GATEWAYS_NOT_CONNECTED)
     updated = {
         "upi_handle": handle,
         "merchant_name": config.merchant_name.strip(),
         "merchant_category_code": config.merchant_category_code.strip(),
         "payment_gateway": config.payment_gateway,
-        "razorpay_key_id": config.razorpay_key_id.strip() if config.razorpay_key_id else current.get("razorpay_key_id"),
-        "razorpay_key_secret": config.razorpay_key_secret.strip() if config.razorpay_key_secret and "••••" not in config.razorpay_key_secret else current.get("razorpay_key_secret"),
-        "razorpay_webhook_secret": config.razorpay_webhook_secret.strip() if config.razorpay_webhook_secret and "••••" not in config.razorpay_webhook_secret else current.get("razorpay_webhook_secret"),
-        "cashfree_app_id": config.cashfree_app_id.strip() if config.cashfree_app_id else current.get("cashfree_app_id"),
-        "cashfree_secret_key": config.cashfree_secret_key.strip() if config.cashfree_secret_key and "••••" not in config.cashfree_secret_key else current.get("cashfree_secret_key"),
-        "cashfree_env": config.cashfree_env or "TEST",
         "stripe_publishable_key": config.stripe_publishable_key.strip() if config.stripe_publishable_key else None,
         "edc_terminal_id": config.edc_terminal_id.strip() if config.edc_terminal_id else None,
         "soundbox_enabled": config.soundbox_enabled,
@@ -1310,7 +1308,7 @@ async def verify_razorpay_payment_endpoint(body: RazorpayVerifyRequest, user: Us
 async def razorpay_webhook(org_id: str, request: Request):
     """Razorpay → this business (set the URL and secret in the Razorpay dashboard and in Payments)."""
     raw = await request.body()
-    cfg = await _get_setting(org_id, "PAYMENT_HANDLE_CONFIG") or {}
+    cfg = await _gateway_credentials(org_id)
     if not razorpay_webhook_ok(cfg.get("razorpay_webhook_secret") or "", raw, request.headers.get("x-razorpay-signature", "")):
         raise HTTPException(status_code=401, detail="Invalid signature")
     payload = json.loads(raw or b"{}")
@@ -1356,7 +1354,7 @@ async def verify_cashfree_payment_endpoint(body: CashfreeVerifyRequest, user: Us
 async def cashfree_webhook(org_id: str, request: Request):
     """Cashfree → this business. Signed with the business's Cashfree secret key."""
     raw = await request.body()
-    cfg = await _get_setting(org_id, "PAYMENT_HANDLE_CONFIG") or {}
+    cfg = await _gateway_credentials(org_id)
     if not cashfree_webhook_ok(cfg.get("cashfree_secret_key") or "", request.headers.get("x-webhook-timestamp", ""), raw, request.headers.get("x-webhook-signature", "")):
         raise HTTPException(status_code=401, detail="Invalid signature")
     data = (json.loads(raw or b"{}").get("data") or {})

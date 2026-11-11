@@ -6,17 +6,17 @@ import {
   AlertCircle,
   Save,
   Volume2,
-  KeyRound,
-  ShieldCheck,
   Zap,
-  Lock,
-  Building,
   RefreshCw,
-  Eye,
-  EyeOff,
   ExternalLink,
 } from 'lucide-react';
 import { useAuth } from '../../lib/auth-context';
+
+const GATEWAYS = [
+  { id: 'upi_qr', name: 'Direct Dynamic UPI QR', desc: '0% MDR • Direct to SBI / Bank • 0-Sec Instant Settle', tag: 'RECOMMENDED', connect: false },
+  { id: 'razorpay', name: 'Razorpay PG', desc: 'Credit/Debit Cards, NetBanking, International & UPI', tag: 'COMING SOON', connect: true },
+  { id: 'cashfree', name: 'Cashfree Payments', desc: 'Drop Checkout, Multi-Rail Auto Settle & Webhooks', tag: 'COMING SOON', connect: true },
+];
 
 export default function OrgPaymentSetup() {
   const { authFetch, org } = useAuth();
@@ -26,26 +26,15 @@ export default function OrgPaymentSetup() {
   const [upiHandle, setUpiHandle] = useState<string>('');
   const [merchantName, setMerchantName] = useState<string>('Zolexora Retail Operations');
   const [mcc, setMcc] = useState<string>('5812');
-  const [razorpayKeyId, setRazorpayKeyId] = useState<string>('');
-  const [razorpayKeySecret, setRazorpayKeySecret] = useState<string>('');
-  const [razorpayWebhookSecret, setRazorpayWebhookSecret] = useState<string>('');
-  const [cashfreeAppId, setCashfreeAppId] = useState<string>('');
-  const [cashfreeSecretKey, setCashfreeSecretKey] = useState<string>('');
-  const [cashfreeEnv, setCashfreeEnv] = useState<'sandbox' | 'production'>('sandbox');
   const [edcTerminalId, setEdcTerminalId] = useState<string>('EDC_TER_001');
   const [soundboxEnabled, setSoundboxEnabled] = useState<boolean>(true);
   const [autoSettle, setAutoSettle] = useState<boolean>(true);
-
-  // Visibility toggles for sensitive API keys
-  const [showRazorpaySecret, setShowRazorpaySecret] = useState(false);
-  const [showCashfreeSecret, setShowCashfreeSecret] = useState(false);
 
   // Status & Feedback
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string; gateway: string } | null>(null);
-  const [testingGateway, setTestingGateway] = useState(false);
 
   // Load from database on mount
   useEffect(() => {
@@ -58,18 +47,12 @@ export default function OrgPaymentSetup() {
       const res = await authFetch('/api/v1/payment/handle');
       if (res.ok) {
         const data = await res.json();
-        if (data && data.config) {
-          const cfg = data.config;
+        if (data) {
+          const cfg = data;
           setUpiHandle(cfg.upi_handle || '');
           setMerchantName(cfg.merchant_name || '');
           setMcc(cfg.merchant_category_code || '5812');
-          setPaymentGateway(cfg.payment_gateway || 'upi_qr');
-          setRazorpayKeyId(cfg.razorpay_key_id || '');
-          setRazorpayKeySecret(cfg.razorpay_key_secret || '');
-          setRazorpayWebhookSecret(cfg.razorpay_webhook_secret || '');
-          setCashfreeAppId(cfg.cashfree_app_id || '');
-          setCashfreeSecretKey(cfg.cashfree_secret_key || '');
-          setCashfreeEnv(cfg.cashfree_env || 'sandbox');
+          setPaymentGateway(GATEWAYS.find((g) => g.id === cfg.payment_gateway && !g.connect) ? cfg.payment_gateway : 'upi_qr');
           setEdcTerminalId(cfg.edc_terminal_id || 'EDC_TER_001');
           setSoundboxEnabled(cfg.soundbox_enabled !== false);
           setAutoSettle(cfg.auto_settle !== false);
@@ -93,12 +76,6 @@ export default function OrgPaymentSetup() {
           merchant_name: merchantName.trim(),
           merchant_category_code: mcc,
           payment_gateway: paymentGateway,
-          razorpay_key_id: razorpayKeyId.trim() || undefined,
-          razorpay_key_secret: razorpayKeySecret.trim() || undefined,
-          razorpay_webhook_secret: razorpayWebhookSecret.trim() || undefined,
-          cashfree_app_id: cashfreeAppId.trim() || undefined,
-          cashfree_secret_key: cashfreeSecretKey.trim() || undefined,
-          cashfree_env: cashfreeEnv,
           edc_terminal_id: edcTerminalId.trim() || undefined,
           soundbox_enabled: soundboxEnabled,
           auto_settle: autoSettle,
@@ -138,39 +115,6 @@ export default function OrgPaymentSetup() {
     }
   };
 
-  // Test Cashfree API Connection
-  const handleTestCashfree = async () => {
-    setTestingGateway(true);
-    try {
-      const res = await authFetch('/api/v1/payment/cashfree/create-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount: 1.0,
-          bill_no: `TEST_${Date.now()}`,
-          customer_phone: '9876543210',
-        }),
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setTestResult({
-          gateway: 'Cashfree',
-          message: `Connection Valid! Session created: ${data.order_id} (Env: ${data.environment})`,
-          ok: true,
-        });
-      } else {
-        setTestResult({
-          gateway: 'Cashfree',
-          message: data.detail || 'Credentials validation rejected by Cashfree API',
-          ok: false,
-        });
-      }
-    } catch (err: any) {
-      setTestResult({ gateway: 'Cashfree', message: err.message || 'Network error', ok: false });
-    }
-    setTestingGateway(false);
-  };
-
   return (
     <div className="p-6 space-y-6 overflow-y-auto flex-1 max-w-5xl mx-auto">
       {/* Header */}
@@ -183,7 +127,7 @@ export default function OrgPaymentSetup() {
             </span>
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            Configure merchant VPA, bank settlement accounts, API secrets, and instant settlement policies. These credentials are isolated from cashier POS counters.
+            Configure the merchant VPA, card & netbanking gateway connections, and settlement policies. Cashier POS counters cannot change these.
           </p>
         </div>
 
@@ -194,7 +138,7 @@ export default function OrgPaymentSetup() {
           className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold transition shadow-lg shadow-purple-900/30 disabled:opacity-50"
         >
           {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          <span>{saving ? 'Saving to Database...' : 'Save Configuration'}</span>
+          <span>{saving ? 'Saving...' : 'Save Configuration'}</span>
         </button>
       </div>
 
@@ -203,7 +147,7 @@ export default function OrgPaymentSetup() {
         <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center justify-between animate-fadeIn">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-            <span>Credentials are stored in this business's IMS database and are never shown again after saving.</span>
+            <span>Payment settings saved for this business.</span>
           </div>
         </div>
       )}
@@ -244,31 +188,13 @@ export default function OrgPaymentSetup() {
             Active Checkout Payment Gateway
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {[
-              {
-                id: 'upi_qr',
-                name: 'Direct Dynamic UPI QR',
-                desc: '0% MDR • Direct to SBI / Bank • 0-Sec Instant Settle',
-                tag: 'RECOMMENDED',
-              },
-              {
-                id: 'razorpay',
-                name: 'Razorpay PG',
-                desc: 'Credit/Debit Cards, NetBanking, International & UPI',
-                tag: 'CARDS & NETBANKING',
-              },
-              {
-                id: 'cashfree',
-                name: 'Cashfree Payments',
-                desc: 'Drop Checkout, Multi-Rail Auto Settle & Webhooks',
-                tag: 'ENTERPRISE PG',
-              },
-            ].map((gw) => (
+            {GATEWAYS.map((gw) => (
               <button
                 type="button"
                 key={gw.id}
+                disabled={gw.connect}
                 onClick={() => setPaymentGateway(gw.id)}
-                className={`p-3.5 rounded-xl border text-left transition ${
+                className={`p-3.5 rounded-xl border text-left transition disabled:opacity-50 disabled:cursor-not-allowed ${
                   paymentGateway === gw.id
                     ? 'bg-purple-600/20 border-purple-500 text-white shadow-md shadow-purple-900/20'
                     : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10 hover:text-white'
@@ -417,136 +343,33 @@ export default function OrgPaymentSetup() {
         </div>
       </div>
 
-      {/* Section 2: Razorpay Gateway Credentials */}
+      {/* Section 2: Card & netbanking gateways (provider connections) */}
       <div className="bg-slate-900/40 border border-white/10 rounded-2xl p-5 space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-white/5">
-          <div className="flex items-center gap-2.5">
-            <KeyRound className="w-5 h-5 text-indigo-400" />
-            <div>
-              <h2 className="text-sm font-bold text-white">Razorpay Payment Gateway API Keys</h2>
-              <p className="text-[11px] text-slate-400">
-                Used for Credit/Debit cards (Visa/Mastercard) and NetBanking orders
-              </p>
-            </div>
+        <div className="flex items-center gap-2.5 pb-3 border-b border-white/5">
+          <CreditCard className="w-5 h-5 text-indigo-400" />
+          <div>
+            <h2 className="text-sm font-bold text-white">Card & Netbanking Gateways</h2>
+            <p className="text-[11px] text-slate-400">Customers pay by card or netbanking through the business's own Razorpay or Cashfree account, connected on the provider's own sign-in and consent screen. IMS never asks for API keys or secrets. Available once Zolexora is an approved Razorpay and Cashfree partner.</p>
           </div>
-          <span className="text-[10px] text-slate-400 font-mono">dashboard.razorpay.com</span>
         </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-          <div>
-            <label className="block text-slate-300 mb-1 font-semibold">Razorpay Key ID</label>
-            <input
-              type="text"
-              placeholder="rzp_live_xxxxxxxxxxxxxxxx"
-              value={razorpayKeyId}
-              onChange={(e) => setRazorpayKeyId(e.target.value)}
-              className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white font-mono focus:outline-none focus:border-purple-500 text-xs"
-            />
-          </div>
-
-          <div>
-            <label className="block text-slate-300 mb-1 font-semibold">Razorpay Key Secret</label>
-            <div className="relative">
-              <input
-                type={showRazorpaySecret ? 'text' : 'password'}
-                placeholder="••••••••••••••••••••••••"
-                value={razorpayKeySecret}
-                onChange={(e) => setRazorpayKeySecret(e.target.value)}
-                className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 pr-10 text-white font-mono focus:outline-none focus:border-purple-500 text-xs"
-              />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+          {GATEWAYS.filter((g) => g.connect).map((gw) => (
+            <div key={gw.id} className="flex items-center justify-between p-3.5 bg-white/5 rounded-xl border border-white/10">
+              <div>
+                <div className="font-bold text-white">{gw.name}</div>
+                <div className="text-[10px] text-slate-400 mt-0.5">{gw.desc}</div>
+              </div>
               <button
                 type="button"
-                onClick={() => setShowRazorpaySecret(!showRazorpaySecret)}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
+                disabled
+                title="Available once Zolexora is an approved partner"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 text-slate-400 border border-white/10 rounded-lg font-semibold cursor-not-allowed"
               >
-                {showRazorpaySecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Connect</span>
               </button>
             </div>
-          </div>
-
-          <div>
-            <label className="block text-slate-300 mb-1 font-semibold">Razorpay Webhook Secret</label>
-            <input
-              type="password"
-              placeholder="Set the same secret in Razorpay → Webhooks"
-              value={razorpayWebhookSecret}
-              onChange={(e) => setRazorpayWebhookSecret(e.target.value)}
-              className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white font-mono focus:outline-none focus:border-purple-500 text-xs"
-            />
-          </div>
-        </div>
-        <div className="text-[11px] text-slate-400 space-y-1">
-          <p>Webhook URLs for this business (events: payment.captured, order.paid / payment success):</p>
-          <p className="font-mono text-slate-300 break-all">Razorpay: {window.location.origin}/api/v1/payment/razorpay/webhook/{org?.zolexora_org_id}</p>
-          <p className="font-mono text-slate-300 break-all">Cashfree: {window.location.origin}/api/v1/payment/cashfree/webhook/{org?.zolexora_org_id}</p>
-        </div>
-      </div>
-
-      {/* Section 3: Cashfree Payments Credentials */}
-      <div className="bg-slate-900/40 border border-white/10 rounded-2xl p-5 space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-white/5">
-          <div className="flex items-center gap-2.5">
-            <Zap className="w-5 h-5 text-amber-400" />
-            <div>
-              <h2 className="text-sm font-bold text-white">Cashfree Payments API Credentials</h2>
-              <p className="text-[11px] text-slate-400">
-                Drop Checkout, dynamic multi-rail webhooks, and 24x7 instant payouts
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={handleTestCashfree}
-            disabled={testingGateway}
-            className="px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/20 rounded-lg text-xs font-semibold transition"
-          >
-            {testingGateway ? 'Testing API...' : 'Test Cashfree Connection'}
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-          <div>
-            <label className="block text-slate-300 mb-1 font-semibold">Cashfree App ID</label>
-            <input
-              type="text"
-              placeholder="e.g. CF_APP_xxxxxxxx"
-              value={cashfreeAppId}
-              onChange={(e) => setCashfreeAppId(e.target.value)}
-              className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white font-mono focus:outline-none focus:border-purple-500 text-xs"
-            />
-          </div>
-
-          <div>
-            <label className="block text-slate-300 mb-1 font-semibold">Cashfree Secret Key</label>
-            <div className="relative">
-              <input
-                type={showCashfreeSecret ? 'text' : 'password'}
-                placeholder="••••••••••••••••••••••••"
-                value={cashfreeSecretKey}
-                onChange={(e) => setCashfreeSecretKey(e.target.value)}
-                className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 pr-10 text-white font-mono focus:outline-none focus:border-purple-500 text-xs"
-              />
-              <button
-                type="button"
-                onClick={() => setShowCashfreeSecret(!showCashfreeSecret)}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
-              >
-                {showCashfreeSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-slate-300 mb-1 font-semibold">Environment</label>
-            <select
-              value={cashfreeEnv}
-              onChange={(e) => setCashfreeEnv(e.target.value as any)}
-              className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-purple-500 text-xs"
-            >
-              <option value="sandbox">Sandbox (Testing / Test Mode)</option>
-              <option value="production">Production (Live Payments)</option>
-            </select>
-          </div>
+          ))}
         </div>
       </div>
     </div>

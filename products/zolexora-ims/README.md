@@ -86,3 +86,12 @@ waits up to 2 minutes, then exits with an error, so such a deploy fails instead 
 copies. Deploy by stopping the old container first; a crashed API's lock is taken over after 90 s. The store must
 support conditional writes (`If-Match` / `If-None-Match`): AWS S3, Cloudflare R2 and MinIO do.
 `scripts/db-ops.sh backup` still writes a plain SQL dump for keeping elsewhere.
+
+## Card & netbanking gateways (Razorpay, Cashfree)
+
+Both providers require a platform to reach a business's account through their partner OAuth ("Connect your
+account" on the provider's own consent screen), not by collecting the business's API secret. IMS therefore never
+accepts gateway keys. Until Zolexora is an approved Razorpay Technology Partner and Cashfree partner, only UPI
+(dynamic QR, confirmed with the UTR) is available and the Connect buttons are disabled. The order, verification
+and webhook code is kept and tested; it gets its access from `_gateway_credentials()` in
+`services/user-api/main.py`, which returns nothing until IMS stores each business's connection.
