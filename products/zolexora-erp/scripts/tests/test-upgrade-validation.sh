@@ -51,12 +51,12 @@ step "Recording current app versions"
 VERSIONS_BEFORE=$(compose_exec backend bench --site "$SITE" list-apps)
 
 if [ "$RUN_BUILD" = "1" ]; then
-  step "Building target v16 image"
-  docker compose -f compose.yaml build --pull
+  step "Pulling target v16 image (built in GitHub CI)"
+  docker compose -f compose.yaml pull backend scheduler worker-short worker-long socketio nginx
   step "Starting target v16 services"
   docker compose -f compose.yaml up -d backend scheduler worker-short worker-long socketio nginx
 else
-  log "WARN" "RUN_UPGRADE_BUILD=1 was not set; image pull/build upgrade simulation is NOT CERTIFIED"
+  log "WARN" "RUN_UPGRADE_BUILD=1 was not set; image pull upgrade simulation is NOT CERTIFIED"
 fi
 
 step "Running migrations"

@@ -21,10 +21,6 @@ services:
   backend:
     image: ${AI_BACKEND_IMAGE:-ghcr.io/zolexora/zolexora-ai-backend:latest}
     pull_policy: missing
-    build:
-      context: ../../
-      dockerfile: products/zolexora-ai/services/api/Dockerfile
-      target: production
     ports:
     - 4090:4090
     environment:
@@ -81,10 +77,6 @@ services:
   celery:
     image: ${AI_BACKEND_IMAGE:-ghcr.io/zolexora/zolexora-ai-backend:latest}
     pull_policy: missing
-    build:
-      context: ../../
-      dockerfile: products/zolexora-ai/services/api/Dockerfile
-      target: production
     environment:
     - PYTHONUNBUFFERED=1
     - LLM_PROVIDER
@@ -145,11 +137,6 @@ services:
   frontend:
     image: ${AI_FRONTEND_IMAGE:-ghcr.io/zolexora/zolexora-ai-frontend:latest}
     pull_policy: missing
-    build:
-      context: ../../
-      dockerfile: products/zolexora-ai/apps/web/Dockerfile
-      args:
-        VITE_API_KEY: ${VITE_API_KEY}
     environment:
     - VITE_API_KEY=${VITE_API_KEY}
     ports: []
@@ -173,9 +160,6 @@ services:
   nginx:
     image: ${AI_NGINX_IMAGE:-ghcr.io/zolexora/zolexora-ai-nginx:latest}
     pull_policy: missing
-    build:
-      context: ../../
-      dockerfile: products/zolexora-ai/Dockerfile.nginx
     container_name: zolexora-ai-nginx
     ports:
     - 3091:80

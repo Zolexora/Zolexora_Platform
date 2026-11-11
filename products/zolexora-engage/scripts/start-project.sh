@@ -12,4 +12,4 @@ esac
 
 exec bash "$WRAP" . bash -c '
   for v in '"$REQUIRED"'; do [ -n "${!v:-}" ] || { echo "❌ $v missing in Infisical (/Zolexora_Engage)" >&2; exit 1; }; done
-  docker compose pull --ignore-pull-failures && docker compose up -d "$@"' _ "$@"
+  docker compose pull && docker compose up -d "$@"' _ "$@"

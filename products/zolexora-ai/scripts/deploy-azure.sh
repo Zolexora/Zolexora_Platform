@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
 # =============================================================
 # Swarm Factory — Fast Azure Container Apps Deployment
-# Builds the local image, pushes it to ACR, updates Container Apps,
-# and verifies the live app.
+# Deploys an image that GitHub CI (zolexora-ai-deploy.yml) already built and pushed to ACR,
+# updates Container Apps, and verifies the live app. Images are never built locally.
 #
 # Usage:
-#   bash products/zolexora-ai/scripts/deploy-azure.sh
-#   TAG=my-test bash products/zolexora-ai/scripts/deploy-azure.sh
-#   SKIP_BUILD=1 IMAGE=swarmfactoryacr.azurecr.io/swarm-factory-api:tag bash products/zolexora-ai/scripts/deploy-azure.sh
+#   bash products/zolexora-ai/scripts/deploy-azure.sh                 # ACR :latest
+#   TAG=<full git sha> bash products/zolexora-ai/scripts/deploy-azure.sh
 # =============================================================
 set -euo pipefail
 
@@ -55,8 +54,6 @@ require_cmd curl
 : "${AZURE_CONTAINER_APP_ENV:=swarm-factory-env}"
 : "${AZURE_CONTAINER_REGISTRY:=swarmfactoryacr.azurecr.io}"
 : "${IMAGE_REPOSITORY:=swarm-factory-api}"
-: "${DOCKERFILE:=products/zolexora-ai/services/api/Dockerfile}"
-: "${SKIP_BUILD:=0}"
 : "${DEPLOY_WORKER:=1}"
 : "${CELERY_CONCURRENCY:=2}"
 
@@ -119,8 +116,7 @@ hydrate_from_azure
 
 ACR_NAME="${ACR_NAME:-${AZURE_CONTAINER_REGISTRY%%.*}}"
 API_KEY="$(trim_trailing_space "${API_KEY:-}")"
-VITE_API_KEY="$(trim_trailing_space "${VITE_API_KEY:-$API_KEY}")"
-TAG="${TAG:-$(git rev-parse --short=12 HEAD 2>/dev/null || date -u +%Y%m%d%H%M%S)}"
+TAG="${TAG:-latest}"
 IMAGE="${IMAGE:-${AZURE_CONTAINER_REGISTRY}/${IMAGE_REPOSITORY}:${TAG}}"
 
 require_var API_KEY
@@ -130,29 +126,9 @@ require_var AZURE_OPENAI_ENDPOINT
 require_var AZURE_OPENAI_API_KEY
 require_var AZURE_STORAGE_CONNECTION_STRING
 
-if [[ "$SKIP_BUILD" != "1" ]]; then
-  require_cmd docker
-  if [[ -z "${DOCKER_CONFIG:-}" ]]; then
-    TEMP_DOCKER_CONFIG="$(mktemp -d /tmp/swarm-factory-docker-config.XXXXXX)"
-    export DOCKER_CONFIG="$TEMP_DOCKER_CONFIG"
-    printf '{"auths":{}}\n' > "${DOCKER_CONFIG}/config.json"
-  fi
-
-  info "Logging in to ACR: $ACR_NAME"
-  az acr login --name "$ACR_NAME" >/dev/null
-
-  info "Building image: $IMAGE"
-  docker build \
-    --file "$DOCKERFILE" \
-    --build-arg VITE_API_KEY="$VITE_API_KEY" \
-    --tag "$IMAGE" \
-    .
-
-  info "Pushing image: $IMAGE"
-  docker push "$IMAGE"
-else
-  info "Skipping build/push; deploying existing image: $IMAGE"
-fi
+info "Deploying CI-built image: $IMAGE"
+az acr repository show --name "$ACR_NAME" --image "${IMAGE_REPOSITORY}:${TAG}" >/dev/null \
+  || error "Image ${IMAGE_REPOSITORY}:${TAG} is not in ACR. Run the zolexora-ai-deploy workflow in GitHub Actions."
 
 COMMON_ENV_VARS=(
   "AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}"

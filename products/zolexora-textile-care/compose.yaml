@@ -45,9 +45,6 @@ services:
   backend:
     image: ${TEXTILE_CARE_BACKEND_IMAGE:-ghcr.io/zolexora/zolexora-textile-care-backend:latest}
     pull_policy: missing
-    build:
-      context: ../../
-      dockerfile: products/zolexora-textile-care/services/backend/Dockerfile
     container_name: ttc-backend
     environment:
     - DATABASE_URL=postgresql+psycopg://ttc:${POSTGRES_PASSWORD}@postgres:5432/ttc
@@ -77,11 +74,6 @@ services:
   admin-web:
     image: ${TEXTILE_CARE_ADMIN_WEB_IMAGE:-ghcr.io/zolexora/zolexora-textile-care-admin-web:latest}
     pull_policy: missing
-    build:
-      context: ../../
-      dockerfile: products/zolexora-textile-care/Dockerfile.web
-      args:
-        APP_PATH: apps/admin-web
     container_name: ttc-admin-web
     deploy:
       resources:
@@ -103,11 +95,6 @@ services:
   seller-web:
     image: ${TEXTILE_CARE_SELLER_WEB_IMAGE:-ghcr.io/zolexora/zolexora-textile-care-seller-web:latest}
     pull_policy: missing
-    build:
-      context: ../../
-      dockerfile: products/zolexora-textile-care/Dockerfile.web
-      args:
-        APP_PATH: apps/seller-web
     container_name: ttc-seller-web
     deploy:
       resources:
@@ -129,11 +116,6 @@ services:
   marketplace-web:
     image: ${TEXTILE_CARE_MARKETPLACE_WEB_IMAGE:-ghcr.io/zolexora/zolexora-textile-care-marketplace-web:latest}
     pull_policy: missing
-    build:
-      context: ../../
-      dockerfile: products/zolexora-textile-care/Dockerfile.web
-      args:
-        APP_PATH: apps/marketplace-web
     container_name: ttc-marketplace-web
     deploy:
       resources:
@@ -155,9 +137,6 @@ services:
   nginx:
     image: ${TEXTILE_CARE_NGINX_IMAGE:-ghcr.io/zolexora/zolexora-textile-care-nginx:latest}
     pull_policy: missing
-    build:
-      context: ../../
-      dockerfile: products/zolexora-textile-care/Dockerfile.nginx
     container_name: ttc-nginx
     ports:
     - "3080:80"

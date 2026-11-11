@@ -42,7 +42,7 @@ fi
 : "${INFISICAL_TOKEN:?export INFISICAL_TOKEN (Infisical machine identity) before running}"
 export APPSUITE_PORT=80 APPSUITE_SSL_PORT=443 INFISICAL_ENV="${INFISICAL_ENV:-prod}"
 
-docker compose -f "$APPSUITE_DIR/compose.yaml" pull --ignore-pull-failures || true
+docker compose -f "$APPSUITE_DIR/compose.yaml" pull  # images are built only in GitHub CI
 
 # 4. Create Systemd Service for Auto-Restart on Boot
 SERVICE_FILE="/etc/systemd/system/zolexora-appsuite.service"

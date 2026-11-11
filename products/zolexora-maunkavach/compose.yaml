@@ -2,9 +2,6 @@ services:
   backend:
     image: ${MAUN_KAVACH_BACKEND_IMAGE:-ghcr.io/zolexora/zolexora-maunkavach-backend:latest}
     pull_policy: missing
-    build:
-      context: ../../
-      dockerfile: products/zolexora-maunkavach/Dockerfile.api
     container_name: maun-kavach-backend
     restart: unless-stopped
     environment:
@@ -36,9 +33,6 @@ services:
   frontend:
     image: ${MAUN_KAVACH_WEB_IMAGE:-ghcr.io/zolexora/zolexora-maunkavach-frontend:latest}
     pull_policy: missing
-    build:
-      context: ../../
-      dockerfile: products/zolexora-maunkavach/Dockerfile.web
     container_name: maun-kavach-web
     restart: unless-stopped
     healthcheck:
@@ -62,9 +56,6 @@ services:
   nginx:
     image: ${MAUN_KAVACH_NGINX_IMAGE:-ghcr.io/zolexora/zolexora-maunkavach-nginx:latest}
     pull_policy: missing
-    build:
-      context: ../../
-      dockerfile: products/zolexora-maunkavach/Dockerfile.nginx
     container_name: maun-kavach-nginx
     restart: unless-stopped
     ports:

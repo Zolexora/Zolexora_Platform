@@ -34,11 +34,6 @@ services:
   backend:
     image: ${MARKETPLACE_BACKEND_IMAGE:-ghcr.io/zolexora/zolexora-marketplace-backend:latest}
     pull_policy: missing
-    build:
-      context: ../../
-      dockerfile: infrastructure/containers/docker/Dockerfile.api-python
-      args:
-        APP_DIR: products/zolexora-marketplace/services/marketplace-api
     container_name: marketplace-backend
     environment:
     # All values come from Infisical (scripts/setup/with-infisical.sh); `${VAR:?}` ones block startup.
@@ -120,12 +115,6 @@ services:
   admin-web:
     image: ${MARKETPLACE_ADMIN_WEB_IMAGE:-ghcr.io/zolexora/zolexora-marketplace-admin-web:latest}
     pull_policy: missing
-    build:
-      context: ../../
-      dockerfile: infrastructure/containers/docker/Dockerfile.nextjs
-      args:
-        APP_NAME: "@zolexora/marketplace-admin"
-        APP_DIR: products/zolexora-marketplace/apps/portals/marketplace-admin/web
     container_name: marketplace-admin-web
     # Public, browser-safe config from Infisical, read at runtime (never baked into the image).
     environment: &web-env
@@ -148,12 +137,6 @@ services:
   seller-web:
     image: ${MARKETPLACE_SELLER_WEB_IMAGE:-ghcr.io/zolexora/zolexora-marketplace-seller-web:latest}
     pull_policy: missing
-    build:
-      context: ../../
-      dockerfile: infrastructure/containers/docker/Dockerfile.nextjs
-      args:
-        APP_NAME: "@zolexora/marketplace-seller-web"
-        APP_DIR: products/zolexora-marketplace/apps/portals/seller/web
     container_name: marketplace-seller-web
     environment: *web-env
     deploy:
@@ -168,12 +151,6 @@ services:
   shop-web:
     image: ${MARKETPLACE_SHOP_WEB_IMAGE:-ghcr.io/zolexora/zolexora-marketplace-shop-web:latest}
     pull_policy: missing
-    build:
-      context: ../../
-      dockerfile: infrastructure/containers/docker/Dockerfile.nextjs
-      args:
-        APP_NAME: "@zolexora/marketplace-shop-web"
-        APP_DIR: products/zolexora-marketplace/apps/storefronts/zolexora-shop/web
     container_name: marketplace-shop-web
     environment: *web-env
     deploy:
@@ -188,12 +165,6 @@ services:
   mahila-web:
     image: ${MARKETPLACE_MAHILA_WEB_IMAGE:-ghcr.io/zolexora/zolexora-marketplace-mahila-web:latest}
     pull_policy: missing
-    build:
-      context: ../../
-      dockerfile: infrastructure/containers/docker/Dockerfile.cra
-      args:
-        APP_NAME: "@zolexora/marketplace-mahila-madel-web"
-        APP_DIR: products/zolexora-marketplace/apps/storefronts/mahila-madel/web
     container_name: marketplace-mahila-web
     environment: *web-env
     volumes:
@@ -211,9 +182,6 @@ services:
   nginx:
     image: ${MARKETPLACE_NGINX_IMAGE:-ghcr.io/zolexora/zolexora-marketplace-nginx:latest}
     pull_policy: missing
-    build:
-      context: ../../
-      dockerfile: products/zolexora-marketplace/Dockerfile.nginx
     container_name: marketplace-nginx
     ports:
     - "3079:80"

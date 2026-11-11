@@ -59,7 +59,7 @@ log_error() {
 log_banner
 
 # Determine workspace root
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 log_info "Workspace Root detected: ${BOLD}$ROOT_DIR${RESET}"
 
@@ -328,12 +328,9 @@ launch_choice=${launch_choice:-2}
 
 case "$launch_choice" in
   1)
-    log_info "Building and launching Docker containers in background..."
-    docker compose pull --ignore-pull-failures
-    bash "${ROOT_DIR}/../../scripts/setup/with-infisical.sh" "${ROOT_DIR}" docker compose up -d
-    echo ""
+    log_info "Pulling CI-built images and launching containers..."
+    bash "${ROOT_DIR}/scripts/docker-start.sh" start
     log_success "IMS containers are running."
-    docker compose ps
     ;;
   2)
     log_info "Launching development servers..."

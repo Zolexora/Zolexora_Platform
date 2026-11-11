@@ -82,7 +82,7 @@ Validates complete destructive database drop and restore sequence while preservi
 RUN_UPGRADE_BUILD=1 ./scripts/tests/test-upgrade-validation.sh
 ```
 
-Upgrade validation rebuilds target images when `RUN_UPGRADE_BUILD=1`, recreates app services from the built images, runs migration, recreates Zolexora Workspaces after migration, validates custom app imports (including `payments`), runs smoke validation, checks background workers, and validates patch log integrity.
+Upgrade validation pulls the CI-built target images when `RUN_UPGRADE_BUILD=1`, recreates app services from them, runs migration, recreates Zolexora Workspaces after migration, validates custom app imports (including `payments`), runs smoke validation, checks background workers, and validates patch log integrity.
 
 ## Monitoring & Health Checks
 
@@ -211,7 +211,7 @@ bench --site site1.example.com clear-website-cache
 ## Release & Production Certification Checklist
 
 - [x] `INSTALL_PAYMENTS=1` set and verified in `.env` and Docker build.
-- [x] Docker build passes (`docker compose -f products/zolexora-erp/compose.yaml build`).
+- [x] Docker images build in GitHub CI (ERP Docker images workflow).
 - [x] Compose startup passes (`docker compose up -d`).
 - [x] Site bootstrap passes idempotency check (`./scripts/bootstrap-frappe-site.sh`).
 - [x] Payments app installed and Payment Gateway DocType available.

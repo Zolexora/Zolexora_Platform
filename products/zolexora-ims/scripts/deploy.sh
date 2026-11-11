@@ -219,21 +219,12 @@ deploy_docker() {
   echo -e "\n${MAGENTA}${BOLD}🐳 Deploying via Docker Containers...${NC}"
 
   if [[ "${DRY_RUN}" == "true" ]]; then
-    echo -e "  ${YELLOW}[DRY RUN] Would run 'docker compose pull --ignore-pull-failures' then 'up -d'.${NC}"
+    echo -e "  ${YELLOW}[DRY RUN] Would run 'scripts/docker-start.sh start' (pull CI-built images, then up -d).${NC}"
     return
   fi
 
-  cd "${ROOT_DIR}"
-  if command -v docker >/dev/null 2>&1; then
-    echo -e "  • Pulling images and starting the stack with Docker Compose..."
-    docker compose pull --ignore-pull-failures
-    bash "${ROOT_DIR}/../../scripts/setup/with-infisical.sh" "${ROOT_DIR}" docker compose up -d
-    echo -e "  ${GREEN}✓ All container services running in background.${NC}"
-    docker compose ps
-  else
-    echo -e "  ${RED}❌ Docker not found in system PATH.${NC}"
-    exit 1
-  fi
+  bash "${ROOT_DIR}/scripts/docker-start.sh" start
+  echo -e "  ${GREEN}✓ All container services running in background.${NC}"
 }
 
 # Step 5: Post-Deployment Smoke Tests

@@ -16,7 +16,7 @@ See the [root README](../README.md#getting-started): Docker, Node 20 + pnpm 9 (`
 
 - [AGENTS.md](../AGENTS.md) and [docs/architecture.md](../docs/architecture.md) define layout and dependency rules; they apply to humans too.
 - Secrets come only from Infisical through `scripts/setup/with-infisical.sh`. Never commit `.env` files, templates or default secret values. List new key names in [docs/secrets.md](../docs/secrets.md).
-- Docker: repo root build context, GHCR `image:` with `pull_policy: missing`, no forced `--build`. See [.agents/rules/docker-product-standards.md](../.agents/rules/docker-product-standards.md).
+- Docker: images are built only in GitHub CI (repo root context) and pulled from GHCR; compose has `image:` + `pull_policy: missing` and no `build:`. See [.agents/rules/docker-product-standards.md](../.agents/rules/docker-product-standards.md).
 - New host ports go in [docs/ports.md](../docs/ports.md).
 - Product layout: `products/<product>/{apps,services,packages}`.
 

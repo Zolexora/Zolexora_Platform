@@ -114,11 +114,6 @@ services:
   backend:
     image: ${ERP_BACKEND_IMAGE:-ghcr.io/zolexora/zolexora-erp-backend:latest}
     pull_policy: missing
-    build:
-      context: ../../
-      dockerfile: infrastructure/containers/docker/Dockerfile
-      args:
-        INSTALL_PAYMENTS: ${INSTALL_PAYMENTS:-0}
     container_name: zolexora-backend
     <<: *defaults
     command: sh -c "configure-frappe-common-site && exec bench serve --port 8000"
@@ -148,11 +143,6 @@ services:
   scheduler:
     image: ${ERP_BACKEND_IMAGE:-ghcr.io/zolexora/zolexora-erp-backend:latest}
     pull_policy: missing
-    build:
-      context: ../../
-      dockerfile: infrastructure/containers/docker/Dockerfile
-      args:
-        INSTALL_PAYMENTS: ${INSTALL_PAYMENTS:-0}
     container_name: zolexora-scheduler
     command: bench schedule
     depends_on:
@@ -168,11 +158,6 @@ services:
   worker-short:
     image: ${ERP_BACKEND_IMAGE:-ghcr.io/zolexora/zolexora-erp-backend:latest}
     pull_policy: missing
-    build:
-      context: ../../
-      dockerfile: infrastructure/containers/docker/Dockerfile
-      args:
-        INSTALL_PAYMENTS: ${INSTALL_PAYMENTS:-0}
     container_name: zolexora-worker-short
     command: bench worker --queue short
     depends_on:
@@ -188,11 +173,6 @@ services:
   worker-long:
     image: ${ERP_BACKEND_IMAGE:-ghcr.io/zolexora/zolexora-erp-backend:latest}
     pull_policy: missing
-    build:
-      context: ../../
-      dockerfile: infrastructure/containers/docker/Dockerfile
-      args:
-        INSTALL_PAYMENTS: ${INSTALL_PAYMENTS:-0}
     container_name: zolexora-worker-long
     command: bench worker --queue long
     depends_on:
@@ -208,11 +188,6 @@ services:
   socketio:
     image: ${ERP_BACKEND_IMAGE:-ghcr.io/zolexora/zolexora-erp-backend:latest}
     pull_policy: missing
-    build:
-      context: ../../
-      dockerfile: infrastructure/containers/docker/Dockerfile
-      args:
-        INSTALL_PAYMENTS: ${INSTALL_PAYMENTS:-0}
     container_name: zolexora-socketio
     command: sh -c "configure-frappe-common-site && exec bench socketio"
     depends_on:
@@ -230,9 +205,6 @@ services:
   nginx:
     image: ${ERP_NGINX_IMAGE:-ghcr.io/zolexora/zolexora-erp-nginx:latest}
     pull_policy: missing
-    build:
-      context: ../../
-      dockerfile: infrastructure/containers/compose/Dockerfile.nginx
     container_name: zolexora-nginx
     ports:
       - "${HTTP_PORT:-8080}:80"

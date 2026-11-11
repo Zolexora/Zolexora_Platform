@@ -2,9 +2,6 @@ services:
   backend:
     image: ${TMS_BACKEND_IMAGE:-ghcr.io/zolexora/zolexora-tms-backend:latest}
     pull_policy: missing
-    build:
-      context: ../../
-      dockerfile: products/zolexora-tms/services/backend/Dockerfile
     container_name: tms-backend
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -73,11 +70,6 @@ services:
   tms-web:
     image: ${TMS_WEB_IMAGE:-ghcr.io/zolexora/zolexora-tms-web:latest}
     pull_policy: missing
-    build:
-      context: ../../
-      dockerfile: products/zolexora-tms/Dockerfile.web
-      args:
-        APP_PATH: apps/tms-web
     container_name: tms-web
     volumes:
       - ./docker-entrypoint-env.sh:/docker-entrypoint.d/40-env-config.sh:ro
@@ -110,11 +102,6 @@ services:
   tms-admin:
     image: ${TMS_ADMIN_IMAGE:-ghcr.io/zolexora/zolexora-tms-admin:latest}
     pull_policy: missing
-    build:
-      context: ../../
-      dockerfile: products/zolexora-tms/Dockerfile.web
-      args:
-        APP_PATH: apps/tms-admin
     container_name: tms-admin
     volumes:
       - ./docker-entrypoint-env.sh:/docker-entrypoint.d/40-env-config.sh:ro
@@ -142,9 +129,6 @@ services:
   nginx:
     image: ${TMS_NGINX_IMAGE:-ghcr.io/zolexora/zolexora-tms-nginx:latest}
     pull_policy: missing
-    build:
-      context: ../../
-      dockerfile: products/zolexora-tms/Dockerfile.nginx
     container_name: tms-nginx
     ports:
     - "${TMS_PORT:-3090}:80"

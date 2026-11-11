@@ -27,9 +27,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    build:
-      context: ../../
-      dockerfile: products/zolexora-rentoeasy/Dockerfile.api
     container_name: rento-easy-api
     environment:
     - NODE_ENV=production
@@ -78,11 +75,6 @@ services:
   web-admin:
     image: ${RENTOEASY_WEB_ADMIN_IMAGE:-ghcr.io/zolexora/zolexora-rentoeasy-web-admin:latest}
     pull_policy: missing
-    build:
-      context: ../../
-      dockerfile: products/zolexora-rentoeasy/Dockerfile.web
-      args:
-        APP_DIR: products/zolexora-rentoeasy/apps/web-admin
     container_name: rento-easy-web-admin
     deploy:
       resources:
@@ -104,11 +96,6 @@ services:
   web-owner:
     image: ${RENTOEASY_WEB_OWNER_IMAGE:-ghcr.io/zolexora/zolexora-rentoeasy-web-owner:latest}
     pull_policy: missing
-    build:
-      context: ../../
-      dockerfile: products/zolexora-rentoeasy/Dockerfile.web
-      args:
-        APP_DIR: products/zolexora-rentoeasy/apps/web-owner
     container_name: rento-easy-web-owner
     deploy:
       resources:
@@ -130,11 +117,6 @@ services:
   web-tenant:
     image: ${RENTOEASY_WEB_TENANT_IMAGE:-ghcr.io/zolexora/zolexora-rentoeasy-web-tenant:latest}
     pull_policy: missing
-    build:
-      context: ../../
-      dockerfile: products/zolexora-rentoeasy/Dockerfile.web
-      args:
-        APP_DIR: products/zolexora-rentoeasy/apps/web-tenant
     container_name: rento-easy-web-tenant
     deploy:
       resources:
@@ -156,9 +138,6 @@ services:
   nginx:
     image: ${RENTOEASY_NGINX_IMAGE:-ghcr.io/zolexora/zolexora-rentoeasy-nginx:latest}
     pull_policy: missing
-    build:
-      context: ../../
-      dockerfile: products/zolexora-rentoeasy/Dockerfile.nginx
     container_name: rento-easy-nginx
     ports:
     - "3076:80"

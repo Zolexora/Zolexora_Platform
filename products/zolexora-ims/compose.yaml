@@ -2,9 +2,6 @@ services:
   ims-user-backend:
     image: ${IMS_USER_BACKEND_IMAGE:-ghcr.io/zolexora/zolexora-ims-user-backend:latest}
     pull_policy: missing
-    build:
-      context: ../../
-      dockerfile: products/zolexora-ims/services/user-api/Dockerfile
     container_name: ims-user-backend
     environment:
     - CLOUDFLARE_ACCOUNT_ID=${CLOUDFLARE_ACCOUNT_ID:?CLOUDFLARE_ACCOUNT_ID missing - run via scripts/setup/with-infisical.sh}
@@ -30,9 +27,6 @@ services:
   ims-user-frontend:
     image: ${IMS_USER_FRONTEND_IMAGE:-ghcr.io/zolexora/zolexora-ims-user-frontend:latest}
     pull_policy: missing
-    build:
-      context: ../../
-      dockerfile: products/zolexora-ims/apps/ims-user/frontend/Dockerfile
     container_name: ims-user-frontend
     environment:
     - AUTH_SERVICE_PUBLIC_URL=${AUTH_SERVICE_PUBLIC_URL:?AUTH_SERVICE_PUBLIC_URL missing - run via scripts/setup/with-infisical.sh}
@@ -58,9 +52,6 @@ services:
   nginx:
     image: ${IMS_NGINX_IMAGE:-ghcr.io/zolexora/zolexora-ims-nginx:latest}
     pull_policy: missing
-    build:
-      context: ../../
-      dockerfile: products/zolexora-ims/Dockerfile.nginx
     container_name: ims-nginx
     ports:
     - "3072:80"

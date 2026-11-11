@@ -13,9 +13,8 @@
     "deploy": "bash scripts/deploy.sh",
     "deploy:frontends": "bash scripts/deploy-frontends-cloudflare.sh",
     "health": "bash scripts/health-check.sh",
-    "docker:ops": "bash scripts/docker-ops.sh",
-    "docker:up": "bash scripts/docker-ops.sh up",
-    "docker:down": "bash scripts/docker-ops.sh down",
+    "docker:up": "bash scripts/docker-start.sh start",
+    "docker:down": "bash scripts/docker-start.sh stop",
     "db:migrate": "bash scripts/db-ops.sh migrate",
     "db:seed": "bash scripts/db-ops.sh seed",
     "menu": "bash scripts/menu.sh"

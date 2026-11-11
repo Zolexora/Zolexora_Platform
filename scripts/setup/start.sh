@@ -42,8 +42,6 @@ echo -e "  ${GREEN}✔ Done${NC}"
 echo -e "\n${YELLOW}[4/4] Scanning for Dockerized products...${NC}"
 PRODUCTS=(); PATHS=()
 
-PRODUCTS+=("All Products (Root Compose)"); PATHS+=("compose.yaml")
-
 for dir in products/*/ apps/*/; do
   [ -d "$dir" ] || continue
   pname=$(basename "$dir")
@@ -64,7 +62,7 @@ if [ -n "$CLI_PRODUCT" ]; then
   if [ "$CLI_PRODUCT" = "stop" ] || [ "$CLI_PRODUCT" = "down" ]; then
     echo -e "\n${YELLOW}Stopping all containers...${NC}"
     for compose_file in "${PATHS[@]}"; do
-      docker compose -f "$compose_file" down 2>/dev/null || true
+      bash scripts/docker/product-stack.sh "$(dirname "$compose_file")" stop || true
     done
     echo -e "${GREEN}✔ All containers stopped.${NC}"
     exit 0
@@ -109,7 +107,7 @@ else
   elif [ "$OPTION" -eq "$((${#PRODUCTS[@]} + 1))" ]; then
     echo -e "\n${YELLOW}Stopping all containers...${NC}"
     for compose_file in "${PATHS[@]}"; do
-      docker compose -f "$compose_file" down 2>/dev/null || true
+      bash scripts/docker/product-stack.sh "$(dirname "$compose_file")" stop || true
     done
     echo -e "${GREEN}✔ All containers stopped.${NC}"; exit 0
   fi
@@ -121,57 +119,6 @@ else
   IDX=$((OPTION - 1))
 fi
 
-NAME="${PRODUCTS[$IDX]}"
-COMPOSE_FILE="${PATHS[$IDX]}"
-DIR=$(dirname "$COMPOSE_FILE")
-SECRETS_DIR="$DIR"; [ "$DIR" = "." ] && SECRETS_DIR="products/zolexora-erp"
-with_secrets() { bash scripts/setup/with-infisical.sh "$SECRETS_DIR" "$@"; }
-ACTION="${CLI_ACTION:-up}"
-
-if [ "$ACTION" = "stop" ] || [ "$ACTION" = "down" ]; then
-  echo -e "\n${YELLOW}Stopping → $NAME${NC}"
-  docker compose -f "$COMPOSE_FILE" down
-  echo -e "${GREEN}✔ Stopped $NAME.${NC}"
-  exit 0
-fi
-
-if [ "$ACTION" = "build" ]; then
-  echo -e "\n${YELLOW}Building images for $NAME...${NC}"
-  with_secrets docker compose -f "$COMPOSE_FILE" build
-  echo -e "${GREEN}✔ Built images for $NAME.${NC}"
-  exit 0
-fi
-
-if [ "$ACTION" = "pull" ]; then
-  echo -e "\n${YELLOW}Pulling images for $NAME from registry...${NC}"
-  docker compose -f "$COMPOSE_FILE" pull
-  echo -e "${GREEN}✔ Pulled images for $NAME.${NC}"
-  exit 0
-fi
-
-if [ "$ACTION" = "ps" ] || [ "$ACTION" = "status" ]; then
-  docker compose -f "$COMPOSE_FILE" ps
-  exit 0
-fi
-
-if [ "$ACTION" = "logs" ]; then
-  docker compose -f "$COMPOSE_FILE" logs -f
-  exit 0
-fi
-
-if [ "$ACTION" = "restart" ]; then
-  echo -e "\n${YELLOW}Stopping existing containers for $NAME...${NC}"
-  docker compose -f "$COMPOSE_FILE" down
-fi
-
-echo -e "\n${GREEN}Starting → $NAME${NC}"
-
-# ── Launch Docker Compose (secrets from Infisical only) ───────
-docker compose -f "$COMPOSE_FILE" pull --ignore-pull-failures
-with_secrets docker compose -f "$COMPOSE_FILE" up -d
-
-echo -e "\n=========================================================="
-echo -e "${GREEN}✅  $NAME is now running!${NC}"
-echo -e "  Logs : ${BLUE}docker compose -f $COMPOSE_FILE logs -f${NC}"
-echo -e "  Stop : ${BLUE}docker compose -f $COMPOSE_FILE down${NC}"
-echo -e "=========================================================="
+# Images come from GHCR (built only in GitHub CI); the shared stack script pulls and runs them.
+ACTION="${CLI_ACTION:-start}"; [ "$ACTION" = "up" ] && ACTION=start
+exec bash scripts/docker/product-stack.sh "$(dirname "${PATHS[$IDX]}")" "$ACTION"

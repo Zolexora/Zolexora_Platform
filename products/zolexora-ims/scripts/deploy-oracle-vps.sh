@@ -59,18 +59,18 @@ iptables -I INPUT 6 -m state --state NEW -p tcp --dport 443 -j ACCEPT 2>/dev/nul
 iptables -I INPUT 6 -m state --state NEW -p tcp --dport 8000 -j ACCEPT 2>/dev/null || true
 
 echo -e "${BLUE}${BOLD}[4/4] Starting Containerized Microservices...${NC}"
-REPO_DIR="/opt/zolexora-ims"
+REPO_DIR="/opt/zolexora-platform"
 if [[ ! -d "${REPO_DIR}" ]]; then
-  git clone -b dev https://github.com/Zolexora/Zolexora_IMS.git "${REPO_DIR}"
+  git clone --depth 1 -b main https://github.com/Zolexora/Zolexora_Platform.git "${REPO_DIR}"
 fi
 
 cd "${REPO_DIR}"
-git pull origin dev
+git pull --ff-only origin main
 
-echo -e "Starting Docker stack with compose..."
+echo -e "Pulling CI-built images and starting the stack..."
 : "${INFISICAL_TOKEN:?export INFISICAL_TOKEN (machine identity) — secrets come only from Infisical}"
-docker compose pull --ignore-pull-failures
-infisical run --projectId=c4ac7d07-f26f-4fb8-bd04-6d3e037079f9 --env=prod --path=/Zolexora_IMS --recursive -- docker compose up -d
+export INFISICAL_ENV="${INFISICAL_ENV:-prod}"
+bash products/zolexora-ims/scripts/docker-start.sh start
 
 echo -e "\n${GREEN}${BOLD}══════════════════════════════════════════════════════════════════════${NC}"
 echo -e "${GREEN}${BOLD}  🎉 SUCCESS! Zolexora IMS is running 24/7 on your Always-Free VPS!   ${NC}"

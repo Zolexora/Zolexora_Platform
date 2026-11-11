@@ -11,7 +11,6 @@
 #   ./products/zolexora-textile-care/scripts/start-docker.sh mobile-build           # Build all mobile APKs
 #   ./products/zolexora-textile-care/scripts/start-docker.sh --down                 # Stop & remove containers
 #   ./products/zolexora-textile-care/scripts/start-docker.sh --logs marketplace-web # Tail logs for a service
-#   ./products/zolexora-textile-care/scripts/start-docker.sh --build all            # Force rebuild images
 #   ./products/zolexora-textile-care/scripts/start-docker.sh --help
 #
 
@@ -143,7 +142,6 @@ dedupe() {
 }
 
 # ── Flags ──────────────────────────────────────────────────────────────────────
-DO_BUILD=false
 DO_DOWN=false
 DO_LOGS=""
 DO_DETACH=false
@@ -155,13 +153,11 @@ while [[ $# -gt 0 ]]; do
     -h|--help)
       show_menu
       echo "Flags:"
-      echo "  --build      Force rebuild Docker images before starting"
       echo "  --down       Stop and remove all containers"
       echo "  --detach/-d  Start in detached (background) mode"
       echo "  --logs <svc> Tail logs for a specific service"
       echo "  --dry-run    Print the docker compose command without running it"
       exit 0 ;;
-    --build)    DO_BUILD=true;    shift ;;
     --down)     DO_DOWN=true;     shift ;;
     -d|--detach) DO_DETACH=true;  shift ;;
     --dry-run)  DO_DRY_RUN=true;  shift ;;
@@ -297,9 +293,6 @@ for svc in "${RESOLVED_SVCS[@]}"; do
 done
 
 # ── Build the compose command ───────────────────────────────────────────────────
-BUILD_FLAG=()
-[ "$DO_BUILD" = true ] && BUILD_FLAG=(--build)
-
 DETACH_FLAG=()
 [ "$DO_DETACH" = true ] && DETACH_FLAG=(-d)
 
@@ -311,7 +304,7 @@ echo ""
 if [ "$DO_DRY_RUN" = true ]; then
   info "[DRY-RUN] Would run:"
   if [ ${#RUN_SVCS[@]} -gt 0 ]; then
-    echo "  docker compose ${PROFILE_FLAGS[*]} up ${BUILD_FLAG[*]} ${DETACH_FLAG[*]} ${RUN_SVCS[*]}"
+    echo "  docker compose ${PROFILE_FLAGS[*]} up ${DETACH_FLAG[*]} ${RUN_SVCS[*]}"
   fi
   for svc in "${BUILD_ONLY_SVCS[@]}"; do
     echo "  docker compose ${PROFILE_FLAGS[*]} run --rm $svc"
@@ -323,7 +316,7 @@ fi
 # ── Run long-running services ──────────────────────────────────────────────────
 if [ ${#RUN_SVCS[@]} -gt 0 ]; then
   info "Starting: ${RUN_SVCS[*]}"
-  dc "${PROFILE_FLAGS[@]}" up "${BUILD_FLAG[@]}" "${DETACH_FLAG[@]}" "${RUN_SVCS[@]}"
+  dc "${PROFILE_FLAGS[@]}" up "${DETACH_FLAG[@]}" "${RUN_SVCS[@]}"
 fi
 
 # ── Run build-only services (mobile APK builds) ────────────────────────────────

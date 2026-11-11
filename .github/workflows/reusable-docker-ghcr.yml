@@ -33,7 +33,15 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - id: img
-        run: echo "name=${{ steps.ghcr.outputs.prefix }}/zolexora-${{ inputs.product }}-${{ matrix.service }}" >> "$GITHUB_OUTPUT"
+        env:
+          REF: ${{ github.ref_name }}
+        # main publishes :latest (what every compose file pulls); other branches publish :<branch> only.
+        run: |
+          name="${{ steps.ghcr.outputs.prefix }}/zolexora-${{ inputs.product }}-${{ matrix.service }}"
+          ref="$(printf '%s' "$REF" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9._-]/-/g' | cut -c1-120)"
+          [ "$REF" = "main" ] && ref=latest
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
       - uses: docker/build-push-action@v6
         with:
           context: ${{ matrix.context || '.' }}
@@ -42,7 +50,7 @@ jobs:
           build-args: ${{ matrix.build-args }}
           push: true
           tags: |
-            ${{ steps.img.outputs.name }}:latest
+            ${{ steps.img.outputs.name }}:${{ steps.img.outputs.ref }}
             ${{ steps.img.outputs.name }}:${{ github.sha }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}

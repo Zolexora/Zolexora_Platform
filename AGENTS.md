@@ -26,24 +26,18 @@ This repository is a Turborepo/pnpm monorepo housing the Zolexora ecosystem prod
 When creating, updating, or debugging Docker infrastructure for any product:
 
 1. **Follow the Rule**: Adhere strictly to [.agents/rules/docker-product-standards.md](file:///.agents/rules/docker-product-standards.md).
-2. **Root Build Context Mandate**:
-   - In this monorepo, **EVERY product and service Docker build** (in CI pipelines, Docker Compose, or manual CLI commands) **MUST use the monorepo root (`.`) as the build context**.
-   - All `Dockerfile` definitions across all products must use paths relative to the repository root (e.g., `COPY products/<product>/...`). Never scope build context to a subfolder.
-3. **Never Force `--build`**: Startup scripts must NEVER hardcode `up -d --build`. They must pull missing prebuilt images from GitHub Container Registry (`ghcr.io/zolexora/...`) using `pull --ignore-pull-failures` and start with `up -d`.
-4. **Always Add GHCR Tags & Pull Policy**:
-   In every `compose.yaml`:
+2. **Images are built only in GitHub CI, never locally**: no `build:` blocks in compose, no `docker build` / `compose build` / `--build` in scripts. CI (`reusable-docker-ghcr.yml`) builds every image with the monorepo root (`.`) as context; Dockerfiles use root-relative paths (e.g. `COPY products/<product>/...`).
+3. **Pull, then start**: startup scripts run a strict `docker compose pull` and then `up -d`. A failed pull stops with a message (run the product's image workflow / log in to GHCR); never fall back to building or `--ignore-pull-failures`.
+4. **GHCR Image & Pull Policy** in every `compose.yaml`:
    ```yaml
    image: ${PRODUCT_SERVICE_IMAGE:-ghcr.io/zolexora/zolexora-<product>-<service>:latest}
    pull_policy: missing
-   build:
-     context: ../../
-     dockerfile: products/zolexora-<product>/Dockerfile.<service>
    ```
 5. **Standard Subcommands**:
-   Every `products/<product>/scripts/docker-start.sh` must support:
-   `start`, `stop`, `restart`, `build`, `pull`, `status`, `logs`.
+   Every `products/<product>/scripts/docker-start.sh` wraps `scripts/docker/product-stack.sh` and supports:
+   `start`, `stop`, `restart`, `pull`, `status`, `logs`.
 6. **Standard Package Scripts**:
-   Register `docker:<product>:{start|stop|restart|build|pull|logs|status}` in root `package.json`.
+   Register `docker:<product>:{start|stop|restart|pull|logs|status}` in root `package.json`.
 7. **Automate with Scaffolder**:
    When adding a new product or scripts, run:
    ```bash

@@ -30,7 +30,7 @@ show_menu() {
   echo -e "${BOLD}Select an operation:${NC}\n"
   echo -e "  ${CYAN}[1]${NC} 🚀 Deploy Application Stack     (Render, Cloudflare Pages, Docker)"
   echo -e "  ${CYAN}[2]${NC} 🩺 Run System Health Check       (Probe all APIs, frontends & latency)"
-  echo -e "  ${CYAN}[3]${NC} 🐳 Docker Container Operations   (Up, down, build, restart, logs, shell)"
+  echo -e "  ${CYAN}[3]${NC} 🐳 Docker Container Operations   (Start, stop, pull, status, logs — GHCR images)"
   echo -e "  ${CYAN}[4]${NC} 📦 Database Migrations & Seeds   (Cloudflare D1 schema, tables & seed)"
   echo -e "  ${CYAN}[5]${NC} 🧪 Run Production Quality Gates  (Pytest suite, TypeScript, build tests)"
   echo -e "  ${CYAN}[6]${NC} 🔐 Audit Environment & Secrets   (Check .env.local, generate keys)"
@@ -54,10 +54,9 @@ run_action() {
       ;;
     3)
       echo ""
-      echo -e "${BOLD}Docker Subcommands:${NC} up | down | build | ps | logs | clean"
-      read -r -p "Enter docker command [up]: " dcmd
-      dcmd="${dcmd:-up}"
-      "${SCRIPT_DIR}/docker-ops.sh" "${dcmd}"
+      echo -e "${BOLD}Docker Subcommands:${NC} start | stop | restart | pull | status | logs"
+      read -r -p "Enter docker command [start]: " dcmd
+      "${SCRIPT_DIR}/docker-start.sh" "${dcmd:-start}"
       ;;
     4)
       echo ""

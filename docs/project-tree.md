@@ -440,7 +440,8 @@ Zolexora_Platform/
 │   │   ├── apps/
 │   │   │   └── ims-user/  (58 files)
 │   │   ├── database/
-│   │   │   └── migrations/  (1 files)
+│   │   │   ├── migrations/  (1 files)
+│   │   │   └── wrangler.toml
 │   │   ├── docs/
 │   │   │   ├── planning/  (2 files)
 │   │   │   └── security/  (2 files)
@@ -457,14 +458,13 @@ Zolexora_Platform/
 │   │   │   ├── deploy-frontends-cloudflare.sh
 │   │   │   ├── deploy-oracle-vps.sh
 │   │   │   ├── deploy.sh
-│   │   │   ├── docker-ops.sh
 │   │   │   ├── docker-start.sh
 │   │   │   ├── mcp-payments-server.py
 │   │   │   ├── menu.sh
 │   │   │   ├── run-all-tests.sh
 │   │   │   └── setup.sh
 │   │   ├── services/
-│   │   │   └── user-api/  (16 files)
+│   │   │   └── user-api/  (19 files)
 │   │   ├── .gitignore
 │   │   ├── .infisical.json
 │   │   ├── compose.yaml
