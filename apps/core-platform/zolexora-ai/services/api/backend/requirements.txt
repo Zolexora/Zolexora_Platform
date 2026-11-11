@@ -12,7 +12,7 @@ pydantic==2.7.1
 pydantic-settings==2.3.0
 
 # ── Job queue ──────────────────────────────────────────────────
-celery==5.4.0
+celery==5.7.0
 redis==5.0.6
 azure-storage-blob==12.20.0
 
