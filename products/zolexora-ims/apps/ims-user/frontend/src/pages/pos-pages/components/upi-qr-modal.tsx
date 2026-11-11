@@ -23,7 +23,8 @@ interface UpiQrModalProps {
   billNo: string;
   isOpen: boolean;
   onClose: () => void;
-  onPaymentSuccess: (utrRef?: string) => void;
+  /** Called with the id of the payment the server confirmed for this bill. */
+  onPaymentSuccess: (paymentId: string) => void;
   customerPhone?: string;
   customerEmail?: string;
 }
@@ -79,7 +80,19 @@ export default function UpiQrModal({
   }, [isOpen]);
 
   const upiUrl = `upi://pay?pa=${upiHandle}&pn=${encodeURIComponent(merchantName)}&mc=${mcc}&am=${amount.toFixed(2)}&cu=INR&tn=${encodeURIComponent(`Bill_${billNo}`)}`;
-  const qrSvgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(upiUrl)}&bgcolor=ffffff&color=0b0d14&margin=10`;
+  // QR made by our own backend (no third-party QR service sees the payment details).
+  const [qrSvgUrl, setQrSvgUrl] = useState<string>('');
+  useEffect(() => {
+    if (!isOpen || !upiHandle || amount <= 0) return;
+    authFetch('/api/v1/payment/generate-dynamic-qr', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount, bill_no: billNo }),
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => setQrSvgUrl(data?.qr_code_url || ''))
+      .catch(() => setQrSvgUrl(''));
+  }, [isOpen, upiHandle, merchantName, amount, billNo]);
 
   // App Deep Links
   const gpayUrl = `gpay://upi/pay?pa=${upiHandle}&pn=${encodeURIComponent(merchantName)}&am=${amount.toFixed(2)}&cu=INR&tn=${encodeURIComponent(`Bill_${billNo}`)}`;
@@ -173,10 +186,10 @@ export default function UpiQrModal({
   };
 
   // A bill is marked paid only when the server confirms the gateway payment.
-  const settle = (rail: string, ref?: string) => {
+  const settle = (rail: string, paymentId: string) => {
     playSoundboxAnnouncement(amount, rail);
     setVerifying(false);
-    onPaymentSuccess(ref);
+    onPaymentSuccess(paymentId);
   };
 
   const handleRazorpayCheckout = async () => {
@@ -210,7 +223,7 @@ export default function UpiQrModal({
               bill_no: billNo,
             });
             if (!result.settled) throw new Error('Payment not confirmed');
-            settle('Razorpay', response.razorpay_payment_id);
+            settle('Razorpay', result.order_id);
           } catch (err) {
             fail(err);
           }
@@ -241,7 +254,7 @@ export default function UpiQrModal({
       if (outcome?.error) throw new Error(outcome.error.message || 'Payment not completed');
       const result = await post('/api/v1/payment/cashfree/verify-payment', { order_id: order.order_id, bill_no: billNo });
       if (!result.settled) throw new Error(`Cashfree has not confirmed this payment (${result.order_status || 'pending'}).`);
-      settle('Cashfree', order.order_id);
+      settle('Cashfree', result.order_id);
     } catch (err) {
       fail(err);
     }
@@ -258,7 +271,7 @@ export default function UpiQrModal({
     setVerifying(true);
     try {
       const result = await post('/api/v1/payment/verify', { bill_no: billNo, amount, payment_mode: 'UPI', transaction_ref: utrNumber.trim() });
-      settle('U P I', result.transaction_ref);
+      settle('U P I', result.payment_id);
     } catch (err) {
       fail(err);
     }

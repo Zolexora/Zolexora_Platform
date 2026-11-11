@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useAuth } from '../../../lib/auth-context';
 import { Users, Clock, UtensilsCrossed, CheckCircle2, ChevronRight, Sparkles } from 'lucide-react';
 
 export interface PosTable {
@@ -13,20 +14,29 @@ export interface PosTable {
   itemCount?: number;
 }
 
-const DEFAULT_TABLES: PosTable[] = [
-  { id: 'T01', code: 'T-01', section: 'Main Hall', capacity: 2, status: 'Vacant' },
-  { id: 'T02', code: 'T-02', section: 'Main Hall', capacity: 4, status: 'Occupied', runningAmount: 1450, activeTime: '24m', currentGuest: 'Vikram S.', itemCount: 3 },
-  { id: 'T03', code: 'T-03', section: 'Main Hall', capacity: 4, status: 'Vacant' },
-  { id: 'T04', code: 'T-04', section: 'Main Hall', capacity: 6, status: 'Occupied', runningAmount: 3820, activeTime: '42m', currentGuest: 'Meera K.', itemCount: 7 },
-  { id: 'T05', code: 'T-05', section: 'AC Lounge', capacity: 4, status: 'Billed', runningAmount: 2190, activeTime: '55m', currentGuest: 'Sharma Family', itemCount: 5 },
-  { id: 'T06', code: 'T-06', section: 'AC Lounge', capacity: 6, status: 'Vacant' },
-  { id: 'T07', code: 'T-07', section: 'AC Lounge', capacity: 8, status: 'Occupied', runningAmount: 6400, activeTime: '18m', currentGuest: 'Corporate Lunch', itemCount: 11 },
-  { id: 'T08', code: 'T-08', section: 'AC Lounge', capacity: 2, status: 'Vacant' },
-  { id: 'T09', code: 'T-09', section: 'Rooftop', capacity: 4, status: 'Vacant' },
-  { id: 'T10', code: 'T-10', section: 'Rooftop', capacity: 4, status: 'Occupied', runningAmount: 1890, activeTime: '12m', currentGuest: 'Aman Deep', itemCount: 4 },
-  { id: 'T11', code: 'T-11', section: 'Rooftop', capacity: 6, status: 'Vacant' },
-  { id: 'T12', code: 'T-12', section: 'Rooftop', capacity: 8, status: 'Vacant' },
-];
+interface TableRow {
+  id: string;
+  number: string;
+  section: string;
+  capacity: number;
+  status: PosTable['status'];
+  current_bill?: number;
+  waiter?: string;
+  items_count?: number;
+  seated_since?: string;
+}
+
+const toTable = (r: TableRow): PosTable => ({
+  id: r.id,
+  code: r.number,
+  section: r.section,
+  capacity: r.capacity,
+  status: r.status,
+  runningAmount: r.current_bill || undefined,
+  currentGuest: r.waiter || undefined,
+  itemCount: r.items_count || undefined,
+  activeTime: r.seated_since ? `${Math.max(0, Math.round((Date.now() - Date.parse(r.seated_since)) / 60000))}m` : undefined,
+});
 
 interface PosTableSelectorProps {
   selectedTable: string | null;
@@ -38,16 +48,43 @@ export default function PosTableSelector({
   selectedTable,
   onSelectTable,
 }: PosTableSelectorProps) {
+  const { authFetch } = useAuth();
+  const [tables, setTables] = useState<PosTable[]>([]);
   const [activeSection, setActiveSection] = useState<string>('All');
-  const sections = ['All', 'Main Hall', 'AC Lounge', 'Rooftop'];
+  const [draft, setDraft] = useState({ number: '', section: '', capacity: 4 });
 
-  const filtered = activeSection === 'All'
-    ? DEFAULT_TABLES
-    : DEFAULT_TABLES.filter((t) => t.section === activeSection);
+  const load = () =>
+    authFetch('/api/v1/tables')
+      .then((res) => (res.ok ? res.json() : []))
+      .then((rows: TableRow[]) => setTables(rows.map(toTable)))
+      .catch(() => setTables([]));
+  useEffect(() => {
+    load();
+  }, []);
 
-  const totalOccupied = DEFAULT_TABLES.filter((t) => t.status === 'Occupied').length;
-  const totalBilled = DEFAULT_TABLES.filter((t) => t.status === 'Billed').length;
-  const totalVacant = DEFAULT_TABLES.filter((t) => t.status === 'Vacant').length;
+  const addTable = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const number = draft.number.trim();
+    if (!number) return;
+    const res = await authFetch('/api/v1/tables', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: number.toUpperCase().replace(/\W+/g, '-'), number, section: draft.section.trim() || 'Main', capacity: draft.capacity }),
+    }).catch(() => null);
+    if (!res?.ok) {
+      alert('Table not saved.');
+      return;
+    }
+    setDraft({ ...draft, number: '' });
+    load();
+  };
+
+  const sections = ['All', ...Array.from(new Set(tables.map((t) => t.section)))];
+  const filtered = activeSection === 'All' ? tables : tables.filter((t) => t.section === activeSection);
+
+  const totalOccupied = tables.filter((t) => t.status === 'Occupied').length;
+  const totalBilled = tables.filter((t) => t.status === 'Billed').length;
+  const totalVacant = tables.filter((t) => t.status === 'Vacant').length;
 
   return (
     <div className="flex-1 flex flex-col bg-[#0b0d14] overflow-hidden p-4 space-y-4">
@@ -86,6 +123,35 @@ export default function PosTableSelector({
           </div>
         </div>
       </div>
+
+      <form onSubmit={addTable} className="flex flex-wrap items-center gap-2 text-xs">
+        <input
+          value={draft.number}
+          onChange={(e) => setDraft({ ...draft, number: e.target.value })}
+          placeholder="Table no. (e.g. T-01)"
+          className="bg-[#121420] border border-white/10 rounded-lg px-2 py-1.5 text-white w-36"
+        />
+        <input
+          value={draft.section}
+          onChange={(e) => setDraft({ ...draft, section: e.target.value })}
+          placeholder="Section (e.g. Main Hall)"
+          className="bg-[#121420] border border-white/10 rounded-lg px-2 py-1.5 text-white w-40"
+        />
+        <input
+          type="number"
+          min={1}
+          value={draft.capacity}
+          onChange={(e) => setDraft({ ...draft, capacity: Number(e.target.value) || 1 })}
+          className="bg-[#121420] border border-white/10 rounded-lg px-2 py-1.5 text-white w-16"
+        />
+        <button type="submit" className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-semibold">
+          + Add table
+        </button>
+      </form>
+
+      {tables.length === 0 && (
+        <div className="py-10 text-center text-slate-500 text-xs">No tables yet. Add your first table above.</div>
+      )}
 
       {/* Tables Grid */}
       <div className="flex-1 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5">

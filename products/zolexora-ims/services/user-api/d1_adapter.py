@@ -59,6 +59,12 @@ class D1Adapter:
         for statement in (s.strip() for s in sql.split(";")):
             if statement:
                 await self.execute(statement + ";")
+        # Columns added after the business-scoped schema first shipped.
+        try:
+            await self.execute("ALTER TABLE selling_point_sales ADD COLUMN payment_id TEXT;")
+        except Exception as e:
+            if "duplicate column" not in str(e):
+                raise
         logger.info("IMS schema ready on %s", where)
 
     async def query(self, sql: str, params: Optional[List[Any]] = None) -> List[Dict[str, Any]]:

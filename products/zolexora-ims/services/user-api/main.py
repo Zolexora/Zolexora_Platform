@@ -1,5 +1,8 @@
 import os
 import json
+import math
+
+import segno
 import hashlib
 import hmac
 from contextlib import asynccontextmanager
@@ -17,7 +20,7 @@ try:
         DashboardMetrics, UserProfile, AggregatorStatusUpdate, DiningBenefitVerify,
         AggregatorChannelConfig, TestWebhookRequest, PaymentHandleConfig,
         GenerateDynamicQrRequest, PaymentVerifyRequest, TerminalSettingsConfig, CustomerModel,
-        PosTableModel, CashDrawerLogModel
+        PosTableModel, CashDrawerLogModel, StoreRequest, SellingPointRequest
     )
     from .payments import (
         PaymentEngine, PaymentError, RazorpayOrderRequest, RazorpayVerifyRequest,
@@ -33,7 +36,7 @@ except ImportError:
         DashboardMetrics, UserProfile, AggregatorStatusUpdate, DiningBenefitVerify,
         AggregatorChannelConfig, TestWebhookRequest, PaymentHandleConfig,
         GenerateDynamicQrRequest, PaymentVerifyRequest, TerminalSettingsConfig, CustomerModel,
-        PosTableModel, CashDrawerLogModel
+        PosTableModel, CashDrawerLogModel, StoreRequest, SellingPointRequest
     )
     from payments import (
         PaymentEngine, PaymentError, RazorpayOrderRequest, RazorpayVerifyRequest,
@@ -194,24 +197,27 @@ async def update_item(item_code: str, item: ItemUpdate, user: UserProfile = Depe
     return await get_item(item_code, user)
 
 
-@app.post("/api/v1/items/{item_code}/adjust", response_model=ItemResponse)
-async def adjust_stock(item_code: str, req: StockAdjustRequest, user: UserProfile = Depends(require("ims:stock:adjust", "ims:purchases:create", "ims:issuance:create", "ims:pos:sell"))):
-    existing = await get_item(item_code, user)
-    stock_col = "stock_s_001" if req.store_code == "S_001" else ("stock_s_002" if req.store_code == "S_002" else "central_stock")
-    cur_stock = getattr(existing, stock_col, 0.0) or 0.0
-    new_store_stock = max(0.0, cur_stock + req.adjustment)
+STOCK_COLUMNS = {"S_001": "stock_s_001", "S_002": "stock_s_002"}
 
-    s1 = new_store_stock if stock_col == "stock_s_001" else existing.stock_s_001
-    s2 = new_store_stock if stock_col == "stock_s_002" else existing.stock_s_002
-    central = new_store_stock if stock_col == "central_stock" else existing.central_stock
-    total_stock = s1 + s2 + central
-    total_val = round(total_stock * existing.rate, 2)
-    now = now_utc_iso()
 
+async def _move_stock(org_id: str, item_code: str, store_code: Optional[str], change: float, now: str) -> None:
+    """Relative update, so two tills or screens never overwrite each other's count. Never below zero."""
+    col = STOCK_COLUMNS.get(store_code or "", "central_stock")
     await db.execute(
-        f"UPDATE products SET {stock_col} = ?, total_stock = ?, total_valuation = ?, last_updated = ? WHERE item_code = ? AND org_id = ?;",
-        [new_store_stock, total_stock, total_val, now, item_code, user.org_id]
+        f"UPDATE products SET {col} = MAX(0, {col} + ?), last_updated = ? WHERE org_id = ? AND item_code = ?;",
+        [change, now, org_id, item_code],
     )
+    await db.execute(
+        "UPDATE products SET total_stock = stock_s_001 + stock_s_002 + central_stock, "
+        "total_valuation = ROUND((stock_s_001 + stock_s_002 + central_stock) * rate, 2) WHERE org_id = ? AND item_code = ?;",
+        [org_id, item_code],
+    )
+
+
+@app.post("/api/v1/items/{item_code}/adjust", response_model=ItemResponse)
+async def adjust_stock(item_code: str, req: StockAdjustRequest, user: UserProfile = Depends(require("ims:stock:adjust", "ims:purchases:create", "ims:issuance:create"))):
+    await get_item(item_code, user)  # 404 if it is not this business's item
+    await _move_stock(user.org_id, item_code, req.store_code, req.adjustment, now_utc_iso())
     return await get_item(item_code, user)
 
 
@@ -230,6 +236,29 @@ async def list_stores(user: UserProfile = Depends(get_current_user)):
 @app.get("/api/v1/selling-points")
 async def list_selling_points(user: UserProfile = Depends(get_current_user)):
     return await db.query("SELECT * FROM selling_points WHERE org_id = ? ORDER BY code ASC;", [user.org_id])
+
+
+@app.post("/api/v1/stores", status_code=201)
+async def save_store(body: StoreRequest, user: UserProfile = Depends(require("ims:sites:manage"))):
+    await db.execute(
+        "INSERT INTO stores (org_id, code, name, type, status, description) VALUES (?, ?, ?, ?, 'Active', ?) "
+        "ON CONFLICT (org_id, code) DO UPDATE SET name = excluded.name, type = excluded.type, description = excluded.description;",
+        [user.org_id, body.code, body.name.strip(), body.type, body.description],
+    )
+    return await db.fetch_one("SELECT * FROM stores WHERE org_id = ? AND code = ?;", [user.org_id, body.code])
+
+
+@app.post("/api/v1/selling-points", status_code=201)
+async def save_selling_point(body: SellingPointRequest, user: UserProfile = Depends(require("ims:sites:manage"))):
+    code = body.code.strip().upper()
+    if not await db.fetch_one("SELECT code FROM stores WHERE org_id = ? AND code = ?;", [user.org_id, body.assigned_store_code]):
+        raise HTTPException(status_code=400, detail=f"Add store {body.assigned_store_code} first")
+    await db.execute(
+        "INSERT INTO selling_points (org_id, code, name, assigned_store_code, type, status) VALUES (?, ?, ?, ?, ?, 'Active') "
+        "ON CONFLICT (org_id, code) DO UPDATE SET name = excluded.name, assigned_store_code = excluded.assigned_store_code, type = excluded.type;",
+        [user.org_id, code, body.name.strip(), body.assigned_store_code, body.type],
+    )
+    return await db.fetch_one("SELECT * FROM selling_points WHERE org_id = ? AND code = ?;", [user.org_id, code])
 
 
 # --- Suppliers ---
@@ -253,53 +282,56 @@ async def list_transactions(limit: int = 50, user: UserProfile = Depends(require
     return combined[:limit]
 
 
+def bill_total(lines: List[tuple], discount: float) -> tuple:
+    """lines = [(quantity, rate, tax_percent)]. The discount is spread over the lines before tax; the
+    bill is rounded to the rupee (the POS shows the same number). Returns (line amounts, total)."""
+    subtotal = sum(q * r for q, r, _ in lines)
+    if discount > subtotal + 0.005:
+        raise HTTPException(status_code=400, detail="Discount is more than the bill")
+    keep = 1 - (discount / subtotal if subtotal else 0)
+    amounts = [round(q * r * keep * (1 + t / 100), 2) for q, r, t in lines]
+    return amounts, float(math.floor(sum(q * r * keep * (1 + t / 100) for q, r, t in lines) + 0.5))
+
+
 @app.post("/api/v1/sales", status_code=201)
 async def record_sale(sale: SaleRequest, user: UserProfile = Depends(require("ims:pos:sell"))):
-    now = now_utc_iso()
-    date_str = today_utc_str()
-    bill_no = sale.bill_no or f"BILL-{generate_id('')}"
     sp = await db.fetch_one("SELECT * FROM selling_points WHERE org_id = ? AND code = ?;", [user.org_id, sale.selling_point_code])
-    sp_name = sp["name"] if sp else "Counter"
-    assigned_store = sp.get("assigned_store_code", "S_001") if sp else "S_001"
+    if not sp:
+        raise HTTPException(status_code=400, detail=f"Unknown selling point {sale.selling_point_code}")
+    bill_no = (sale.bill_no or "").strip() or f"BILL-{generate_id('')}"
+    if await db.fetch_one("SELECT id FROM selling_point_sales WHERE org_id = ? AND bill_no = ? LIMIT 1;", [user.org_id, bill_no]):
+        raise HTTPException(status_code=409, detail=f"Bill {bill_no} is already recorded")
 
-    total_bill = 0.0
+    prods = []
     for item in sale.items:
         prod = await db.fetch_one("SELECT * FROM products WHERE org_id = ? AND item_code = ?;", [user.org_id, item.item_code])
         if not prod:
-            continue
-        amount = round(item.quantity * item.rate * (1 + item.tax_percent / 100), 2)
-        total_bill += amount
-        sale_id = generate_id("SALE")
+            raise HTTPException(status_code=400, detail=f"Unknown item {item.item_code}")
+        prods.append(prod)
+    amounts, total = bill_total([(i.quantity, p["rate"], p["tax_percent"]) for i, p in zip(sale.items, prods)], sale.discount_amount)
 
-        sql = """
-        INSERT INTO selling_point_sales (
-            id, org_id, timestamp, date, selling_point_code, selling_point_name,
-            bill_no, customer_name, item_code, item_name, category,
-            quantity, uom, rate, tax_percent, total_amount, payment_mode,
-            payment_status, cashier, notes
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Completed', ?, ?);
-        """
-        await db.execute(sql, [
-            sale_id, user.org_id, now, date_str, sale.selling_point_code, sp_name,
-            bill_no, sale.customer_name, item.item_code, prod["description"], prod["category"],
-            item.quantity, prod["uom"], item.rate, item.tax_percent, amount,
-            sale.payment_mode, user.name, sale.notes
-        ])
+    payment_status = "Completed"
+    if sale.payment_mode == "UPI":
+        pay = sale.payment_id and await db.fetch_one("SELECT * FROM payments WHERE org_id = ? AND id = ?;", [user.org_id, sale.payment_id])
+        if not pay or pay["status"] not in ("PAID", "MANUAL"):
+            raise HTTPException(status_code=402, detail="UPI sale needs a confirmed payment")
+        if pay["bill_no"] != bill_no or abs(pay["amount"] - total) > 0.005:
+            raise HTTPException(status_code=409, detail=f"Payment is for bill {pay['bill_no']} ₹{pay['amount']}, not {bill_no} ₹{total}")
+        payment_status = "Paid" if pay["status"] == "PAID" else "Confirmed by cashier"
 
-        # Decrement stock
-        stock_col = "stock_s_001" if assigned_store == "S_001" else "stock_s_002"
-        cur_stock = prod.get(stock_col, 0.0) or 0.0
-        new_store_stock = max(0.0, cur_stock - item.quantity)
-        other_col = "stock_s_002" if stock_col == "stock_s_001" else "stock_s_001"
-        new_total = new_store_stock + (prod.get(other_col, 0.0) or 0.0) + (prod.get("central_stock", 0.0) or 0.0)
-        new_val = round(new_total * prod["rate"], 2)
-
+    now, date_str = now_utc_iso(), today_utc_str()
+    for item, prod, amount in zip(sale.items, prods, amounts):
         await db.execute(
-            f"UPDATE products SET {stock_col} = ?, total_stock = ?, total_valuation = ?, last_updated = ? WHERE org_id = ? AND item_code = ?;",
-            [new_store_stock, new_total, new_val, now, user.org_id, item.item_code]
+            "INSERT INTO selling_point_sales (id, org_id, timestamp, date, selling_point_code, selling_point_name, bill_no, "
+            "customer_name, item_code, item_name, category, quantity, uom, rate, tax_percent, total_amount, payment_mode, "
+            "payment_status, payment_id, cashier, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
+            [generate_id("SALE"), user.org_id, now, date_str, sp["code"], sp["name"], bill_no, sale.customer_name,
+             item.item_code, prod["description"], prod["category"], item.quantity, prod["uom"], prod["rate"],
+             prod["tax_percent"], amount, sale.payment_mode, payment_status, sale.payment_id, user.name, sale.notes],
         )
+        await _move_stock(user.org_id, item.item_code, sp.get("assigned_store_code"), -item.quantity, now)
 
-    return {"success": True, "bill_no": bill_no, "total_amount": round(total_bill, 2)}
+    return {"success": True, "bill_no": bill_no, "total_amount": total, "payment_status": payment_status}
 
 
 # --- Auth ---
@@ -1163,7 +1195,7 @@ async def generate_dynamic_upi_qr(body: GenerateDynamicQrRequest, user: UserProf
     phonepe_url = f"phonepe://upi/pay?pa={handle}&pn={encoded_name}&am={amount:.2f}&cu=INR&tn={encoded_note}"
     paytm_url = f"paytmmp://pay?pa={handle}&pn={encoded_name}&am={amount:.2f}&cu=INR&tn={encoded_note}"
 
-    qr_img_url = f"https://api.qrserver.com/v1/create-qr-code/?size=260x260&data={urllib.parse.quote(upi_intent_url)}&bgcolor=ffffff&color=0a0c16&margin=10"
+    qr_img_url = segno.make(upi_intent_url, error="m").svg_data_uri(scale=6, border=2, dark="#0a0c16")
 
     return {
         "bill_no": bill_no,

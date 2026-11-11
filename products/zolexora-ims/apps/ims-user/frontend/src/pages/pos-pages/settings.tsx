@@ -102,11 +102,17 @@ export default function PosSettings() {
       .catch(() => {});
   }, []);
 
-  // Compute test dynamic QR whenever handle or amount changes
+  // Test QR for the saved handle, made by our own backend (no third-party QR service).
   useEffect(() => {
-    const encodedName = encodeURIComponent(merchantName);
-    const intentUrl = `upi://pay?pa=${upiHandle}&pn=${encodedName}&mc=${mcc}&am=${testAmount.toFixed(2)}&cu=INR&tn=Handle_Test_1`;
-    setTestQrUrl(`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(intentUrl)}&bgcolor=ffffff&color=090a10&margin=8`);
+    if (!upiHandle || testAmount <= 0) return;
+    authFetch('/api/v1/payment/generate-dynamic-qr', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount: testAmount, bill_no: 'HANDLE-TEST' }),
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => setTestQrUrl(data?.qr_code_url || ''))
+      .catch(() => setTestQrUrl(''));
   }, [upiHandle, merchantName, mcc, testAmount]);
 
   // Hardware Printer state

@@ -3,7 +3,6 @@ import {
   Building2,
   Store,
   MapPin,
-  Phone,
   Plus,
   RefreshCw,
   Layers,
@@ -17,8 +16,7 @@ export interface Site {
   code: string;
   name: string;
   type: string;
-  address?: string;
-  phone?: string;
+  description?: string;
   status: string;
 }
 
@@ -29,53 +27,18 @@ export interface SellingPoint {
   status: string;
 }
 
-const DEFAULT_SITES: Site[] = [
-  {
-    code: 'S_001',
-    name: 'Store 1 — Central Hub & Warehouse',
-    type: 'Main Fulfillment Hub',
-    address: 'Plot 42, Industrial Area, Phase 1',
-    phone: '+91 98765 43210',
-    status: 'Active',
-  },
-  {
-    code: 'S_002',
-    name: 'Store 2 — Downtown Commercial Branch',
-    type: 'Retail Store & Stockroom',
-    address: 'Shop 14, City Center Mall',
-    phone: '+91 98765 43211',
-    status: 'Active',
-  },
-  {
-    code: 'CENTRAL',
-    name: 'Central Regional Distribution Center',
-    type: 'Primary Buffer Warehouse',
-    address: 'Logistics Park, National Highway 8',
-    phone: '+91 98765 43299',
-    status: 'Active',
-  },
-];
-
-const DEFAULT_POINTS: SellingPoint[] = [
-  { code: 'SP_001', name: 'Main Retail Counter 1 (POS Desk A)', assigned_store_code: 'S_001', status: 'Active' },
-  { code: 'SP_002', name: 'Mall Express Counter 2 (POS Desk B)', assigned_store_code: 'S_002', status: 'Active' },
-];
+// Each item keeps stock in three columns, so a business has these three store slots.
+const STORE_CODES = ['S_001', 'S_002', 'CENTRAL'];
 
 export default function OrgSiteManagement() {
   const { authFetch } = useAuth();
-  const [sites, setSites] = useState<Site[]>(DEFAULT_SITES);
-  const [sellingPoints, setSellingPoints] = useState<SellingPoint[]>(DEFAULT_POINTS);
+  const [sites, setSites] = useState<Site[]>([]);
+  const [sellingPoints, setSellingPoints] = useState<SellingPoint[]>([]);
   const [loading, setLoading] = useState(false);
   const [isAddSiteModalOpen, setIsAddSiteModalOpen] = useState(false);
   const [isAddPointModalOpen, setIsAddPointModalOpen] = useState(false);
 
-  const [newSite, setNewSite] = useState({
-    code: '',
-    name: '',
-    type: 'Warehouse',
-    address: '',
-    phone: '',
-  });
+  const [newSite, setNewSite] = useState({ code: 'S_001', name: '', type: 'Main Fulfillment Hub', description: '' });
 
   const [newPoint, setNewPoint] = useState({
     code: '',
@@ -89,12 +52,12 @@ export default function OrgSiteManagement() {
       const sRes = await authFetch('/api/v1/stores');
       if (sRes.ok) {
         const sData = await sRes.json();
-        if (Array.isArray(sData) && sData.length > 0) setSites(sData);
+        if (Array.isArray(sData)) setSites(sData);
       }
       const pRes = await authFetch('/api/v1/selling-points');
       if (pRes.ok) {
         const pData = await pRes.json();
-        if (Array.isArray(pData) && pData.length > 0) setSellingPoints(pData);
+        if (Array.isArray(pData)) setSellingPoints(pData);
       }
     } catch {}
     setLoading(false);
@@ -104,39 +67,37 @@ export default function OrgSiteManagement() {
     fetchSites();
   }, []);
 
-  const handleAddSite = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newSite.name.trim()) return;
-
-    const code = newSite.code.trim().toUpperCase() || `S_00${sites.length + 1}`;
-    setSites([
-      ...sites,
-      {
-        ...newSite,
-        code,
-        status: 'Active',
-      },
-    ]);
-    setIsAddSiteModalOpen(false);
-    setNewSite({ code: '', name: '', type: 'Warehouse', address: '', phone: '' });
+  const save = async (path: string, body: object) => {
+    const res = await authFetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }).catch(() => null);
+    if (!res?.ok) {
+      const detail = res ? (await res.json().catch(() => ({})))?.detail : null;
+      alert(`Not saved: ${typeof detail === 'string' ? detail : 'check the fields and try again'}`);
+      return false;
+    }
+    await fetchSites();
+    return true;
   };
 
-  const handleAddPoint = (e: React.FormEvent) => {
+  const handleAddSite = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPoint.name.trim()) return;
+    if (!newSite.name.trim()) return;
+    if (await save('/api/v1/stores', newSite)) {
+      setIsAddSiteModalOpen(false);
+      setNewSite({ code: 'S_001', name: '', type: 'Main Fulfillment Hub', description: '' });
+    }
+  };
 
-    const code = newPoint.code.trim().toUpperCase() || `SP_00${sellingPoints.length + 1}`;
-    setSellingPoints([
-      ...sellingPoints,
-      {
-        code,
-        name: newPoint.name,
-        assigned_store_code: newPoint.assigned_store_code,
-        status: 'Active',
-      },
-    ]);
-    setIsAddPointModalOpen(false);
-    setNewPoint({ code: '', name: '', assigned_store_code: 'S_001' });
+  const handleAddPoint = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPoint.name.trim() || !newPoint.code.trim()) return;
+    if (await save('/api/v1/selling-points', newPoint)) {
+      setIsAddPointModalOpen(false);
+      setNewPoint({ code: '', name: '', assigned_store_code: 'S_001' });
+    }
   };
 
   return (
@@ -205,16 +166,10 @@ export default function OrgSiteManagement() {
               </div>
 
               <div className="pt-2 border-t border-white/5 space-y-1 text-[11px] text-slate-400">
-                {site.address && (
+                {site.description && (
                   <div className="flex items-center gap-1.5 truncate">
                     <MapPin className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
-                    <span className="truncate">{site.address}</span>
-                  </div>
-                )}
-                {site.phone && (
-                  <div className="flex items-center gap-1.5">
-                    <Phone className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
-                    <span>{site.phone}</span>
+                    <span className="truncate">{site.description}</span>
                   </div>
                 )}
               </div>
@@ -280,15 +235,18 @@ export default function OrgSiteManagement() {
 
             <form onSubmit={handleAddSite} className="space-y-4 text-xs">
               <div>
-                <label className="block text-slate-300 mb-1 font-semibold">Location Code *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. S_003 or WAREHOUSE_NORTH"
+                <label className="block text-slate-300 mb-1 font-semibold">Store Slot *</label>
+                <select
                   value={newSite.code}
                   onChange={(e) => setNewSite({ ...newSite, code: e.target.value })}
-                  className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white font-mono focus:outline-none focus:border-purple-500 text-xs uppercase"
-                />
+                  className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white font-mono focus:outline-none focus:border-purple-500 text-xs cursor-pointer"
+                >
+                  {STORE_CODES.map((c) => (
+                    <option key={c} value={c}>
+                      {c}{sites.some((x) => x.code === c) ? ' (in use — saving renames it)' : ''}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>
@@ -322,19 +280,8 @@ export default function OrgSiteManagement() {
                 <input
                   type="text"
                   placeholder="e.g. Shop 2, Terminal 2 Arrivals, Mumbai Airport"
-                  value={newSite.address}
-                  onChange={(e) => setNewSite({ ...newSite, address: e.target.value })}
-                  className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-purple-500 text-xs"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-300 mb-1 font-semibold">Contact Phone</label>
-                <input
-                  type="text"
-                  placeholder="e.g. +91 98765 43212"
-                  value={newSite.phone}
-                  onChange={(e) => setNewSite({ ...newSite, phone: e.target.value })}
+                  value={newSite.description}
+                  onChange={(e) => setNewSite({ ...newSite, description: e.target.value })}
                   className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-purple-500 text-xs"
                 />
               </div>

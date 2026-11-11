@@ -119,6 +119,7 @@ CREATE TABLE IF NOT EXISTS selling_point_sales (
   total_amount REAL NOT NULL,
   payment_mode TEXT DEFAULT 'Cash',
   payment_status TEXT DEFAULT 'Completed',
+  payment_id TEXT,
   cashier TEXT,
   notes TEXT,
   PRIMARY KEY (org_id, id)

@@ -70,6 +70,7 @@ def test_dynamic_qr_uses_the_business_handle(client):
     data = client.post("/api/v1/payment/generate-dynamic-qr", json={"amount": 499.5, "bill_no": "B-1"}).json()
     assert data["upi_handle"] == "shop@icici"
     assert "pa=shop@icici" in data["upi_intent_url"] and "am=499.50" in data["upi_intent_url"]
+    assert data["qr_code_url"].startswith("data:image/svg+xml")  # made here, not by a third-party QR service
 
 
 def test_gateways_refuse_without_keys(client):

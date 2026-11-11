@@ -57,25 +57,13 @@ export interface Product {
   is_veg?: boolean;
 }
 
-const DEFAULT_PRODUCTS: Product[] = [
-  { item_code: "P001", shortcode: "MS", description: "Logitech MX Master 3S Mouse", category: "Electronics", rate: 8999.0, tax_percent: 18.0, stock_s_001: 25, stock_s_002: 10, central_stock: 50, total_stock: 85, uom: "Pcs", status: "Active" },
-  { item_code: "P002", shortcode: "KB", description: "Keychron K2 Mechanical Keyboard", category: "Electronics", rate: 7499.0, tax_percent: 18.0, stock_s_001: 14, stock_s_002: 5, central_stock: 20, total_stock: 39, uom: "Pcs", status: "Active" },
-  { item_code: "P003", shortcode: "MON", description: "Dell UltraSharp 27 4K Monitor", category: "Electronics", rate: 52000.0, tax_percent: 18.0, stock_s_001: 6, stock_s_002: 2, central_stock: 12, total_stock: 20, uom: "Pcs", status: "Active" },
-  { item_code: "P004", shortcode: "HP", description: "Sony WH-1000XM5 Headphones", category: "Audio", rate: 29990.0, tax_percent: 18.0, stock_s_001: 9, stock_s_002: 4, central_stock: 15, total_stock: 28, uom: "Pcs", status: "Active" },
-  { item_code: "P005", shortcode: "AP", description: "Apple AirPods Pro (2nd Gen)", category: "Audio", rate: 24900.0, tax_percent: 18.0, stock_s_001: 18, stock_s_002: 8, central_stock: 30, total_stock: 56, uom: "Pcs", status: "Active" },
-  { item_code: "P006", shortcode: "PB", description: "Anker 737 Power Bank (24K)", category: "Accessories", rate: 12499.0, tax_percent: 18.0, stock_s_001: 20, stock_s_002: 7, central_stock: 40, total_stock: 67, uom: "Pcs", status: "Active" },
-  { item_code: "P007", shortcode: "SSD", description: "Samsung T7 Shield 2TB SSD", category: "Storage", rate: 16999.0, tax_percent: 18.0, stock_s_001: 15, stock_s_002: 6, central_stock: 25, total_stock: 46, uom: "Pcs", status: "Active" },
-  { item_code: "P008", shortcode: "WP", description: "Belkin BoostCharge Pro 3-in-1", category: "Accessories", rate: 11999.0, tax_percent: 18.0, stock_s_001: 11, stock_s_002: 3, central_stock: 18, total_stock: 32, uom: "Pcs", status: "Active" },
-  { item_code: "P009", shortcode: "ARM", description: "Ergotron LX Desk Mount Arm", category: "Office", rate: 15500.0, tax_percent: 18.0, stock_s_001: 8, stock_s_002: 2, central_stock: 10, total_stock: 20, uom: "Pcs", status: "Active" },
-  { item_code: "P010", shortcode: "DK", description: "CalDigit TS4 Thunderbolt 4 Dock", category: "Accessories", rate: 38500.0, tax_percent: 18.0, stock_s_001: 4, stock_s_002: 1, central_stock: 8, total_stock: 13, uom: "Pcs", status: "Active" },
-  { item_code: "P011", shortcode: "MIC", description: "Shure SM7B Vocal Dynamic Mic", category: "Audio", rate: 36900.0, tax_percent: 18.0, stock_s_001: 5, stock_s_002: 2, central_stock: 7, total_stock: 14, uom: "Pcs", status: "Active" },
-  { item_code: "P012", shortcode: "SD", description: "Elgato Stream Deck XL 32 Keys", category: "Electronics", rate: 21990.0, tax_percent: 18.0, stock_s_001: 7, stock_s_002: 3, central_stock: 14, total_stock: 24, uom: "Pcs", status: "Active" },
-  // Quick F&B / Cafe items for Petpooja-style demo
-  { item_code: "F001", shortcode: "TEA", description: "Assam Special Masala Chai", category: "Beverages", rate: 120.0, tax_percent: 5.0, stock_s_001: 150, stock_s_002: 100, central_stock: 200, total_stock: 450, uom: "Cups", status: "Active", is_veg: true },
-  { item_code: "F002", shortcode: "COF", description: "Artisan Cappuccino Roast", category: "Beverages", rate: 220.0, tax_percent: 5.0, stock_s_001: 90, stock_s_002: 60, central_stock: 150, total_stock: 300, uom: "Cups", status: "Active", is_veg: true },
-  { item_code: "F003", shortcode: "SW", description: "Paneer Tikka Grilled Sandwich", category: "Snacks", rate: 260.0, tax_percent: 5.0, stock_s_001: 40, stock_s_002: 30, central_stock: 60, total_stock: 130, uom: "Plates", status: "Active", is_veg: true },
-  { item_code: "F004", shortcode: "BG", description: "Crispy Farmhouse Veg Burger", category: "Snacks", rate: 240.0, tax_percent: 5.0, stock_s_001: 35, stock_s_002: 25, central_stock: 50, total_stock: 110, uom: "Pcs", status: "Active", is_veg: true },
-];
+interface SellingPoint {
+  code: string;
+  name: string;
+  assigned_store_code: string;
+}
+
+const newBillNo = () => `BILL-${Date.now().toString(36).toUpperCase()}`;
 
 export type OrderServiceType = 'Quick Bill' | 'Dine-In' | 'Takeaway';
 
@@ -83,11 +71,19 @@ export default function POSTerminal() {
   const { authFetch, user } = useAuth();
 
   // Core Data
-  const [products, setProducts] = useState<Product[]>(DEFAULT_PRODUCTS);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const [sellingPoint, setSellingPoint] = useState<string>('SP_001');
+  const [sellingPoints, setSellingPoints] = useState<SellingPoint[]>([]);
+  const [sellingPoint, setSellingPoint] = useState<string>('');
+  const [billNo, setBillNo] = useState<string>(newBillNo);
+  const sellingPointName = sellingPoints.find((sp) => sp.code === sellingPoint)?.name || sellingPoint;
+  // Stock at the store this counter sells from (the backend deducts from the same store).
+  const storeStock = (p: Product) => {
+    const store = sellingPoints.find((sp) => sp.code === sellingPoint)?.assigned_store_code;
+    return store === 'S_001' ? p.stock_s_001 : store === 'S_002' ? p.stock_s_002 : p.central_stock;
+  };
 
   // Service Mode & Table
   const [orderType, setOrderType] = useState<OrderServiceType>('Quick Bill');
@@ -180,18 +176,15 @@ export default function POSTerminal() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await authFetch('/api/v1/items');
+      const [res, spRes] = await Promise.all([authFetch('/api/v1/items'), authFetch('/api/v1/selling-points')]);
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          // Merge with default products if needed
-          setProducts((prev) => {
-            const map = new Map<string, Product>();
-            DEFAULT_PRODUCTS.forEach((p) => map.set(p.item_code, p));
-            data.forEach((p: Product) => map.set(p.item_code, { ...map.get(p.item_code), ...p }));
-            return Array.from(map.values());
-          });
-        }
+        if (Array.isArray(data)) setProducts(data);
+      }
+      if (spRes.ok) {
+        const sps: SellingPoint[] = await spRes.json();
+        setSellingPoints(sps);
+        setSellingPoint((cur) => cur || sps[0]?.code || '');
       }
     } catch {}
 
@@ -264,12 +257,12 @@ export default function POSTerminal() {
   // Add to Cart
   const addToCart = (product: Product, note?: string) => {
     playSound('beep');
-    const currentStoreStock = sellingPoint === 'SP_001' ? product.stock_s_001 : product.stock_s_002;
+    const currentStoreStock = storeStock(product);
     const existing = cart.find((item) => item.item_code === product.item_code);
     const curQtyInCart = existing ? existing.quantity : 0;
 
     if (curQtyInCart + 1 > currentStoreStock) {
-      alert(`Stock Limit: Only ${currentStoreStock} ${product.uom} available in ${sellingPoint}.`);
+      alert(`Stock Limit: Only ${currentStoreStock} ${product.uom} available in ${sellingPointName}.`);
       return;
     }
 
@@ -300,11 +293,7 @@ export default function POSTerminal() {
   const updateQuantity = (item_code: string, delta: number) => {
     playSound(delta > 0 ? 'beep' : 'delete');
     const product = products.find((p) => p.item_code === item_code);
-    const currentStoreStock = product
-      ? sellingPoint === 'SP_001'
-        ? product.stock_s_001
-        : product.stock_s_002
-      : 999;
+    const currentStoreStock = product ? storeStock(product) : 0;
 
     setCart(
       cart
@@ -358,9 +347,11 @@ export default function POSTerminal() {
 
   const discountedSubtotal = Math.max(0, subtotal - discountAmount);
 
+  // Each item's own GST, on the discounted price; the backend computes the bill the same way.
   const taxAmount = useMemo(() => {
-    return (discountedSubtotal * 18.0) / 100;
-  }, [discountedSubtotal]);
+    const keep = subtotal > 0 ? discountedSubtotal / subtotal : 0;
+    return cart.reduce((acc, item) => acc + (item.rate * item.quantity * keep * (item.tax_percent || 0)) / 100, 0);
+  }, [cart, subtotal, discountedSubtotal]);
 
   const grandTotal = Math.round(discountedSubtotal + taxAmount);
   const tenderedVal = parseFloat(cashTendered) || 0;
@@ -454,7 +445,7 @@ export default function POSTerminal() {
   };
 
   // Settle Bill & Checkout
-  const handleCheckout = async () => {
+  const handleCheckout = async (paymentId?: string) => {
     if (cart.length === 0) {
       alert('Cart is empty. Please select products to bill.');
       return;
@@ -465,10 +456,15 @@ export default function POSTerminal() {
       return;
     }
 
-    playSound('success');
-    const billNo = `BILL-${Date.now().toString().slice(-6)}`;
-    const currentToken = `TK-${tokenCounter}`;
-    setTokenCounter((c) => c + 1);
+    if (!sellingPoint) {
+      alert('Add a selling point in Command Panel → Site Management first.');
+      return;
+    }
+    // UPI is recorded only against a payment confirmed for this bill and amount.
+    if (paymentMode === 'UPI' && !paymentId) {
+      setUpiModalOpen(true);
+      return;
+    }
 
     const salePayload = {
       selling_point_code: sellingPoint,
@@ -481,20 +477,30 @@ export default function POSTerminal() {
         item_code: c.item_code,
         quantity: c.quantity,
         rate: c.rate,
-        tax_percent: c.tax_percent,
-        notes: c.notes,
       })),
       payment_mode: paymentMode,
+      discount_amount: Math.round(discountAmount * 100) / 100,
+      payment_id: paymentId,
       notes: `${orderType} sale via Zolexora POS terminal`,
     };
 
-    try {
-      await authFetch('/api/v1/sales', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(salePayload),
-      });
+    const res = await authFetch('/api/v1/sales', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(salePayload),
+    }).catch(() => null);
+    if (!res?.ok) {
+      const detail = res ? (await res.json().catch(() => ({})))?.detail : null;
+      playSound('delete');
+      alert(`Sale not recorded: ${typeof detail === 'string' ? detail : 'server unreachable'}. Nothing was billed.`);
+      return;
+    }
+    playSound('success');
+    const currentToken = `TK-${tokenCounter}`;
+    setTokenCounter((c) => c + 1);
+    setBillNo(newBillNo());
 
+    try {
       if (customerPhone.trim()) {
         const cleaned = customerPhone.replace(/\D/g, '');
         if (cleaned.length >= 10) {
@@ -517,28 +523,13 @@ export default function POSTerminal() {
       }
     } catch {}
 
-    // Deduct stock in local view
-    setProducts((prev) =>
-      prev.map((p) => {
-        const itemInCart = cart.find((c) => c.item_code === p.item_code);
-        if (!itemInCart) return p;
-        const dec = itemInCart.quantity;
-        const s1 = sellingPoint === 'SP_001' ? Math.max(0, p.stock_s_001 - dec) : p.stock_s_001;
-        const s2 = sellingPoint === 'SP_002' ? Math.max(0, p.stock_s_002 - dec) : p.stock_s_002;
-        return {
-          ...p,
-          stock_s_001: s1,
-          stock_s_002: s2,
-          total_stock: s1 + s2 + p.central_stock,
-        };
-      })
-    );
+    fetchData(); // fresh stock from the server
 
     const receiptObj: SaleReceipt = {
       bill_no: billNo,
       token_no: currentToken,
       date: new Date().toLocaleString(),
-      selling_point: sellingPoint === 'SP_001' ? 'Counter 1 (Main Branch)' : 'Counter 2 (Branch Store)',
+      selling_point: sellingPointName,
       cashier: user?.name || 'POS Cashier 01',
       customer_name: customerName.trim() || 'Walk-in Customer',
       customer_phone: customerPhone || undefined,
@@ -623,7 +614,7 @@ export default function POSTerminal() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [cart, grandTotal, customerName, selectedTable, orderType, paymentMode]);
+  }, [cart, grandTotal, customerName, customerPhone, selectedTable, orderType, paymentMode, billNo, sellingPoint, sellingPoints, discountAmount]);
 
   // Handle Search Enter key (Quick shortcode / first item add)
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -719,8 +710,12 @@ export default function POSTerminal() {
               onChange={(e) => setSellingPoint(e.target.value)}
               className="bg-transparent text-white font-medium outline-hidden cursor-pointer text-xs"
             >
-              <option value="SP_001" className="bg-[#10121d] text-white">SP_001 (Main Counter)</option>
-              <option value="SP_002" className="bg-[#10121d] text-white">SP_002 (Outlet Dispenser)</option>
+              {sellingPoints.length === 0 && <option value="">No counters — add one in Site Management</option>}
+              {sellingPoints.map((sp) => (
+                <option key={sp.code} value={sp.code} className="bg-[#10121d] text-white">
+                  {sp.code} ({sp.name})
+                </option>
+              ))}
             </select>
           </div>
 
@@ -870,7 +865,7 @@ export default function POSTerminal() {
                   </div>
                 ) : (
                   filteredProducts.map((product) => {
-                    const currentStock = sellingPoint === 'SP_001' ? product.stock_s_001 : product.stock_s_002;
+                    const currentStock = storeStock(product);
                     const inCartItem = cart.find((i) => i.item_code === product.item_code);
                     const isOutOfStock = currentStock <= 0;
 
@@ -1134,7 +1129,7 @@ export default function POSTerminal() {
                 </div>
               )}
               <div className="flex justify-between text-slate-400">
-                <span>GST (CGST 9% + SGST 9%)</span>
+                <span>GST</span>
                 <span className="font-mono text-slate-200">₹{taxAmount.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center text-base font-black text-white border-t border-white/10 pt-1.5">
@@ -1224,7 +1219,7 @@ export default function POSTerminal() {
 
             {/* Big Settle / Pay Button */}
             <button
-              onClick={handleCheckout}
+              onClick={() => handleCheckout()}
               disabled={cart.length === 0}
               className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-sm font-black transition shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed group"
             >
@@ -1263,13 +1258,13 @@ export default function POSTerminal() {
       />
       <UpiQrModal
         amount={grandTotal}
-        billNo={receipt?.bill_no || `BILL-${Date.now().toString().slice(-6)}`}
+        billNo={billNo}
         customerPhone={customerPhone}
         isOpen={upiModalOpen}
         onClose={() => setUpiModalOpen(false)}
-        onPaymentSuccess={() => {
+        onPaymentSuccess={(paymentId) => {
           setUpiModalOpen(false);
-          handleCheckout();
+          handleCheckout(paymentId);
         }}
       />
       <ShortcutsModal

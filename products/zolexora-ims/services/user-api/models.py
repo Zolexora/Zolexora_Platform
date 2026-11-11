@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, Field
 
 
@@ -62,19 +62,35 @@ class ItemResponse(BaseModel):
     last_updated: str
 
 
+class StoreRequest(BaseModel):
+    """Stock is kept in three columns per item, so a business has at most these three stores."""
+    code: Literal["S_001", "S_002", "CENTRAL"]
+    name: str = Field(min_length=1)
+    type: Optional[str] = None
+    description: Optional[str] = None
+
+
+class SellingPointRequest(BaseModel):
+    code: str = Field(min_length=1, max_length=20)
+    name: str = Field(min_length=1)
+    assigned_store_code: Literal["S_001", "S_002", "CENTRAL"]
+    type: Optional[str] = None
+
+
 class SaleItem(BaseModel):
     item_code: str
-    quantity: float
-    rate: float
-    tax_percent: float = 0.0
+    quantity: float = Field(gt=0)
 
 
 class SaleRequest(BaseModel):
+    """Prices and tax come from the item master, never from the till."""
     selling_point_code: str
     customer_name: Optional[str] = "Walk-in Customer"
     bill_no: Optional[str] = None
-    items: List[SaleItem]
-    payment_mode: str = "Cash"
+    items: List[SaleItem] = Field(min_length=1)
+    payment_mode: Literal["Cash", "Card", "UPI", "Split"] = "Cash"
+    discount_amount: float = Field(default=0.0, ge=0)
+    payment_id: Optional[str] = None  # required for UPI: a PAID or MANUAL row in payments for this bill
     notes: Optional[str] = None
 
 
