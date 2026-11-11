@@ -46,7 +46,7 @@ If a tightly coupled table (like `order_items`) hits 500MB, moving just that tab
 Data is managed based on capacity, not hardcoded dates.
 
 1. **Telemetry:** A background cron job pings all Supabase databases constantly.
-2. **The Threshold Trigger:** If `zolexora-marketplace-db1` hits **90% capacity** (450MB), the Autonomous Archiver activates.
+2. **The Threshold Trigger:** If `zolexora-shop-db1` hits **90% capacity** (450MB), the Autonomous Archiver activates.
 3. **The Action:** The script calculates the exact amount of historical data (e.g., orders from 8 months ago) that must be moved to reach **40% capacity**.
 4. **Execution:** It moves that historical data to a Cold Archive Database (DB 2), verifies integrity, and deletes it from the Hot Database (DB 1).
 5. **Result:** DB 1 drops back to 40% capacity. Joins are preserved. If users need old data, the router directs that specific query to the Cold Archive Database.

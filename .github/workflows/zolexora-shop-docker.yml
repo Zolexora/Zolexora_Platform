@@ -1,0 +1,57 @@
+name: Zolexora Shop — Docker images
+
+# Builds every image in apps/core-platform/zolexora-shop/compose.yaml and pushes ghcr.io/zolexora/zolexora-shop-<service>:{latest,<sha>}.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/core-platform/zolexora-shop/**'
+      - 'packages/**'
+      - 'infrastructure/containers/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/zolexora-shop-docker.yml'
+      - '.github/workflows/reusable-docker-ghcr.yml'
+      - '.github/actions/docker-login/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  images:
+    uses: ./.github/workflows/reusable-docker-ghcr.yml
+    with:
+      product: shop
+      services: |
+        [
+          {
+            "service": "admin-web",
+            "file": "infrastructure/containers/docker/Dockerfile.nextjs",
+            "build-args": "APP_DIR=apps/core-platform/zolexora-shop/apps/portals/marketplace-admin/web\nAPP_NAME=@zolexora/shop-admin"
+          },
+          {
+            "service": "backend",
+            "file": "infrastructure/containers/docker/Dockerfile.api-python",
+            "build-args": "APP_DIR=apps/core-platform/zolexora-shop/services/marketplace-api"
+          },
+          {
+            "service": "mahila-web",
+            "file": "infrastructure/containers/docker/Dockerfile.cra",
+            "build-args": "APP_DIR=apps/core-platform/zolexora-shop/apps/storefronts/mahila-madel/web\nAPP_NAME=@zolexora/shop-mahila-madel-web"
+          },
+          {
+            "service": "nginx",
+            "file": "apps/core-platform/zolexora-shop/Dockerfile.nginx"
+          },
+          {
+            "service": "seller-web",
+            "file": "infrastructure/containers/docker/Dockerfile.nextjs",
+            "build-args": "APP_DIR=apps/core-platform/zolexora-shop/apps/portals/seller/web\nAPP_NAME=@zolexora/shop-seller-web"
+          },
+          {
+            "service": "shop-web",
+            "file": "infrastructure/containers/docker/Dockerfile.nextjs",
+            "build-args": "APP_DIR=apps/core-platform/zolexora-shop/apps/storefronts/zolexora-shop/web\nAPP_NAME=@zolexora/shop-web"
+          }
+        ]

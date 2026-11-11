@@ -6,10 +6,10 @@ This rule governs how all products in the Zolexora Platform monorepo must config
 
 ## 1. Product Directory Layout
 
-Each product resides under `products/<product-name>/` and follows this layout:
+Each product resides under `apps/<category>/<product>/` (`core-platform/zolexora-<name>` or `standalone-apps/<name>`) and follows this layout:
 
 ```text
-products/zolexora-<product>/
+apps/<category>/<product>/
 ├── apps/                             # Frontends, mobile, edge workers
 ├── services/                         # Backends (FastAPI, Express, NestJS, Frappe)
 ├── packages/                         # Product-local shared code
@@ -27,18 +27,16 @@ Full layout: [docs/architecture.md](../../docs/architecture.md#product-layout).
 
 ## 2. Docker Compose Standards (`compose.yaml`)
 
-Every service in `compose.yaml` that builds locally MUST adhere to:
+**Images are built only by GitHub CI and pulled from GHCR. They are never built locally** (not by
+developers, scripts, agents or deploy hosts). Every service in `compose.yaml` that runs a Zolexora image MUST:
 
-1. **Root Build Context (`context: ../../` or `.`)**:
-   **Mandatory:** In this monorepo, EVERY product service build context MUST be the monorepo root. For `products/<product-name>/compose.yaml`, this means `context: ../../` and `dockerfile: products/<product-name>/Dockerfile.<service>`. Never set context to a product subfolder.
-2. **Explicit GHCR Image Tag**:
-   Always attach `image: ${<PRODUCT>_<SERVICE>_IMAGE:-ghcr.io/zolexora/<product-slug>-<service>:latest}` alongside `build:`.
+1. **Reference the GHCR image**:
+   `image: ${<PRODUCT>_<SERVICE>_IMAGE:-ghcr.io/zolexora/<product-slug>-<service>:latest}`.
    *All repository and image names must be strictly lowercase.*
-3. **`pull_policy: missing`**:
-   Always declare `pull_policy: missing`. This ensures Docker Compose pulls the prebuilt image from GHCR when missing, rather than compiling from scratch.
-4. **Preserve `build:` Block**:
-   Always keep the `build:` block so developers can still build local changes when explicitly requested.
-5. **Port Overrides via Environment Variables**:
+2. **Declare `pull_policy: missing`**.
+3. **Have no `build:` block.** Build settings (Dockerfile, target, build args) live only in the
+   product's image workflow (section 8). To try an unmerged change in a container, run that workflow.
+4. **Port Overrides via Environment Variables**:
    Never hardcode raw host ports that collide with VS Code DevContainer forwards. Use configurable defaults:
    ```yaml
    ports:
@@ -52,9 +50,6 @@ services:
   backend:
     image: ${TMS_BACKEND_IMAGE:-ghcr.io/zolexora/zolexora-tms-backend:latest}
     pull_policy: missing
-    build:
-      context: ../../
-      dockerfile: products/zolexora-tms/services/backend/Dockerfile
     container_name: tms-backend
     ports:
       - "${TMS_BACKEND_PORT:-4031}:4030"
@@ -66,8 +61,9 @@ services:
 
 Heavy images (>500MB) cause 20–40 minute network pull delays. Every Dockerfile MUST be multi-stage:
 
-0. **Root-Relative COPY Paths**:
-   - Because all build contexts are set to the monorepo root (`.`), all `COPY` commands must use repository root-relative paths (e.g., `COPY products/<product>/apps/web ...`, `COPY package.json ...`).
+0. **Root Build Context & Root-Relative COPY Paths**:
+   - CI builds every image with the monorepo root (`.`) as context; never a product subfolder.
+   - Because of that, all `COPY` commands must use repository root-relative paths (e.g., `COPY apps/<category>/<product>/apps/web ...`, `COPY package.json ...`).
    - Never assume the Dockerfile's local directory is the build context.
 1. **Separate Builder and Runner Stages**:
    - Compilers (`build-essential`, `gcc`, `make`, build SDKs) must ONLY live in the `builder` stage.
@@ -89,30 +85,21 @@ Heavy images (>500MB) cause 20–40 minute network pull delays. Every Dockerfile
 
 ## 4. Startup Script Standards (`scripts/docker-start.sh`)
 
-Every product's `docker-start.sh` MUST:
+Every product's `docker-start.sh` is a one-line wrapper around the shared
+[scripts/docker/product-stack.sh](../../scripts/docker/product-stack.sh) (the scaffolder writes it):
 
-1. **Always execute from monorepo root**:
-   ```bash
-   cd "$(dirname "$0")/../../.."
-   ```
-2. **Infisical-only Secret Injection**:
-   `run_compose() { bash scripts/setup/with-infisical.sh products/<product> docker compose -f "$COMPOSE_FILE" "$@"; }`.
-   The wrapper fails fast if Infisical is unavailable. Never fall back to `.env` files, never hang.
-3. **NEVER hardcode `--build` or forced pulls in default start**:
-   - `start_stack()` must run:
-     ```bash
-     run_compose up -d "$@"
-     ```
-   - Docker Compose handles pulling automatically when images are missing via `pull_policy: missing`.
-   - Day-to-day starts take ~2 seconds with zero network overhead.
-4. **Provide standard subcommands**:
-   - `start` / `up`: Start stack (pulls automatically if images missing).
-   - `stop` / `down`: Stop containers.
-   - `restart`: Restart containers cleanly.
-   - `build`: Explicitly build containers locally from source.
-   - `pull`: Explicitly pull latest images from GHCR.
-   - `status` / `ps`: Show container status.
-   - `logs`: Stream container logs.
+```bash
+exec bash "$(dirname "$0")/../../../scripts/docker/product-stack.sh" "$(dirname "$0")/.." "$@"
+```
+
+The shared script runs every compose call through `scripts/setup/with-infisical.sh` (Infisical only,
+fails fast) and provides:
+
+- `start` / `up`: `docker compose pull` (strict), then `up -d`. If an image cannot be pulled it stops and
+  says to run the product's image workflow or log in to GHCR; it never builds instead.
+- `stop` / `down`, `restart`, `pull`, `status` / `ps`, `logs`.
+- There is no `build` subcommand. Never add `--build`, `docker build`, `compose build` or
+  `--ignore-pull-failures` to any script.
 
 ---
 
@@ -146,13 +133,12 @@ Instead, use the two-tier platform commands:
 When a product is dockerized, register these scripts in root `package.json`:
 
 ```json
-"docker:<product>:start": "bash products/<product>/scripts/docker-start.sh start",
-"docker:<product>:stop": "bash products/<product>/scripts/docker-start.sh stop",
-"docker:<product>:restart": "bash products/<product>/scripts/docker-start.sh restart",
-"docker:<product>:build": "bash products/<product>/scripts/docker-start.sh build",
-"docker:<product>:pull": "bash products/<product>/scripts/docker-start.sh pull",
-"docker:<product>:logs": "bash products/<product>/scripts/docker-start.sh logs",
-"docker:<product>:status": "bash products/<product>/scripts/docker-start.sh status"
+"docker:<product>:start": "bash apps/<category>/<product>/scripts/docker-start.sh start",
+"docker:<product>:stop": "bash apps/<category>/<product>/scripts/docker-start.sh stop",
+"docker:<product>:restart": "bash apps/<category>/<product>/scripts/docker-start.sh restart",
+"docker:<product>:pull": "bash apps/<category>/<product>/scripts/docker-start.sh pull",
+"docker:<product>:logs": "bash apps/<category>/<product>/scripts/docker-start.sh logs",
+"docker:<product>:status": "bash apps/<category>/<product>/scripts/docker-start.sh status"
 ```
 
 ---
@@ -161,13 +147,16 @@ When a product is dockerized, register these scripts in root `package.json`:
 
 Every product's image workflow is a thin caller of `.github/workflows/reusable-docker-ghcr.yml`:
 
-- **Trigger**: push to `main` with `paths: ['products/zolexora-<product>/**', 'packages/**', ...]` + `workflow_dispatch`.
+- **Trigger**: push to `main` with `paths: ['apps/<category>/<product>/**', 'packages/**', ...]` + `workflow_dispatch`.
 - **Permissions**: `packages: write`, `contents: read`.
-- **Input `services`**: a JSON list mirroring the product's `compose.yaml` builds:
-  `[{"service":"backend","file":"products/zolexora-<product>/services/backend/Dockerfile","build-args":"K=V","target":""}]`.
+- **Input `services`**: a JSON list with one entry per image the product's `compose.yaml` uses (this is the only place build settings live):
+  `[{"service":"backend","file":"apps/<category>/<product>/services/backend/Dockerfile","build-args":"K=V","target":""}]`.
 - The reusable workflow builds from the repo root, logs in via `.github/actions/docker-login`, and pushes
-  `ghcr.io/zolexora/zolexora-<product>-<service>:{latest,<sha>}` with Buildx GHA cache and OCI source/revision labels.
-- The image name must equal the compose `image:` default so `pull_policy: missing` finds it.
+  `ghcr.io/zolexora/zolexora-<product>-<service>:<sha>` plus `:latest` from `main` only (a manual run on another
+  branch pushes `:<branch>` instead, so it never replaces what everyone pulls), with Buildx GHA cache and OCI labels.
+- To run a branch build locally, set the compose image variable, e.g.
+  `IMS_USER_BACKEND_IMAGE=ghcr.io/zolexora/zolexora-ims-user-backend:<branch> bash apps/core-platform/zolexora-ims/scripts/docker-start.sh start`.
+- The image name must equal the compose `image:` default.
 - Builds that need build-time secrets (e.g. AppSuite `NEXT_PUBLIC_*`) load them with `.github/actions/infisical`.
 
 ---

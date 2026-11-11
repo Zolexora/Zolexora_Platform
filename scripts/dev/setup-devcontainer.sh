@@ -8,7 +8,7 @@
 #     ZolexoraMarketplace — Ecom marketplace app (FastAPI/Python, Next.js, Expo/EAS)
 #     TheTextileCare      — Laundry app (FastAPI/Python, Next.js, Expo)
 #     ZolexoraTMS         — Transport management (FastAPI/Python, Next.js, Supabase)
-#     ZolexoraIMS         — Inventory management (Next.js, Cloudflare Workers/Wrangler)
+#     ZolexoraIMS         — Inventory & POS (React/Vite, FastAPI, SQLite)
 #     ZolexoraAI          — AI product (FastAPI/Python, Celery)
 #     ZolexoraEngage      — Engagement platform (pnpm/TS)
 #     ClarityFi           — Fintech (pnpm/TS, Expo)
@@ -21,7 +21,7 @@
 #     pnpm (latest)       — JS package manager (all products)
 #     turbo               — Monorepo task runner
 #     expo-cli + eas-cli  — Expo / React Native builds
-#     wrangler            — Cloudflare Workers (ZolexoraIMS)
+#     wrangler            — Cloudflare CLI (packages/api-shield)
 #     firebase-tools      — Firebase hosting / functions (root firebase.json)
 #     supabase CLI        — Supabase (ZolexoraTMS, infrastructure/supabase)
 #     agy (Antigravity)   — AI coding assistant CLI
@@ -134,7 +134,7 @@ else
 fi
 
 # =============================================================================
-# 6. Wrangler — Cloudflare Workers (ZolexoraIMS: ims-admin, ims-user)
+# 6. Wrangler — Cloudflare CLI (packages/api-shield Workers)
 # =============================================================================
 log "[6/11] wrangler (Cloudflare Workers)"
 if ! command -v wrangler > /dev/null 2>&1; then
@@ -244,6 +244,6 @@ echo " codex    : $(codex --version 2>/dev/null || echo 'n/a')"
 echo "============================================================"
 echo ""
 echo " NOTE: MaunKavach (Android/Kotlin) requires Android Studio"
-echo " locally. The Gradle wrapper (gradlew) in products/zolexora-maunkavach"
+echo " locally. The Gradle wrapper (gradlew) in apps/standalone-apps/maunkavach"
 echo " handles builds — no extra install needed in this container."
 echo "============================================================"

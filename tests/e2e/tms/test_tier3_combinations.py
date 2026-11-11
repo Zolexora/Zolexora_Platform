@@ -162,7 +162,7 @@ class TestTier3CrossFeatureCombinations(unittest.TestCase):
         the NEXT_PUBLIC_ variables declared in compose.yaml for frontend services.
         """
         compose_content = get_tms_compose_path().read_text(encoding="utf-8")
-        entrypoint_script = get_repo_root() / "products" / "zolexora-tms" / "docker-entrypoint-env.sh"
+        entrypoint_script = get_repo_root() / "apps" / "core-platform" / "zolexora-tms" / "docker-entrypoint-env.sh"
         self.assertTrue(entrypoint_script.is_file(), "Missing docker-entrypoint-env.sh")
 
         entrypoint_content = entrypoint_script.read_text(encoding="utf-8")
@@ -194,7 +194,7 @@ class TestTier3CrossFeatureCombinations(unittest.TestCase):
         Validates that down action in startup script stops the compose stack
         cleanly without deleting named data volumes (preventing volume wipe).
         """
-        canonical_script = get_repo_root() / "products" / "zolexora-tms" / "scripts" / "docker-start.sh"
+        canonical_script = get_repo_root() / "apps" / "core-platform" / "zolexora-tms" / "scripts" / "docker-start.sh"
         content = canonical_script.read_text(encoding="utf-8")
 
         self.assertIn("stop|down)", content)

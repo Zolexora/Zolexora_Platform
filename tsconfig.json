@@ -14,10 +14,10 @@
     { "path": "./packages/user-auth-firebase" },
     { "path": "./packages/auth-functions" },
     { "path": "./apps/zolexora-platform-admin/frontend" },
-    { "path": "./products/zolexora-tms/apps/tms-web" },
-    { "path": "./products/zolexora-tms/apps/tms-admin" },
-    { "path": "./products/zolexora-clarityfi" },
-    { "path": "./products/zolexora-engage" },
-    { "path": "./products/zolexora-textile-care" }
+    { "path": "./apps/core-platform/zolexora-tms/apps/tms-web" },
+    { "path": "./apps/core-platform/zolexora-tms/apps/tms-admin" },
+    { "path": "./apps/standalone-apps/clarityfi" },
+    { "path": "./apps/core-platform/zolexora-engage" },
+    { "path": "./apps/standalone-apps/textile-care" }
   ]
 }

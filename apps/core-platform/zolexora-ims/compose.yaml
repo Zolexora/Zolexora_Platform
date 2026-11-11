@@ -1,0 +1,78 @@
+services:
+  ims-user-backend:
+    image: ${IMS_USER_BACKEND_IMAGE:-ghcr.io/zolexora/zolexora-ims-user-backend:latest}
+    pull_policy: missing
+    container_name: ims-user-backend
+    environment:
+    - AUTH_SERVICE_URL=${AUTH_SERVICE_URL:?AUTH_SERVICE_URL missing - run via scripts/setup/with-infisical.sh}
+    - IMS_PRODUCT_KEY=${IMS_PRODUCT_KEY:?IMS_PRODUCT_KEY missing - run via scripts/setup/with-infisical.sh}
+    # Continuous database backup (Litestream). The API refuses to start without these unless
+    # IMS_REPLICATION=off is set in Infisical (local development only).
+    - IMS_REPLICATION=${IMS_REPLICATION:-}
+    - IMS_BACKUP_S3_BUCKET=${IMS_BACKUP_S3_BUCKET:-}
+    - IMS_BACKUP_S3_PATH=${IMS_BACKUP_S3_PATH:-}
+    - IMS_BACKUP_S3_ENDPOINT=${IMS_BACKUP_S3_ENDPOINT:-}
+    - IMS_BACKUP_S3_REGION=${IMS_BACKUP_S3_REGION:-}
+    - IMS_BACKUP_S3_ACCESS_KEY_ID=${IMS_BACKUP_S3_ACCESS_KEY_ID:-}
+    - IMS_BACKUP_S3_SECRET_ACCESS_KEY=${IMS_BACKUP_S3_SECRET_ACCESS_KEY:-}
+    # Gateway connections (services/user-api/gateways.py): set once Zolexora is an approved partner.
+    - IMS_PUBLIC_URL=${IMS_PUBLIC_URL:-}
+    - IMS_ENCRYPTION_KEY=${IMS_ENCRYPTION_KEY:-}
+    - IMS_RAZORPAY_CLIENT_ID=${IMS_RAZORPAY_CLIENT_ID:-}
+    - IMS_RAZORPAY_CLIENT_SECRET=${IMS_RAZORPAY_CLIENT_SECRET:-}
+    - IMS_RAZORPAY_WEBHOOK_SECRET=${IMS_RAZORPAY_WEBHOOK_SECRET:-}
+    - IMS_RAZORPAY_MODE=${IMS_RAZORPAY_MODE:-}
+    - IMS_CASHFREE_PARTNER_API_KEY=${IMS_CASHFREE_PARTNER_API_KEY:-}
+    - IMS_CASHFREE_CLIENT_ID=${IMS_CASHFREE_CLIENT_ID:-}
+    - IMS_CASHFREE_ENV=${IMS_CASHFREE_ENV:-}
+    volumes:
+    - ims-data:/data
+    restart: unless-stopped
+    extra_hosts:
+    - "host.docker.internal:host-gateway"
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4050/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  ims-user-frontend:
+    image: ${IMS_USER_FRONTEND_IMAGE:-ghcr.io/zolexora/zolexora-ims-user-frontend:latest}
+    pull_policy: missing
+    container_name: ims-user-frontend
+    depends_on:
+    - ims-user-backend
+    ports:
+    - "${IMS_PORT:-3072}:3000"
+    environment:
+    - IMS_API_URL=http://ims-user-backend:4050
+    - AUTH_SERVICE_PUBLIC_URL=${AUTH_SERVICE_PUBLIC_URL:?AUTH_SERVICE_PUBLIC_URL missing - run via scripts/setup/with-infisical.sh}
+    - TURNSTILE_SITE_KEY=${TURNSTILE_SITE_KEY:?TURNSTILE_SITE_KEY missing - run via scripts/setup/with-infisical.sh}
+    - NEXT_PUBLIC_IMS_CLIENT_FIREBASE_API_KEY=${NEXT_PUBLIC_IMS_CLIENT_FIREBASE_API_KEY:?NEXT_PUBLIC_IMS_CLIENT_FIREBASE_API_KEY missing - run via scripts/setup/with-infisical.sh}
+    - NEXT_PUBLIC_IMS_CLIENT_FIREBASE_AUTH_DOMAIN=${NEXT_PUBLIC_IMS_CLIENT_FIREBASE_AUTH_DOMAIN:?NEXT_PUBLIC_IMS_CLIENT_FIREBASE_AUTH_DOMAIN missing - run via scripts/setup/with-infisical.sh}
+    - NEXT_PUBLIC_IMS_CLIENT_FIREBASE_APP_ID=${NEXT_PUBLIC_IMS_CLIENT_FIREBASE_APP_ID:?NEXT_PUBLIC_IMS_CLIENT_FIREBASE_APP_ID missing - run via scripts/setup/with-infisical.sh}
+    - NEXT_PUBLIC_FIREBASE_PROJECT_ID=${NEXT_PUBLIC_FIREBASE_PROJECT_ID:?NEXT_PUBLIC_FIREBASE_PROJECT_ID missing - run via scripts/setup/with-infisical.sh}
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/healthz || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+volumes:
+  ims-data:

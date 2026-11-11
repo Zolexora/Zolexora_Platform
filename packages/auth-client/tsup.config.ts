@@ -33,6 +33,7 @@ export default defineConfig((options: Options) => {
       entry: {
         index: "src/index.ts",
         client: "src/client/index.ts",
+        "business-session": "src/business-session/index.ts",
       },
     },
     // 2. React Client Components & Hooks (React & Turnstile)

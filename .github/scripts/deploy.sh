@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Deploy (or roll back) one Compose service to a given image on the current host.
-# Usage: deploy.sh --dir products/<p> --service <svc> --image-var <VAR> --image ghcr.io/zolexora/<img>:<tag> [--environment dev|staging|prod]
+# Usage: deploy.sh --dir apps/<category>/<p> --service <svc> --image-var <VAR> --image ghcr.io/zolexora/<img>:<tag> [--environment dev|staging|prod]
 #   --image-var is the variable the service's compose `image:` reads, e.g. TMS_BACKEND_IMAGE.
 # Secrets come from Infisical via scripts/setup/with-infisical.sh (no fallback).
 set -euo pipefail

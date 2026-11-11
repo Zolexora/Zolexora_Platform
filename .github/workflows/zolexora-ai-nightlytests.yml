@@ -30,13 +30,13 @@ jobs:
       - uses: ./.github/actions/setup-python
         with:
           python-version: '3.11'
-          requirements: products/zolexora-ai/services/api/requirements.txt
+          requirements: apps/core-platform/zolexora-ai/services/api/requirements.txt
           packages: pytest pytest-cov pytest-asyncio
 
       - name: Run unit tests with coverage
         env:
           REDIS_URL: redis://localhost:6379/0
-        working-directory: products/zolexora-ai/services/api
+        working-directory: apps/core-platform/zolexora-ai/services/api
         run: |
           pytest backend/tests tests \
             --cov=backend \
@@ -48,7 +48,7 @@ jobs:
       - name: Upload coverage
         uses: codecov/codecov-action@v4
         with:
-          files: products/zolexora-ai/services/api/coverage.xml
+          files: apps/core-platform/zolexora-ai/services/api/coverage.xml
           fail_ci_if_error: false
 
   test-frontend:

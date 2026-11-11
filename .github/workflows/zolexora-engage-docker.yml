@@ -1,11 +1,11 @@
 name: Zolexora Engage — Docker images
 
-# Builds every image in products/zolexora-engage/compose.yaml and pushes ghcr.io/zolexora/zolexora-engage-<service>:{latest,<sha>}.
+# Builds every image in apps/core-platform/zolexora-engage/compose.yaml and pushes ghcr.io/zolexora/zolexora-engage-<service>:{latest,<sha>}.
 on:
   push:
     branches: [main]
     paths:
-      - 'products/zolexora-engage/**'
+      - 'apps/core-platform/zolexora-engage/**'
       - 'packages/**'
       - 'infrastructure/containers/**'
       - 'pnpm-lock.yaml'
@@ -27,14 +27,14 @@ jobs:
         [
           {
             "service": "api",
-            "file": "products/zolexora-engage/Dockerfile.api"
+            "file": "apps/core-platform/zolexora-engage/Dockerfile.api"
           },
           {
             "service": "nginx",
-            "file": "products/zolexora-engage/Dockerfile.nginx"
+            "file": "apps/core-platform/zolexora-engage/Dockerfile.nginx"
           },
           {
             "service": "web",
-            "file": "products/zolexora-engage/Dockerfile.web"
+            "file": "apps/core-platform/zolexora-engage/Dockerfile.web"
           }
         ]

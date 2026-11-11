@@ -4,13 +4,15 @@ on:
   push:
     branches: [main]
     paths:
-      - 'products/zolexora-ims/**'
+      - 'apps/core-platform/zolexora-ims/**'
+      - 'packages/**'
       - 'pnpm-lock.yaml'
       - '.github/workflows/zolexora-ims-ci.yml'
       - '.github/actions/**'
   pull_request:
     paths:
-      - 'products/zolexora-ims/**'
+      - 'apps/core-platform/zolexora-ims/**'
+      - 'packages/**'
       - 'pnpm-lock.yaml'
       - '.github/workflows/zolexora-ims-ci.yml'
       - '.github/actions/**'
@@ -21,25 +23,21 @@ permissions:
 jobs:
   backend-tests:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        service: [user-api, admin-api]
     defaults:
       run:
-        working-directory: products/zolexora-ims/services/${{ matrix.service }}
+        working-directory: apps/core-platform/zolexora-ims/services/user-api
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-python
         with:
           python-version: '3.11'
-          requirements: products/zolexora-ims/services/${{ matrix.service }}/requirements.txt
+          requirements: apps/core-platform/zolexora-ims/services/user-api/requirements.txt
           packages: pytest
-      - run: PYTHONPATH=.:../shared pytest tests
+      - run: PYTHONPATH=. pytest tests
 
   frontend-build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-node
-      - run: pnpm --filter @zolexora/ims-user-frontend --filter @zolexora/ims-admin-frontend build
+      - run: pnpm --filter "@zolexora/ims-user-frontend..." build

@@ -6,7 +6,7 @@ Closes #
 
 ## Products / areas touched
 
-<!-- e.g. products/zolexora-tms, apps/zolexora-auth-service, packages/auth-client, .github -->
+<!-- e.g. apps/core-platform/zolexora-tms, apps/zolexora-auth-service, packages/auth-client, .github -->
 
 ## How it was verified
 
@@ -14,7 +14,7 @@ Closes #
 
 ## Checklist
 
-- [ ] Follows [AGENTS.md](../AGENTS.md) (root Docker build context, no forced `--build`, GHCR `image:` + `pull_policy: missing`)
+- [ ] Follows [AGENTS.md](../AGENTS.md) (images built only in GitHub CI from the repo root, GHCR `image:` + `pull_policy: missing`, no `build:` in compose)
 - [ ] No secrets, `.env` files or secret defaults; new keys added to Infisical and listed in `docs/secrets.md`
 - [ ] Ports changed? `docs/ports.md` updated
 - [ ] Shared code changed? Every consumer still builds

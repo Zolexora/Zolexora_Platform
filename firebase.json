@@ -14,7 +14,7 @@
     "providers": {
       "emailPassword": true,
       "googleSignIn": {
-        "oAuthBrandDisplayName": "Zolexora Marketplace",
+        "oAuthBrandDisplayName": "Zolexora Shop",
         "supportEmail": "abhishekofficial4577@gmail.com"
       }
     }

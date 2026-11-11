@@ -39,7 +39,7 @@ ls -la turbo.json 2>/dev/null
 ls -la scripts/ 2>/dev/null
 
 echo "=== 10. Product Completeness ==="
-for dir in products/* apps/*; do
+for dir in apps/core-platform/* apps/standalone-apps/* apps/zolexora-*; do
   if [ -d "$dir" ]; then
     echo -n "$dir: "
     find "$dir" -type f -name "*.ts" -o -name "*.tsx" -o -name "*.py" -o -name "*.js" | grep -v node_modules | wc -l

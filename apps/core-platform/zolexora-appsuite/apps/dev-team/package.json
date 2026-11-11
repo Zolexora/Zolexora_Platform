@@ -1,0 +1,36 @@
+{
+  "name": "@zolexora/appsuite-dev-team",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --port 3074",
+    "dev:infisical": "bash ../../../../../scripts/setup/with-infisical.sh ../.. next dev --port 3074",
+    "build": "next build",
+    "start": "next start --port 3074",
+    "lint": "next lint",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@zolexora/user-auth-firebase": "workspace:^",
+    "@zolexora/user-auth-zolexora": "workspace:^",
+    "clsx": "^2.1.1",
+    "firebase": "^12.19.0",
+    "lucide-react": "^0.545.0",
+    "next": "^15.3.0",
+    "pg": "^8.13.3",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "tailwind-merge": "^3.3.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.14",
+    "@types/node": "^25.0.0",
+    "@types/pg": "^8.11.11",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "eslint": "^9.0.0",
+    "eslint-config-next": "^15.3.0",
+    "tailwindcss": "^4.1.14",
+    "typescript": "^5.8.0"
+  }
+}

@@ -29,16 +29,16 @@ start_app() {
   fi
 }
 
-start_app "products/zolexora-tms"
-start_app "products/zolexora-engage"
-start_app "products/zolexora-ims"
-start_app "products/zolexora-textile-care"
-start_app "products/zolexora-rentoeasy"
-start_app "products/zolexora-clarityfi"
-start_app "products/zolexora-ai/apps/web"
-start_app "products/zolexora-marketplace"
-start_app "products/zolexora-maunkavach"
-start_app "products/zolexora-ironclub"
+start_app "apps/core-platform/zolexora-tms"
+start_app "apps/core-platform/zolexora-engage"
+start_app "apps/core-platform/zolexora-ims"
+start_app "apps/standalone-apps/textile-care"
+start_app "apps/standalone-apps/rentoeasy"
+start_app "apps/standalone-apps/clarityfi"
+start_app "apps/core-platform/zolexora-ai/apps/web"
+start_app "apps/core-platform/zolexora-shop"
+start_app "apps/standalone-apps/maunkavach"
+start_app "apps/standalone-apps/ironclub"
 start_app "apps/zolexora-platform-admin/frontend"
 
 echo "All startup commands dispatched!"

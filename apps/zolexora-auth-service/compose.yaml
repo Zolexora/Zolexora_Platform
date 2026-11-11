@@ -7,9 +7,6 @@ services:
   auth-service:
     image: ${AUTH_SERVICE_IMAGE:-ghcr.io/zolexora/zolexora-auth-service:latest}
     pull_policy: missing
-    build:
-      context: ../../
-      dockerfile: apps/zolexora-auth-service/Dockerfile
     container_name: zolexora-auth-service
     restart: unless-stopped
     extra_hosts:

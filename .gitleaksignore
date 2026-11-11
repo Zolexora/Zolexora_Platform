@@ -1,0 +1,3 @@
+# Findings reviewed and accepted (gitleaks fingerprint: commit:file:rule:line).
+# A made-up JWT used as a forged token in the auth e2e probe; the probe now builds it at runtime.
+33d8155e733105e5875b434370d3feb5e7cb2c3a:tests/e2e/auth-service/empirical-adversarial-probe.mjs:jwt:173

@@ -8,9 +8,9 @@ Closes #
 
 ## Checklist
 
-- [ ] Docker builds use the repo root as context (`context: ../../`, `dockerfile: products/<p>/Dockerfile.<svc>`)
+- [ ] Docker builds use the repo root as context (`context: ../../../`, `dockerfile: apps/<category>/<p>/Dockerfile.<svc>`)
 - [ ] Compose services have `image: ${..._IMAGE:-ghcr.io/zolexora/zolexora-<product>-<svc>:latest}` and `pull_policy: missing`
-- [ ] Start scripts use `pull --ignore-pull-failures` + `up -d` (never `up -d --build`) and run through `scripts/setup/with-infisical.sh`
+- [ ] No local image builds: compose has no `build:`, start scripts wrap `scripts/docker/product-stack.sh` (strict pull + `up -d`, through `scripts/setup/with-infisical.sh`)
 - [ ] `docker compose config` passes for every touched stack
 - [ ] Host ports follow `docs/ports.md` (and it is updated)
 - [ ] No `docker system prune -a`; cleanup goes through `pnpm docker:clean` / `pnpm docker:prune`

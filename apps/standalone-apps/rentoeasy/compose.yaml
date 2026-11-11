@@ -1,0 +1,165 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: rento-easy-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: rento
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d rento"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  redis:
+    image: redis:7-alpine
+    container_name: rento-easy-redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  api:
+    image: ${RENTOEASY_API_IMAGE:-ghcr.io/zolexora/zolexora-rentoeasy-api:latest}
+    pull_policy: missing
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    container_name: rento-easy-api
+    environment:
+    - NODE_ENV=production
+    - PORT=3000
+    - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/rento}
+    - JWT_ACCESS_SECRET=${JWT_ACCESS_SECRET}
+    - JWT_ACCESS_EXPIRES=${JWT_ACCESS_EXPIRES:-7d}
+    - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID:-your_local_project}
+    - FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL:-your_placeholder@local.iam.gserviceaccount.com}
+    - FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY}
+    - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID}
+    - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET}
+    - RAZORPAY_WEBHOOK_SECRET=${RAZORPAY_WEBHOOK_SECRET}
+    - RAZORPAY_X_ACCOUNT_NUMBER=${RAZORPAY_X_ACCOUNT_NUMBER:-0000000000}
+    - REDIS_URL=${REDIS_URL:-redis://redis:6379}
+    - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+    - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+    - AWS_REGION=${AWS_REGION:-ap-south-1}
+    - AWS_S3_BUCKET=${AWS_S3_BUCKET:-placeholder}
+    - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME:-placeholder}
+    - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+    - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+    - SENDGRID_API_KEY=${SENDGRID_API_KEY}
+    - SENDGRID_FROM_EMAIL=${SENDGRID_FROM_EMAIL:-noreply@placeholder.com}
+    - DIGIO_CLIENT_ID=${DIGIO_CLIENT_ID:-placeholder}
+    - DIGIO_CLIENT_SECRET=${DIGIO_CLIENT_SECRET}
+    - DIGIO_ENV=${DIGIO_ENV:-sandbox}
+    - RSTAAY=${RSTAAY:-placeholder}
+    healthcheck:
+      test:
+      - CMD
+      - wget
+      - -qO-
+      - http://localhost:3000/docs
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+  web-admin:
+    image: ${RENTOEASY_WEB_ADMIN_IMAGE:-ghcr.io/zolexora/zolexora-rentoeasy-web-admin:latest}
+    pull_policy: missing
+    container_name: rento-easy-web-admin
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    healthcheck:
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://localhost:80/
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  web-owner:
+    image: ${RENTOEASY_WEB_OWNER_IMAGE:-ghcr.io/zolexora/zolexora-rentoeasy-web-owner:latest}
+    pull_policy: missing
+    container_name: rento-easy-web-owner
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    healthcheck:
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://localhost:80/
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  web-tenant:
+    image: ${RENTOEASY_WEB_TENANT_IMAGE:-ghcr.io/zolexora/zolexora-rentoeasy-web-tenant:latest}
+    pull_policy: missing
+    container_name: rento-easy-web-tenant
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    healthcheck:
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://localhost:80/
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  nginx:
+    image: ${RENTOEASY_NGINX_IMAGE:-ghcr.io/zolexora/zolexora-rentoeasy-nginx:latest}
+    pull_policy: missing
+    container_name: rento-easy-nginx
+    ports:
+    - "3076:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    healthcheck:
+      test:
+      - CMD
+      - curl
+      - -f
+      - -H
+      - "Host: localhost"
+      - http://127.0.0.1:80/
+      interval: 30s
+      timeout: 10s
+      retries: 3

@@ -6,18 +6,18 @@ Monorepo for every Zolexora product plus the shared identity, admin and library 
 
 | Product | Path | What it is | Stack | Local gateway |
 | --- | --- | --- | --- | --- |
-| Zolexora Marketplace | `products/zolexora-marketplace` | Multi-storefront e-commerce (Zolexora Shop, Mahila Madel) + seller and admin portals | FastAPI, Next.js, Expo | :3079 |
-| The Textile Care | `products/zolexora-textile-care` | Multi-tenant white-label laundry platform (customer, seller, driver, admin apps) | FastAPI, Next.js, Expo | :3080 |
-| Zolexora TMS | `products/zolexora-tms` | Transport management (web, admin, mobile) | FastAPI, Vite, Expo | :3090 |
-| Zolexora IMS | `products/zolexora-ims` | Multi-tenant inventory management | Cloudflare Workers + D1, FastAPI, Vite | :3072 |
-| Zolexora ERP | `products/zolexora-erp` | ERP on Frappe/ERPNext (submodules) + Zolexora Frappe apps | Frappe, MariaDB | :8080 |
-| Zolexora IronClub | `products/zolexora-ironclub` | Gym & health-club management (admin, manager, marketing, member apps) | FastAPI, Vite, Expo | :8085 |
-| Rento Easy | `products/zolexora-rentoeasy` | Property rental (tenant, owner, admin portals) | NestJS, Prisma, Vite | :3076 |
-| Zolexora AppSuite | `products/zolexora-appsuite` | Client intake + dev-team console for commissioned apps | Next.js, Express | :3070 |
-| Zolexora AI | `products/zolexora-ai` | Multi-agent "Swarm Factory" that turns requirements into codebases | FastAPI, Celery, Vite | :3091 |
-| Zolexora Engage | `products/zolexora-engage` | WhatsApp dispatch for driver duty sheets | Express, Vite, Supabase | :3077 |
-| ClarityFi | `products/zolexora-clarityfi` | Privacy-first personal finance + lifestyle tracker | Expo, Express | :3110 |
-| Maun Kavach | `products/zolexora-maunkavach` | Encrypted messenger (Android client + Node backend + web) | Kotlin, Node, Vite | :3071 |
+| Zolexora Shop | `apps/core-platform/zolexora-shop` | Multi-storefront e-commerce (Zolexora Shop, Mahila Madel) + seller and admin portals | FastAPI, Next.js, Expo | :3079 |
+| The Textile Care | `apps/standalone-apps/textile-care` | Multi-tenant white-label laundry platform (customer, seller, driver, admin apps) | FastAPI, Next.js, Expo | :3080 |
+| Zolexora TMS | `apps/core-platform/zolexora-tms` | Transport management (web, admin, mobile) | FastAPI, Vite, Expo | :3090 |
+| Zolexora IMS | `apps/core-platform/zolexora-ims` | Multi-tenant inventory management | FastAPI, SQLite, Vite | :3072 |
+| Zolexora ERP | `apps/core-platform/zolexora-erp` | ERP on Frappe/ERPNext (submodules) + Zolexora Frappe apps | Frappe, MariaDB | :8080 |
+| Zolexora IronClub | `apps/standalone-apps/ironclub` | Gym & health-club management (admin, manager, marketing, member apps) | FastAPI, Vite, Expo | :8085 |
+| Rento Easy | `apps/standalone-apps/rentoeasy` | Property rental (tenant, owner, admin portals) | NestJS, Prisma, Vite | :3076 |
+| Zolexora AppSuite | `apps/core-platform/zolexora-appsuite` | Client intake + dev-team console for commissioned apps | Next.js, Express | :3070 |
+| Zolexora AI | `apps/core-platform/zolexora-ai` | Multi-agent "Swarm Factory" that turns requirements into codebases | FastAPI, Celery, Vite | :3091 |
+| Zolexora Engage | `apps/core-platform/zolexora-engage` | WhatsApp dispatch for driver duty sheets | Express, Vite, Supabase | :3077 |
+| ClarityFi | `apps/standalone-apps/clarityfi` | Privacy-first personal finance + lifestyle tracker | Expo, Express | :3110 |
+| Maun Kavach | `apps/standalone-apps/maunkavach` | Encrypted messenger (Android client + Node backend + web) | Kotlin, Node, Vite | :3071 |
 
 Shared: `apps/zolexora-auth-service` (central identity, :3081), `apps/zolexora-platform-admin` (:3095), `packages/*` (shared libraries). Every product uses `apps/` (frontends, mobile) + `services/` (backends) + `packages/`. Full layout, naming and dependency rules: [docs/architecture.md](docs/architecture.md). All host ports: [docs/ports.md](docs/ports.md).
 
@@ -62,11 +62,11 @@ Product backends have their own `pytest` suites under each product.
 
 - [docs/architecture.md](docs/architecture.md): layout, dependency rules, platform vs product boundaries
 - [docs/project-tree.md](docs/project-tree.md): full project tree (file paths)
-- [products/README.md](products/README.md): product index
+- [apps/README.md](apps/README.md): product index
 - [docs/ports.md](docs/ports.md): host port registry
 - [docs/secrets.md](docs/secrets.md): Infisical folders and key names per product
 - [docs/architecture/adrs/](docs/architecture/adrs/): decisions
 - [docs/architecture/infrastructure/](docs/architecture/infrastructure/): infrastructure strategy
 - [scripts/README.md](scripts/README.md): scripts
 - [AGENTS.md](AGENTS.md) and [.agents/rules/](.agents/rules/): rules for AI agents
-- Product docs: `products/<name>/README.md` and `products/<name>/docs/`
+- Product docs: `apps/<category>/<product>/README.md` and `apps/<category>/<product>/docs/`

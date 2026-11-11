@@ -1,0 +1,279 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# ZOLEXORA IMS — ULTIMATE ENTERPRISE BOOTSTRAP & PROVISIONING SCRIPT
+# ==============================================================================
+# One-command automated onboarding: Installs CLIs, MCP servers, AI Skills, 
+# dependencies, manages interactive terminal logins, and writes all environment configs.
+# ==============================================================================
+
+set -e
+
+# ANSI Color Codes
+BOLD="\033[1m"
+GREEN="\033[38;5;48m"
+CYAN="\033[38;5;51m"
+BLUE="\033[38;5;39m"
+YELLOW="\033[38;5;220m"
+RED="\033[38;5;196m"
+MAGENTA="\033[38;5;207m"
+PURPLE="\033[38;5;141m"
+DIM="\033[2m"
+RESET="\033[0m"
+
+log_banner() {
+  clear 2>/dev/null || true
+  echo -e "${PURPLE}${BOLD}"
+  echo "  ███████╗ ██████╗ ██╗     ███████╗██╗  ██╗ ██████╗ ██████╗  █████╗      ██╗███╗   ███╗███████╗"
+  echo "  ╚══███╔╝██╔═══██╗██║     ██╔════╝╚██╗██╔╝██╔═══██╗██╔══██╗██╔══██╗     ██║████╗ ████║██╔════╝"
+  echo "    ███╔╝ ██║   ██║██║     █████╗   ╚███╔╝ ██║   ██║██████╔╝███████║     ██║██╔████╔██║███████╗"
+  echo "   ███╔╝  ██║   ██║██║     ██╔══╝   ██╔██╗ ██║   ██║██╔══██╗██╔══██║     ██║██║╚██╔╝██║╚════██║"
+  echo "  ███████╗╚██████╔╝███████╗███████╗██╔╝ ██╗╚██████╔╝██║  ██║██║  ██║     ██║██║ ╚═╝ ██║███████║"
+  echo "  ╚══════╝ ╚═════╝ ╚══════╝╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝     ╚═╝╚═╝     ╚═╝╚══════╝"
+  echo -e "${RESET}"
+  echo -e "${CYAN}${BOLD}   >>> Enterprise Retail POS & Multi-Tenant Inventory Management System <<<${RESET}"
+  echo -e "${DIM}   Automated Environment Setup, CLI Provisioner & Interactive Cloud Auth Login${RESET}"
+  echo " ==========================================================================================="
+  echo ""
+}
+
+log_step() {
+  echo -e "\n${BLUE}${BOLD}==>${RESET} ${BOLD}$1${RESET}"
+}
+
+log_info() {
+  echo -e "  ${CYAN}[INFO]${RESET} $1"
+}
+
+log_success() {
+  echo -e "  ${GREEN}[✓]${RESET} $1"
+}
+
+log_warn() {
+  echo -e "  ${YELLOW}[WARN]${RESET} $1"
+}
+
+log_error() {
+  echo -e "  ${RED}[✗]${RESET} $1"
+}
+
+log_banner
+
+# Determine workspace root
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT_DIR"
+log_info "Workspace Root detected: ${BOLD}$ROOT_DIR${RESET}"
+
+# ------------------------------------------------------------------------------
+# STEP 1: Operating System & Architecture Detection
+# ------------------------------------------------------------------------------
+log_step "Step 1: Inspecting Host Architecture & Package System"
+
+OS_TYPE="$(uname -s)"
+ARCH_TYPE="$(uname -m)"
+log_info "Host Operating System: ${BOLD}${OS_TYPE} (${ARCH_TYPE})${RESET}"
+
+install_pkg() {
+  local pkg=$1
+  if command -v apt-get &>/dev/null; then
+    sudo apt-get update -y && sudo apt-get install -y "$pkg"
+  elif command -v brew &>/dev/null; then
+    brew install "$pkg"
+  elif command -v dnf &>/dev/null; then
+    sudo dnf install -y "$pkg"
+  elif command -v pacman &>/dev/null; then
+    sudo pacman -S --noconfirm "$pkg"
+  fi
+}
+
+# ------------------------------------------------------------------------------
+# STEP 2: Node.js, Corepack & pnpm Verification
+# ------------------------------------------------------------------------------
+log_step "Step 2: Checking Node.js, Corepack & pnpm Runtimes"
+
+if ! command -v node &>/dev/null; then
+  log_warn "Node.js not detected. Attempting installation..."
+  if command -v brew &>/dev/null; then
+    brew install node@20
+  elif command -v apt-get &>/dev/null; then
+    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+    sudo apt-get install -y nodejs
+  fi
+fi
+
+NODE_VERSION=$(node -v 2>/dev/null || echo "Unknown")
+log_success "Node.js Active: ${BOLD}${NODE_VERSION}${RESET}"
+
+# Corepack & pnpm
+log_info "Configuring pnpm package manager (v10.32.1)..."
+if command -v corepack &>/dev/null; then
+  corepack enable 2>/dev/null || true
+  corepack prepare pnpm@10.32.1 --activate 2>/dev/null || true
+fi
+
+if ! command -v pnpm &>/dev/null; then
+  log_info "Installing pnpm globally via npm..."
+  npm install -g pnpm@10.32.1
+fi
+
+PNPM_VERSION=$(pnpm -v 2>/dev/null || echo "Unknown")
+log_success "pnpm Active: ${BOLD}v${PNPM_VERSION}${RESET}"
+
+# ------------------------------------------------------------------------------
+# STEP 3: Python 3 & pip Environment
+# ------------------------------------------------------------------------------
+log_step "Step 3: Checking Python 3 Runtime & Backend Utilities"
+
+if ! command -v python3 &>/dev/null; then
+  log_warn "Python 3 not detected. Installing python3..."
+  install_pkg python3
+fi
+
+PYTHON_VERSION=$(python3 --version 2>/dev/null || echo "Unknown")
+log_success "Python Active: ${BOLD}${PYTHON_VERSION}${RESET}"
+
+if ! python3 -m pip --version &>/dev/null; then
+  log_info "Installing python3-pip and venv..."
+  install_pkg python3-pip
+  install_pkg python3-venv
+fi
+
+# ------------------------------------------------------------------------------
+# STEP 4: Docker & Containerization Tooling
+# ------------------------------------------------------------------------------
+log_step "Step 4: Verifying Docker & Container Runtime"
+
+if command -v docker &>/dev/null; then
+  DOCKER_VER=$(docker --version 2>/dev/null || echo "Installed")
+  log_success "Docker Engine: ${BOLD}${DOCKER_VER}${RESET}"
+  if docker compose version &>/dev/null; then
+    COMPOSE_VER=$(docker compose version 2>/dev/null || echo "Installed")
+    log_success "Docker Compose: ${BOLD}${COMPOSE_VER}${RESET}"
+  else
+    log_warn "Docker compose plugin not found. Some multi-container commands might require docker-compose."
+  fi
+else
+  log_warn "Docker is not currently installed or running. Containerized deployments will require Docker."
+fi
+
+# ------------------------------------------------------------------------------
+# STEP 5: GitHub CLI (images are built by GitHub CI and pulled from GHCR)
+# ------------------------------------------------------------------------------
+log_step "Step 5: GitHub CLI"
+
+# 1. GitHub CLI (gh)
+if command -v gh &>/dev/null; then
+  GH_VER=$(gh --version | head -n 1)
+  log_success "GitHub CLI (gh): ${BOLD}${GH_VER}${RESET}"
+else
+  log_info "Installing GitHub CLI (gh)..."
+  if command -v apt-get &>/dev/null; then
+    (type -p wget >/dev/null || (sudo apt update && sudo apt-get install wget -y)) \
+    && sudo mkdir -p -m 755 /etc/apt/keyrings \
+    && wget -qO- https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null \
+    && sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+    && sudo apt update && sudo apt install gh -y
+  elif command -v brew &>/dev/null; then
+    brew install gh
+  fi
+  log_success "GitHub CLI installed."
+fi
+
+# ------------------------------------------------------------------------------
+# STEP 6: AI MCP Servers & Local Skills Configuration
+# ------------------------------------------------------------------------------
+log_step "Step 6: Verifying Local AI Skills & MCP Server Configurations"
+
+if [ -d "$ROOT_DIR/.agents/skills" ]; then
+  SKILLS_COUNT=$(find "$ROOT_DIR/.agents/skills" -maxdepth 1 -mindepth 1 -type d | wc -l)
+  log_success "Local AI Skills: ${BOLD}${SKILLS_COUNT} skills configured${RESET} (.agents/skills/)"
+fi
+
+if [ -f "$ROOT_DIR/.gemini/mcp_config.json" ] || [ -f "$ROOT_DIR/.vscode/mcp.json" ]; then
+  log_success "Local MCP Configuration: ${BOLD}Active${RESET} (.gemini/ & .vscode/)"
+fi
+
+# ------------------------------------------------------------------------------
+# STEP 7: Monorepo Dependencies Installation
+# ------------------------------------------------------------------------------
+log_step "Step 7: Installing Monorepo Dependencies (Python & Node.js)"
+
+log_info "Installing Python dependencies for User API (FastAPI)..."
+python3 -m pip install -q --no-cache-dir -r "$ROOT_DIR/services/user-api/requirements.txt"
+log_success "User API dependencies installed."
+
+log_info "Installing Frontend monorepo packages via pnpm..."
+pnpm install
+log_success "Frontend packages installed cleanly."
+
+# ------------------------------------------------------------------------------
+# STEP 8: Interactive Terminal Auth Wizard (Cloud Services)
+# ------------------------------------------------------------------------------
+log_step "Step 8: Interactive Terminal Authentication & Cloud Login"
+echo -e "${DIM}  We will now verify your GitHub session (secrets come from Infisical).${RESET}"
+echo -e "${DIM}  You can log in directly right now or skip if you already have valid tokens.${RESET}\n"
+
+# 1. GitHub Login Check
+echo -e "${BOLD}GitHub Authentication (gh)${RESET}"
+if gh auth status &>/dev/null; then
+  GH_USER=$(gh api user -q .login 2>/dev/null || echo "Authenticated")
+  log_success "GitHub logged in as: ${BOLD}${GH_USER}${RESET}"
+else
+  echo -e "  ${YELLOW}GitHub CLI is not currently authenticated.${RESET}"
+  read -p "  Would you like to log in to GitHub now? (Y/n): " do_gh_login
+  if [[ "$do_gh_login" =~ ^[Yy]?$ ]]; then
+    gh auth login
+  else
+    log_warn "Skipped GitHub login. You can run 'gh auth login' later."
+  fi
+fi
+
+# Secrets: injected at runtime from Infisical (/Zolexora_IMS). No .env files.
+
+# ------------------------------------------------------------------------------
+# STEP 9: Self-Test & Quality Verification
+# ------------------------------------------------------------------------------
+log_step "Step 9: Running Automated Health & Test Suite"
+
+log_info "Running backend pytest suite..."
+(cd "$ROOT_DIR/services/user-api" && python3 -m pytest -q tests)
+log_success "Backend pytest tests passed."
+
+# ------------------------------------------------------------------------------
+# STEP 10: Launch Selection
+# ------------------------------------------------------------------------------
+echo ""
+echo -e "==========================================================================================="
+echo -e "${GREEN}${BOLD}             🎉 BOOM! ZOLEXORA IMS ENVIRONMENT SETUP COMPLETE! 🎉             ${RESET}"
+echo -e "==========================================================================================="
+echo ""
+echo -e "${BOLD}Your monorepo is fully configured, secure, authenticated, and ready to run.${RESET}"
+echo ""
+echo -e "Available Services:"
+echo -e "  • ${BOLD}POS & Inventory Frontend:${RESET}    ${CYAN}http://localhost:3000${RESET}  (/pos/dashboard & /inv/dashboard)"
+echo -e "  • ${BOLD}Core User API (FastAPI):${RESET}      ${CYAN}http://localhost:8000${RESET}  (Docs at /docs)"
+echo ""
+echo -e "${BOLD}How would you like to launch the apps right now?${RESET}"
+echo -e "  ${BOLD}[1]${RESET} Launch via ${GREEN}Docker Compose${RESET} (web, API and gateway)"
+echo -e "  ${BOLD}[2]${RESET} Launch via ${BLUE}Local Dev Servers${RESET} (pnpm dev + uvicorn)"
+echo -e "  ${BOLD}[3]${RESET} Exit (I will run them myself)"
+echo ""
+read -p "Select option [1-3] (Default: 2): " launch_choice
+launch_choice=${launch_choice:-2}
+
+case "$launch_choice" in
+  1)
+    log_info "Pulling CI-built images and launching containers..."
+    bash "${ROOT_DIR}/scripts/docker-start.sh" start
+    log_success "IMS containers are running."
+    ;;
+  2)
+    log_info "Launching development servers..."
+    pnpm dev:user:frontend &
+    cd "$ROOT_DIR/services/user-api" && uvicorn main:app --port 8000 &
+    wait
+    ;;
+  *)
+    log_info "Setup complete! Run 'pnpm dev' or 'docker compose up' when ready."
+    ;;
+esac

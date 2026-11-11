@@ -1,0 +1,24 @@
+FROM node:22-alpine AS builder
+RUN apk add --no-cache openssl libc6-compat
+RUN corepack enable && corepack prepare pnpm@9 --activate
+WORKDIR /app
+
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+COPY packages ./packages
+COPY apps/standalone-apps/rentoeasy ./apps/standalone-apps/rentoeasy
+
+RUN ln -s /app/packages /packages
+RUN pnpm config set ignore-scripts true && pnpm install --no-frozen-lockfile
+RUN pnpm --filter @zolexora/rentoeasy-utils build
+RUN pnpm --filter @zolexora/rentoeasy-api prisma:generate
+RUN pnpm --filter @zolexora/rentoeasy-api build
+
+FROM node:22-alpine
+RUN apk add --no-cache openssl libc6-compat
+WORKDIR /app
+COPY --from=builder /app ./
+WORKDIR /app/apps/standalone-apps/rentoeasy/services/api
+EXPOSE 3000
+HEALTHCHECK --interval=15s --timeout=5s --retries=3 \
+  CMD wget -qO- http://localhost:3000/health || exit 1
+CMD ["node", "dist/src/main"]

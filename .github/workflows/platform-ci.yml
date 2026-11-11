@@ -18,23 +18,24 @@ jobs:
         run: git ls-files '*.sh' | grep -v '/services/frappe/' | xargs -r -n1 bash -n
       - name: Compose files are valid
         run: |
-          for f in apps/*/compose.yaml products/*/compose.yaml; do
+          for f in apps/*/compose.yaml apps/core-platform/*/compose.yaml apps/standalone-apps/*/compose.yaml; do
             echo "::group::$f"; docker compose -f "$f" config -q; echo "::endgroup::"
           done
-      - name: Compose builds use the repo root and GHCR images
+      - name: Compose only pulls CI-built GHCR images (no local builds)
         run: |
           bad=0
-          for f in apps/*/compose.yaml products/*/compose.yaml; do
+          for f in apps/*/compose.yaml apps/core-platform/*/compose.yaml apps/standalone-apps/*/compose.yaml; do
             docker compose -f "$f" config --no-interpolate --format json | F="$f" python3 -c '
           import json, os, sys
-          d = json.load(sys.stdin); f = os.environ["F"]; root = os.getcwd(); bad = 0
+          d = json.load(sys.stdin); f = os.environ["F"]; bad = 0
           for n, s in d["services"].items():
-              b = s.get("build")
-              if not b: continue
-              if b["context"].rstrip("/") != root:
-                  print(f"::error file={f}::{n}: build context must be the repo root"); bad = 1
-              if "ghcr.io/zolexora/" not in s.get("image", "") or s.get("pull_policy") != "missing":
-                  print(f"::error file={f}::{n}: needs image ghcr.io/zolexora/... and pull_policy: missing"); bad = 1
+              img = s.get("image", "")
+              if s.get("build"):
+                  print(f"::error file={f}::{n}: no build: blocks; images are built only in GitHub CI"); bad = 1
+              if "ghcr.io/zolexora/" in img and s.get("pull_policy") != "missing":
+                  print(f"::error file={f}::{n}: needs pull_policy: missing"); bad = 1
+              if not img:
+                  print(f"::error file={f}::{n}: needs an image"); bad = 1
           sys.exit(bad)' || bad=1
           done
           exit $bad
@@ -43,10 +44,10 @@ jobs:
           if git ls-files | grep -E '(^|/)\.env(\.|$)|\.env\.example$'; then
             echo "::error::.env files are not allowed (Infisical is the only secret source)"; exit 1
           fi
-      - name: No forced rebuilds in start scripts
+      - name: No local image builds in scripts
         run: |
-          if git ls-files '*.sh' | xargs grep -nE 'up -d --build|up --build -d' | grep -v 'grep -q'; then
-            echo "::error::start scripts must pull + up -d, never force --build (AGENTS.md)"; exit 1
+          if git ls-files '*.sh' | grep -v '/services/frappe/' | xargs grep -nE 'docker (compose .*)?build\b|compose build|up (-d )?--build|--ignore-pull-failures'; then
+            echo "::error::images are built only in GitHub CI; scripts pull strictly and never build (AGENTS.md)"; exit 1
           fi
       - name: Lint workflows (actionlint)
         run: |

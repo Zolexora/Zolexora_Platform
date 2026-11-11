@@ -18,7 +18,7 @@ zolexora-platform (Infisical Project)
 ├── /platform-admin/                   ← Superadmin credentials & cluster registry
 ├── /zolexora-tms/                      ← TMS-specific production variables
 ├── /zolexora-ims/                      ← IMS-specific production variables
-├── /zolexora-marketplace/              ← Marketplace-specific production variables
+├── /zolexora-shop/              ← Marketplace-specific production variables
 ├── /zolexora-erp/                      ← ERPNext Frappe credentials
 ├── /zolexora-engage/                   ← Customer CRM & live chat
 ├── /clarity-fi/                        ← Fintech & accounting

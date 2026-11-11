@@ -6,7 +6,7 @@ One pnpm workspace (root `pnpm-workspace.yaml`) orchestrated by Turborepo. Produ
 
 | Path | Holds |
 | --- | --- |
-| `products/<name>/` | One deployable product each: its apps, services, product-local packages, `compose.yaml`, Dockerfiles, scripts, docs. |
+| `apps/<category>/<product>/` | One deployable product each (`core-platform/zolexora-<name>` or `standalone-apps/<name>`): its apps, services, product-local packages, `compose.yaml`, Dockerfiles, scripts, docs. |
 | `apps/` | Cross-product apps: `zolexora-auth-service` (central identity, Node, port 3081) and `zolexora-platform-admin` (FastAPI `backend/` + `frontend/`). |
 | `packages/` | All shared code, one folder per npm package (`@zolexora/<folder>`): `api-contracts`, `auth-client`, `utils`, `tsconfig`, `eslint-config`, `api-shield` (Cloudflare Worker), `user-auth-firebase` (Firebase login SDK), `user-auth-zolexora` (Postgres + Resend email/password auth, used by AppSuite), `auth-functions` (Firebase Cloud Functions). |
 | `infrastructure/` | Shared Dockerfiles (`containers/docker`), the shared nginx gateway image (`containers/compose`), database schemas/migrations (`database`, used by `supabase/`), cloud specs (`cloud`). |
@@ -18,7 +18,7 @@ One pnpm workspace (root `pnpm-workspace.yaml`) orchestrated by Turborepo. Produ
 Every product uses the same top-level folders:
 
 ```
-products/zolexora-<product>/
+apps/<category>/<product>/
   apps/        frontends and mobile/desktop clients (web, admin, android, expo apps, edge workers)
   services/    backends and APIs (FastAPI, Express, NestJS, Frappe apps)
   packages/    product-local shared code (types, API clients, UI)
@@ -35,7 +35,7 @@ Product notes: ERP's Frappe apps (including the `frappe`/`erpnext`/`payments` su
 
 npm packages are named `@zolexora/<product>-<app>` (e.g. `@zolexora/tms-web`, `@zolexora/textile-care-admin-web`); product root packages are `@zolexora/<product>`. GHCR images are `ghcr.io/zolexora/zolexora-<product>-<service>`, built by `.github/workflows/zolexora-<product>-docker.yml`.
 
-All Docker builds use the repo root as context (`context: ../../`, `dockerfile: products/<p>/Dockerfile.<svc>`); see `.agents/rules/docker-product-standards.md`.
+All Docker builds use the repo root as context (`context: ../../../`, `dockerfile: apps/<category>/<p>/Dockerfile.<svc>`); see `.agents/rules/docker-product-standards.md`.
 
 ## Dependency rules
 
@@ -53,7 +53,7 @@ Stays inside a product (never extracted):
 
 - ERP business domains: accounting/GL, B2B/B2C invoicing, inventory, logistics, selling/CRM, manufacturing, and their data (orders, customers, items, invoices, payroll).
 - Fine-grained business permissions (the platform only answers "may this org use product X?").
-- Integrations that serve a single product (e.g. ERP bank reconciliation lives in `products/zolexora-erp/services/frappe/zolexora_integrations/`).
+- Integrations that serve a single product (e.g. ERP bank reconciliation lives in `apps/core-platform/zolexora-erp/services/frappe/zolexora_integrations/`).
 
 ## Tenant naming
 

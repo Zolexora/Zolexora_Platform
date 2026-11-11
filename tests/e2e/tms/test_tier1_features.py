@@ -102,7 +102,7 @@ class TestTier1Feature2NonBlockingAuth(unittest.TestCase):
         self.assertIn(rc, [0, 1], f"Unexpected return code: {rc}, stderr: {stderr}")
 
     def test_f2_03_infisical_project_config_exists(self):
-        """Verify products/zolexora-tms/.infisical.json exists and is valid JSON."""
+        """Verify apps/core-platform/zolexora-tms/.infisical.json exists and is valid JSON."""
         cfg_path = get_infisical_config_path()
         self.assertTrue(cfg_path.is_file(), f"Missing config file: {cfg_path}")
         with open(cfg_path, "r", encoding="utf-8") as f:
@@ -110,7 +110,7 @@ class TestTier1Feature2NonBlockingAuth(unittest.TestCase):
         self.assertIsInstance(data, dict)
 
     def test_f2_04_infisical_project_config_schema(self):
-        """Verify products/zolexora-tms/.infisical.json contains target workspace and env."""
+        """Verify apps/core-platform/zolexora-tms/.infisical.json contains target workspace and env."""
         cfg_path = get_infisical_config_path()
         with open(cfg_path, "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -147,14 +147,14 @@ class TestTier1Feature3StartDockerSyntax(unittest.TestCase):
 
     def test_f3_03_startup_script_non_interactive_status(self):
         """Verify startup script accepts status or ps without hanging on stdin."""
-        canonical_script = get_repo_root() / "products" / "zolexora-tms" / "scripts" / "docker-start.sh"
+        canonical_script = get_repo_root() / "apps" / "core-platform" / "zolexora-tms" / "scripts" / "docker-start.sh"
         if canonical_script.exists():
             rc, stdout, stderr = run_cmd(["bash", str(canonical_script), "status"], timeout=10.0)
             self.assertEqual(rc, 0, f"docker-start.sh status failed: {stderr}")
 
     def test_f3_04_startup_script_help_guidance(self):
         """Verify startup script prints usage or handles unknown subcommand cleanly."""
-        canonical_script = get_repo_root() / "products" / "zolexora-tms" / "scripts" / "docker-start.sh"
+        canonical_script = get_repo_root() / "apps" / "core-platform" / "zolexora-tms" / "scripts" / "docker-start.sh"
         if canonical_script.exists():
             rc, stdout, stderr = run_cmd(["bash", str(canonical_script), "invalid_subcommand"], timeout=5.0)
             self.assertNotEqual(rc, 0, "Script should exit non-zero on invalid subcommand")
@@ -162,18 +162,18 @@ class TestTier1Feature3StartDockerSyntax(unittest.TestCase):
             self.assertIn("Usage", output, f"Expected 'Usage' string in output: {output}")
 
     def test_f3_05_startup_script_references_canonical_compose(self):
-        """Verify startup script references products/zolexora-tms/compose.yaml."""
-        canonical_script = get_repo_root() / "products" / "zolexora-tms" / "scripts" / "docker-start.sh"
+        """Verify startup script references apps/core-platform/zolexora-tms/compose.yaml."""
+        canonical_script = get_repo_root() / "apps" / "core-platform" / "zolexora-tms" / "scripts" / "docker-start.sh"
         self.assertTrue(canonical_script.exists())
         content = canonical_script.read_text(encoding="utf-8")
-        self.assertIn("products/zolexora-tms/compose.yaml", content)
+        self.assertIn("apps/core-platform/zolexora-tms/compose.yaml", content)
 
 
 class TestTier1Feature4ComposeValidity(unittest.TestCase):
     """Feature 4: Docker Compose File Validity & Service Structure."""
 
     def test_f4_01_canonical_compose_file_exists(self):
-        """Verify canonical compose file products/zolexora-tms/compose.yaml exists."""
+        """Verify canonical compose file apps/core-platform/zolexora-tms/compose.yaml exists."""
         compose_path = get_tms_compose_path()
         self.assertTrue(compose_path.is_file(), f"Compose file missing at: {compose_path}")
 
@@ -239,7 +239,7 @@ class TestTier1Feature5DatabaseConfig(unittest.TestCase):
     def test_f5_04_backend_settings_support_remote_db(self):
         """Verify backend settings compute database URL from Infisical keys."""
         config_path = (
-            get_repo_root() / "products" / "zolexora-tms" / "services" / "backend" / "app" / "core" / "config.py"
+            get_repo_root() / "apps" / "core-platform" / "zolexora-tms" / "services" / "backend" / "app" / "core" / "config.py"
         )
         content = config_path.read_text(encoding="utf-8")
         self.assertIn("DATABASE_ZOLEXORA_TMS_HOST", content)
@@ -272,7 +272,8 @@ class TestTier1Feature6BackendHealth(unittest.TestCase):
         """Verify backend /health route implementation returns status ok."""
         routes_file = (
             get_repo_root()
-            / "products"
+            / "apps"
+            / "core-platform"
             / "zolexora-tms"
             / "services"
             / "backend"
@@ -292,7 +293,8 @@ class TestTier1Feature6BackendHealth(unittest.TestCase):
         """Verify backend /ready route implementation verifies database connectivity."""
         routes_file = (
             get_repo_root()
-            / "products"
+            / "apps"
+            / "core-platform"
             / "zolexora-tms"
             / "services"
             / "backend"
@@ -309,7 +311,7 @@ class TestTier1Feature6BackendHealth(unittest.TestCase):
     def test_f6_04_backend_port_exposure_in_dockerfile(self):
         """Verify backend Dockerfile declares EXPOSE 4030."""
         dockerfile = (
-            get_repo_root() / "products" / "zolexora-tms" / "services" / "backend" / "Dockerfile"
+            get_repo_root() / "apps" / "core-platform" / "zolexora-tms" / "services" / "backend" / "Dockerfile"
         )
         self.assertTrue(dockerfile.is_file())
         content = dockerfile.read_text(encoding="utf-8")
@@ -327,7 +329,7 @@ class TestTier1Feature6BackendHealth(unittest.TestCase):
         else:
             # Verify route registration in FastAPI app/main.py
             main_py = (
-                get_repo_root() / "products" / "zolexora-tms" / "services" / "backend" / "app" / "main.py"
+                get_repo_root() / "apps" / "core-platform" / "zolexora-tms" / "services" / "backend" / "app" / "main.py"
             )
             content = main_py.read_text(encoding="utf-8")
             self.assertIn("app.include_router(health_router)", content)
@@ -373,7 +375,7 @@ class TestTier1Feature7NginxGateway(unittest.TestCase):
             self.assertEqual(status, 200, f"Nginx gateway returned unexpected status: {status}")
         else:
             # Check Nginx config syntax in Docker if image is present
-            conf_dir = get_repo_root() / "products" / "zolexora-tms" / "nginx-conf.d"
+            conf_dir = get_repo_root() / "apps" / "core-platform" / "zolexora-tms" / "nginx-conf.d"
             rc, stdout, stderr = run_cmd(
                 [
                     "docker", "run", "--rm",
@@ -401,8 +403,8 @@ class TestTier1Feature8GitSecretHygiene(unittest.TestCase):
         self.assertIn("*.env", content)
 
     def test_f8_02_tms_gitignore_ignores_env_variants(self):
-        """Verify products/zolexora-tms/.gitignore ignores .env, .env*.local, .env.production."""
-        tms_gi = get_repo_root() / "products" / "zolexora-tms" / ".gitignore"
+        """Verify apps/core-platform/zolexora-tms/.gitignore ignores .env, .env*.local, .env.production."""
+        tms_gi = get_repo_root() / "apps" / "core-platform" / "zolexora-tms" / ".gitignore"
         self.assertTrue(tms_gi.is_file())
         content = tms_gi.read_text(encoding="utf-8")
         self.assertIn(".env", content)
@@ -427,14 +429,14 @@ class TestTier1Feature8GitSecretHygiene(unittest.TestCase):
         """Infisical is the only secret source: no .env files or .env templates may exist for TMS."""
         root = get_repo_root()
         found = [
-            p for d in (root / "products" / "zolexora-tms", root / "config" / "envs" / "zolexora-tms") if d.exists()
+            p for d in (root / "apps" / "core-platform" / "zolexora-tms", root / "config" / "envs" / "zolexora-tms") if d.exists()
             for p in d.rglob("*") if p.is_file() and "node_modules" not in p.parts and (p.name.startswith(".env") or ".env." in p.name or p.name.endswith(".env"))
         ]
         self.assertEqual(found, [], f"Env files/templates found (use Infisical): {found}")
 
     def test_f8_05_no_private_keys_committed_in_tms(self):
-        """Verify no RSA/PEM private keys exist committed in products/zolexora-tms/."""
-        tms_dir = get_repo_root() / "products" / "zolexora-tms"
+        """Verify no RSA/PEM private keys exist committed in apps/core-platform/zolexora-tms/."""
+        tms_dir = get_repo_root() / "apps" / "core-platform" / "zolexora-tms"
         for ext in ["*.pem", "*.key", "*id_rsa*"]:
             matches = list(tms_dir.rglob(ext))
             self.assertEqual(

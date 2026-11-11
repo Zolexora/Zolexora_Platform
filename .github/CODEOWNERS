@@ -1,14 +1,14 @@
 # Global owners
 * @Zolexora/core-team
 
-# Zolexora Marketplace
-/products/zolexora-marketplace/services/ @Zolexora/backend-team
-/products/zolexora-marketplace/contracts/ @Zolexora/backend-team
-/products/zolexora-marketplace/apps/ @Zolexora/frontend-team
-/products/zolexora-marketplace/packages/ @Zolexora/frontend-team
+# Zolexora Shop
+/apps/core-platform/zolexora-shop/services/ @Zolexora/backend-team
+/apps/core-platform/zolexora-shop/contracts/ @Zolexora/backend-team
+/apps/core-platform/zolexora-shop/apps/ @Zolexora/frontend-team
+/apps/core-platform/zolexora-shop/packages/ @Zolexora/frontend-team
 
 # The Textile Care
-/products/zolexora-textile-care/ @TheTextileCare
+/apps/standalone-apps/textile-care/ @TheTextileCare
 
 # Infrastructure & CI/CD
 /infrastructure/ @Zolexora/devops-team
