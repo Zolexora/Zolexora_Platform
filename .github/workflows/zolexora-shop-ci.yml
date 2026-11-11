@@ -1,0 +1,95 @@
+name: Zolexora Shop — CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'products/zolexora-shop/**'
+      - 'packages/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/zolexora-shop-ci.yml'
+      - '.github/actions/**'
+  pull_request:
+    paths:
+      - 'products/zolexora-shop/**'
+      - 'packages/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/zolexora-shop-ci.yml'
+      - '.github/actions/**'
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: products/zolexora-shop
+
+jobs:
+  javascript:
+    name: Workspace, build, type-check, lint, test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node
+      - run: pnpm verify:workspace
+      - run: pnpm build
+        env:
+          NEXT_PUBLIC_API_URL: https://api.zolexora.com/api
+      - run: pnpm type-check
+      - run: pnpm exec turbo run lint --filter='./**' --filter='!@zolexora/shop'
+      - run: pnpm test
+
+  backend:
+    name: Backend — contracts, migrations, lint, tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          # Throwaway CI database, not a real credential
+          POSTGRES_DB: marketplace_ci
+          POSTGRES_USER: marketplace_ci
+          POSTGRES_PASSWORD: marketplace_ci
+        options: >-
+          --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+        ports: ['5432:5432']
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+    env:
+      DATABASE_URL: postgresql://marketplace_ci:marketplace_ci@localhost:5432/marketplace_ci
+      REDIS_URL: redis://localhost:6379
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-python
+        with:
+          requirements: products/zolexora-shop/services/marketplace-api/requirements.txt
+          packages: bandit
+      - name: Contracts and schema
+        run: |
+          python scripts/validate-erp-contracts.py
+          python scripts/validate-postgresql-schema.py
+      - name: Migrations
+        working-directory: products/zolexora-shop/services/marketplace-api
+        run: |
+          alembic heads
+          alembic upgrade head --sql >/dev/null
+          alembic upgrade head
+      - name: Compile and lint
+        run: |
+          python -m compileall -q services/marketplace-api
+          ruff check services/marketplace-api
+      - name: Bandit (advisory)
+        run: bandit -r services/marketplace-api -x services/marketplace-api/tests -ll -ii || true
+      - name: Security gates and full test suite
+        working-directory: products/zolexora-shop/services/marketplace-api
+        run: |
+          pytest tests/test_storefront_context.py tests/test_storefront_isolation.py tests/test_payments.py
+          pytest -q
+
+  docs:
+    name: Docs links
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/validate-doc-links.py

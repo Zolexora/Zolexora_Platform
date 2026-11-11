@@ -22,7 +22,7 @@ product:ironclub:
       - any-glob-to-any-file: 'products/zolexora-ironclub/**'
 product:marketplace:
   - changed-files:
-      - any-glob-to-any-file: 'products/zolexora-marketplace/**'
+      - any-glob-to-any-file: 'products/zolexora-shop/**'
 product:maunkavach:
   - changed-files:
       - any-glob-to-any-file: 'products/zolexora-maunkavach/**'

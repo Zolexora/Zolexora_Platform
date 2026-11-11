@@ -24,8 +24,8 @@ def replace_in_files(directory, old_str, new_str, extensions=None):
 print("Patching Zolexora AI (8000 -> 4090)")
 replace_in_files('products/zolexora-ai', '8000', '4090')
 
-print("Patching Zolexora Marketplace (8000 -> 4100)")
-replace_in_files('products/zolexora-marketplace', '8000', '4100')
+print("Patching Zolexora Shop (8000 -> 4100)")
+replace_in_files('products/zolexora-shop', '8000', '4100')
 
 print("Patching Zolexora TMS (8000 -> 4030)")
 replace_in_files('products/zolexora-tms', '8000', '4030')

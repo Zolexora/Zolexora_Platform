@@ -11,6 +11,6 @@ Cloudflare D1 runs SQLite databases distributed at the edge.
 
 ## Cloudflare R2 (Object Storage)
 R2 is an S3-compatible object store with zero egress fees.
-- **Bucket Architecture:** Create separate buckets per environment and product (e.g., `zolexora-erp-prod`, `zolexora-marketplace-dev`).
+- **Bucket Architecture:** Create separate buckets per environment and product (e.g., `zolexora-erp-prod`, `zolexora-shop-dev`).
 - **CDN Integration:** Always map R2 buckets to a custom domain (e.g., `assets.zolexora.com`) to utilize Cloudflare's global CDN caching automatically.
 - **Security:** Never expose R2 API keys to the frontend. Use your backend (FastAPI/Next.js) to generate **Pre-signed URLs** for temporary, secure uploads/downloads.

@@ -6,7 +6,7 @@ Always use these canonical names, descriptions and paths. Never use the old fold
 
 | Product | Description | Path |
 | --- | --- | --- |
-| Zolexora Marketplace | Ecom marketplace app | `products/zolexora-marketplace/` |
+| Zolexora Shop | Ecom marketplace app | `products/zolexora-shop/` |
 | The Textile Care | Laundry app | `products/zolexora-textile-care/` |
 | Zolexora TMS | Transport management | `products/zolexora-tms/` |
 | Zolexora IMS | Inventory management | `products/zolexora-ims/` |
@@ -19,7 +19,7 @@ Always use these canonical names, descriptions and paths. Never use the old fold
 | ClarityFi | Personal finance tracker | `products/zolexora-clarityfi/` |
 | Maun Kavach | Encrypted messenger | `products/zolexora-maunkavach/` |
 
-## Zolexora Marketplace — Ecom Marketplace App
+## Zolexora Shop — Ecom Marketplace App
 
 **What it is:** Multi-storefront e-commerce marketplace.
 
@@ -28,7 +28,7 @@ Always use these canonical names, descriptions and paths. Never use the old fold
 - Backend: FastAPI (Python 3.12) · PostgreSQL · Redis — `services/marketplace-api/`
 - Frontend: Next.js (web) + Expo React Native (mobile)
 - Product-local packages: `packages/shared-api`, `packages/shared-config`
-- Path: `products/zolexora-marketplace/`
+- Path: `products/zolexora-shop/`
 
 ## The Textile Care — Laundry App
 

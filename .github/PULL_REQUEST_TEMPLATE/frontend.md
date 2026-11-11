@@ -4,7 +4,7 @@ Closes #
 
 ## App(s)
 
-<!-- e.g. products/zolexora-marketplace/apps/zolexora-shop -->
+<!-- e.g. products/zolexora-shop/apps/zolexora-shop -->
 
 ## Screenshots
 

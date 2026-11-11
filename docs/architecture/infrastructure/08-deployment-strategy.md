@@ -42,7 +42,7 @@ User → Cloudflare Worker (per product)
 | :--- | :--- | :--- | :--- |
 | Platform Admin | Vercel | Fly.io VM 1 | CF Account 1 |
 | Zolexora IMS | Vercel | Fly.io VM 2 | CF Account 2 |
-| Zolexora Marketplace | Vercel | Fly.io VM 2 | CF Account 3 |
+| Zolexora Shop | Vercel | Fly.io VM 2 | CF Account 3 |
 | Zolexora TMS | Vercel | Fly.io VM 3 | CF Account 4 |
 | Zolexora Engage | Vercel | Render (UptimeRobot) | CF Account 5 |
 | Clarity FI | Vercel | Render (UptimeRobot) | CF Account 6 |

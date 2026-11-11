@@ -44,7 +44,7 @@ Names only. Add any missing key to the product's Infisical folder (project `c4ac
 - **user-backend**: `ENVIRONMENT`, `HOST`, `PORT`, `LOG_LEVEL`, `CORS_ALLOWED_ORIGINS`, `DEFAULT_CURRENCY`, `AUTH_SERVICE_URL`, `IMS_PRODUCT_KEY` (same value as the `ims` entry in the auth service's `CATALOG_PRODUCT_KEYS`). The database is a SQLite file at `DATABASE_PATH` (`/data/ims.db`, set by the image; not a secret), backed up continuously by Litestream: `IMS_BACKUP_S3_BUCKET`, `IMS_BACKUP_S3_PATH`, `IMS_BACKUP_S3_ENDPOINT`, `IMS_BACKUP_S3_REGION`, `IMS_BACKUP_S3_ACCESS_KEY_ID`, `IMS_BACKUP_S3_SECRET_ACCESS_KEY` (required), or `IMS_REPLICATION=off` (local dev only). Gateway connections (only once Zolexora is an approved Razorpay/Cashfree partner): `IMS_PUBLIC_URL`, `IMS_ENCRYPTION_KEY`, `IMS_RAZORPAY_CLIENT_ID`, `IMS_RAZORPAY_CLIENT_SECRET`, `IMS_RAZORPAY_WEBHOOK_SECRET`, `IMS_RAZORPAY_MODE`, `IMS_CASHFREE_PARTNER_API_KEY`, `IMS_CASHFREE_CLIENT_ID`, `IMS_CASHFREE_ENV`.
 - **user-frontend**: `AUTH_SERVICE_PUBLIC_URL`, `TURNSTILE_SITE_KEY`, `NEXT_PUBLIC_IMS_CLIENT_FIREBASE_API_KEY`, `NEXT_PUBLIC_IMS_CLIENT_FIREBASE_AUTH_DOMAIN`, `NEXT_PUBLIC_IMS_CLIENT_FIREBASE_APP_ID`, `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
 
-### zolexora-marketplace — `/Zolexora_Marketplace`
+### zolexora-shop — `/Zolexora_Marketplace`
 
 - **admin-frontend-generic**: `NEXT_PUBLIC_API_URL`
 - **admin-web**: `NEXT_PUBLIC_API_URL`

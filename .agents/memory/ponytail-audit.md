@@ -32,7 +32,7 @@ Shared resume point for any agent performing a repository-wide over-engineering 
 | `products/zolexora-engage` | Initial pass | README, workspace/package usage, and exact duplicate packages reviewed; detailed app/API flow review pending. |
 | `products/zolexora-erp` first-party code | Not reviewed | Inspect local customization/integration only; upstream submodules excluded. |
 | `products/zolexora-ims` | Not reviewed | |
-| `products/zolexora-marketplace` | Not reviewed | Follow its local agent instructions before detailed review. |
+| `products/zolexora-shop` | Not reviewed | Follow its local agent instructions before detailed review. |
 | `products/zolexora-tms` | Initial pass | Agent instructions read; first-pass abstraction inventory only. |
 | Git submodule internals | Excluded | Third-party ERPNext, Frappe, and Payments upstream trees; assess only first-party integration. |
 
@@ -41,7 +41,7 @@ Shared resume point for any agent performing a repository-wide over-engineering 
 - `shrink:` Remove the repeated `products/zolexora-engage/apps/*` glob from root `pnpm-workspace.yaml` (one duplicate line).
 - `delete:` Consolidate byte-identical Nginx and PostgreSQL test Compose configs under `infrastructure/containers/{compose,docker}`; verify all references and compatibility paths before recommending a canonical path.
 - `delete:` The Textile Care `logo.png` and `logo-white.png` assets are byte-identical across seller, marketplace, and admin web public directories; consider a shared canonical asset source. Determine build/deploy constraints before finalizing.
-- `yagni:` The Zolexora Marketplace buyer mobile apps contain nine identical route/store files (1,435 duplicate lines) despite ADR 0007 rejecting copied full-app behavior and requiring two distinct binaries. Share identical app behavior while retaining separate app identities, storefront config, and release artifacts.
+- `yagni:` The Zolexora Shop buyer mobile apps contain nine identical route/store files (1,435 duplicate lines) despite ADR 0007 rejecting copied full-app behavior and requiring two distinct binaries. Share identical app behavior while retaining separate app identities, storefront config, and release artifacts.
 
 These candidates are not yet final findings; validate file ownership, consumers, and intended product boundaries during the detailed pass.
 

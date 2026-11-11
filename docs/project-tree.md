@@ -87,14 +87,14 @@ Zolexora_Platform/
 │   │   ├── zolexora-ims-ci.yml
 │   │   ├── zolexora-ims-docker.yml
 │   │   ├── zolexora-ironclub-docker.yml
-│   │   ├── zolexora-marketplace-ci.yml
-│   │   ├── zolexora-marketplace-docker.yml
-│   │   ├── zolexora-marketplace-release.yml
 │   │   ├── zolexora-maunkavach-android.yml
 │   │   ├── zolexora-maunkavach-ci.yml
 │   │   ├── zolexora-maunkavach-docker.yml
 │   │   ├── zolexora-platform-admin-docker.yml
 │   │   ├── zolexora-rentoeasy-docker.yml
+│   │   ├── zolexora-shop-ci.yml
+│   │   ├── zolexora-shop-docker.yml
+│   │   ├── zolexora-shop-release.yml
 │   │   ├── zolexora-textile-care-ci.yml
 │   │   ├── zolexora-textile-care-docker.yml
 │   │   └── zolexora-tms-docker.yml
@@ -447,7 +447,7 @@ Zolexora_Platform/
 │   │   │   ├── run-all-tests.sh
 │   │   │   └── setup.sh
 │   │   ├── services/
-│   │   │   └── user-api/  (24 files)
+│   │   │   └── user-api/  (26 files)
 │   │   ├── .gitignore
 │   │   ├── .infisical.json
 │   │   ├── compose.yaml
@@ -480,52 +480,6 @@ Zolexora_Platform/
 │   │   ├── compose.yaml
 │   │   ├── Dockerfile.nginx
 │   │   ├── Dockerfile.vite-app
-│   │   ├── nginx.conf
-│   │   ├── package.json
-│   │   └── README.md
-│   ├── zolexora-marketplace/
-│   │   ├── apps/
-│   │   │   ├── portals/  (79 files)
-│   │   │   └── storefronts/  (127 files)
-│   │   ├── contracts/
-│   │   │   ├── marketplace/  (1 files)
-│   │   │   └── zolexora-erp/  (21 files)
-│   │   ├── docs/
-│   │   │   ├── agents/  (4 files)
-│   │   │   ├── api-test-reports/  (8 files)
-│   │   │   ├── architecture/  (12 files)
-│   │   │   ├── decisions/  (16 files)
-│   │   │   ├── directory-plan/  (4 files)
-│   │   │   ├── legacy/  (3 files)
-│   │   │   ├── planning/  (5 files)
-│   │   │   ├── runbooks/  (4 files)
-│   │   │   ├── status/  (25 files)
-│   │   │   ├── README.md
-│   │   │   └── SECURITY.md
-│   │   ├── nginx-conf.d/
-│   │   │   └── default.conf
-│   │   ├── packages/
-│   │   │   ├── mobile-sign-in/  (7 files)
-│   │   │   ├── shared-api/  (9 files)
-│   │   │   ├── shared-config/  (3 files)
-│   │   │   └── sign-in/  (9 files)
-│   │   ├── scripts/
-│   │   │   ├── tests/  (1 files)
-│   │   │   ├── check-openapi-drift.sh
-│   │   │   ├── docker-start.sh
-│   │   │   ├── generate-openapi.py
-│   │   │   ├── py-exec.mjs
-│   │   │   ├── validate-doc-links.py
-│   │   │   ├── validate-erp-contracts.py
-│   │   │   ├── validate-postgresql-schema.py
-│   │   │   ├── verify-workspace.mjs
-│   │   │   └── web-env-config.sh
-│   │   ├── services/
-│   │   │   └── marketplace-api/  (232 files)
-│   │   ├── .gitignore
-│   │   ├── .infisical.json
-│   │   ├── compose.yaml
-│   │   ├── Dockerfile.nginx
 │   │   ├── nginx.conf
 │   │   ├── package.json
 │   │   └── README.md
@@ -581,6 +535,52 @@ Zolexora_Platform/
 │   │   ├── package.json
 │   │   ├── README.md
 │   │   └── tsconfig.base.json
+│   ├── zolexora-shop/
+│   │   ├── apps/
+│   │   │   ├── portals/  (79 files)
+│   │   │   └── storefronts/  (127 files)
+│   │   ├── contracts/
+│   │   │   ├── marketplace/  (1 files)
+│   │   │   └── zolexora-erp/  (21 files)
+│   │   ├── docs/
+│   │   │   ├── agents/  (4 files)
+│   │   │   ├── api-test-reports/  (8 files)
+│   │   │   ├── architecture/  (12 files)
+│   │   │   ├── decisions/  (16 files)
+│   │   │   ├── directory-plan/  (4 files)
+│   │   │   ├── legacy/  (3 files)
+│   │   │   ├── planning/  (5 files)
+│   │   │   ├── runbooks/  (4 files)
+│   │   │   ├── status/  (25 files)
+│   │   │   ├── README.md
+│   │   │   └── SECURITY.md
+│   │   ├── nginx-conf.d/
+│   │   │   └── default.conf
+│   │   ├── packages/
+│   │   │   ├── mobile-sign-in/  (7 files)
+│   │   │   ├── shared-api/  (9 files)
+│   │   │   ├── shared-config/  (3 files)
+│   │   │   └── sign-in/  (9 files)
+│   │   ├── scripts/
+│   │   │   ├── tests/  (1 files)
+│   │   │   ├── check-openapi-drift.sh
+│   │   │   ├── docker-start.sh
+│   │   │   ├── generate-openapi.py
+│   │   │   ├── py-exec.mjs
+│   │   │   ├── validate-doc-links.py
+│   │   │   ├── validate-erp-contracts.py
+│   │   │   ├── validate-postgresql-schema.py
+│   │   │   ├── verify-workspace.mjs
+│   │   │   └── web-env-config.sh
+│   │   ├── services/
+│   │   │   └── marketplace-api/  (232 files)
+│   │   ├── .gitignore
+│   │   ├── .infisical.json
+│   │   ├── compose.yaml
+│   │   ├── Dockerfile.nginx
+│   │   ├── nginx.conf
+│   │   ├── package.json
+│   │   └── README.md
 │   ├── zolexora-textile-care/
 │   │   ├── apps/
 │   │   │   ├── admin-web/  (34 files)
@@ -729,6 +729,7 @@ Zolexora_Platform/
 ├── .firebaserc
 ├── .gitattributes
 ├── .gitignore
+├── .gitleaksignore
 ├── .gitmodules
 ├── .hintrc
 ├── .infisical.json

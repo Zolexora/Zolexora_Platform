@@ -175,7 +175,7 @@ Currently every product has its own copy of this type of code:
 import psycopg2
 conn = psycopg2.connect(os.getenv("SUPABASE_URL"))
 
-# zolexora-marketplace/backend/database.py
+# zolexora-shop/backend/database.py
 import psycopg2
 conn = psycopg2.connect(os.getenv("SUPABASE_URL"))   # different URL, same code
 ```
@@ -194,7 +194,7 @@ PRODUCT_DB_MAP = {
         "schema":           "ims",           # → searches in ims.* tables
         "pool_port":        6543,            # → Supavisor (not 5432!)
     },
-    "zolexora-marketplace": {
+    "zolexora-shop": {
         "supabase_project": "core",
         "schema":           "marketplace",
         "pool_port":        6543,
@@ -286,7 +286,7 @@ A single, clearly organised environment variable template that consolidates all 
 Currently you have:
 ```
 products/zolexora-ims/.env         → has SUPABASE_URL (which project?)
-products/zolexora-marketplace/.env → has SUPABASE_URL (different project!)
+products/zolexora-shop/.env → has SUPABASE_URL (different project!)
 products/zolexora-ai/.env          → has SUPABASE_URL (yet another!)
 ```
 
@@ -346,7 +346,7 @@ R2_ACCOUNT_ID=
 R2_ACCESS_KEY_ID=
 R2_SECRET_ACCESS_KEY=
 R2_BUCKET_IMS=zolexora-ims-files
-R2_BUCKET_MARKETPLACE=zolexora-marketplace-files
+R2_BUCKET_MARKETPLACE=zolexora-shop-files
 R2_BUCKET_TMS=zolexora-tms-files
 
 # ── Shared Services ───────────────────────────────────────

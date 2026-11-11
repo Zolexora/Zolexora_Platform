@@ -85,7 +85,7 @@
   description: "products/zolexora-ironclub"
 - name: "product:marketplace"
   color: "fbca04"
-  description: "products/zolexora-marketplace"
+  description: "products/zolexora-shop"
 - name: "product:maunkavach"
   color: "fbca04"
   description: "products/zolexora-maunkavach"

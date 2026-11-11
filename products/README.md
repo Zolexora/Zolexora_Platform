@@ -4,7 +4,7 @@ Each product is an independent stack under `products/zolexora-<product>/` using 
 
 | Product | Path | What it is | Docker scripts |
 | --- | --- | --- | --- |
-| Zolexora Marketplace | [`zolexora-marketplace/`](zolexora-marketplace/) | Ecom marketplace app: Zolexora Shop + Mahila Madel storefronts, seller and admin portals | `docker:marketplace:*` |
+| Zolexora Shop | [`zolexora-shop/`](zolexora-shop/) | Ecom marketplace app: Zolexora Shop + Mahila Madel storefronts, seller and admin portals | `docker:shop:*` |
 | The Textile Care | [`zolexora-textile-care/`](zolexora-textile-care/) | Laundry app: multi-tenant white-label (customer, seller, driver, admin) | `docker:ttc:*` |
 | Zolexora TMS | [`zolexora-tms/`](zolexora-tms/) | Transport management (web, admin, mobile) | `docker:tms:*` |
 | Zolexora IMS | [`zolexora-ims/`](zolexora-ims/) | Multi-tenant inventory management | `docker:ims:*` |

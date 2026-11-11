@@ -6,7 +6,7 @@ Monorepo for every Zolexora product plus the shared identity, admin and library 
 
 | Product | Path | What it is | Stack | Local gateway |
 | --- | --- | --- | --- | --- |
-| Zolexora Marketplace | `products/zolexora-marketplace` | Multi-storefront e-commerce (Zolexora Shop, Mahila Madel) + seller and admin portals | FastAPI, Next.js, Expo | :3079 |
+| Zolexora Shop | `products/zolexora-shop` | Multi-storefront e-commerce (Zolexora Shop, Mahila Madel) + seller and admin portals | FastAPI, Next.js, Expo | :3079 |
 | The Textile Care | `products/zolexora-textile-care` | Multi-tenant white-label laundry platform (customer, seller, driver, admin apps) | FastAPI, Next.js, Expo | :3080 |
 | Zolexora TMS | `products/zolexora-tms` | Transport management (web, admin, mobile) | FastAPI, Vite, Expo | :3090 |
 | Zolexora IMS | `products/zolexora-ims` | Multi-tenant inventory management | FastAPI, SQLite, Vite | :3072 |

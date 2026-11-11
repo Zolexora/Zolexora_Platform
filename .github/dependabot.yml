@@ -17,7 +17,7 @@ updates:
       - /products/zolexora-ai/services/api/backend
       - /products/zolexora-ims/services/user-api
       - /products/zolexora-ironclub/services/backend
-      - /products/zolexora-marketplace/services/marketplace-api
+      - /products/zolexora-shop/services/marketplace-api
       - /products/zolexora-textile-care/services/backend
       - /products/zolexora-tms/services/backend
     schedule:

@@ -1427,7 +1427,7 @@ importers:
         specifier: ^5.7.2
         version: 5.9.3
 
-  products/zolexora-marketplace:
+  products/zolexora-shop:
     devDependencies:
       '@types/node':
         specifier: ^26.2.0
@@ -1445,12 +1445,12 @@ importers:
         specifier: ^5.4.5
         version: 5.9.3
 
-  products/zolexora-marketplace/apps/portals/marketplace-admin/web:
+  products/zolexora-shop/apps/portals/marketplace-admin/web:
     dependencies:
       '@zolexora/auth-client':
         specifier: workspace:*
         version: link:../../../../../../packages/auth-client
-      '@zolexora/marketplace-sign-in':
+      '@zolexora/shop-sign-in':
         specifier: workspace:*
         version: link:../../../../packages/sign-in
       axios:
@@ -1515,7 +1515,7 @@ importers:
         specifier: ^5.6.0
         version: 5.9.3
 
-  products/zolexora-marketplace/apps/portals/seller/mobile:
+  products/zolexora-shop/apps/portals/seller/mobile:
     dependencies:
       '@babel/runtime':
         specifier: ^7.25.0
@@ -1523,10 +1523,10 @@ importers:
       '@expo/metro-runtime':
         specifier: ~6.1.2
         version: 6.1.2(expo@54.0.37)(react-dom@19.1.0(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.3.0)(react@19.1.0))(react@19.1.0)
-      '@zolexora/marketplace-mobile-sign-in':
+      '@zolexora/shop-mobile-sign-in':
         specifier: workspace:*
         version: link:../../../../packages/mobile-sign-in
-      '@zolexora/marketplace-shared-api':
+      '@zolexora/shop-shared-api':
         specifier: workspace:*
         version: link:../../../../packages/shared-api
       axios:
@@ -1615,7 +1615,7 @@ importers:
         specifier: ^5.3.3
         version: 5.9.3
 
-  products/zolexora-marketplace/apps/portals/seller/web:
+  products/zolexora-shop/apps/portals/seller/web:
     dependencies:
       '@radix-ui/react-dialog':
         specifier: ^1.1.2
@@ -1629,10 +1629,10 @@ importers:
       '@zolexora/auth-client':
         specifier: workspace:*
         version: link:../../../../../../packages/auth-client
-      '@zolexora/marketplace-shared-api':
+      '@zolexora/shop-shared-api':
         specifier: workspace:*
         version: link:../../../../packages/shared-api
-      '@zolexora/marketplace-sign-in':
+      '@zolexora/shop-sign-in':
         specifier: workspace:*
         version: link:../../../../packages/sign-in
       axios:
@@ -1700,7 +1700,7 @@ importers:
         specifier: ^5.6.0
         version: 5.9.3
 
-  products/zolexora-marketplace/apps/storefronts/mahila-madel/mobile:
+  products/zolexora-shop/apps/storefronts/mahila-madel/mobile:
     dependencies:
       '@babel/runtime':
         specifier: ^7.25.0
@@ -1708,10 +1708,10 @@ importers:
       '@expo/metro-runtime':
         specifier: ~6.1.2
         version: 6.1.2(expo@54.0.37)(react-dom@19.1.0(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.3.0)(react@19.1.0))(react@19.1.0)
-      '@zolexora/marketplace-mobile-sign-in':
+      '@zolexora/shop-mobile-sign-in':
         specifier: workspace:*
         version: link:../../../../packages/mobile-sign-in
-      '@zolexora/marketplace-shared-api':
+      '@zolexora/shop-shared-api':
         specifier: workspace:*
         version: link:../../../../packages/shared-api
       axios:
@@ -1803,7 +1803,7 @@ importers:
         specifier: ^4.1.10
         version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(happy-dom@17.6.3)(jsdom@29.1.1)(vite@8.3.3(@types/node@26.6.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
 
-  products/zolexora-marketplace/apps/storefronts/mahila-madel/web:
+  products/zolexora-shop/apps/storefronts/mahila-madel/web:
     dependencies:
       '@testing-library/jest-dom':
         specifier: ^5.17.0
@@ -1814,7 +1814,7 @@ importers:
       '@zolexora/auth-client':
         specifier: workspace:*
         version: link:../../../../../../packages/auth-client
-      '@zolexora/marketplace-sign-in':
+      '@zolexora/shop-sign-in':
         specifier: workspace:*
         version: link:../../../../packages/sign-in
       axios:
@@ -1852,7 +1852,7 @@ importers:
         specifier: 8.57.1
         version: 8.57.1
 
-  products/zolexora-marketplace/apps/storefronts/zolexora-shop/mobile:
+  products/zolexora-shop/apps/storefronts/zolexora-shop/mobile:
     dependencies:
       '@babel/runtime':
         specifier: ^7.25.0
@@ -1860,10 +1860,10 @@ importers:
       '@expo/metro-runtime':
         specifier: ~6.1.2
         version: 6.1.2(expo@54.0.37)(react-dom@19.1.0(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.9)(@types/react@19.3.0)(react@19.1.0))(react@19.1.0)
-      '@zolexora/marketplace-mobile-sign-in':
+      '@zolexora/shop-mobile-sign-in':
         specifier: workspace:*
         version: link:../../../../packages/mobile-sign-in
-      '@zolexora/marketplace-shared-api':
+      '@zolexora/shop-shared-api':
         specifier: workspace:*
         version: link:../../../../packages/shared-api
       axios:
@@ -1955,7 +1955,7 @@ importers:
         specifier: ^4.1.10
         version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(happy-dom@17.6.3)(jsdom@29.1.1)(vite@8.3.3(@types/node@26.6.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
 
-  products/zolexora-marketplace/apps/storefronts/zolexora-shop/web:
+  products/zolexora-shop/apps/storefronts/zolexora-shop/web:
     dependencies:
       '@radix-ui/react-dialog':
         specifier: ^1.1.2
@@ -1975,10 +1975,10 @@ importers:
       '@zolexora/auth-client':
         specifier: workspace:*
         version: link:../../../../../../packages/auth-client
-      '@zolexora/marketplace-shared-api':
+      '@zolexora/shop-shared-api':
         specifier: workspace:*
         version: link:../../../../packages/shared-api
-      '@zolexora/marketplace-sign-in':
+      '@zolexora/shop-sign-in':
         specifier: workspace:*
         version: link:../../../../packages/sign-in
       axios:
@@ -2058,7 +2058,7 @@ importers:
         specifier: ^4.1.10
         version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(happy-dom@17.6.3)(jsdom@29.1.1)(vite@8.3.3(@types/node@26.6.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
 
-  products/zolexora-marketplace/packages/mobile-sign-in:
+  products/zolexora-shop/packages/mobile-sign-in:
     devDependencies:
       '@types/react':
         specifier: ^19.1.17
@@ -2082,7 +2082,7 @@ importers:
         specifier: ^5.4.5
         version: 5.9.3
 
-  products/zolexora-marketplace/packages/shared-api:
+  products/zolexora-shop/packages/shared-api:
     dependencies:
       axios:
         specifier: ^1.7.0
@@ -2091,16 +2091,16 @@ importers:
       '@types/node':
         specifier: ^26.2.0
         version: 26.6.4
-      '@zolexora/marketplace-shared-config':
+      '@zolexora/shop-shared-config':
         specifier: workspace:*
         version: link:../shared-config
       typescript:
         specifier: ^5.4.5
         version: 5.9.3
 
-  products/zolexora-marketplace/packages/shared-config: {}
+  products/zolexora-shop/packages/shared-config: {}
 
-  products/zolexora-marketplace/packages/sign-in:
+  products/zolexora-shop/packages/sign-in:
     dependencies:
       '@zolexora/auth-client':
         specifier: workspace:*

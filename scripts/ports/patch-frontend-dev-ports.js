@@ -9,12 +9,12 @@ const updates = [
   { file: 'products/zolexora-maunkavach/apps/web/package.json', search: '"vite"', replace: '"vite --port 3071"' },
   { file: 'products/zolexora-clarityfi/apps/web/package.json', search: '"npx serve ."', replace: '"npx serve . -l 3081"' },
   { file: 'products/zolexora-ai/apps/web/package.json', search: '"vite"', replace: '"vite --port 3091"' },
-  { file: 'products/zolexora-marketplace/apps/portals/marketplace-admin/web/package.json', search: 'next dev -p 3002', replace: 'next dev -p 3101' },
-  { file: 'products/zolexora-marketplace/apps/portals/seller/web/package.json', search: 'next dev -p 3001', replace: 'next dev -p 3102' },
-  { file: 'products/zolexora-marketplace/apps/storefronts/zolexora-shop/web/package.json', search: 'next dev -p 3000', replace: 'next dev -p 3103' },
-  { file: 'products/zolexora-marketplace/apps/storefronts/zolexora-shop/mobile/package.json', search: 'expo start --clear --port 8081', replace: 'expo start --clear --port 8083' },
-  { file: 'products/zolexora-marketplace/apps/storefronts/mahila-madel/mobile/package.json', search: 'expo start --clear --port 8081', replace: 'expo start --clear --port 8084' },
-  { file: 'products/zolexora-marketplace/apps/storefronts/mahila-madel/web/package.json', search: 'PORT=3003 react-scripts start', replace: 'PORT=3104 react-scripts start' }
+  { file: 'products/zolexora-shop/apps/portals/marketplace-admin/web/package.json', search: 'next dev -p 3002', replace: 'next dev -p 3101' },
+  { file: 'products/zolexora-shop/apps/portals/seller/web/package.json', search: 'next dev -p 3001', replace: 'next dev -p 3102' },
+  { file: 'products/zolexora-shop/apps/storefronts/zolexora-shop/web/package.json', search: 'next dev -p 3000', replace: 'next dev -p 3103' },
+  { file: 'products/zolexora-shop/apps/storefronts/zolexora-shop/mobile/package.json', search: 'expo start --clear --port 8081', replace: 'expo start --clear --port 8083' },
+  { file: 'products/zolexora-shop/apps/storefronts/mahila-madel/mobile/package.json', search: 'expo start --clear --port 8081', replace: 'expo start --clear --port 8084' },
+  { file: 'products/zolexora-shop/apps/storefronts/mahila-madel/web/package.json', search: 'PORT=3003 react-scripts start', replace: 'PORT=3104 react-scripts start' }
 ];
 
 updates.forEach(u => {

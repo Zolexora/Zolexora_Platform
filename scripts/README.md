@@ -51,7 +51,7 @@ Product-specific deployment, lifecycle, and testing scripts are located in their
 | **Zolexora ERP** | [`products/zolexora-erp/scripts/`](../products/zolexora-erp/scripts/) | `bootstrap-frappe-site.sh`, `backup-frappe-site.sh`, `restore-frappe-site.sh`, `schedule-daily-backup.sh`, `check-frappe-stack-health.sh`, `report-frappe-stack-status.sh`, `cleanup-workspaces.py`, `tests/` |
 | **Zolexora IMS** | [`products/zolexora-ims/scripts/`](../products/zolexora-ims/scripts/) | `setup.sh`, `deploy.sh`, `check-health.sh`, `db-ops.sh`, `docker-start.sh`, `menu.sh`, `run-all-tests.sh`, `mcp-payments-server.py` |
 | **Zolexora IronClub** | [`products/zolexora-ironclub/scripts/`](../products/zolexora-ironclub/scripts/) | `dev.sh`, `test.sh` |
-| **Zolexora Marketplace** | [`products/zolexora-marketplace/scripts/`](../products/zolexora-marketplace/scripts/) | `check-openapi-drift.sh`, `generate-openapi.py`, `validate-doc-links.py`, `verify-workspace.mjs` |
+| **Zolexora Shop** | [`products/zolexora-shop/scripts/`](../products/zolexora-shop/scripts/) | `check-openapi-drift.sh`, `generate-openapi.py`, `validate-doc-links.py`, `verify-workspace.mjs` |
 | **Every product** | `products/<product>/scripts/` | `docker-start.sh` (start, stop, restart, build, pull, status, logs) |
 | **Zolexora TMS** | [`products/zolexora-tms/scripts/`](../products/zolexora-tms/scripts/) | `docker-start.sh`, `local-start.sh` |
 
