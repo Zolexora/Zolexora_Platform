@@ -1,4 +1,5 @@
 import os
+import logging
 import json
 import math
 
@@ -9,6 +10,7 @@ from contextlib import asynccontextmanager
 from typing import List, Optional, Dict, Any
 from fastapi import FastAPI, Depends, HTTPException, Query, status, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 try:
     from .utils import now_utc_iso, today_utc_str, generate_id
@@ -26,6 +28,7 @@ try:
         PaymentEngine, PaymentError, RazorpayOrderRequest, RazorpayVerifyRequest,
         CashfreeOrderRequest, CashfreeVerifyRequest, cashfree_webhook_ok, razorpay_webhook_ok, to_paise
     )
+    from .vault import SECRET_FIELDS, GatewayVault, VaultError
 except ImportError:
     from utils import now_utc_iso, today_utc_str, generate_id
     from db import db
@@ -42,12 +45,17 @@ except ImportError:
         PaymentEngine, PaymentError, RazorpayOrderRequest, RazorpayVerifyRequest,
         CashfreeOrderRequest, CashfreeVerifyRequest, cashfree_webhook_ok, razorpay_webhook_ok, to_paise
     )
+    from vault import SECRET_FIELDS, GatewayVault, VaultError
+
+vault = GatewayVault()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await db.init()
     await register_catalog()
+    if not vault.configured:
+        logging.getLogger("zolexora.ims").warning("Gateway vault not configured (IMS_VAULT_*): Razorpay/Cashfree keys cannot be saved or used.")
     yield
 
 
@@ -56,6 +64,11 @@ app = FastAPI(
     version="2.0.0",
     lifespan=lifespan
 )
+
+
+@app.exception_handler(VaultError)
+async def vault_error(_: Request, exc: VaultError):
+    return JSONResponse(status_code=503, content={"detail": str(exc)})
 
 raw_origins = os.getenv("CORS_ALLOWED_ORIGINS", "*")
 if raw_origins.strip() == "*":
@@ -799,8 +812,12 @@ async def verify_dining_benefit(body: DiningBenefitVerify, user: UserProfile = D
 
 # --- Database-Backed Payment Handles, Terminal Settings & Customers ---
 async def _get_payment_handle_from_db(user: UserProfile) -> dict:
-    """This business's payment settings. A new business starts with none (no platform keys or UPI handle)."""
-    return await _get_setting(user.org_id, "PAYMENT_HANDLE_CONFIG") or {
+    """This business's payment settings, without secrets (those are in the vault).
+    A new business starts with none (no platform keys or UPI handle)."""
+    cfg = await _get_setting(user.org_id, "PAYMENT_HANDLE_CONFIG")
+    if cfg:
+        return {k: v for k, v in cfg.items() if k not in SECRET_FIELDS}
+    return {
         "upi_handle": "",
         "merchant_name": user.org_name,
         "merchant_category_code": "5812",
@@ -814,8 +831,16 @@ async def _save_payment_handle_to_db(user: UserProfile, config: dict):
     await _save_setting(user.org_id, "PAYMENT_HANDLE_CONFIG", config, "Payment handle and gateway settings")
 
 
+async def _gateway_secrets(org_id: str, cfg: dict) -> dict:
+    """Gateway secrets from the vault; looked up only for a business that has saved payment settings."""
+    if not cfg or not any(cfg.get(k) for k in ("razorpay_key_id", "cashfree_app_id", "has_gateway_secrets")):
+        return {}
+    return await vault.get(org_id)
+
+
 async def _payment_engine(user: UserProfile) -> PaymentEngine:
-    return PaymentEngine(await _get_payment_handle_from_db(user))
+    cfg = await _get_payment_handle_from_db(user)
+    return PaymentEngine({**cfg, **await _gateway_secrets(user.org_id, cfg)})
 
 
 async def _get_terminal_settings_from_db(user: UserProfile) -> dict:
@@ -847,7 +872,8 @@ async def _save_terminal_settings_to_db(user: UserProfile, settings: dict):
 async def get_payment_handle(user: UserProfile = Depends(require("ims:pos:sell", "ims:payments:manage"))):
     """Returns active merchant payment handle and accepted payment rails from database."""
     current_config = await _get_payment_handle_from_db(user)
-    safe_config = dict(current_config)
+    safe_config = {**current_config, **await _gateway_secrets(user.org_id, current_config)}
+    safe_config.pop("has_gateway_secrets", None)
     if safe_config.get("razorpay_key_secret"):
         safe_config["has_razorpay_secret"] = True
         safe_config["razorpay_key_secret"] = "••••••••"
@@ -871,16 +897,21 @@ async def update_payment_handle(config: PaymentHandleConfig, user: UserProfile =
         )
 
     current = await _get_payment_handle_from_db(user)
+    stored = await _gateway_secrets(user.org_id, current)
+    secrets = {}
+    for field in SECRET_FIELDS:
+        given = (getattr(config, field) or "").strip()
+        secrets[field] = stored.get(field, "") if not given or "••••" in given else given
+    if secrets != {k: stored.get(k, "") for k in SECRET_FIELDS}:
+        await vault.put(user.org_id, secrets)
     updated = {
         "upi_handle": handle,
         "merchant_name": config.merchant_name.strip(),
         "merchant_category_code": config.merchant_category_code.strip(),
         "payment_gateway": config.payment_gateway,
         "razorpay_key_id": config.razorpay_key_id.strip() if config.razorpay_key_id else current.get("razorpay_key_id"),
-        "razorpay_key_secret": config.razorpay_key_secret.strip() if config.razorpay_key_secret and "••••" not in config.razorpay_key_secret else current.get("razorpay_key_secret"),
-        "razorpay_webhook_secret": config.razorpay_webhook_secret.strip() if config.razorpay_webhook_secret and "••••" not in config.razorpay_webhook_secret else current.get("razorpay_webhook_secret"),
         "cashfree_app_id": config.cashfree_app_id.strip() if config.cashfree_app_id else current.get("cashfree_app_id"),
-        "cashfree_secret_key": config.cashfree_secret_key.strip() if config.cashfree_secret_key and "••••" not in config.cashfree_secret_key else current.get("cashfree_secret_key"),
+        "has_gateway_secrets": any(secrets.values()),
         "cashfree_env": config.cashfree_env or "TEST",
         "stripe_publishable_key": config.stripe_publishable_key.strip() if config.stripe_publishable_key else None,
         "edc_terminal_id": config.edc_terminal_id.strip() if config.edc_terminal_id else None,
@@ -1311,7 +1342,8 @@ async def razorpay_webhook(org_id: str, request: Request):
     """Razorpay → this business (set the URL and secret in the Razorpay dashboard and in Payments)."""
     raw = await request.body()
     cfg = await _get_setting(org_id, "PAYMENT_HANDLE_CONFIG") or {}
-    if not razorpay_webhook_ok(cfg.get("razorpay_webhook_secret") or "", raw, request.headers.get("x-razorpay-signature", "")):
+    secrets = await _gateway_secrets(org_id, cfg)
+    if not razorpay_webhook_ok(secrets.get("razorpay_webhook_secret") or "", raw, request.headers.get("x-razorpay-signature", "")):
         raise HTTPException(status_code=401, detail="Invalid signature")
     payload = json.loads(raw or b"{}")
     if payload.get("event") in ("payment.captured", "order.paid"):
@@ -1357,7 +1389,8 @@ async def cashfree_webhook(org_id: str, request: Request):
     """Cashfree → this business. Signed with the business's Cashfree secret key."""
     raw = await request.body()
     cfg = await _get_setting(org_id, "PAYMENT_HANDLE_CONFIG") or {}
-    if not cashfree_webhook_ok(cfg.get("cashfree_secret_key") or "", request.headers.get("x-webhook-timestamp", ""), raw, request.headers.get("x-webhook-signature", "")):
+    secrets = await _gateway_secrets(org_id, cfg)
+    if not cashfree_webhook_ok(secrets.get("cashfree_secret_key") or "", request.headers.get("x-webhook-timestamp", ""), raw, request.headers.get("x-webhook-signature", "")):
         raise HTTPException(status_code=401, detail="Invalid signature")
     data = (json.loads(raw or b"{}").get("data") or {})
     order, payment = data.get("order") or {}, data.get("payment") or {}

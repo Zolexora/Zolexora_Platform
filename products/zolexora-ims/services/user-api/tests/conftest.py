@@ -13,6 +13,24 @@ from auth import get_current_user  # noqa: E402
 from catalog import PERMISSIONS  # noqa: E402
 from main import app  # noqa: E402
 from models import UserProfile  # noqa: E402
+import main  # noqa: E402
+
+
+class MemoryVault:
+    """Stands in for the Infisical gateway vault in tests."""
+    configured = True
+
+    def __init__(self):
+        self.data = {}
+
+    async def get(self, org_id):
+        return dict(self.data.get(org_id, {}))
+
+    async def put(self, org_id, secrets):
+        self.data[org_id] = {k: v for k, v in secrets.items() if v}
+
+
+main.vault = MemoryVault()
 
 
 def member(*permissions: str, org_id: str = "ZX-ORG-TEST-0001-AAAA") -> UserProfile:
