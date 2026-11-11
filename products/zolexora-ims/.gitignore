@@ -33,9 +33,6 @@ Thumbs.db
 .wrangler/
 **/.wrangler/
 
-# Agent local cache
-.gemini/config/.migrated
-
 # Supabase temporary files
 supabase/.temp/
 
