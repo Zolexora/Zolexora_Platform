@@ -257,3 +257,28 @@ CREATE TABLE IF NOT EXISTS payments (
   PRIMARY KEY (org_id, id)
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_payments_reference ON payments (org_id, gateway, reference);
+-- Webhooks from a gateway find the business by the order id (gateway order ids are unique).
+CREATE INDEX IF NOT EXISTS idx_payments_gateway_order ON payments (gateway, id);
+
+-- A business's own Razorpay/Cashfree account, connected through the provider's partner OAuth (gateways.py).
+-- tokens: access/refresh tokens, AES-GCM encrypted with IMS_ENCRYPTION_KEY. Never the business's API keys.
+CREATE TABLE IF NOT EXISTS gateway_connections (
+  org_id TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  account_id TEXT,
+  tokens TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  connected_by TEXT,
+  connected_at TEXT NOT NULL,
+  PRIMARY KEY (org_id, provider)
+);
+CREATE INDEX IF NOT EXISTS idx_gateway_connections_account ON gateway_connections (provider, account_id);
+
+-- One-time "state" values for Connect, valid for 1 hour.
+CREATE TABLE IF NOT EXISTS gateway_connect_states (
+  state TEXT PRIMARY KEY,
+  org_id TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  member_id TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);

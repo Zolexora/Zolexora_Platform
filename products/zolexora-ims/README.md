@@ -89,9 +89,30 @@ support conditional writes (`If-Match` / `If-None-Match`): AWS S3, Cloudflare R2
 
 ## Card & netbanking gateways (Razorpay, Cashfree)
 
-Both providers require a platform to reach a business's account through their partner OAuth ("Connect your
-account" on the provider's own consent screen), not by collecting the business's API secret. IMS therefore never
-accepts gateway keys. Until Zolexora is an approved Razorpay Technology Partner and Cashfree partner, only UPI
-(dynamic QR, confirmed with the UTR) is available and the Connect buttons are disabled. The order, verification
-and webhook code is kept and tested; it gets its access from `_gateway_credentials()` in
-`services/user-api/main.py`, which returns nothing until IMS stores each business's connection.
+Both providers require a platform to reach a business's account through their partner OAuth, not by collecting the
+business's API secret, so IMS never accepts gateway keys. In Command Panel → Payments a business clicks **Connect**,
+signs in on the provider's own page and approves Zolexora; IMS stores only the resulting tokens, AES-GCM encrypted
+with `IMS_ENCRYPTION_KEY` (so database backups hold nothing usable), refreshes them before they expire, and revokes
+them on **Disconnect** ([gateways.py](services/user-api/gateways.py)). A provider's Connect button is enabled only
+when all of its values below are set; until then only UPI is available.
+
+| Variable (Infisical `/Zolexora_IMS`) | What |
+| --- | --- |
+| `IMS_PUBLIC_URL` | The web app's public URL, e.g. `https://ims.example.com` (the providers return the browser there) |
+| `IMS_ENCRYPTION_KEY` | Base64 of 32 random bytes (`openssl rand -base64 32`). Changing it disconnects every business |
+| `IMS_RAZORPAY_CLIENT_ID`, `IMS_RAZORPAY_CLIENT_SECRET`, `IMS_RAZORPAY_MODE` (`test`/`live`) | Razorpay partner OAuth app |
+| `IMS_RAZORPAY_WEBHOOK_SECRET` | Secret of the partner app's webhook |
+| `IMS_CASHFREE_PARTNER_API_KEY`, `IMS_CASHFREE_CLIENT_ID`, `IMS_CASHFREE_ENV` (`TEST`/`PRODUCTION`) | Cashfree partner key and OAuth client |
+
+Register in the providers' partner dashboards:
+
+| | Razorpay | Cashfree |
+| --- | --- | --- |
+| Redirect URL | `<IMS_PUBLIC_URL>/api/v1/payment/connections/razorpay/callback` | `<IMS_PUBLIC_URL>/api/v1/payment/connections/cashfree/callback` |
+| Webhook URL | `<IMS_PUBLIC_URL>/api/v1/payment/razorpay/webhook` (`payment.captured`, `order.paid`, `account.app.authorization_revoked`) | `<IMS_PUBLIC_URL>/api/v1/payment/cashfree/webhook` (payment success, `merchant.unlinked`) |
+
+**Not yet checked against the providers.** The code follows their partner docs and is tested against fake servers
+only. Before offering Connect to businesses, run it once in each sandbox; the lines to check are marked `VERIFY`
+in the code: Razorpay's checkout signature secret and the payload of its partner webhooks; Cashfree's
+payment API base URL for partner tokens, the signature of its partner webhooks and the shape of `merchant.unlinked`.
+A business that does not use a connection for 180 days (Razorpay) or 90 days (Cashfree) must connect again.

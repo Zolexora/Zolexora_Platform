@@ -14,9 +14,11 @@ import { useAuth } from '../../lib/auth-context';
 
 const GATEWAYS = [
   { id: 'upi_qr', name: 'Direct Dynamic UPI QR', desc: '0% MDR • Direct to SBI / Bank • 0-Sec Instant Settle', tag: 'RECOMMENDED', connect: false },
-  { id: 'razorpay', name: 'Razorpay PG', desc: 'Credit/Debit Cards, NetBanking, International & UPI', tag: 'COMING SOON', connect: true },
-  { id: 'cashfree', name: 'Cashfree Payments', desc: 'Drop Checkout, Multi-Rail Auto Settle & Webhooks', tag: 'COMING SOON', connect: true },
+  { id: 'razorpay', name: 'Razorpay PG', desc: 'Credit/Debit Cards, NetBanking, International & UPI', tag: 'CONNECT FIRST', connect: true },
+  { id: 'cashfree', name: 'Cashfree Payments', desc: 'Drop Checkout, Multi-Rail Auto Settle & Webhooks', tag: 'CONNECT FIRST', connect: true },
 ];
+
+type Connection = { provider: string; name: string; available: boolean; connected: boolean; account_id?: string; connected_at?: string };
 
 export default function OrgPaymentSetup() {
   const { authFetch, org } = useAuth();
@@ -35,11 +37,59 @@ export default function OrgPaymentSetup() {
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string; gateway: string } | null>(null);
+  const [connections, setConnections] = useState<Connection[]>([]);
+  const [connecting, setConnecting] = useState<string | null>(null);
+  const isConnected = (id: string) => connections.some((c) => c.provider === id && c.connected);
 
   // Load from database on mount
   useEffect(() => {
     fetchConfig();
+    // Back from the provider's consent page: ?connected=razorpay or ?connect_error=...
+    const q = new URLSearchParams(window.location.search);
+    const done = q.get('connected');
+    const failed = q.get('connect_error');
+    if (done || failed) {
+      setTestResult({ ok: !!done, gateway: done ? (done === 'razorpay' ? 'Razorpay' : 'Cashfree') : 'Connect', message: done ? 'Account connected. You can now choose it for checkout.' : failed || '' });
+      window.history.replaceState(null, '', window.location.pathname);
+    }
   }, []);
+
+  const fetchConnections = async () => {
+    const res = await authFetch('/api/v1/payment/connections');
+    const list: Connection[] = res.ok ? await res.json() : [];
+    setConnections(list);
+    return list;
+  };
+
+  // The business signs in on the provider's own page and approves IMS; it comes back to this page.
+  const handleConnect = async (provider: string) => {
+    setConnecting(provider);
+    const res = await authFetch(`/api/v1/payment/connections/${provider}/start`, { method: 'POST' });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.url) {
+      window.location.href = data.url;
+      return;
+    }
+    setTestResult({ ok: false, gateway: provider === 'razorpay' ? 'Razorpay' : 'Cashfree', message: data.detail || 'Could not start the connection' });
+    setConnecting(null);
+  };
+
+  const handleDisconnect = async (provider: string, name: string) => {
+    if (!window.confirm(`Disconnect ${name}? Card and netbanking payments through it stop, and checkout goes back to UPI.`)) return;
+    setConnecting(provider);
+    const res = await authFetch(`/api/v1/payment/connections/${provider}`, { method: 'DELETE' });
+    const data = await res.json().catch(() => ({}));
+    setTestResult({
+      ok: res.ok,
+      gateway: name,
+      message: res.ok
+        ? data.revoked_at_provider ? 'Disconnected.' : `Disconnected here; also remove Zolexora's access in your ${name} dashboard.`
+        : data.detail || 'Could not disconnect',
+    });
+    await fetchConnections();
+    await fetchConfig();
+    setConnecting(null);
+  };
 
   const fetchConfig = async () => {
     setLoading(true);
@@ -49,10 +99,12 @@ export default function OrgPaymentSetup() {
         const data = await res.json();
         if (data) {
           const cfg = data;
+          const list = await fetchConnections();
           setUpiHandle(cfg.upi_handle || '');
           setMerchantName(cfg.merchant_name || '');
           setMcc(cfg.merchant_category_code || '5812');
-          setPaymentGateway(GATEWAYS.find((g) => g.id === cfg.payment_gateway && !g.connect) ? cfg.payment_gateway : 'upi_qr');
+          const usable = (id: string) => id === 'upi_qr' || list.some((c) => c.provider === id && c.connected);
+          setPaymentGateway(cfg.payment_gateway && usable(cfg.payment_gateway) ? cfg.payment_gateway : 'upi_qr');
           setEdcTerminalId(cfg.edc_terminal_id || 'EDC_TER_001');
           setSoundboxEnabled(cfg.soundbox_enabled !== false);
           setAutoSettle(cfg.auto_settle !== false);
@@ -192,7 +244,7 @@ export default function OrgPaymentSetup() {
               <button
                 type="button"
                 key={gw.id}
-                disabled={gw.connect}
+                disabled={gw.connect && !isConnected(gw.id)}
                 onClick={() => setPaymentGateway(gw.id)}
                 className={`p-3.5 rounded-xl border text-left transition disabled:opacity-50 disabled:cursor-not-allowed ${
                   paymentGateway === gw.id
@@ -206,7 +258,7 @@ export default function OrgPaymentSetup() {
                 </div>
                 <div className="text-[10px] text-slate-400 mt-1">{gw.desc}</div>
                 <span className="mt-2 inline-block text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20">
-                  {gw.tag}
+                  {gw.connect && isConnected(gw.id) ? 'CONNECTED' : gw.tag}
                 </span>
               </button>
             ))}
@@ -349,7 +401,7 @@ export default function OrgPaymentSetup() {
           <CreditCard className="w-5 h-5 text-indigo-400" />
           <div>
             <h2 className="text-sm font-bold text-white">Card & Netbanking Gateways</h2>
-            <p className="text-[11px] text-slate-400">Customers pay by card or netbanking through the business's own Razorpay or Cashfree account, connected on the provider's own sign-in and consent screen. IMS never asks for API keys or secrets. Available once Zolexora is an approved Razorpay and Cashfree partner.</p>
+            <p className="text-[11px] text-slate-400">Customers pay by card or netbanking through the business's own Razorpay or Cashfree account, connected on the provider's own sign-in and consent screen. IMS never asks for API keys or secrets, and you can disconnect at any time.</p>
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
@@ -359,15 +411,32 @@ export default function OrgPaymentSetup() {
                 <div className="font-bold text-white">{gw.name}</div>
                 <div className="text-[10px] text-slate-400 mt-0.5">{gw.desc}</div>
               </div>
-              <button
-                type="button"
-                disabled
-                title="Available once Zolexora is an approved partner"
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 text-slate-400 border border-white/10 rounded-lg font-semibold cursor-not-allowed"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-                <span>Connect</span>
-              </button>
+              {(() => {
+                const c = connections.find((x) => x.provider === gw.id);
+                if (c?.connected) {
+                  return (
+                    <div className="text-right">
+                      <div className="text-emerald-300 font-semibold flex items-center gap-1 justify-end"><CheckCircle2 className="w-3.5 h-3.5" /> Connected</div>
+                      {c.account_id && <div className="text-[10px] text-slate-400 font-mono">{c.account_id}</div>}
+                      <button type="button" disabled={connecting === gw.id} onClick={() => handleDisconnect(gw.id, gw.name)} className="mt-1 text-[11px] text-rose-300 hover:text-rose-200 underline disabled:opacity-50">
+                        Disconnect
+                      </button>
+                    </div>
+                  );
+                }
+                return (
+                  <button
+                    type="button"
+                    disabled={!c?.available || connecting === gw.id}
+                    onClick={() => handleConnect(gw.id)}
+                    title={c?.available ? `Sign in to ${gw.name} and approve Zolexora` : 'Available once Zolexora is an approved partner'}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-200 border border-indigo-500/30 rounded-lg font-semibold disabled:bg-white/5 disabled:text-slate-400 disabled:border-white/10 disabled:cursor-not-allowed"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>{connecting === gw.id ? 'Opening…' : c?.available ? 'Connect' : 'Coming soon'}</span>
+                  </button>
+                );
+              })()}
             </div>
           ))}
         </div>

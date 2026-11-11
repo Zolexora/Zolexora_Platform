@@ -1,6 +1,11 @@
 import os
 import json
 import math
+import asyncio
+import logging
+import secrets
+from datetime import datetime, timedelta, timezone
+from urllib.parse import urlencode
 
 import segno
 import hashlib
@@ -9,6 +14,7 @@ from contextlib import asynccontextmanager
 from typing import List, Optional, Dict, Any
 from fastapi import FastAPI, Depends, HTTPException, Query, status, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 
 try:
     from .utils import now_utc_iso, today_utc_str, generate_id
@@ -26,6 +32,7 @@ try:
         PaymentEngine, PaymentError, RazorpayOrderRequest, RazorpayVerifyRequest,
         CashfreeOrderRequest, CashfreeVerifyRequest, cashfree_webhook_ok, razorpay_webhook_ok, to_paise
     )
+    from .gateways import PROVIDERS, ConnectionRejected, public_url, seal, unseal
 except ImportError:
     from utils import now_utc_iso, today_utc_str, generate_id
     from db import db
@@ -42,6 +49,7 @@ except ImportError:
         PaymentEngine, PaymentError, RazorpayOrderRequest, RazorpayVerifyRequest,
         CashfreeOrderRequest, CashfreeVerifyRequest, cashfree_webhook_ok, razorpay_webhook_ok, to_paise
     )
+    from gateways import PROVIDERS, ConnectionRejected, public_url, seal, unseal
 
 
 @asynccontextmanager
@@ -819,13 +827,53 @@ async def _save_payment_handle_to_db(user: UserProfile, config: dict):
 
 GATEWAY_KEY_FIELDS = ("razorpay_key_id", "razorpay_key_secret", "razorpay_webhook_secret",
                       "cashfree_app_id", "cashfree_secret_key", "cashfree_env")
-GATEWAYS_NOT_CONNECTED = "Razorpay and Cashfree are not available yet: businesses will connect their own account once Zolexora is an approved partner."
+gateway_log = logging.getLogger("zolexora.ims.gateways")
+REFRESH_MARGIN = timedelta(minutes=10)
+CONNECT_STATE_TTL = timedelta(hours=1)
+_refresh_locks: Dict[str, asyncio.Lock] = {}
+
+
+def _expiry(expires_in: Optional[int]) -> str:
+    return (datetime.now(timezone.utc) + timedelta(seconds=expires_in or 3600)).isoformat()
+
+
+async def _fresh_tokens(org_id: str, provider: str) -> Optional[dict]:
+    """The connection's tokens, refreshed first when the access token expires within 10 minutes. One refresh
+    at a time per connection: the provider invalidates the old refresh token the moment it issues a new one."""
+    async with _refresh_locks.setdefault(f"{org_id}:{provider}", asyncio.Lock()):
+        row = await db.fetch_one("SELECT tokens, expires_at FROM gateway_connections WHERE org_id = ? AND provider = ?;", [org_id, provider])
+        if not row:
+            return None
+        tokens = unseal(row["tokens"], org_id, provider)
+        if datetime.fromisoformat(row["expires_at"]) - datetime.now(timezone.utc) > REFRESH_MARGIN:
+            return tokens
+        try:
+            tokens = await PROVIDERS[provider].refresh(tokens)
+        except ConnectionRejected:
+            await db.execute("DELETE FROM gateway_connections WHERE org_id = ? AND provider = ?;", [org_id, provider])
+            gateway_log.warning("%s refused to refresh %s's connection; removed, the business must connect again", provider, org_id)
+            return None
+        await db.execute(
+            "UPDATE gateway_connections SET tokens = ?, expires_at = ?, account_id = COALESCE(?, account_id) WHERE org_id = ? AND provider = ?;",
+            [seal(tokens, org_id, provider), _expiry(tokens.get("expires_in")), tokens.get("account_id"), org_id, provider])
+        return tokens
 
 
 async def _gateway_credentials(org_id: str) -> dict:
-    """Razorpay/Cashfree access for this business. Empty until gateway connections are built: both providers
-    require platforms to use their partner OAuth, so businesses never paste API secrets into IMS."""
-    return {}
+    """Razorpay/Cashfree access for this business, from its connected accounts (gateways.py). Businesses never
+    paste API keys into IMS: both providers require platforms to use their partner OAuth."""
+    creds: dict = {}
+    for provider, p in PROVIDERS.items():
+        if not p.available():
+            continue
+        try:
+            tokens = await _fresh_tokens(org_id, provider)
+        except Exception as e:  # provider down, or tokens unreadable (IMS_ENCRYPTION_KEY changed)
+            gateway_log.warning("%s connection of %s unusable: %s", provider, org_id, getattr(e, "message", e))
+            continue
+        if tokens:
+            creds.update(p.engine_config(tokens))
+    return creds
 
 
 async def _payment_engine(user: UserProfile) -> PaymentEngine:
@@ -873,8 +921,9 @@ async def update_payment_handle(config: PaymentHandleConfig, user: UserProfile =
             detail="Invalid UPI VPA handle format. Must be in the format 'username@bank' (e.g. merchant@icici, store@okhdfcbank)."
         )
 
-    if config.payment_gateway in ("razorpay", "cashfree") and not await _gateway_credentials(user.org_id):
-        raise HTTPException(status_code=400, detail=GATEWAYS_NOT_CONNECTED)
+    if config.payment_gateway in PROVIDERS and not await db.fetch_one(
+            "SELECT 1 FROM gateway_connections WHERE org_id = ? AND provider = ?;", [user.org_id, config.payment_gateway]):
+        raise HTTPException(status_code=400, detail=f"Connect {PROVIDERS[config.payment_gateway].name} first (Command Panel → Payments).")
     updated = {
         "upi_handle": handle,
         "merchant_name": config.merchant_name.strip(),
@@ -1304,19 +1353,32 @@ async def verify_razorpay_payment_endpoint(body: RazorpayVerifyRequest, user: Us
     return _paid_response(row, body.razorpay_payment_id)
 
 
-@app.post("/api/v1/payment/razorpay/webhook/{org_id}")
-async def razorpay_webhook(org_id: str, request: Request):
-    """Razorpay → this business (set the URL and secret in the Razorpay dashboard and in Payments)."""
+async def _gateway_order(gateway: str, order_id: Optional[str]) -> Optional[dict]:
+    """The payment order a webhook is about; gateway order ids are unique, so this also finds the business."""
+    return await db.fetch_one("SELECT * FROM payments WHERE gateway = ? AND id = ?;", [gateway, order_id or ""])
+
+
+async def _drop_connection(provider: str, account_id: Optional[str]) -> None:
+    """The business removed IMS's access on the provider's side."""
+    if account_id:
+        await db.execute("DELETE FROM gateway_connections WHERE provider = ? AND account_id = ?;", [provider, str(account_id)])
+
+
+@app.post("/api/v1/payment/razorpay/webhook")
+async def razorpay_webhook(request: Request):
+    """Razorpay → IMS, for every connected business: the partner app's webhook, signed with
+    IMS_RAZORPAY_WEBHOOK_SECRET. VERIFY against the sandbox: event names and payload of partner webhooks."""
     raw = await request.body()
-    cfg = await _gateway_credentials(org_id)
-    if not razorpay_webhook_ok(cfg.get("razorpay_webhook_secret") or "", raw, request.headers.get("x-razorpay-signature", "")):
+    if not razorpay_webhook_ok(os.getenv("IMS_RAZORPAY_WEBHOOK_SECRET", ""), raw, request.headers.get("x-razorpay-signature", "")):
         raise HTTPException(status_code=401, detail="Invalid signature")
     payload = json.loads(raw or b"{}")
     if payload.get("event") in ("payment.captured", "order.paid"):
         entity = ((payload.get("payload") or {}).get("payment") or {}).get("entity") or {}
-        row = await db.fetch_one("SELECT * FROM payments WHERE org_id = ? AND id = ? AND gateway = 'razorpay';", [org_id, entity.get("order_id")])
+        row = await _gateway_order("razorpay", entity.get("order_id"))
         if row and int(entity.get("amount") or 0) == to_paise(row["amount"]):
-            await _mark_paid(org_id, row["id"], entity.get("id"))
+            await _mark_paid(row["org_id"], row["id"], entity.get("id"))
+    elif payload.get("event") == "account.app.authorization_revoked":
+        await _drop_connection("razorpay", payload.get("account_id"))
     return {"status": "ok"}
 
 
@@ -1350,20 +1412,104 @@ async def verify_cashfree_payment_endpoint(body: CashfreeVerifyRequest, user: Us
     return {"success": False, "settled": False, "order_id": row["id"], "order_status": order.get("order_status")}
 
 
-@app.post("/api/v1/payment/cashfree/webhook/{org_id}")
-async def cashfree_webhook(org_id: str, request: Request):
-    """Cashfree → this business. Signed with the business's Cashfree secret key."""
+@app.post("/api/v1/payment/cashfree/webhook")
+async def cashfree_webhook(request: Request):
+    """Cashfree → IMS, for every connected business, signed with the partner API key.
+    VERIFY against the sandbox: signature scheme for partner webhooks and where merchant.unlinked puts the merchant id."""
     raw = await request.body()
-    cfg = await _gateway_credentials(org_id)
-    if not cashfree_webhook_ok(cfg.get("cashfree_secret_key") or "", request.headers.get("x-webhook-timestamp", ""), raw, request.headers.get("x-webhook-signature", "")):
+    if not cashfree_webhook_ok(os.getenv("IMS_CASHFREE_PARTNER_API_KEY", ""), request.headers.get("x-webhook-timestamp", ""), raw, request.headers.get("x-webhook-signature", "")):
         raise HTTPException(status_code=401, detail="Invalid signature")
-    data = (json.loads(raw or b"{}").get("data") or {})
+    body = json.loads(raw or b"{}")
+    data = body.get("data") or {}
     order, payment = data.get("order") or {}, data.get("payment") or {}
     if payment.get("payment_status") == "SUCCESS":
-        row = await db.fetch_one("SELECT * FROM payments WHERE org_id = ? AND id = ? AND gateway = 'cashfree';", [org_id, order.get("order_id")])
+        row = await _gateway_order("cashfree", order.get("order_id"))
         if row and to_paise(float(order.get("order_amount") or 0)) == to_paise(row["amount"]):
-            await _mark_paid(org_id, row["id"], str(payment.get("cf_payment_id") or "") or None)
+            await _mark_paid(row["org_id"], row["id"], str(payment.get("cf_payment_id") or "") or None)
+    elif str(body.get("type") or body.get("event") or "").lower() in ("merchant.unlinked", "merchant_unlinked"):
+        await _drop_connection("cashfree", data.get("merchant_id") or body.get("merchant_id"))
     return {"status": "ok"}
+
+
+# --- Gateway connections: a business connects its own Razorpay/Cashfree account (gateways.py) ---
+def _provider(provider: str):
+    p = PROVIDERS.get(provider)
+    if not p:
+        raise HTTPException(status_code=404, detail="Unknown payment provider")
+    return p
+
+
+@app.get("/api/v1/payment/connections")
+async def list_gateway_connections(user: UserProfile = Depends(require("ims:pos:sell", "ims:payments:manage"))):
+    """Which providers IMS offers (Zolexora is an approved partner) and which this business has connected."""
+    rows = {r["provider"]: r for r in await db.query(
+        "SELECT provider, account_id, connected_at FROM gateway_connections WHERE org_id = ?;", [user.org_id])}
+    return [{"provider": k, "name": p.name, "available": p.available(), "connected": k in rows,
+             "account_id": (rows.get(k) or {}).get("account_id"), "connected_at": (rows.get(k) or {}).get("connected_at")}
+            for k, p in PROVIDERS.items()]
+
+
+@app.post("/api/v1/payment/connections/{provider}/start")
+async def start_gateway_connection(provider: str, user: UserProfile = Depends(require("ims:payments:manage"))):
+    """The provider's own sign-in and consent page; the business approves IMS there."""
+    p = _provider(provider)
+    if not p.available():
+        raise HTTPException(status_code=400, detail=f"{p.name} is not available yet: Zolexora is not an approved {p.name} partner.")
+    state = secrets.token_hex(16)
+    await db.execute("DELETE FROM gateway_connect_states WHERE created_at < ?;", [(datetime.now(timezone.utc) - CONNECT_STATE_TTL).isoformat()])
+    await db.execute("INSERT INTO gateway_connect_states (state, org_id, provider, member_id, created_at) VALUES (?, ?, ?, ?, ?);",
+                     [state, user.org_id, provider, user.id, now_utc_iso()])
+    try:
+        return {"url": await p.authorize_url(state)}
+    except PaymentError as e:
+        raise _gateway_error(e)
+
+
+@app.get("/api/v1/payment/connections/{provider}/callback")
+async def gateway_connection_callback(provider: str, request: Request):
+    """The provider sends the browser back here after the business approves or declines."""
+    p = _provider(provider)
+    params = dict(request.query_params)
+    back = f"{public_url()}/cmd-panal/payments?"
+    fail = lambda msg: RedirectResponse(back + urlencode({"connect_error": msg}), status_code=302)
+    row = await db.fetch_one("SELECT * FROM gateway_connect_states WHERE state = ? AND provider = ?;", [params.get("state", ""), provider])
+    if row:
+        await db.execute("DELETE FROM gateway_connect_states WHERE state = ?;", [row["state"]])  # one use only
+    if not row or datetime.fromisoformat(row["created_at"]) < datetime.now(timezone.utc) - CONNECT_STATE_TTL:
+        return fail(f"This {p.name} connect link has expired. Start again.")
+    if params.get("error") or not params.get("code"):
+        return fail(f"{p.name} was not connected: {params.get('error_description') or params.get('error') or 'not approved'}.")
+    try:
+        tokens = await p.exchange(params["code"], params)
+    except PaymentError as e:
+        return fail(e.message)
+    org_id = row["org_id"]
+    await db.execute(
+        "INSERT INTO gateway_connections (org_id, provider, account_id, tokens, expires_at, connected_by, connected_at) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(org_id, provider) DO UPDATE SET account_id = excluded.account_id, "
+        "tokens = excluded.tokens, expires_at = excluded.expires_at, connected_by = excluded.connected_by, connected_at = excluded.connected_at;",
+        [org_id, provider, tokens.get("account_id"), seal(tokens, org_id, provider), _expiry(tokens.get("expires_in")), row["member_id"], now_utc_iso()])
+    return RedirectResponse(back + urlencode({"connected": provider}), status_code=302)
+
+
+@app.delete("/api/v1/payment/connections/{provider}")
+async def disconnect_gateway(provider: str, user: UserProfile = Depends(require("ims:payments:manage"))):
+    """Removes IMS's access: revoked at the provider (best effort), deleted here, checkout back to UPI."""
+    p = _provider(provider)
+    row = await db.fetch_one("SELECT tokens FROM gateway_connections WHERE org_id = ? AND provider = ?;", [user.org_id, provider])
+    if not row:
+        raise HTTPException(status_code=404, detail=f"{p.name} is not connected")
+    revoked = True
+    try:
+        await p.revoke(unseal(row["tokens"], user.org_id, provider))
+    except Exception as e:
+        revoked = False
+        gateway_log.warning("Could not revoke %s access of %s at the provider: %s", provider, user.org_id, getattr(e, "message", e))
+    await db.execute("DELETE FROM gateway_connections WHERE org_id = ? AND provider = ?;", [user.org_id, provider])
+    cfg = await _get_setting(user.org_id, "PAYMENT_HANDLE_CONFIG")
+    if cfg and cfg.get("payment_gateway") == provider:
+        await _save_setting(user.org_id, "PAYMENT_HANDLE_CONFIG", {**cfg, "payment_gateway": "upi_qr"}, "Payment handle and gateway settings")
+    return {"success": True, "revoked_at_provider": revoked}
 
 
 if __name__ == "__main__":

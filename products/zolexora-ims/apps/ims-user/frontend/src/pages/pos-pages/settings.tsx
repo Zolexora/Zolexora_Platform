@@ -32,8 +32,14 @@ export default function PosSettings() {
   const [testAmount, setTestAmount] = useState<number>(1.0);
   const [testQrUrl, setTestQrUrl] = useState<string>('');
 
+  const [connected, setConnected] = useState<string[]>([]);
+
   // Load existing payment handle & terminal settings from backend
   useEffect(() => {
+    authFetch('/api/v1/payment/connections')
+      .then((res) => (res.ok ? res.json() : []))
+      .then((list: { provider: string; connected: boolean }[]) => setConnected(list.filter((c) => c.connected).map((c) => c.provider)))
+      .catch(() => {});
     authFetch('/api/v1/payment/handle')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
@@ -41,7 +47,7 @@ export default function PosSettings() {
           setUpiHandle(data.upi_handle || '');
           setMerchantName(data.merchant_name || 'Zolexora Retail Operations');
           setMcc(data.merchant_category_code || '5812');
-          setPaymentGateway(['razorpay', 'cashfree'].includes(data.payment_gateway) ? 'upi_qr' : data.payment_gateway || 'upi_qr');
+          setPaymentGateway(data.payment_gateway || 'upi_qr');  // the API resets it to UPI when a gateway is disconnected
           setEdcTerminalId(data.edc_terminal_id || 'PINE_EDC_01');
           setSoundboxEnabled(data.soundbox_enabled ?? true);
         }
@@ -268,13 +274,13 @@ export default function PosSettings() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
               {[
                 { id: 'upi_qr', name: 'Direct Dynamic UPI QR', desc: '0% MDR, Direct to Bank via NPCI' },
-                { id: 'razorpay', name: 'Razorpay PG', desc: 'Coming soon: connect in Command Panel', soon: true },
-                { id: 'cashfree', name: 'Cashfree Payments', desc: 'Coming soon: connect in Command Panel', soon: true },
+                { id: 'razorpay', name: 'Razorpay PG', desc: connected.includes('razorpay') ? 'Cards, NetBanking, UPI' : 'Connect it in Command Panel first', soon: !connected.includes('razorpay') },
+                { id: 'cashfree', name: 'Cashfree Payments', desc: connected.includes('cashfree') ? 'Drop Checkout, Multi-Rail' : 'Connect it in Command Panel first', soon: !connected.includes('cashfree') },
               ].map((gw) => (
                 <button
                   type="button"
                   key={gw.id}
-                  disabled={'soon' in gw}
+                  disabled={!!gw.soon}
                   onClick={() => setPaymentGateway(gw.id)}
                   className={`p-3 rounded-xl border text-left transition disabled:opacity-50 disabled:cursor-not-allowed ${
                     paymentGateway === gw.id

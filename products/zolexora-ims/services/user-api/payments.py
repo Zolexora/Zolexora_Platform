@@ -1,6 +1,7 @@
-"""Payment gateways for one business (Razorpay, Cashfree), over their REST APIs with that business's
-own keys. No simulators and no shared SDK state: missing keys or a gateway error is an error, and a
-bill is paid only when the gateway says so (signature or order status) for the amount we recorded."""
+"""Payment gateways for one business (Razorpay, Cashfree), over their REST APIs with the access token of
+the business's own connected account (gateways.py). No simulators and no shared SDK state: no connection
+or a gateway error is an error, and a bill is paid only when the gateway says so (signature or order
+status) for the amount we recorded."""
 import base64
 import hashlib
 import hmac
@@ -10,7 +11,7 @@ import httpx
 from pydantic import BaseModel
 
 RAZORPAY_API = "https://api.razorpay.com/v1"
-CASHFREE_API = {"TEST": "https://sandbox.cashfree.com/pg", "PRODUCTION": "https://api.cashfree.com/pg"}
+CASHFREE_API = {"TEST": "https://sandbox.cashfree.com/pg", "PRODUCTION": "https://api.cashfree.com/pg"}  # VERIFY for partner tokens
 CASHFREE_API_VERSION = "2023-08-01"
 
 
@@ -74,11 +75,10 @@ def to_paise(amount: float) -> int:
 class PaymentEngine:
     def __init__(self, cfg: Optional[Dict[str, Any]] = None):
         cfg = cfg or {}
-        self.razorpay_key_id = cfg.get("razorpay_key_id")
-        self.razorpay_key_secret = cfg.get("razorpay_key_secret")
-        self.razorpay_webhook_secret = cfg.get("razorpay_webhook_secret")
-        self.cashfree_app_id = cfg.get("cashfree_app_id")
-        self.cashfree_secret_key = cfg.get("cashfree_secret_key")
+        self.razorpay_access_token = cfg.get("razorpay_access_token")
+        self.razorpay_public_token = cfg.get("razorpay_public_token")
+        self.razorpay_signing_secret = cfg.get("razorpay_signing_secret")
+        self.cashfree_access_token = cfg.get("cashfree_access_token")
         self.cashfree_env = "PRODUCTION" if str(cfg.get("cashfree_env") or "").upper() == "PRODUCTION" else "TEST"
 
     async def _call(self, method: str, url: str, **kw) -> Dict[str, Any]:
@@ -95,26 +95,27 @@ class PaymentEngine:
 
     # --- Razorpay ---
     def _need_razorpay(self) -> None:
-        if not (self.razorpay_key_id and self.razorpay_key_secret):
+        if not (self.razorpay_access_token and self.razorpay_public_token and self.razorpay_signing_secret):
             raise PaymentError(400, "Razorpay is not connected for this business yet.")
 
     async def create_razorpay_order(self, req: RazorpayOrderRequest) -> Dict[str, Any]:
         self._need_razorpay()
         order = await self._call(
-            "POST", f"{RAZORPAY_API}/orders", auth=(self.razorpay_key_id, self.razorpay_key_secret),
+            "POST", f"{RAZORPAY_API}/orders", headers={"Authorization": f"Bearer {self.razorpay_access_token}"},
             json={"amount": to_paise(req.amount), "currency": "INR", "receipt": req.bill_no[:40], "notes": {"bill_no": req.bill_no}},
         )
-        return {"order_id": order["id"], "key_id": self.razorpay_key_id, "amount_in_paise": order["amount"]}
+        # Checkout opens with the connection's public token in place of a key id.
+        return {"order_id": order["id"], "key_id": self.razorpay_public_token, "amount_in_paise": order["amount"]}
 
     def razorpay_signature_ok(self, req: RazorpayVerifyRequest) -> bool:
         self._need_razorpay()
-        return razorpay_signature_ok(self.razorpay_key_secret, req.razorpay_order_id, req.razorpay_payment_id, req.razorpay_signature)
+        return razorpay_signature_ok(self.razorpay_signing_secret, req.razorpay_order_id, req.razorpay_payment_id, req.razorpay_signature)
 
     # --- Cashfree ---
     def _cashfree_headers(self) -> Dict[str, str]:
-        if not (self.cashfree_app_id and self.cashfree_secret_key):
+        if not self.cashfree_access_token:
             raise PaymentError(400, "Cashfree is not connected for this business yet.")
-        return {"x-client-id": self.cashfree_app_id, "x-client-secret": self.cashfree_secret_key, "x-api-version": CASHFREE_API_VERSION}
+        return {"Authorization": f"Bearer {self.cashfree_access_token}", "x-api-version": CASHFREE_API_VERSION}
 
     async def create_cashfree_order(self, order_id: str, req: CashfreeOrderRequest) -> Dict[str, Any]:
         headers = self._cashfree_headers()

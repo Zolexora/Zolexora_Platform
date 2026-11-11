@@ -20,8 +20,8 @@ ORG = "ZX-ORG-PAYS-0000-0001"
 HANDLE = {"upi_handle": "shop@icici", "merchant_name": "Shop"}
 # What a gateway connection will provide; injected through main._gateway_credentials.
 KEYS = {
-    "razorpay_key_id": "rzp_test_k", "razorpay_key_secret": "rzp_secret", "razorpay_webhook_secret": "rzp_hook",
-    "cashfree_app_id": "cf_app", "cashfree_secret_key": "cf_secret", "cashfree_env": "TEST",
+    "razorpay_access_token": "rzp_access", "razorpay_public_token": "rzp_test_oauth_pub", "razorpay_signing_secret": "rzp_secret",
+    "cashfree_access_token": "cf_access", "cashfree_env": "TEST",
 }
 
 
@@ -36,7 +36,9 @@ def client():
 
 @pytest.fixture(autouse=True)
 def connected(monkeypatch):
-    """This business has Razorpay and Cashfree connected (others have nothing)."""
+    """This business has Razorpay and Cashfree connected (others have nothing); platform webhook secrets set."""
+    monkeypatch.setenv("IMS_RAZORPAY_WEBHOOK_SECRET", "rzp_hook")
+    monkeypatch.setenv("IMS_CASHFREE_PARTNER_API_KEY", "cf_partner")
     async def creds(org_id):
         return dict(KEYS) if org_id == ORG else {}
     monkeypatch.setattr(main, "_gateway_credentials", creds)
@@ -95,8 +97,8 @@ def test_razorpay_paid_only_with_a_valid_signature(client, gateway):
     setup_keys(client)
     order = client.post("/api/v1/payment/razorpay/create-order", json={"amount": 250, "bill_no": "B-2"}).json()
     oid = order["order_id"]
-    assert order["amount_in_paise"] == 25000 and order["key_id"] == "rzp_test_k"
-    assert gateway.calls[0].headers["Authorization"].startswith("Basic ")
+    assert order["amount_in_paise"] == 25000 and order["key_id"] == "rzp_test_oauth_pub"
+    assert gateway.calls[0].headers["Authorization"] == "Bearer rzp_access"
 
     bad = {"razorpay_order_id": oid, "razorpay_payment_id": "pay_1", "razorpay_signature": "simulated_sig"}
     assert client.post("/api/v1/payment/razorpay/verify-payment", json=bad).status_code == 400
@@ -115,7 +117,7 @@ def test_cashfree_paid_only_when_cashfree_says_paid_for_our_amount(client, gatew
     assert order["payment_session_id"] == "sess_1"
     sent = json.loads(gateway.calls[0].content)
     assert sent["customer_details"]["customer_phone"] == "9800000001"
-    assert gateway.calls[0].headers["x-client-id"] == "cf_app"
+    assert gateway.calls[0].headers["Authorization"] == "Bearer cf_access" and "x-client-secret" not in gateway.calls[0].headers
     verify = lambda: client.post("/api/v1/payment/cashfree/verify-payment", json={"order_id": order["order_id"]}).json()
 
     assert verify()["settled"] is False  # still ACTIVE
@@ -145,10 +147,14 @@ def test_razorpay_webhook_needs_signature_and_matching_amount(client, gateway):
     oid = client.post("/api/v1/payment/razorpay/create-order", json={"amount": 250, "bill_no": "B-7"}).json()["order_id"]
     app.dependency_overrides.clear()
     event = json.dumps({"event": "payment.captured", "payload": {"payment": {"entity": {"id": "pay_9", "order_id": oid, "amount": 25000}}}}).encode()
-    url = f"/api/v1/payment/razorpay/webhook/{ORG}"
+    url = "/api/v1/payment/razorpay/webhook"
     assert client.post(url, content=event, headers={"X-Razorpay-Signature": "nope"}).status_code == 401
     sig = hmac.new(b"rzp_hook", event, hashlib.sha256).hexdigest()
     assert client.post(url, content=event, headers={"X-Razorpay-Signature": sig}).status_code == 200
+    app.dependency_overrides[get_current_user] = lambda: member(*PERMISSIONS, org_id=ORG)
+    paid = client.post("/api/v1/payment/razorpay/verify-payment", json={"razorpay_order_id": oid, "razorpay_payment_id": "pay_9",
+        "razorpay_signature": hmac.new(b"rzp_secret", f"{oid}|pay_9".encode(), hashlib.sha256).hexdigest()}).json()
+    assert paid["settled"] is True  # the webhook had already found this business's order by its id
 
 
 def test_cashfree_webhook_signature(client):
@@ -156,8 +162,8 @@ def test_cashfree_webhook_signature(client):
     app.dependency_overrides.clear()
     body = json.dumps({"data": {"order": {"order_id": "CF_X", "order_amount": 1}, "payment": {"payment_status": "SUCCESS"}}}).encode()
     ts = "1700000000"
-    sig = base64.b64encode(hmac.new(b"cf_secret", ts.encode() + body, hashlib.sha256).digest()).decode()
-    url = f"/api/v1/payment/cashfree/webhook/{ORG}"
+    sig = base64.b64encode(hmac.new(b"cf_partner", ts.encode() + body, hashlib.sha256).digest()).decode()
+    url = "/api/v1/payment/cashfree/webhook"
     assert client.post(url, content=body, headers={"x-webhook-timestamp": ts, "x-webhook-signature": "bad"}).status_code == 401
     assert client.post(url, content=body, headers={"x-webhook-timestamp": ts, "x-webhook-signature": sig}).status_code == 200
 
