@@ -170,7 +170,7 @@ async function runAdversarialProbes() {
 
   // Subtest 3C: Arbitrary forged compact token
   const res3C = await fetch(`${BASE_URL}/api/v1/auth/me`, {
-    headers: { Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJhZG1pbiIsImV4cCI6OTk5OTk5OTk5OX0.Zm9yZ2VkX3NpZ25hdHVyZV8xMjM0NTY3ODkwMTI" },
+    headers: { Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJmb3JnZWQifQ.Zm9yZ2VkLXNpZ25hdHVyZQ" },
   });
   const data3C = await res3C.json();
   console.log(`  Subtest 3C (Arbitrary Forged Token): Status = ${res3C.status}, Code = ${data3C.code}`);
