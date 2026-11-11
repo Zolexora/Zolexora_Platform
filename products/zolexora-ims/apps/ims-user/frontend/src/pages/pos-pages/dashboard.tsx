@@ -447,7 +447,7 @@ export default function POSTerminal() {
       kot_no: kotNo,
       table_no: selectedTable || undefined,
       order_type: orderType,
-      server_name: user?.user_metadata?.name || user?.email?.split('@')[0] || 'Captain 01',
+      server_name: user?.name || 'Captain 01',
       timestamp: new Date().toISOString(),
       items: [...cart],
     });
@@ -539,7 +539,7 @@ export default function POSTerminal() {
       token_no: currentToken,
       date: new Date().toLocaleString(),
       selling_point: sellingPoint === 'SP_001' ? 'Counter 1 (Main Branch)' : 'Counter 2 (Branch Store)',
-      cashier: user?.user_metadata?.name || user?.email || 'POS Cashier 01',
+      cashier: user?.name || 'POS Cashier 01',
       customer_name: customerName.trim() || 'Walk-in Customer',
       customer_phone: customerPhone || undefined,
       order_type: orderType,
@@ -1281,7 +1281,7 @@ export default function POSTerminal() {
         onClose={() => setSummaryModalOpen(false)}
         transactions={recentTxns}
         sellingPoint={sellingPoint}
-        cashierName={user?.user_metadata?.name || user?.email || 'POS Cashier 01'}
+        cashierName={user?.name || 'POS Cashier 01'}
       />
     </div>
   );

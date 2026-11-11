@@ -15,7 +15,7 @@ import { useAuth } from '../../lib/auth-context';
 export default function Profile() {
   const { user: authUser, authFetch } = useAuth();
   const [profile, setProfile] = useState({
-    name: authUser?.user_metadata?.name || authUser?.email?.split('@')[0] || '',
+    name: authUser?.name || '',
     email: authUser?.email || '',
     role: 'Store Staff',
     org_id: '',
@@ -31,7 +31,7 @@ export default function Profile() {
       setProfile((prev) => ({
         ...prev,
         email: authUser.email || prev.email,
-        name: authUser.user_metadata?.name || prev.name || (authUser.email ? authUser.email.split('@')[0] : ''),
+        name: authUser.name || prev.name,
       }));
     }
 

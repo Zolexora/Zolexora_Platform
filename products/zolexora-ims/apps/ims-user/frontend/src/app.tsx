@@ -35,26 +35,21 @@ import CmdCompanyProfile from './pages/cmd-panal-pages/company-profile';
 // Shared Pages
 import LandingPage from './pages/shared-pages/landing-page';
 import LoginPage from './pages/shared-pages/login-page';
-import OnboardingPage from './pages/shared-pages/onboarding-page';
 import NotFoundPage from './pages/shared-pages/not-found-page';
 
-// Supabase Auth
 import { useAuth } from './lib/auth-context';
 import { LogOut, UserCircle2, Loader2, Store, Boxes, ShieldCheck } from 'lucide-react';
 
-/**
- * Route guard enforcing authentic Supabase session.
- * Unauthenticated requests are intercepted and redirected to /login.
- */
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+/** Needs a business session; with `perm`, also that ims:* (or org:*) permission. */
+function ProtectedRoute({ children, perm }: { children: React.ReactNode; perm?: string }) {
+  const { user, loading, can } = useAuth();
   const location = useLocation();
 
   if (loading) {
     return (
       <div className="min-h-screen bg-[#07080e] flex flex-col items-center justify-center text-slate-400">
         <Loader2 className="w-8 h-8 text-indigo-500 animate-spin mb-3" />
-        <p className="text-xs font-mono tracking-wider">Verifying Supabase Session...</p>
+        <p className="text-xs font-mono tracking-wider">Checking your session...</p>
       </div>
     );
   }
@@ -63,13 +58,23 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
+  if (perm && !can(perm)) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center text-slate-400 p-10 text-center">
+        <ShieldCheck className="w-8 h-8 text-slate-600 mb-3" />
+        <p className="text-sm text-slate-300">You don't have access to this page.</p>
+        <p className="text-xs mt-1">Ask your business owner for <span className="font-mono">{perm}</span>.</p>
+      </div>
+    );
+  }
+
   return <>{children}</>;
 }
 
 export default function App() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, org, role, signOut, switchBusiness } = useAuth();
 
   // Public standalone authentication/onboarding routes
   const isPublicRoute = ['/landing', '/login', '/onboarding'].includes(location.pathname);
@@ -92,6 +97,11 @@ export default function App() {
     navigate('/login');
   };
 
+  const handleSwitch = async () => {
+    await switchBusiness();
+    navigate('/login');
+  };
+
   return (
     <div className="min-h-screen flex bg-[#07080e] text-slate-100 font-sans">
       {/* Dynamic Sidepanel: PosSidepanal for POS, CmdSidepanal for Command Panel, Sidepanal for Inventory */}
@@ -108,36 +118,37 @@ export default function App() {
                 <>
                   <Store className="w-4 h-4 text-emerald-400" />
                   <span>Workspace:</span>
-                  <span className="text-emerald-400 font-medium">POS Register Terminal (Desk SP_001)</span>
+                  <span className="text-emerald-400 font-medium">{org?.name}</span>
                 </>
               ) : isCmdRoute ? (
                 <>
                   <ShieldCheck className="w-4 h-4 text-purple-400" />
                   <span>Workspace:</span>
-                  <span className="text-purple-300 font-medium">Command Panel (Corporate Governance)</span>
+                  <span className="text-purple-300 font-medium">{org?.name} · Command Panel</span>
                 </>
               ) : (
                 <>
                   <Boxes className="w-4 h-4 text-indigo-400" />
                   <span>Workspace:</span>
-                  <span className="text-white font-medium">Zolexora Retail Operations (Inventory Master)</span>
+                  <span className="text-white font-medium">{org?.name}</span>
                 </>
               )}
             </div>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2 text-xs">
                 <UserCircle2 className="w-4 h-4 text-indigo-400" />
-                <span className="text-slate-300 font-medium">{user.email}</span>
-                <span className={`text-[10px] px-2 py-0.5 rounded-md font-semibold border ${
-                  isPosRoute
-                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
-                    : isCmdRoute
-                    ? 'bg-gradient-to-r from-purple-500/30 to-indigo-500/30 text-purple-200 border-purple-500/40 font-bold uppercase tracking-wider shadow-xs'
-                    : 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
-                }`}>
-                  {isCmdRoute ? 'Commander' : user.user_metadata?.name || (isPosRoute ? 'POS Cashier' : 'Staff')}
+                <span className="text-slate-300 font-medium">{user.name}</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-md font-semibold border bg-indigo-500/20 text-indigo-300 border-indigo-500/30 capitalize">
+                  {role || 'member'}
                 </span>
               </div>
+              <button
+                onClick={handleSwitch}
+                className="text-xs text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 px-2.5 py-1 rounded-lg transition"
+                title="Switch business"
+              >
+                Switch business
+              </button>
               <button
                 onClick={handleSignOut}
                 className="flex items-center gap-1.5 text-xs text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 px-2.5 py-1 rounded-lg transition"
@@ -155,7 +166,7 @@ export default function App() {
             {/* Public Unprotected Pages */}
             <Route path="/landing" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
-            <Route path="/onboarding" element={<OnboardingPage />} />
+            <Route path="/onboarding" element={<Navigate to="/login" replace />} />
 
             {/* Main Application Entry Roots */}
             <Route
@@ -198,7 +209,7 @@ export default function App() {
             <Route
               path="/pos/dashboard"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute perm="ims:pos:sell">
                   <POSDashboard />
                 </ProtectedRoute>
               }
@@ -206,7 +217,7 @@ export default function App() {
             <Route
               path="/pos/online-orders"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute perm="ims:orders:view">
                   <POSOnlineOrders />
                 </ProtectedRoute>
               }
@@ -214,7 +225,7 @@ export default function App() {
             <Route
               path="/pos/orders"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute perm="ims:orders:view">
                   <POSOrders />
                 </ProtectedRoute>
               }
@@ -222,7 +233,7 @@ export default function App() {
             <Route
               path="/pos/tables"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute perm="ims:pos:sell">
                   <POSTables />
                 </ProtectedRoute>
               }
@@ -230,7 +241,7 @@ export default function App() {
             <Route
               path="/pos/menu"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute perm="ims:pos:manage">
                   <POSMenu />
                 </ProtectedRoute>
               }
@@ -238,7 +249,7 @@ export default function App() {
             <Route
               path="/pos/customers"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute perm="ims:customers:manage">
                   <POSCustomers />
                 </ProtectedRoute>
               }
@@ -246,7 +257,7 @@ export default function App() {
             <Route
               path="/pos/cash-drawer"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute perm="ims:cash:manage">
                   <POSCashDrawer />
                 </ProtectedRoute>
               }
@@ -254,7 +265,7 @@ export default function App() {
             <Route
               path="/pos/reports"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute perm="ims:reports:view">
                   <POSReports />
                 </ProtectedRoute>
               }
@@ -262,7 +273,7 @@ export default function App() {
             <Route
               path="/pos/settings"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute perm="ims:pos:manage">
                   <POSSettings />
                 </ProtectedRoute>
               }
@@ -272,7 +283,7 @@ export default function App() {
             <Route
               path="/cmd-panal"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute perm="ims:reports:view">
                   <CmdDashboard />
                 </ProtectedRoute>
               }
@@ -280,7 +291,7 @@ export default function App() {
             <Route
               path="/cmd-panal/dashboard"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute perm="ims:reports:view">
                   <CmdDashboard />
                 </ProtectedRoute>
               }
@@ -288,7 +299,7 @@ export default function App() {
             <Route
               path="/cmd-panal/payments"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute perm="ims:payments:manage">
                   <CmdPaymentSetup />
                 </ProtectedRoute>
               }
@@ -296,7 +307,7 @@ export default function App() {
             <Route
               path="/cmd-panal/users"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute perm="org:team:view">
                   <CmdUsers />
                 </ProtectedRoute>
               }
@@ -304,7 +315,7 @@ export default function App() {
             <Route
               path="/cmd-panal/sites"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute perm="ims:sites:manage">
                   <CmdSiteManagement />
                 </ProtectedRoute>
               }
@@ -312,7 +323,7 @@ export default function App() {
             <Route
               path="/cmd-panal/company"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute perm="ims:company:manage">
                   <CmdCompanyProfile />
                 </ProtectedRoute>
               }
@@ -337,7 +348,7 @@ export default function App() {
             <Route
               path="/inv/dashboard"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute perm="ims:dashboard:view">
                   <div className="p-6 overflow-y-auto flex-1"><Dashboard /></div>
                 </ProtectedRoute>
               }
@@ -345,7 +356,7 @@ export default function App() {
             <Route
               path="/inv/products"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute perm="ims:items:view">
                   <div className="p-6 overflow-y-auto flex-1"><Products /></div>
                 </ProtectedRoute>
               }
@@ -355,7 +366,7 @@ export default function App() {
             <Route
               path="/inv/requisitions"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute perm="ims:requisitions:manage">
                   <div className="p-6 overflow-y-auto flex-1"><Requisitions /></div>
                 </ProtectedRoute>
               }
@@ -363,7 +374,7 @@ export default function App() {
             <Route
               path="/inv/suppliers"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute perm="ims:suppliers:view">
                   <div className="p-6 overflow-y-auto flex-1"><Suppliers /></div>
                 </ProtectedRoute>
               }
@@ -371,7 +382,7 @@ export default function App() {
             <Route
               path="/inv/issuance-logs"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute perm="ims:items:view">
                   <div className="p-6 overflow-y-auto flex-1"><IssuanceLogs /></div>
                 </ProtectedRoute>
               }
@@ -379,7 +390,7 @@ export default function App() {
             <Route
               path="/inv/reports"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute perm="ims:reports:view">
                   <div className="p-6 overflow-y-auto flex-1"><Reports /></div>
                 </ProtectedRoute>
               }
@@ -387,7 +398,7 @@ export default function App() {
             <Route
               path="/inv/users"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute perm="org:team:view">
                   <div className="p-6 overflow-y-auto flex-1"><Users /></div>
                 </ProtectedRoute>
               }
@@ -395,7 +406,7 @@ export default function App() {
             <Route
               path="/inv/site-management"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute perm="ims:sites:manage">
                   <div className="p-6 overflow-y-auto flex-1"><SiteManagement /></div>
                 </ProtectedRoute>
               }
@@ -414,7 +425,7 @@ export default function App() {
             <Route
               path="/inv/forms/sku-addition"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute perm="ims:items:manage">
                   <div className="p-6 overflow-y-auto flex-1"><SKUaddition /></div>
                 </ProtectedRoute>
               }
@@ -422,7 +433,7 @@ export default function App() {
             <Route
               path="/inv/forms/purchase-entry"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute perm="ims:purchases:create">
                   <div className="p-6 overflow-y-auto flex-1"><PurchaseEntry /></div>
                 </ProtectedRoute>
               }
@@ -430,7 +441,7 @@ export default function App() {
             <Route
               path="/inv/forms/issuance-entry"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute perm="ims:issuance:create">
                   <div className="p-6 overflow-y-auto flex-1"><IssuanceEntry /></div>
                 </ProtectedRoute>
               }

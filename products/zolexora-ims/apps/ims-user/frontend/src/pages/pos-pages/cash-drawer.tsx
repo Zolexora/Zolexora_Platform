@@ -92,7 +92,7 @@ export default function PosCashDrawer() {
     const actualAmount = modalType === 'Pay In' ? val : -val;
     const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const reasonStr = reasonInput || `${modalType} adjustment`;
-    const cashierStr = user?.email || 'Active Cashier';
+    const cashierStr = user?.name || 'Active Cashier';
 
     try {
       await authFetch('/api/v1/cash-drawer/logs', {
@@ -133,7 +133,7 @@ export default function PosCashDrawer() {
         body: JSON.stringify({
           counted_cash: parseFloat(countedCash) || 0,
           expected_cash: expectedCash,
-          cashier: user?.email || 'Active Cashier',
+          cashier: user?.name || 'Active Cashier',
         }),
       });
       fetchLogs();

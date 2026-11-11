@@ -1,132 +1,158 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User, Session, AuthError } from '@supabase/supabase-js';
-import { supabase } from './supabase';
+import React, { createContext, useCallback, useContext, useEffect, useState, ReactNode } from 'react';
+import { useAuth as useZolexoraAuth } from '@zolexora/auth-client/react';
+import {
+  BUSINESS_SESSION_EXPIRED_EVENT,
+  getBusinessAccessToken,
+  loadBusinessSession,
+  openBusinessSession,
+  refreshBusinessSession,
+  signOutBusiness,
+} from '@zolexora/auth-client/business-session';
+import { AUTH_SERVICE_PUBLIC_URL, IMS_PRODUCT } from './runtime';
+
+/**
+ * IMS session = a Zolexora business session for product "zolexora-ims" (ADR 0004/0005).
+ * Owners sign in with their Zolexora account and pick a business; employees sign in straight into one.
+ * Who they are, the business, the role and the ims:* permissions come from the auth service.
+ */
+export interface ImsUser {
+  member_id: string;
+  kind: 'person' | 'employee';
+  zolexora_id: string | null;
+  email: string | null;
+  phone_number: string | null;
+  name: string;
+}
+
+interface Me {
+  user: ImsUser;
+  org: { zolexora_org_id: string; name: string; status: string; business_kind: string | null };
+  role: string | null;
+  permissions: string[];
+  mfa_setup_required: boolean;
+}
 
 interface AuthContextType {
-  user: User | null;
-  session: Session | null;
-  token: string | null;
+  /** Signed into a business (null while choosing one). */
+  user: ImsUser | null;
+  org: Me['org'] | null;
+  role: string | null;
+  permissions: string[];
+  can: (permission: string) => boolean;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
-  signUp: (email: string, password: string, name?: string) => Promise<{ error: AuthError | null }>;
+  /** Personal Zolexora account signed in (owners), even before a business is chosen. */
+  personalSignedIn: boolean;
+  enterBusiness: (orgId: string, mfaCode?: string) => Promise<void>;
+  /** Loads the session just stored by employee sign-in. */
+  adoptSession: () => Promise<void>;
+  /** Leaves the business but stays signed into the Zolexora account. */
+  switchBusiness: () => Promise<void>;
   signOut: () => Promise<void>;
   authFetch: (url: string, init?: RequestInit) => Promise<Response>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+async function fetchMe(token: string): Promise<Me | null> {
+  const res = await fetch(`${AUTH_SERVICE_PUBLIC_URL()}/api/v1/auth/me`, { headers: { Authorization: `Bearer ${token}` } });
+  if (res.status === 401 || res.status === 403) return null;
+  if (!res.ok) throw new Error('Zolexora auth service is unavailable.');
+  const data = await res.json();
+  const u = data.user;
+  return {
+    ...data,
+    user: { ...u, name: u.display_name || u.email?.split('@')[0] || u.phone_number || 'Staff' },
+    permissions: data.permissions ?? [],
+  };
+}
+
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const zx = useZolexoraAuth();
+  const authUrl = AUTH_SERVICE_PUBLIC_URL();
+  const [me, setMe] = useState<Me | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    try {
+      const token = await getBusinessAccessToken(authUrl);
+      const next = token ? await fetchMe(token) : null;
+      if (token && !next) await signOutBusiness(authUrl);
+      setMe(next);
+    } catch {
+      setMe(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [authUrl]);
 
   useEffect(() => {
-    // 1. Fetch initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    void load();
+    const onExpired = () => setMe(null);
+    window.addEventListener(BUSINESS_SESSION_EXPIRED_EVENT, onExpired);
+    return () => window.removeEventListener(BUSINESS_SESSION_EXPIRED_EVENT, onExpired);
+  }, [load]);
 
-    // 2. Subscribe to auth state updates
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+  const enterBusiness = useCallback(
+    async (orgId: string, mfaCode?: string) => {
+      const personal = await zx.getToken();
+      if (!personal) throw new Error('Sign in again.');
+      await openBusinessSession(authUrl, personal, { orgId, product: IMS_PRODUCT, mfaCode });
+      setLoading(true);
+      await load();
+    },
+    [authUrl, zx, load],
+  );
 
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
+  const adoptSession = useCallback(async () => {
+    setLoading(true);
+    await load();
+  }, [load]);
 
-  const signIn = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (!error && data.session) {
-      setSession(data.session);
-      setUser(data.user);
-    }
-    return { error };
-  };
+  const switchBusiness = useCallback(async () => {
+    await signOutBusiness(authUrl);
+    setMe(null);
+  }, [authUrl]);
 
-  const signUp = async (email: string, password: string, name?: string) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { name: name || email.split('@')[0] },
-      },
-    });
-    if (!error && data.session) {
-      setSession(data.session);
-      setUser(data.user);
-    }
-    return { error };
-  };
+  const signOut = useCallback(async () => {
+    await signOutBusiness(authUrl);
+    setMe(null);
+    if (zx.isAuthenticated) await zx.signOut();
+  }, [authUrl, zx]);
 
-  const signOut = async () => {
-    await supabase.auth.signOut();
-    setSession(null);
-    setUser(null);
-  };
+  /** Same-origin IMS API call with the business token; refreshes once on 401. */
+  const authFetch = useCallback(
+    async (url: string, init?: RequestInit) => {
+      const send = (token: string | null) => {
+        const headers = new Headers(init?.headers);
+        if (token) headers.set('Authorization', `Bearer ${token}`);
+        return fetch(url, { ...init, headers });
+      };
+      let res = await send(await getBusinessAccessToken(authUrl));
+      if (res.status === 401 && loadBusinessSession()) {
+        const s = await refreshBusinessSession(authUrl).catch(() => null);
+        if (s) res = await send(s.access_token);
+      }
+      return res;
+    },
+    [authUrl],
+  );
 
-  const authFetch = async (url: string, init?: RequestInit): Promise<Response> => {
-    const headers = new Headers(init?.headers);
-
-    // 1. Resolve token from active session or query Supabase directly
-    let token = session?.access_token;
-    if (!token) {
-      try {
-        const { data } = await supabase.auth.getSession();
-        if (data.session?.access_token) {
-          token = data.session.access_token;
-          if (!session || session.access_token !== token) {
-            setSession(data.session);
-            setUser(data.session.user);
-          }
-        }
-      } catch {}
-    }
-
-    if (token) {
-      headers.set('Authorization', `Bearer ${token}`);
-    }
-
-    // 2. Perform fetch with retry on transient network errors (e.g. ERR_NETWORK_CHANGED, tunnel resets)
-    let res: Response;
-    try {
-      res = await fetch(url, { ...init, headers });
-    } catch (networkErr: any) {
-      // If network changed or disconnected momentarily, retry once after short backoff
-      await new Promise((r) => setTimeout(r, 400));
-      res = await fetch(url, { ...init, headers });
-    }
-
-    // 3. If response is 401 Unauthorized (e.g. expired JWT), try auto-refreshing session and retry
-    if (res.status === 401) {
-      try {
-        const { data, error } = await supabase.auth.refreshSession();
-        if (!error && data.session?.access_token) {
-          setSession(data.session);
-          setUser(data.session.user);
-          headers.set('Authorization', `Bearer ${data.session.access_token}`);
-          res = await fetch(url, { ...init, headers });
-        }
-      } catch {}
-    }
-
-    return res;
-  };
+  const permissions = me?.permissions ?? [];
+  const can = useCallback((p: string) => permissions.includes(p), [permissions]);
 
   return (
     <AuthContext.Provider
       value={{
-        user,
-        session,
-        token: session?.access_token ?? null,
-        loading,
-        signIn,
-        signUp,
+        user: me?.user ?? null,
+        org: me?.org ?? null,
+        role: me?.role ?? null,
+        permissions,
+        can,
+        loading: loading || zx.loading,
+        personalSignedIn: zx.isAuthenticated,
+        enterBusiness,
+        adoptSession,
+        switchBusiness,
         signOut,
         authFetch,
       }}
@@ -138,8 +164,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };
