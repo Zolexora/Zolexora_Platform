@@ -194,7 +194,7 @@ export default function OrgPaymentSetup() {
           className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold transition shadow-lg shadow-purple-900/30 disabled:opacity-50"
         >
           {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          <span>{saving ? 'Saving...' : 'Save Configuration'}</span>
+          <span>{saving ? 'Saving to Database...' : 'Save Configuration'}</span>
         </button>
       </div>
 
@@ -203,7 +203,7 @@ export default function OrgPaymentSetup() {
         <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center justify-between animate-fadeIn">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-            <span>Secret keys are kept in the Zolexora secrets vault, not in the IMS database, and are never shown again after saving.</span>
+            <span>Credentials are stored in this business's IMS database and are never shown again after saving.</span>
           </div>
         </div>
       )}

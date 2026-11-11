@@ -41,8 +41,6 @@ Run the two images and give them this environment (values from Infisical):
 | `IMS_REPLICATION` | `off` runs without backups (local development only; the API logs a warning) |
 | `AUTH_SERVICE_URL` | Auth service base URL as the API reaches it |
 | `IMS_PRODUCT_KEY` | Product key for registering the `ims:*` permission catalog |
-| `IMS_VAULT_CLIENT_ID`, `IMS_VAULT_CLIENT_SECRET`, `IMS_VAULT_PROJECT_ID`, `IMS_VAULT_ENV` | Gateway vault (below). Without them manual UPI still works, but Razorpay/Cashfree keys cannot be saved or used |
-| `IMS_VAULT_PATH`, `IMS_VAULT_SITE_URL` | Optional: vault folder (default `/Zolexora_IMS_Gateways`) and a self-hosted Infisical URL |
 
 **Web** — `zolexora-ims-user-frontend`, listens on `PORT` (default `3000`), health: `GET /healthz`
 
@@ -88,15 +86,3 @@ waits up to 2 minutes, then exits with an error, so such a deploy fails instead 
 copies. Deploy by stopping the old container first; a crashed API's lock is taken over after 90 s. The store must
 support conditional writes (`If-Match` / `If-None-Match`): AWS S3, Cloudflare R2 and MinIO do.
 `scripts/db-ops.sh backup` still writes a plain SQL dump for keeping elsewhere.
-
-## Payment gateway secrets (vault)
-
-Each business's Razorpay and Cashfree secret keys (key secret, webhook secret, Cashfree secret key) are kept in one
-Infisical folder, `/Zolexora_IMS_Gateways`, as one secret per business (`ORG_<business id>`, JSON value), never in
-the database, its backups or dumps. Key ids and the UPI handle stay in the database. The API reads and writes the
-folder through Infisical's API ([vault.py](services/user-api/vault.py)) and caches each business's keys for 5 minutes.
-
-Set up once per environment: create the folder (outside `/Zolexora_IMS`, which is injected into processes
-recursively), create a machine identity with Universal Auth and a custom role that may only read and write that
-folder, and put its client id/secret, the project id and the environment slug in `/Zolexora_IMS` as `IMS_VAULT_*`.
-

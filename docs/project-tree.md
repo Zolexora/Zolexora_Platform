@@ -447,7 +447,7 @@ Zolexora_Platform/
 │   │   │   ├── run-all-tests.sh
 │   │   │   └── setup.sh
 │   │   ├── services/
-│   │   │   └── user-api/  (22 files)
+│   │   │   └── user-api/  (21 files)
 │   │   ├── .gitignore
 │   │   ├── .infisical.json
 │   │   ├── compose.yaml
