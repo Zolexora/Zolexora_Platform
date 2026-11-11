@@ -35,7 +35,10 @@ Run the two images and give them this environment (values from Infisical):
 
 | Variable | What |
 | --- | --- |
-| `DATABASE_PATH` | SQLite file; the image sets `/data/ims.db`. **Mount a persistent disk or volume at `/data`**, or data is lost when the container is replaced |
+| `DATABASE_PATH` | SQLite file; the image sets `/data/ims.db`. A persistent disk at `/data` is recommended (faster starts) but not required: a missing file is restored from the backup bucket |
+| `IMS_BACKUP_S3_BUCKET`, `IMS_BACKUP_S3_PATH`, `IMS_BACKUP_S3_ACCESS_KEY_ID`, `IMS_BACKUP_S3_SECRET_ACCESS_KEY` | **Required.** Continuous database backup to any S3-compatible store |
+| `IMS_BACKUP_S3_ENDPOINT`, `IMS_BACKUP_S3_REGION` | Endpoint for non-AWS stores (R2: `https://<account>.r2.cloudflarestorage.com`, region `auto`); region for AWS |
+| `IMS_REPLICATION` | `off` runs without backups (local development only; the API logs a warning) |
 | `AUTH_SERVICE_URL` | Auth service base URL as the API reaches it |
 | `IMS_PRODUCT_KEY` | Product key for registering the `ims:*` permission catalog |
 
@@ -58,7 +61,7 @@ service to a given image tag. Check any deployment with `IMS_URL=https://<web ho
 | Script | Does |
 | --- | --- |
 | `scripts/docker-start.sh` | Start / stop / pull the local stack |
-| `scripts/db-ops.sh` | SQLite `status`, `query`, `backup`, `restore` on the running stack (backups go to `~/zolexora-ims-backups`) |
+| `scripts/db-ops.sh` | SQLite `status`, `query`, `backup`, `restore`, and from the bucket `restore-points`, `restore-to <time>` |
 | `scripts/check-health.sh` | Probe the web app and API |
 | `scripts/run-all-tests.sh` | Backend tests, typecheck, build |
 | `scripts/setup.sh`, `scripts/menu.sh` | First-time setup and a menu over the above |
@@ -68,4 +71,11 @@ service to a given image tag. Check any deployment with `IMS_URL=https://<web ho
 SQLite, one file for all businesses (every row and key starts with `org_id`). The API creates the tables on start
 from `services/user-api/schema.sql` and runs in WAL mode; a sale is written in one transaction. Locally the file is
 on the `ims-data` Docker volume (kept by `stop`, `docker:clean` and `docker:prune`). SQLite allows one writer, so
-run **one API instance** per database file; take backups with `scripts/db-ops.sh backup` (or snapshot the disk).
+run **one API instance** per database file.
+
+**Durability (Litestream, built into the API image).** On start the API restores the database from the bucket if
+the file is missing (new server, lost disk, host without a disk), then runs under Litestream, which copies every
+change to the bucket within about a second and pushes the last changes on shutdown. Point-in-time recovery:
+`scripts/db-ops.sh restore-points`, then `scripts/db-ops.sh restore-to 2026-11-11T09:30:00Z`. Use a bucket only IMS
+writes to, one `IMS_BACKUP_S3_PATH` per database (e.g. `prod`, `staging`), and never two running APIs on one path.
+`scripts/db-ops.sh backup` still writes a plain SQL dump for keeping elsewhere.

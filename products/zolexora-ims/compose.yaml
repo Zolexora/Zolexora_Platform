@@ -6,6 +6,15 @@ services:
     environment:
     - AUTH_SERVICE_URL=${AUTH_SERVICE_URL:?AUTH_SERVICE_URL missing - run via scripts/setup/with-infisical.sh}
     - IMS_PRODUCT_KEY=${IMS_PRODUCT_KEY:?IMS_PRODUCT_KEY missing - run via scripts/setup/with-infisical.sh}
+    # Continuous database backup (Litestream). The API refuses to start without these unless
+    # IMS_REPLICATION=off is set in Infisical (local development only).
+    - IMS_REPLICATION=${IMS_REPLICATION:-}
+    - IMS_BACKUP_S3_BUCKET=${IMS_BACKUP_S3_BUCKET:-}
+    - IMS_BACKUP_S3_PATH=${IMS_BACKUP_S3_PATH:-}
+    - IMS_BACKUP_S3_ENDPOINT=${IMS_BACKUP_S3_ENDPOINT:-}
+    - IMS_BACKUP_S3_REGION=${IMS_BACKUP_S3_REGION:-}
+    - IMS_BACKUP_S3_ACCESS_KEY_ID=${IMS_BACKUP_S3_ACCESS_KEY_ID:-}
+    - IMS_BACKUP_S3_SECRET_ACCESS_KEY=${IMS_BACKUP_S3_SECRET_ACCESS_KEY:-}
     volumes:
     - ims-data:/data
     restart: unless-stopped

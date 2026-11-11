@@ -18,6 +18,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
+# Litestream: continuous off-host copy of the SQLite database (see docker-entrypoint.sh)
+COPY --from=litestream/litestream:0.5.18 /usr/local/bin/litestream /usr/local/bin/litestream
+
 # Install python dependencies
 COPY products/zolexora-ims/services/user-api/requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
@@ -37,4 +40,5 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
   CMD curl -f "http://localhost:${PORT}/health" || exit 1
 
 # Listens on $PORT (default 4050) so hosts that assign a port (Render, Fly, …) can run the same image.
-CMD ["sh", "-c", "exec uvicorn main:app --host 0.0.0.0 --port ${PORT}"]
+# The entrypoint restores the database if missing and runs the API under Litestream.
+CMD ["sh", "/app/docker-entrypoint.sh"]

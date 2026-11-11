@@ -1,0 +1,15 @@
+# Continuous off-host copy of the IMS SQLite database (Litestream). Works with any S3-compatible
+# store (AWS S3, Cloudflare R2, Backblaze B2, MinIO, …); every value comes from the environment.
+# On shutdown (container stop / deploy), push the last changes before exiting.
+shutdown-sync-timeout: 15s
+
+dbs:
+  - path: ${DATABASE_PATH}
+    replica:
+      type: s3
+      bucket: ${IMS_BACKUP_S3_BUCKET}
+      path: ${IMS_BACKUP_S3_PATH}
+      endpoint: ${IMS_BACKUP_S3_ENDPOINT}
+      region: ${IMS_BACKUP_S3_REGION}
+      access-key-id: ${IMS_BACKUP_S3_ACCESS_KEY_ID}
+      secret-access-key: ${IMS_BACKUP_S3_SECRET_ACCESS_KEY}

@@ -450,7 +450,7 @@ Zolexora_Platform/
 │   │   │   ├── run-all-tests.sh
 │   │   │   └── setup.sh
 │   │   ├── services/
-│   │   │   └── user-api/  (18 files)
+│   │   │   └── user-api/  (19 files)
 │   │   ├── .gitignore
 │   │   ├── .infisical.json
 │   │   ├── compose.yaml
