@@ -37,7 +37,7 @@ jobs:
       - name: Test
         # backend/tests/conftest.py sets test-only stub settings; no real secrets are used.
         run: pytest backend/tests tests --cov=backend --cov-report=xml --cov-report=term-missing
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: zolexora-ai-coverage
