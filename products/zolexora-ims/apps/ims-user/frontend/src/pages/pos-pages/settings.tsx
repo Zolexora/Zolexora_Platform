@@ -158,7 +158,6 @@ export default function PosSettings() {
           amount: testAmount || 1.0,
           bill_no: `TEST_${Date.now()}`,
           customer_phone: '9876543210',
-          customer_email: 'test@zolexora.com',
         }),
       });
       const data = await res.json();
@@ -192,7 +191,6 @@ export default function PosSettings() {
           amount: testAmount || 1.0,
           bill_no: `TEST_${Date.now()}`,
           customer_phone: '9876543210',
-          customer_email: 'test@zolexora.com',
         }),
       });
       const data = await res.json();

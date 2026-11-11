@@ -237,3 +237,22 @@ CREATE TABLE IF NOT EXISTS cash_drawer_logs (
   created_at TEXT NOT NULL,
   PRIMARY KEY (org_id, id)
 );
+
+-- One row per gateway order or manual UPI confirmation. A bill is paid only through this table:
+-- status PAID after a verified gateway signature / order status for the recorded amount, or
+-- MANUAL when a cashier confirms a direct UPI transfer by its UTR (one UTR, one bill).
+CREATE TABLE IF NOT EXISTS payments (
+  org_id TEXT NOT NULL,
+  id TEXT NOT NULL,
+  gateway TEXT NOT NULL,
+  bill_no TEXT NOT NULL,
+  amount REAL NOT NULL,
+  status TEXT NOT NULL,
+  gateway_payment_id TEXT,
+  reference TEXT,
+  created_by TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  PRIMARY KEY (org_id, id)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_payments_reference ON payments (org_id, gateway, reference);

@@ -1,5 +1,7 @@
 import os
 import json
+import hashlib
+import hmac
 from contextlib import asynccontextmanager
 from typing import List, Optional, Dict, Any
 from fastapi import FastAPI, Depends, HTTPException, Query, status, Request
@@ -18,8 +20,8 @@ try:
         PosTableModel, CashDrawerLogModel
     )
     from .payments import (
-        PaymentEngine, RazorpayOrderRequest, RazorpayVerifyRequest,
-        CashfreeOrderRequest, CashfreeVerifyRequest
+        PaymentEngine, PaymentError, RazorpayOrderRequest, RazorpayVerifyRequest,
+        CashfreeOrderRequest, CashfreeVerifyRequest, cashfree_webhook_ok, razorpay_webhook_ok, to_paise
     )
 except ImportError:
     from utils import now_utc_iso, today_utc_str, generate_id
@@ -34,8 +36,8 @@ except ImportError:
         PosTableModel, CashDrawerLogModel
     )
     from payments import (
-        PaymentEngine, RazorpayOrderRequest, RazorpayVerifyRequest,
-        CashfreeOrderRequest, CashfreeVerifyRequest
+        PaymentEngine, PaymentError, RazorpayOrderRequest, RazorpayVerifyRequest,
+        CashfreeOrderRequest, CashfreeVerifyRequest, cashfree_webhook_ok, razorpay_webhook_ok, to_paise
     )
 
 
@@ -455,6 +457,7 @@ async def get_aggregator_configs(request: Request, user: UserProfile = Depends(r
             "status": saved.get("status", "Online" if saved.get("outlet_id") else "Not Connected"),
             "outlet_id": saved.get("outlet_id"),
             "has_api_key": bool(saved.get("api_key")),
+            "has_webhook_secret": bool(saved.get("webhook_secret")),
             "auto_accept": saved.get("auto_accept", False),
             "webhook_url": webhook_url,
             "portal_url": p["portal_url"],
@@ -477,11 +480,13 @@ async def save_aggregator_config(platform_id: str, config: AggregatorChannelConf
         raise HTTPException(status_code=400, detail="Store/Outlet ID is mandatory to link channel")
 
     configs = await _get_aggregator_configs_from_db(user.org_id)
+    import secrets
+    webhook_secret = (config.webhook_secret or "").strip() or (configs.get(pid) or {}).get("webhook_secret") or secrets.token_hex(32)
     configs[pid] = {
         "outlet_id": config.outlet_id.strip(),
         "api_key": config.api_key.strip() if config.api_key else None,
         "api_username": config.api_username.strip() if config.api_username else None,
-        "webhook_secret": config.webhook_secret.strip() if config.webhook_secret else None,
+        "webhook_secret": webhook_secret,
         "auto_accept": config.auto_accept,
         "status": "Online",
         "connected_at": now_utc_iso()
@@ -491,6 +496,9 @@ async def save_aggregator_config(platform_id: str, config: AggregatorChannelConf
     return {
         "success": True,
         "message": f"Successfully connected and activated {target_platform['name']} in database",
+        # Shown here only: the platform (or middleware) must sign each webhook body with it.
+        "webhook_secret": webhook_secret,
+        "signature_header": "X-Zolexora-Signature: sha256=<hex HMAC-SHA256 of the raw body>",
         "platform": {
             **target_platform,
             "connected": True,
@@ -565,11 +573,16 @@ async def update_order_status(order_id: str, body: AggregatorStatusUpdate, user:
 @app.post("/api/v1/aggregator/webhook/{channel}/{org_id}")
 async def receive_aggregator_webhook(channel: str, org_id: str, request: Request):
     channel = channel.lower()
-    # Signature checks per channel come with the payments work; until then only connected channels.
-    if not (await _get_aggregator_configs_from_db(org_id)).get(channel, {}).get("outlet_id"):
+    cfg = (await _get_aggregator_configs_from_db(org_id)).get(channel) or {}
+    if not cfg.get("outlet_id"):
         raise HTTPException(status_code=404, detail="Channel not connected")
+    raw = await request.body()
+    given = request.headers.get("x-zolexora-signature", "").removeprefix("sha256=")
+    expected = hmac.new((cfg.get("webhook_secret") or "").encode(), raw, hashlib.sha256).hexdigest()
+    if not cfg.get("webhook_secret") or not hmac.compare_digest(expected, given):
+        raise HTTPException(status_code=401, detail="Invalid signature")
     try:
-        payload = await request.json()
+        payload = json.loads(raw)
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid JSON payload")
 
@@ -804,6 +817,9 @@ async def get_payment_handle(user: UserProfile = Depends(require("ims:pos:sell",
     if safe_config.get("cashfree_secret_key"):
         safe_config["has_cashfree_secret"] = True
         safe_config["cashfree_secret_key"] = "••••••••"
+    if safe_config.get("razorpay_webhook_secret"):
+        safe_config["has_razorpay_webhook_secret"] = True
+        safe_config["razorpay_webhook_secret"] = "••••••••"
     return safe_config
 
 
@@ -825,6 +841,7 @@ async def update_payment_handle(config: PaymentHandleConfig, user: UserProfile =
         "payment_gateway": config.payment_gateway,
         "razorpay_key_id": config.razorpay_key_id.strip() if config.razorpay_key_id else current.get("razorpay_key_id"),
         "razorpay_key_secret": config.razorpay_key_secret.strip() if config.razorpay_key_secret and "••••" not in config.razorpay_key_secret else current.get("razorpay_key_secret"),
+        "razorpay_webhook_secret": config.razorpay_webhook_secret.strip() if config.razorpay_webhook_secret and "••••" not in config.razorpay_webhook_secret else current.get("razorpay_webhook_secret"),
         "cashfree_app_id": config.cashfree_app_id.strip() if config.cashfree_app_id else current.get("cashfree_app_id"),
         "cashfree_secret_key": config.cashfree_secret_key.strip() if config.cashfree_secret_key and "••••" not in config.cashfree_secret_key else current.get("cashfree_secret_key"),
         "cashfree_env": config.cashfree_env or "TEST",
@@ -1165,78 +1182,153 @@ async def generate_dynamic_upi_qr(body: GenerateDynamicQrRequest, user: UserProf
     }
 
 
+# --- Payments: a bill is paid only through the payments table ---
+async def _payment_row(org_id: str, order_id: str, gateway: str) -> dict:
+    row = await db.fetch_one("SELECT * FROM payments WHERE org_id = ? AND id = ? AND gateway = ?;", [org_id, order_id, gateway])
+    if not row:
+        raise HTTPException(status_code=404, detail="Payment order not found")
+    return row
+
+
+async def _record_order(user: UserProfile, order_id: str, gateway: str, bill_no: str, amount: float) -> None:
+    now = now_utc_iso()
+    await db.execute(
+        "INSERT INTO payments (org_id, id, gateway, bill_no, amount, status, created_by, created_at, updated_at) "
+        "VALUES (?, ?, ?, ?, ?, 'CREATED', ?, ?, ?);",
+        [user.org_id, order_id, gateway, bill_no, round(amount, 2), user.id, now, now],
+    )
+
+
+async def _mark_paid(org_id: str, order_id: str, gateway_payment_id: Optional[str]) -> None:
+    await db.execute(
+        "UPDATE payments SET status = 'PAID', gateway_payment_id = COALESCE(?, gateway_payment_id), updated_at = ? "
+        "WHERE org_id = ? AND id = ?;",
+        [gateway_payment_id, now_utc_iso(), org_id, order_id],
+    )
+
+
+def _paid_response(row: dict, payment_id: Optional[str]) -> dict:
+    return {"success": True, "settled": True, "order_id": row["id"], "bill_no": row["bill_no"], "amount": row["amount"], "payment_id": payment_id}
+
+
+def _gateway_error(e: PaymentError) -> HTTPException:
+    return HTTPException(status_code=e.status, detail=e.message)
+
+
 @app.post("/api/v1/payment/verify")
 async def verify_payment_settlement(body: PaymentVerifyRequest, user: UserProfile = Depends(require("ims:pos:sell"))):
-    """Verifies and confirms settlement of payment against a bill."""
-    import secrets
-    txn_ref = body.transaction_ref or f"UPI-UTR-{secrets.randbelow(899999999) + 100000000}"
-    settlement_id = f"SETTLE_{secrets.token_hex(4).upper()}"
-    
+    """Records a cashier's confirmation of a direct UPI transfer by its UTR. Not a bank check: the
+    response says so, and one UTR can settle only one bill."""
+    ref = "".join(ch for ch in body.transaction_ref if ch.isalnum()).upper()
+    if not 6 <= len(ref) <= 35:
+        raise HTTPException(status_code=400, detail="Enter the UPI transaction reference (UTR) from your bank app.")
+    if await db.fetch_one("SELECT id FROM payments WHERE org_id = ? AND gateway = 'upi_manual' AND reference = ?;", [user.org_id, ref]):
+        raise HTTPException(status_code=409, detail="This UTR is already recorded against another bill.")
+    now = now_utc_iso()
+    payment_id = generate_id("UPI")
+    await db.execute(
+        "INSERT INTO payments (org_id, id, gateway, bill_no, amount, status, reference, created_by, created_at, updated_at) "
+        "VALUES (?, ?, 'upi_manual', ?, ?, 'MANUAL', ?, ?, ?, ?);",
+        [user.org_id, payment_id, body.bill_no, round(body.amount, 2), ref, user.id, now, now],
+    )
     return {
         "success": True,
-        "settled": True,
-        "settlement_id": settlement_id,
+        "settled": False,
+        "confirmed_manually": True,
+        "payment_id": payment_id,
         "bill_no": body.bill_no,
-        "amount": body.amount,
-        "payment_mode": body.payment_mode,
-        "transaction_ref": txn_ref,
-        "soundbox_announcement": f"Received payment of ₹{body.amount:.2f} successfully via {body.payment_mode}",
-        "settled_at": now_utc_iso()
+        "amount": round(body.amount, 2),
+        "transaction_ref": ref,
+        "confirmed_by": user.name,
     }
 
 
-# --- Razorpay Payment Gateway Endpoints ---
+# --- Razorpay ---
 @app.post("/api/v1/payment/razorpay/create-order")
 async def create_razorpay_order_endpoint(body: RazorpayOrderRequest, user: UserProfile = Depends(require("ims:pos:sell"))):
-    return (await _payment_engine(user)).create_razorpay_order(body)
+    if body.amount <= 0:
+        raise HTTPException(status_code=400, detail="Amount must be more than zero")
+    try:
+        order = await (await _payment_engine(user)).create_razorpay_order(body)
+    except PaymentError as e:
+        raise _gateway_error(e)
+    await _record_order(user, order["order_id"], "razorpay", body.bill_no, body.amount)
+    return {"success": True, "gateway": "Razorpay", "amount": round(body.amount, 2), "currency": "INR", **order}
 
 
 @app.post("/api/v1/payment/razorpay/verify-payment")
 async def verify_razorpay_payment_endpoint(body: RazorpayVerifyRequest, user: UserProfile = Depends(require("ims:pos:sell"))):
-    return (await _payment_engine(user)).verify_razorpay_payment(body)
+    row = await _payment_row(user.org_id, body.razorpay_order_id, "razorpay")
+    try:
+        ok = (await _payment_engine(user)).razorpay_signature_ok(body)
+    except PaymentError as e:
+        raise _gateway_error(e)
+    if not ok:
+        raise HTTPException(status_code=400, detail="Payment signature does not match; not marked paid.")
+    await _mark_paid(user.org_id, row["id"], body.razorpay_payment_id)
+    return _paid_response(row, body.razorpay_payment_id)
 
 
-@app.post("/api/v1/payment/razorpay/webhook")
-async def razorpay_webhook(request: Request):
-    payload = await request.json()
-    event = payload.get("event", "payment.captured")
-    payment_entity = payload.get("payload", {}).get("payment", {}).get("entity", {})
-    return {
-        "status": "OK",
-        "event": event,
-        "payment_id": payment_entity.get("id"),
-        "amount": payment_entity.get("amount", 0) / 100.0,
-        "captured": True
-    }
+@app.post("/api/v1/payment/razorpay/webhook/{org_id}")
+async def razorpay_webhook(org_id: str, request: Request):
+    """Razorpay → this business (set the URL and secret in the Razorpay dashboard and in Payments)."""
+    raw = await request.body()
+    cfg = await _get_setting(org_id, "PAYMENT_HANDLE_CONFIG") or {}
+    if not razorpay_webhook_ok(cfg.get("razorpay_webhook_secret") or "", raw, request.headers.get("x-razorpay-signature", "")):
+        raise HTTPException(status_code=401, detail="Invalid signature")
+    payload = json.loads(raw or b"{}")
+    if payload.get("event") in ("payment.captured", "order.paid"):
+        entity = ((payload.get("payload") or {}).get("payment") or {}).get("entity") or {}
+        row = await db.fetch_one("SELECT * FROM payments WHERE org_id = ? AND id = ? AND gateway = 'razorpay';", [org_id, entity.get("order_id")])
+        if row and int(entity.get("amount") or 0) == to_paise(row["amount"]):
+            await _mark_paid(org_id, row["id"], entity.get("id"))
+    return {"status": "ok"}
 
 
-# --- Cashfree Payment Gateway Endpoints ---
+# --- Cashfree ---
 @app.post("/api/v1/payment/cashfree/create-order")
 async def create_cashfree_order_endpoint(body: CashfreeOrderRequest, user: UserProfile = Depends(require("ims:pos:sell", "ims:payments:manage"))):
-    return (await _payment_engine(user)).create_cashfree_order(body)
+    if body.amount <= 0:
+        raise HTTPException(status_code=400, detail="Amount must be more than zero")
+    order_id = generate_id("CF")
+    try:
+        order = await (await _payment_engine(user)).create_cashfree_order(order_id, body)
+    except PaymentError as e:
+        raise _gateway_error(e)
+    await _record_order(user, order["order_id"], "cashfree", body.bill_no, body.amount)
+    return {"success": True, "gateway": "Cashfree", "amount": round(body.amount, 2), **order}
 
 
 @app.post("/api/v1/payment/cashfree/verify-payment")
 async def verify_cashfree_payment_endpoint(body: CashfreeVerifyRequest, user: UserProfile = Depends(require("ims:pos:sell", "ims:payments:manage"))):
-    return {
-        "success": True,
-        "order_id": body.order_id,
-        "bill_no": body.bill_no,
-        "settled": True,
-        "soundbox_announcement": "Received payment successfully via Cashfree"
-    }
+    """Asks Cashfree for the order; paid only if Cashfree says PAID for the amount we recorded."""
+    row = await _payment_row(user.org_id, body.order_id, "cashfree")
+    if row["status"] == "PAID":
+        return _paid_response(row, row.get("gateway_payment_id"))
+    try:
+        order = await (await _payment_engine(user)).get_cashfree_order(row["id"])
+    except PaymentError as e:
+        raise _gateway_error(e)
+    if order.get("order_status") == "PAID" and to_paise(float(order.get("order_amount") or 0)) == to_paise(row["amount"]):
+        await _mark_paid(user.org_id, row["id"], order.get("cf_order_id"))
+        return _paid_response(row, order.get("cf_order_id"))
+    return {"success": False, "settled": False, "order_id": row["id"], "order_status": order.get("order_status")}
 
 
-@app.post("/api/v1/payment/cashfree/webhook")
-async def cashfree_webhook(request: Request):
-    payload = await request.json()
-    data = payload.get("data", {})
-    order = data.get("order", {})
-    return {
-        "status": "OK",
-        "order_id": order.get("order_id"),
-        "order_status": "PAID"
-    }
+@app.post("/api/v1/payment/cashfree/webhook/{org_id}")
+async def cashfree_webhook(org_id: str, request: Request):
+    """Cashfree → this business. Signed with the business's Cashfree secret key."""
+    raw = await request.body()
+    cfg = await _get_setting(org_id, "PAYMENT_HANDLE_CONFIG") or {}
+    if not cashfree_webhook_ok(cfg.get("cashfree_secret_key") or "", request.headers.get("x-webhook-timestamp", ""), raw, request.headers.get("x-webhook-signature", "")):
+        raise HTTPException(status_code=401, detail="Invalid signature")
+    data = (json.loads(raw or b"{}").get("data") or {})
+    order, payment = data.get("order") or {}, data.get("payment") or {}
+    if payment.get("payment_status") == "SUCCESS":
+        row = await db.fetch_one("SELECT * FROM payments WHERE org_id = ? AND id = ? AND gateway = 'cashfree';", [org_id, order.get("order_id")])
+        if row and to_paise(float(order.get("order_amount") or 0)) == to_paise(row["amount"]):
+            await _mark_paid(org_id, row["id"], str(payment.get("cf_payment_id") or "") or None)
+    return {"status": "ok"}
 
 
 if __name__ == "__main__":

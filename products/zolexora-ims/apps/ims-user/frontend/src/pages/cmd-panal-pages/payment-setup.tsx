@@ -19,7 +19,7 @@ import {
 import { useAuth } from '../../lib/auth-context';
 
 export default function OrgPaymentSetup() {
-  const { authFetch } = useAuth();
+  const { authFetch, org } = useAuth();
 
   // Payment Gateway & Rails State
   const [paymentGateway, setPaymentGateway] = useState<string>('upi_qr');
@@ -28,6 +28,7 @@ export default function OrgPaymentSetup() {
   const [mcc, setMcc] = useState<string>('5812');
   const [razorpayKeyId, setRazorpayKeyId] = useState<string>('');
   const [razorpayKeySecret, setRazorpayKeySecret] = useState<string>('');
+  const [razorpayWebhookSecret, setRazorpayWebhookSecret] = useState<string>('');
   const [cashfreeAppId, setCashfreeAppId] = useState<string>('');
   const [cashfreeSecretKey, setCashfreeSecretKey] = useState<string>('');
   const [cashfreeEnv, setCashfreeEnv] = useState<'sandbox' | 'production'>('sandbox');
@@ -60,11 +61,12 @@ export default function OrgPaymentSetup() {
         if (data && data.config) {
           const cfg = data.config;
           setUpiHandle(cfg.upi_handle || '');
-          setMerchantName(cfg.merchant_name || 'Zolexora Retail Operations');
+          setMerchantName(cfg.merchant_name || '');
           setMcc(cfg.merchant_category_code || '5812');
           setPaymentGateway(cfg.payment_gateway || 'upi_qr');
           setRazorpayKeyId(cfg.razorpay_key_id || '');
           setRazorpayKeySecret(cfg.razorpay_key_secret || '');
+          setRazorpayWebhookSecret(cfg.razorpay_webhook_secret || '');
           setCashfreeAppId(cfg.cashfree_app_id || '');
           setCashfreeSecretKey(cfg.cashfree_secret_key || '');
           setCashfreeEnv(cfg.cashfree_env || 'sandbox');
@@ -93,6 +95,7 @@ export default function OrgPaymentSetup() {
           payment_gateway: paymentGateway,
           razorpay_key_id: razorpayKeyId.trim() || undefined,
           razorpay_key_secret: razorpayKeySecret.trim() || undefined,
+          razorpay_webhook_secret: razorpayWebhookSecret.trim() || undefined,
           cashfree_app_id: cashfreeAppId.trim() || undefined,
           cashfree_secret_key: cashfreeSecretKey.trim() || undefined,
           cashfree_env: cashfreeEnv,
@@ -146,7 +149,6 @@ export default function OrgPaymentSetup() {
           amount: 1.0,
           bill_no: `TEST_${Date.now()}`,
           customer_phone: '9876543210',
-          customer_email: 'finance@zolexora.com',
         }),
       });
       const data = await res.json();
@@ -461,6 +463,22 @@ export default function OrgPaymentSetup() {
               </button>
             </div>
           </div>
+
+          <div>
+            <label className="block text-slate-300 mb-1 font-semibold">Razorpay Webhook Secret</label>
+            <input
+              type="password"
+              placeholder="Set the same secret in Razorpay → Webhooks"
+              value={razorpayWebhookSecret}
+              onChange={(e) => setRazorpayWebhookSecret(e.target.value)}
+              className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white font-mono focus:outline-none focus:border-purple-500 text-xs"
+            />
+          </div>
+        </div>
+        <div className="text-[11px] text-slate-400 space-y-1">
+          <p>Webhook URLs for this business (events: payment.captured, order.paid / payment success):</p>
+          <p className="font-mono text-slate-300 break-all">Razorpay: {window.location.origin}/api/v1/payment/razorpay/webhook/{org?.zolexora_org_id}</p>
+          <p className="font-mono text-slate-300 break-all">Cashfree: {window.location.origin}/api/v1/payment/cashfree/webhook/{org?.zolexora_org_id}</p>
         </div>
       </div>
 

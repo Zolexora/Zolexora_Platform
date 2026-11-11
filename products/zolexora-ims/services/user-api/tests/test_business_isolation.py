@@ -1,5 +1,8 @@
 """Two businesses on one IMS: neither can see or overwrite the other's data."""
 import asyncio
+import hashlib
+import hmac
+import json
 
 import pytest
 from starlette.testclient import TestClient
@@ -77,12 +80,14 @@ def test_cash_drawer_and_reports_are_per_business(client):
 
 def test_aggregator_webhook_goes_to_the_named_business_only(client):
     act_as(A)
-    assert client.post("/api/v1/aggregator/config/swiggy", json={"platform": "swiggy", "outlet_id": "OUT-A"}).status_code == 200
+    res = client.post("/api/v1/aggregator/config/swiggy", json={"platform": "swiggy", "outlet_id": "OUT-A"})
+    assert res.status_code == 200
     app.dependency_overrides.clear()
-    order = {"order_id": "SW-1", "customer": {"name": "C"}, "items": [{"name": "Dosa", "qty": 1, "price": 100}]}
-    assert client.post(f"/api/v1/aggregator/webhook/swiggy/{A}", json=order).status_code == 200
+    body = json.dumps({"order_id": "SW-1", "customer": {"name": "C"}, "items": [{"name": "Dosa", "qty": 1, "price": 100}]}).encode()
+    sig = {"X-Zolexora-Signature": "sha256=" + hmac.new(res.json()["webhook_secret"].encode(), body, hashlib.sha256).hexdigest()}
+    assert client.post(f"/api/v1/aggregator/webhook/swiggy/{A}", content=body, headers=sig).status_code == 200
     # B never connected Swiggy
-    assert client.post(f"/api/v1/aggregator/webhook/swiggy/{B}", json=order).status_code == 404
+    assert client.post(f"/api/v1/aggregator/webhook/swiggy/{B}", content=body, headers=sig).status_code == 404
     act_as(B)
     assert client.get("/api/v1/aggregator/orders").json() == []
     assert client.delete("/api/v1/aggregator/orders").status_code == 200

@@ -1,164 +1,162 @@
-import os
-import sys
+"""Payments: a bill is paid only when the gateway proves it, for the amount we recorded."""
+import base64
+import hashlib
+import hmac
+import json
+import uuid
+
+import httpx
 import pytest
 from starlette.testclient import TestClient
 
-# Add app backend and shared paths
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../shared")))
-
+import payments
+from auth import get_current_user
+from catalog import PERMISSIONS
+from conftest import member
 from main import app
 
-
-@pytest.fixture(autouse=True)
-def _owner(as_owner):
-    return as_owner
-
-
-def test_payment_handle_get_and_update():
-    with TestClient(app) as client:
-        # GET default handle
-        resp = client.get("/api/v1/payment/handle")
-        assert resp.status_code == 200
-        data = resp.json()
-        assert "upi_handle" in data
-        assert "merchant_name" in data
-
-        # UPDATE handle with valid UPI VPA
-        update_resp = client.post("/api/v1/payment/handle", json={
-            "upi_handle": "myretailstore@icici",
-            "merchant_name": "My Retail Store Pvt Ltd",
-            "merchant_category_code": "5411",
-            "payment_gateway": "razorpay",
-            "soundbox_enabled": True,
-            "auto_settle": True
-        })
-        assert update_resp.status_code == 200
-        res_data = update_resp.json()
-        assert res_data["success"] is True
-        assert res_data["config"]["upi_handle"] == "myretailstore@icici"
-
-        # UPDATE handle with invalid UPI VPA (fails validation)
-        invalid_resp = client.post("/api/v1/payment/handle", json={
-            "upi_handle": "invalidhandlewithoutbank",
-            "merchant_name": "My Retail Store"
-        })
-        assert invalid_resp.status_code == 400
+ORG = "ZX-ORG-PAYS-0000-0001"
+KEYS = {
+    "upi_handle": "shop@icici", "merchant_name": "Shop",
+    "razorpay_key_id": "rzp_test_k", "razorpay_key_secret": "rzp_secret", "razorpay_webhook_secret": "rzp_hook",
+    "cashfree_app_id": "cf_app", "cashfree_secret_key": "cf_secret", "cashfree_env": "TEST",
+}
 
 
-def test_generate_dynamic_upi_qr():
-    with TestClient(app) as client:
-        resp = client.post("/api/v1/payment/generate-dynamic-qr", json={
-            "bill_no": "BILL-TEST-8899",
-            "amount": 749.50,
-            "notes": "Table 4 POS bill"
-        })
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["bill_no"] == "BILL-TEST-8899"
-        assert data["amount"] == 749.50
-        assert data["currency"] == "INR"
-        assert "upi://" in data["upi_intent_url"]
-        assert "pa=" in data["upi_intent_url"]
-        assert "am=749.50" in data["upi_intent_url"]
-        assert "qr_code_url" in data
-        assert "app_intents" in data
-        assert "google_pay" in data["app_intents"]
-        assert "phonepe" in data["app_intents"]
-        assert "paytm" in data["app_intents"]
+@pytest.fixture
+def client():
+    user = member(*PERMISSIONS, org_id=ORG)
+    app.dependency_overrides[get_current_user] = lambda: user
+    with TestClient(app) as c:
+        yield c
+    app.dependency_overrides.clear()
 
 
-def test_verify_payment_settlement():
-    with TestClient(app) as client:
-        resp = client.post("/api/v1/payment/verify", json={
-            "bill_no": "BILL-TEST-8899",
-            "amount": 749.50,
-            "payment_mode": "UPI",
-            "transaction_ref": "UTR49281920"
-        })
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["success"] is True
-        assert data["settled"] is True
-        assert data["transaction_ref"] == "UTR49281920"
-        assert "749.50" in data["soundbox_announcement"]
+@pytest.fixture
+def gateway(monkeypatch):
+    """Fake Razorpay/Cashfree APIs. Set gateway.cashfree_status / .cashfree_amount per test."""
+    state = type("G", (), {"calls": [], "cashfree_status": "ACTIVE", "cashfree_amount": 250.0})()
+
+    def handler(req: httpx.Request):
+        state.calls.append(req)
+        if req.url.host == "api.razorpay.com":
+            body = json.loads(req.content)
+            return httpx.Response(200, json={"id": f"order_{uuid.uuid4().hex[:12]}", "amount": body["amount"]})
+        if req.method == "POST":
+            return httpx.Response(200, json={"order_id": json.loads(req.content)["order_id"], "payment_session_id": "sess_1"})
+        return httpx.Response(200, json={"order_status": state.cashfree_status, "order_amount": state.cashfree_amount, "cf_order_id": 99})
+
+    real = httpx.AsyncClient
+    monkeypatch.setattr(payments.httpx, "AsyncClient", lambda **kw: real(transport=httpx.MockTransport(handler), **kw))
+    return state
 
 
-def test_razorpay_order_creation_and_verification():
-    with TestClient(app) as client:
-        # Create order
-        resp = client.post("/api/v1/payment/razorpay/create-order", json={
-            "amount": 1250.00,
-            "bill_no": "BILL-RZP-101",
-            "customer_phone": "9876543210",
-            "customer_email": "customer@zolexora.com"
-        })
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["success"] is True
-        assert "order_id" in data
-        assert data["amount"] == 1250.00
-        assert data["amount_in_paise"] == 125000
-
-        # Verify payment
-        verify_resp = client.post("/api/v1/payment/razorpay/verify-payment", json={
-            "razorpay_order_id": data["order_id"],
-            "razorpay_payment_id": "pay_test_987654321",
-            "razorpay_signature": "mock_signature_for_test",
-            "bill_no": "BILL-RZP-101",
-            "amount": 1250.00
-        })
-        assert verify_resp.status_code == 200
-        vdata = verify_resp.json()
-        assert vdata["settled"] is True
-
-        # Webhook
-        wh_resp = client.post("/api/v1/payment/razorpay/webhook", json={
-            "event": "payment.captured",
-            "payload": {
-                "payment": {
-                    "entity": {
-                        "id": "pay_test_987654321",
-                        "amount": 125000
-                    }
-                }
-            }
-        })
-        assert wh_resp.status_code == 200
-        assert wh_resp.json()["captured"] is True
+def setup_keys(client, **overrides):
+    res = client.post("/api/v1/payment/handle", json={**KEYS, **overrides})
+    assert res.status_code == 200, res.text
+    return res
 
 
-def test_cashfree_order_creation_and_verification():
-    with TestClient(app) as client:
-        # Create order
-        resp = client.post("/api/v1/payment/cashfree/create-order", json={
-            "amount": 540.00,
-            "bill_no": "BILL-CF-202",
-            "customer_phone": "9812345678",
-            "customer_email": "cf_guest@example.com"
-        })
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["success"] is True
-        assert "order_id" in data
-        assert "payment_session_id" in data
-        assert data["amount"] == 540.00
+def test_handle_masks_secrets_and_validates(client):
+    cfg = setup_keys(client).json()["config"]
+    assert cfg["razorpay_key_secret"] == cfg["cashfree_secret_key"] == cfg["razorpay_webhook_secret"] == "••••••••"
+    # Saving the masked values back keeps the real ones
+    setup_keys(client, razorpay_key_secret="••••••••", razorpay_webhook_secret="••••••••")
+    assert client.post("/api/v1/payment/handle", json={"upi_handle": "nobank"}).status_code == 400
 
-        # Verify payment
-        verify_resp = client.post("/api/v1/payment/cashfree/verify-payment", json={
-            "order_id": data["order_id"],
-            "bill_no": "BILL-CF-202"
-        })
-        assert verify_resp.status_code == 200
-        assert verify_resp.json()["settled"] is True
 
-        # Webhook
-        wh_resp = client.post("/api/v1/payment/cashfree/webhook", json={
-            "data": {
-                "order": {
-                    "order_id": data["order_id"]
-                }
-            }
-        })
-        assert wh_resp.status_code == 200
-        assert wh_resp.json()["order_status"] == "PAID"
+def test_dynamic_qr_uses_the_business_handle(client):
+    setup_keys(client)
+    data = client.post("/api/v1/payment/generate-dynamic-qr", json={"amount": 499.5, "bill_no": "B-1"}).json()
+    assert data["upi_handle"] == "shop@icici"
+    assert "pa=shop@icici" in data["upi_intent_url"] and "am=499.50" in data["upi_intent_url"]
+
+
+def test_gateways_refuse_without_keys(client):
+    setup_keys(client, razorpay_key_id="", razorpay_key_secret="", cashfree_app_id="", cashfree_secret_key="")
+    # Empty strings are kept as "unchanged", so clear by saving a config without keys for a new business
+    other = member(*PERMISSIONS, org_id="ZX-ORG-NOKEYS-0000-0002")
+    app.dependency_overrides[get_current_user] = lambda: other
+    assert client.post("/api/v1/payment/razorpay/create-order", json={"amount": 10, "bill_no": "B"}).status_code == 400
+    assert client.post("/api/v1/payment/cashfree/create-order", json={"amount": 10, "bill_no": "B", "customer_phone": "9800000001"}).status_code == 400
+
+
+def test_razorpay_paid_only_with_a_valid_signature(client, gateway):
+    setup_keys(client)
+    order = client.post("/api/v1/payment/razorpay/create-order", json={"amount": 250, "bill_no": "B-2"}).json()
+    oid = order["order_id"]
+    assert order["amount_in_paise"] == 25000 and order["key_id"] == "rzp_test_k"
+    assert gateway.calls[0].headers["Authorization"].startswith("Basic ")
+
+    bad = {"razorpay_order_id": oid, "razorpay_payment_id": "pay_1", "razorpay_signature": "simulated_sig"}
+    assert client.post("/api/v1/payment/razorpay/verify-payment", json=bad).status_code == 400
+
+    sig = hmac.new(b"rzp_secret", f"{oid}|pay_1".encode(), hashlib.sha256).hexdigest()
+    res = client.post("/api/v1/payment/razorpay/verify-payment", json={**bad, "razorpay_signature": sig})
+    assert res.status_code == 200 and res.json()["settled"] is True and res.json()["amount"] == 250
+
+    # Unknown order (or another business's) is not found
+    assert client.post("/api/v1/payment/razorpay/verify-payment", json={**bad, "razorpay_order_id": "order_X", "razorpay_signature": sig}).status_code == 404
+
+
+def test_cashfree_paid_only_when_cashfree_says_paid_for_our_amount(client, gateway):
+    setup_keys(client)
+    order = client.post("/api/v1/payment/cashfree/create-order", json={"amount": 250, "bill_no": "B-3", "customer_phone": "+91 98000 00001"}).json()
+    assert order["payment_session_id"] == "sess_1"
+    sent = json.loads(gateway.calls[0].content)
+    assert sent["customer_details"]["customer_phone"] == "9800000001"
+    assert gateway.calls[0].headers["x-client-id"] == "cf_app"
+    verify = lambda: client.post("/api/v1/payment/cashfree/verify-payment", json={"order_id": order["order_id"]}).json()
+
+    assert verify()["settled"] is False  # still ACTIVE
+    gateway.cashfree_status, gateway.cashfree_amount = "PAID", 1.0
+    assert verify()["settled"] is False  # wrong amount
+    gateway.cashfree_amount = 250.0
+    assert verify()["settled"] is True
+
+
+def test_cashfree_needs_a_phone(client, gateway):
+    setup_keys(client)
+    assert client.post("/api/v1/payment/cashfree/create-order", json={"amount": 5, "bill_no": "B"}).status_code == 400
+
+
+def test_manual_upi_is_recorded_not_claimed_as_settled(client):
+    body = {"bill_no": "B-4", "amount": 120, "transaction_ref": "4123 5678 9012"}
+    res = client.post("/api/v1/payment/verify", json=body).json()
+    assert res["settled"] is False and res["confirmed_manually"] is True and res["transaction_ref"] == "412356789012"
+    # The same UTR cannot settle a second bill; a missing/short one is refused
+    assert client.post("/api/v1/payment/verify", json={**body, "bill_no": "B-5"}).status_code == 409
+    assert client.post("/api/v1/payment/verify", json={**body, "transaction_ref": "12"}).status_code == 400
+    assert client.post("/api/v1/payment/verify", json={"bill_no": "B-6", "amount": 1}).status_code == 422
+
+
+def test_razorpay_webhook_needs_signature_and_matching_amount(client, gateway):
+    setup_keys(client)
+    oid = client.post("/api/v1/payment/razorpay/create-order", json={"amount": 250, "bill_no": "B-7"}).json()["order_id"]
+    app.dependency_overrides.clear()
+    event = json.dumps({"event": "payment.captured", "payload": {"payment": {"entity": {"id": "pay_9", "order_id": oid, "amount": 25000}}}}).encode()
+    url = f"/api/v1/payment/razorpay/webhook/{ORG}"
+    assert client.post(url, content=event, headers={"X-Razorpay-Signature": "nope"}).status_code == 401
+    sig = hmac.new(b"rzp_hook", event, hashlib.sha256).hexdigest()
+    assert client.post(url, content=event, headers={"X-Razorpay-Signature": sig}).status_code == 200
+
+
+def test_cashfree_webhook_signature(client):
+    setup_keys(client)
+    app.dependency_overrides.clear()
+    body = json.dumps({"data": {"order": {"order_id": "CF_X", "order_amount": 1}, "payment": {"payment_status": "SUCCESS"}}}).encode()
+    ts = "1700000000"
+    sig = base64.b64encode(hmac.new(b"cf_secret", ts.encode() + body, hashlib.sha256).digest()).decode()
+    url = f"/api/v1/payment/cashfree/webhook/{ORG}"
+    assert client.post(url, content=body, headers={"x-webhook-timestamp": ts, "x-webhook-signature": "bad"}).status_code == 401
+    assert client.post(url, content=body, headers={"x-webhook-timestamp": ts, "x-webhook-signature": sig}).status_code == 200
+
+
+def test_aggregator_webhook_needs_the_channel_signature(client):
+    secret = client.post("/api/v1/aggregator/config/zomato", json={"platform": "zomato", "outlet_id": "Z-1"}).json()["webhook_secret"]
+    app.dependency_overrides.clear()
+    body = json.dumps({"order_id": "ZO-1", "items": [{"name": "Thali", "qty": 1, "price": 200}]}).encode()
+    url = f"/api/v1/aggregator/webhook/zomato/{ORG}"
+    assert client.post(url, content=body).status_code == 401
+    sig = "sha256=" + hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
+    assert client.post(url, content=body, headers={"X-Zolexora-Signature": sig}).status_code == 200

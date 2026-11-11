@@ -127,12 +127,13 @@ class TestWebhookRequest(BaseModel):
 
 
 class PaymentHandleConfig(BaseModel):
-    upi_handle: str = "zolexora@icici"  # Merchant VPA, e.g. merchant@okhdfcbank
-    merchant_name: str = "Zolexora Retail Operations"
+    upi_handle: str  # Merchant VPA, e.g. merchant@okhdfcbank
+    merchant_name: str = ""
     merchant_category_code: str = "5812"  # MCC (5812: Restaurants, 5411: Groceries)
     payment_gateway: str = "upi_qr"  # upi_qr, razorpay, cashfree, stripe, paytm_edc, pinelabs
     razorpay_key_id: Optional[str] = None
     razorpay_key_secret: Optional[str] = None
+    razorpay_webhook_secret: Optional[str] = None
     cashfree_app_id: Optional[str] = None
     cashfree_secret_key: Optional[str] = None
     cashfree_env: Optional[str] = "TEST"  # TEST or PRODUCTION
@@ -179,11 +180,11 @@ class CustomerModel(BaseModel):
 
 
 class PaymentVerifyRequest(BaseModel):
+    """A cashier confirming a direct UPI transfer they have seen arrive (no gateway to ask)."""
     bill_no: str
     amount: float
-    payment_mode: str = "UPI"  # UPI, Card, Netbanking
-    transaction_ref: Optional[str] = None  # Bank UTR / Reference No / Card Auth Code
-    status: str = "SUCCESS"
+    payment_mode: str = "UPI"
+    transaction_ref: str  # UPI UTR / bank reference, as shown in the merchant's bank app
 
 
 class PosTableModel(BaseModel):

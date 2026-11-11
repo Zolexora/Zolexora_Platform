@@ -48,7 +48,7 @@ export default function UpiQrModal({
 
   // Dynamic Payment Handle & Gateway State
   const [upiHandle, setUpiHandle] = useState<string>('');
-  const [merchantName, setMerchantName] = useState<string>('Zolexora Retail Operations');
+  const [merchantName, setMerchantName] = useState<string>('');
   const [mcc, setMcc] = useState<string>('5812');
   const [soundboxEnabled, setSoundboxEnabled] = useState<boolean>(true);
   const [razorpayKeyId, setRazorpayKeyId] = useState<string>('');
@@ -147,159 +147,121 @@ export default function UpiQrModal({
     } catch {}
   };
 
-  // Helper to dynamically load Razorpay script
-  const loadRazorpayScript = (): Promise<boolean> => {
-    return new Promise((resolve) => {
-      if ((window as any).Razorpay) {
-        resolve(true);
-        return;
-      }
+  const [payError, setPayError] = useState<string | null>(null);
+
+  const loadScript = (src: string, globalName: string): Promise<boolean> =>
+    new Promise((resolve) => {
+      if ((window as any)[globalName]) return resolve(true);
       const script = document.createElement('script');
-      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-      script.onload = () => resolve(true);
+      script.src = src;
+      script.onload = () => resolve(Boolean((window as any)[globalName]));
       script.onerror = () => resolve(false);
       document.body.appendChild(script);
     });
+
+  /** POSTs JSON; returns the body, or throws the server's message. */
+  const post = async (url: string, body: unknown) => {
+    const res = await authFetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || 'Request failed');
+    return data;
   };
 
-  // Trigger Razorpay Checkout
+  const fail = (err: any) => {
+    setPayError(err?.message || 'Payment failed');
+    setVerifying(false);
+  };
+
+  // A bill is marked paid only when the server confirms the gateway payment.
+  const settle = (rail: string, ref?: string) => {
+    playSoundboxAnnouncement(amount, rail);
+    setVerifying(false);
+    onPaymentSuccess(ref);
+  };
+
   const handleRazorpayCheckout = async () => {
+    setPayError(null);
     setVerifying(true);
     try {
-      const res = await authFetch('/api/v1/payment/razorpay/create-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount: amount,
-          bill_no: billNo,
-          customer_phone: customerPhone?.replace(/\D/g, '') || '9876543210',
-          customer_email: customerEmail || 'guest@zolexora.com',
-        }),
+      const order = await post('/api/v1/payment/razorpay/create-order', {
+        amount,
+        bill_no: billNo,
+        customer_phone: customerPhone?.replace(/\D/g, '') || undefined,
+        customer_email: customerEmail || undefined,
       });
-      const orderData = await res.json();
-      if (!res.ok || !orderData.order_id) {
-        alert('Failed to initiate Razorpay order: ' + (orderData.detail || 'Unknown error'));
-        setVerifying(false);
-        return;
+      if (!(await loadScript('https://checkout.razorpay.com/v1/checkout.js', 'Razorpay'))) {
+        throw new Error('Could not load Razorpay checkout. Check the internet connection and try again.');
       }
-
-      const scriptLoaded = await loadRazorpayScript();
-      if (scriptLoaded && (window as any).Razorpay) {
-        const options = {
-          key: orderData.key_id,
-          amount: orderData.amount_in_paise,
-          currency: 'INR',
-          name: merchantName,
-          description: `Invoice ${billNo}`,
-          order_id: orderData.order_id,
-          handler: async function (response: any) {
-            await authFetch('/api/v1/payment/razorpay/verify-payment', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-                bill_no: billNo,
-                amount: amount,
-              }),
+      const rzp = new (window as any).Razorpay({
+        key: order.key_id,
+        amount: order.amount_in_paise,
+        currency: 'INR',
+        name: merchantName,
+        description: `Invoice ${billNo}`,
+        order_id: order.order_id,
+        theme: { color: '#0284c7' },
+        modal: { ondismiss: () => setVerifying(false) },
+        handler: async (response: any) => {
+          try {
+            const result = await post('/api/v1/payment/razorpay/verify-payment', {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              bill_no: billNo,
             });
-            playSoundboxAnnouncement(amount, 'Razorpay');
-            setVerifying(false);
-            onPaymentSuccess(response.razorpay_payment_id);
-          },
-          theme: { color: '#0284c7' },
-        };
-        const rzp = new (window as any).Razorpay(options);
-        rzp.open();
-      } else {
-        // Fallback for sandboxed or offline environments
-        const simPaymentId = `pay_rzp_sim_${Date.now()}`;
-        await authFetch('/api/v1/payment/razorpay/verify-payment', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            razorpay_order_id: orderData.order_id,
-            razorpay_payment_id: simPaymentId,
-            razorpay_signature: 'simulated_sig',
-            bill_no: billNo,
-            amount: amount,
-          }),
-        });
-        playSoundboxAnnouncement(amount, 'Razorpay');
-        setVerifying(false);
-        onPaymentSuccess(simPaymentId);
-      }
-    } catch (err: any) {
-      alert('Razorpay Checkout failed: ' + (err.message || 'Error'));
-      setVerifying(false);
+            if (!result.settled) throw new Error('Payment not confirmed');
+            settle('Razorpay', response.razorpay_payment_id);
+          } catch (err) {
+            fail(err);
+          }
+        },
+      });
+      rzp.on('payment.failed', (r: any) => fail(new Error(r?.error?.description || 'Payment failed')));
+      rzp.open();
+    } catch (err) {
+      fail(err);
     }
   };
 
-  // Trigger Cashfree Payments
   const handleCashfreeCheckout = async () => {
+    setPayError(null);
     setVerifying(true);
     try {
-      const res = await authFetch('/api/v1/payment/cashfree/create-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount: amount,
-          bill_no: billNo,
-          customer_phone: customerPhone?.replace(/\D/g, '') || '9876543210',
-          customer_email: customerEmail || 'guest@zolexora.com',
-        }),
+      const order = await post('/api/v1/payment/cashfree/create-order', {
+        amount,
+        bill_no: billNo,
+        customer_phone: customerPhone || undefined,
+        customer_email: customerEmail || undefined,
       });
-      const data = await res.json();
-      if (!res.ok || !data.order_id) {
-        alert('Failed to initiate Cashfree order: ' + (data.detail || 'Unknown error'));
-        setVerifying(false);
-        return;
+      if (!(await loadScript('https://sdk.cashfree.com/js/v3/cashfree.js', 'Cashfree'))) {
+        throw new Error('Could not load Cashfree checkout. Check the internet connection and try again.');
       }
-
-      await authFetch('/api/v1/payment/cashfree/verify-payment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          order_id: data.order_id,
-          bill_no: billNo,
-        }),
-      });
-
-      playSoundboxAnnouncement(amount, 'Cashfree');
-      setTimeout(() => {
-        setVerifying(false);
-        onPaymentSuccess(data.order_id);
-      }, 500);
-    } catch (err: any) {
-      alert('Cashfree Checkout error: ' + (err.message || 'Error'));
-      setVerifying(false);
+      const cashfree = (window as any).Cashfree({ mode: order.environment === 'PRODUCTION' ? 'production' : 'sandbox' });
+      const outcome = await cashfree.checkout({ paymentSessionId: order.payment_session_id, redirectTarget: '_modal' });
+      if (outcome?.error) throw new Error(outcome.error.message || 'Payment not completed');
+      const result = await post('/api/v1/payment/cashfree/verify-payment', { order_id: order.order_id, bill_no: billNo });
+      if (!result.settled) throw new Error(`Cashfree has not confirmed this payment (${result.order_status || 'pending'}).`);
+      settle('Cashfree', order.order_id);
+    } catch (err) {
+      fail(err);
     }
   };
 
-  // Manual UTR Settlement for UPI QR
+  // Direct UPI to the shop's own account: no gateway can confirm it, so the cashier checks their
+  // bank app and records the UTR. The server keeps it as a cashier confirmation, one UTR per bill.
   const handleManualVerify = async () => {
+    setPayError(null);
+    if (utrNumber.replace(/\W/g, '').length < 6) {
+      setPayError('Enter the UPI transaction reference (UTR) from your bank app after you see the money arrive.');
+      return;
+    }
     setVerifying(true);
     try {
-      await authFetch('/api/v1/payment/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          bill_no: billNo,
-          amount: amount,
-          payment_mode: 'UPI',
-          transaction_ref: utrNumber.trim() || undefined,
-          status: 'SUCCESS',
-        }),
-      });
-    } catch {}
-
-    playSoundboxAnnouncement(amount, 'U P I');
-
-    setTimeout(() => {
-      setVerifying(false);
-      onPaymentSuccess(utrNumber.trim() || undefined);
-    }, 500);
+      const result = await post('/api/v1/payment/verify', { bill_no: billNo, amount, payment_mode: 'UPI', transaction_ref: utrNumber.trim() });
+      settle('U P I', result.transaction_ref);
+    } catch (err) {
+      fail(err);
+    }
   };
 
   const formatTimer = (secs: number) => {
@@ -544,7 +506,7 @@ export default function UpiQrModal({
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-400">Key ID:</span>
-                  <span className="font-mono text-sky-300">{razorpayKeyId || 'rzp_test_zolexora_demo'}</span>
+                  <span className="font-mono text-sky-300">{razorpayKeyId || 'Not set up'}</span>
                 </div>
               </div>
               <button
@@ -606,9 +568,14 @@ export default function UpiQrModal({
           </div>
         </div>
 
+        {payError && activeTab !== 'upi' && (
+          <p className="px-4 py-3 text-[11px] text-rose-400 bg-rose-500/10 border-t border-rose-500/20">{payError}</p>
+        )}
+
         {/* Verification Action (For UPI QR) */}
         {activeTab === 'upi' && (
           <div className="p-4 bg-[#141624] border-t border-white/10 space-y-2">
+            {payError && <p className="mb-2 text-[11px] text-rose-400">{payError}</p>}
             <button
               type="button"
               onClick={handleManualVerify}
@@ -616,7 +583,7 @@ export default function UpiQrModal({
               className="w-full flex items-center justify-center gap-2 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition shadow-lg shadow-emerald-600/30 disabled:opacity-50"
             >
               {verifying ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCheck className="w-4 h-4" />}
-              <span>{verifying ? 'Verifying Settlement...' : 'Confirm & Settle Payment'}</span>
+              <span>{verifying ? 'Recording...' : 'I received it — record UTR'}</span>
             </button>
           </div>
         )}

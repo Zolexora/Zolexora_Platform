@@ -105,7 +105,7 @@ def test_auth_service_not_configured_gets_503(auth_service, monkeypatch):
     assert get_items().status_code == 503
 
 
-PUBLIC = {"/health", "/api/v1/health", "/api/v1/aggregator/webhook/{channel}/{org_id}", "/api/v1/payment/razorpay/webhook", "/api/v1/payment/cashfree/webhook"}
+PUBLIC = {"/health", "/api/v1/health", "/api/v1/aggregator/webhook/{channel}/{org_id}", "/api/v1/payment/razorpay/webhook/{org_id}", "/api/v1/payment/cashfree/webhook/{org_id}"}
 
 
 def test_every_route_except_health_and_webhooks_needs_sign_in():
