@@ -55,10 +55,10 @@ def test_list_items(monkeypatch, as_member):
     ]
     user = as_member("ims:items:view")
     query = AsyncMock(return_value=mock_items)
-    monkeypatch.setattr(db, "query", query)
 
     try:
         with TestClient(app) as client:
+            monkeypatch.setattr(db, "query", query)  # after startup created the schema
             resp = client.get("/api/v1/items")
             assert resp.status_code == 200
             items = resp.json()

@@ -57,21 +57,17 @@ main() {
   print_banner
 
   # 1. Python Code Syntax & Integrity
-  run_step "Checking Python Syntax across User & Admin Backends" \
+  run_step "Checking Python Syntax (IMS backend)" \
     "python3 -m py_compile \
-      ${ROOT_DIR}/services/user-api/*.py \
-      ${ROOT_DIR}/services/admin-api/*.py"
+      ${ROOT_DIR}/services/user-api/*.py"
 
   # 2. Pytest Suite
   run_step "Running FastAPI Backend Pytest Suites" \
-    "pytest ${ROOT_DIR}/services/user-api/tests ${ROOT_DIR}/services/admin-api/tests -v"
+    "cd ${ROOT_DIR}/services/user-api && pytest tests -v"
 
   # 3. TypeScript Typecheck
   run_step "Running TypeScript Verification (User Frontend)" \
     "cd ${ROOT_DIR}/apps/ims-user/frontend && pnpm exec tsc --noEmit"
-
-  run_step "Running TypeScript Verification (Admin Frontend)" \
-    "cd ${ROOT_DIR}/apps/ims-admin/frontend && pnpm exec tsc --noEmit"
 
   # 4. Security & Secret Leak Scanning
   run_step "Auditing Working Tree for Unprotected Secrets" \

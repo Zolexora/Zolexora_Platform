@@ -1,22 +1,12 @@
 import os
-import sys
 import json
 from contextlib import asynccontextmanager
 from typing import List, Optional, Dict, Any
 from fastapi import FastAPI, Depends, HTTPException, Query, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-# Add path for services/shared
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../shared")))
 try:
-    from utils import now_utc_iso, today_utc_str, generate_id
-except ImportError:
-    from datetime import datetime, timezone
-    def now_utc_iso(): return datetime.now(timezone.utc).isoformat()
-    def today_utc_str(): return datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    def generate_id(p="ID"): return f"{p}_12345"
-
-try:
+    from .utils import now_utc_iso, today_utc_str, generate_id
     from .db import db
     from .auth import get_current_user, require
     from .catalog import register_catalog
@@ -32,6 +22,7 @@ try:
         CashfreeOrderRequest, CashfreeVerifyRequest
     )
 except ImportError:
+    from utils import now_utc_iso, today_utc_str, generate_id
     from db import db
     from auth import get_current_user, require
     from catalog import register_catalog

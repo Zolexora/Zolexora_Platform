@@ -23,8 +23,6 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
 COPY products/zolexora-ims/services/user-api/ .
-# Shared helpers, found via sys.path ../shared
-COPY products/zolexora-ims/services/shared /shared
 
 # Create a non-root user for container security
 RUN useradd -m -u 1001 appuser && chown -R appuser:appuser /app

@@ -131,7 +131,7 @@ run_tests() {
   echo -e "\n${BLUE}${BOLD}[2/5] Running Quality Gate Tests...${NC}"
   if command -v pytest >/dev/null 2>&1; then
     echo -e "  • Executing Python Backend Pytest Suite..."
-    if pytest "${ROOT_DIR}/services/user-api/tests" "${ROOT_DIR}/services/admin-api/tests" -q; then
+    if (cd "${ROOT_DIR}/services/user-api" && pytest tests -q); then
       echo -e "  ${GREEN}✓ Backend pytest suites passed (100% clean).${NC}"
     else
       echo -e "  ${RED}❌ Error: Pytest tests failed. Fix errors or pass --skip-tests to bypass.${NC}"
@@ -166,9 +166,7 @@ deploy_render() {
   echo -e "\n${MAGENTA}${BOLD}🚀 Deploying to Render Cloud Platform...${NC}"
   echo -e "  • Target Services:"
   echo -e "    - zolexora-ims-api (Docker Web Service)"
-  echo -e "    - zolexora-admin-api (Docker Web Service)"
   echo -e "    - zolexora-user-frontend (Docker SPA Container)"
-  echo -e "    - zolexora-admin-frontend (Docker SPA Container)"
 
   if [[ "${DRY_RUN}" == "true" ]]; then
     echo -e "  ${YELLOW}[DRY RUN] Would trigger Render blueprint sync via Render CLI or Git push to dev.${NC}"
@@ -194,7 +192,7 @@ deploy_cloudflare() {
   echo -e "\n${MAGENTA}${BOLD}⚡ Deploying to Cloudflare Pages...${NC}"
 
   if [[ "${DRY_RUN}" == "true" ]]; then
-    echo -e "  ${YELLOW}[DRY RUN] Would run wrangler pages deploy for User & Admin Frontends.${NC}"
+    echo -e "  ${YELLOW}[DRY RUN] Would run wrangler pages deploy for the IMS web app.${NC}"
     return
   fi
 
@@ -214,14 +212,6 @@ deploy_cloudflare() {
     echo -e "  ${RED}❌ apps/ims-user/frontend/dist not found! Run build first.${NC}"
   fi
 
-  # 2. Admin Frontend Pages
-  echo -e "  • Deploying Admin Platform (dist/) to Cloudflare Pages..."
-  if [[ -d "${ROOT_DIR}/apps/ims-admin/frontend/dist" ]]; then
-    $WRANGLER_BIN pages deploy "${ROOT_DIR}/apps/ims-admin/frontend/dist" \
-      --project-name="zolexora-admin-web" \
-      --branch="${CURRENT_BRANCH}" \
-      --commit-dirty=true || echo -e "  ${YELLOW}⚠️ Cloudflare deploy requires 'wrangler login' or CLOUDFLARE_API_TOKEN.${NC}"
-  fi
   echo -e "  ${GREEN}✓ Cloudflare Pages deployment completed.${NC}"
 }
 

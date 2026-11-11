@@ -48,17 +48,15 @@ else
   echo -e "${GREEN}✓ Docker is already installed.${NC}"
 fi
 
-echo -e "${BLUE}${BOLD}[3/4] Configuring Network Firewall (Ports 80, 443, 8000, 8001)...${NC}"
+echo -e "${BLUE}${BOLD}[3/4] Configuring Network Firewall (Ports 80, 443, 8000)...${NC}"
 ufw allow 22/tcp || true
 ufw allow 80/tcp || true
 ufw allow 443/tcp || true
 ufw allow 8000/tcp || true
-ufw allow 8001/tcp || true
 # Oracle Linux iptables rules
 iptables -I INPUT 6 -m state --state NEW -p tcp --dport 80 -j ACCEPT 2>/dev/null || true
 iptables -I INPUT 6 -m state --state NEW -p tcp --dport 443 -j ACCEPT 2>/dev/null || true
 iptables -I INPUT 6 -m state --state NEW -p tcp --dport 8000 -j ACCEPT 2>/dev/null || true
-iptables -I INPUT 6 -m state --state NEW -p tcp --dport 8001 -j ACCEPT 2>/dev/null || true
 
 echo -e "${BLUE}${BOLD}[4/4] Starting Containerized Microservices...${NC}"
 REPO_DIR="/opt/zolexora-ims"
@@ -78,5 +76,4 @@ echo -e "\n${GREEN}${BOLD}══════════════════
 echo -e "${GREEN}${BOLD}  🎉 SUCCESS! Zolexora IMS is running 24/7 on your Always-Free VPS!   ${NC}"
 echo -e "${GREEN}${BOLD}  API Services:                                                       ${NC}"
 echo -e "  • User Core API:  http://$(curl -s ifconfig.me):8000/health"
-echo -e "  • Admin API:      http://$(curl -s ifconfig.me):8001/health"
 echo -e "${GREEN}${BOLD}══════════════════════════════════════════════════════════════════════${NC}\n"

@@ -26,14 +26,6 @@ jobs:
       services: |
         [
           {
-            "service": "admin-backend",
-            "file": "products/zolexora-ims/services/admin-api/Dockerfile"
-          },
-          {
-            "service": "admin-frontend",
-            "file": "products/zolexora-ims/apps/ims-admin/frontend/Dockerfile"
-          },
-          {
             "service": "user-backend",
             "file": "products/zolexora-ims/services/user-api/Dockerfile"
           },

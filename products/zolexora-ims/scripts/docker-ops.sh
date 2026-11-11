@@ -31,7 +31,7 @@ print_help() {
   echo -e "${BOLD}Commands:${NC}"
   echo "  up                Build and start all containers in background"
   echo "  down              Stop and remove all running containers"
-  echo "  build [service]   Build images (optional: user-api | admin-api | user-web | admin-web)"
+  echo "  build [service]   Build images (optional: ims-user-backend | ims-user-frontend | nginx)"
   echo "  restart [service] Restart all or specified container"
   echo "  logs [service]    Tail logs with timestamps and colors"
   echo "  ps                Display container status, ports, and health"
@@ -41,10 +41,9 @@ print_help() {
   echo "  help              Show this help manual"
   echo ""
   echo -e "${BOLD}Available Services:${NC}"
-  echo "  • user-api        (Core FastAPI: 8000)"
-  echo "  • admin-api       (Admin FastAPI: 8001)"
-  echo "  • user-web        (POS & Inventory Frontend: 3000)"
-  echo "  • admin-web       (SuperAdmin Control Center: 3001)"
+  echo "  • ims-user-backend   (FastAPI: 4050)"
+  echo "  • ims-user-frontend  (POS & Inventory web: 3000)"
+  echo "  • nginx              (gateway: 3072)"
   exit 0
 }
 
@@ -119,7 +118,7 @@ cmd_shell() {
   local svc="${1:-}"
   if [[ -z "${svc}" ]]; then
     echo -e "${RED}❌ Service name required for shell.${NC}"
-    echo "Options: user-api | admin-api | user-web | admin-web"
+    echo "Options: ims-user-backend | ims-user-frontend | nginx"
     exit 1
   fi
   echo -e "${CYAN}Connecting to ${svc}...${NC}"

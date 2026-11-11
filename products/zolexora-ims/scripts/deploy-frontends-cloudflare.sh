@@ -77,7 +77,7 @@ main() {
 
   echo -e "${BLUE}${BOLD}[1/2] Compiling Production Frontend Bundles...${NC}"
   cd "${ROOT_DIR}"
-  pnpm --filter "@zolexora/*" build
+  pnpm --filter "@zolexora/ims-user-frontend..." build
   echo -e "${GREEN}✓ Production builds ready in dist/ folders.${NC}\n"
 
   echo -e "${BLUE}${BOLD}[2/2] Deploying to Cloudflare Global Edge Network...${NC}"
@@ -92,18 +92,6 @@ main() {
         echo -e "  ${YELLOW}⚠️ Cloudflare Pages deployment requires 'wrangler login' or CLOUDFLARE_API_TOKEN.${NC}"
       }
     echo -e "  ${GREEN}✓ User Frontend deployed: https://zolexora-ims-web.pages.dev${NC}\n"
-  fi
-
-  # 2. Admin Frontend
-  if [[ "${TARGET}" == "all" || "${TARGET}" == "admin" ]]; then
-    echo -e "  • Deploying ${CYAN}zolexora-admin-web${NC} (SuperAdmin Control Center)..."
-    $WRANGLER_BIN pages deploy "${ROOT_DIR}/apps/ims-admin/frontend/dist" \
-      --project-name="zolexora-admin-web" \
-      --branch="${BRANCH}" \
-      --commit-dirty=true || {
-        echo -e "  ${YELLOW}⚠️ Cloudflare Pages deployment requires 'wrangler login' or CLOUDFLARE_API_TOKEN.${NC}"
-      }
-    echo -e "  ${GREEN}✓ Admin Frontend deployed: https://zolexora-admin-web.pages.dev${NC}\n"
   fi
 
   echo -e "${GREEN}${BOLD}══════════════════════════════════════════════════════════════════════${NC}"

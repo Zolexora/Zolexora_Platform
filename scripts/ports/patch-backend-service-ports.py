@@ -33,12 +33,8 @@ replace_in_files('products/zolexora-tms', '8000', '4030')
 print("Patching Zolexora IMS User (8000 -> 4050)")
 replace_in_files('products/zolexora-ims/apps/ims-user', '8000', '4050')
 
-print("Patching Zolexora IMS Admin (8001 -> 4051)")
-replace_in_files('products/zolexora-ims/apps/ims-admin', '8001', '4051')
-
 # Also IMS root package.json for its scripts
 replace_in_files('products/zolexora-ims', '8000', '4050', extensions=['.json'])
-replace_in_files('products/zolexora-ims', '8001', '4051', extensions=['.json'])
 
 print("Patching The Textile Care (8000 -> 4010)")
 replace_in_files('products/zolexora-textile-care', '8000', '4010')

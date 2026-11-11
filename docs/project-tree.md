@@ -77,6 +77,8 @@ Zolexora_Platform/
 │   │   ├── zolexora-ai-e2e.yml
 │   │   ├── zolexora-ai-nightlytests.yml
 │   │   ├── zolexora-appsuite-docker.yml
+│   │   ├── zolexora-auth-service-ci.yml
+│   │   ├── zolexora-auth-service-docker.yml
 │   │   ├── zolexora-clarityfi-docker.yml
 │   │   ├── zolexora-clarityfi-release.yml
 │   │   ├── zolexora-engage-docker.yml
@@ -113,27 +115,43 @@ Zolexora_Platform/
 │   └── settings.json
 ├── apps/
 │   ├── zolexora-auth-service/
+│   │   ├── scripts/
+│   │   │   └── docker-start.sh
 │   │   ├── src/
+│   │   │   ├── business/  (1 files)
 │   │   │   ├── config/  (3 files)
 │   │   │   ├── middleware/  (1 files)
 │   │   │   ├── plugins/  (2 files)
-│   │   │   ├── repositories/  (4 files)
-│   │   │   ├── routes/  (8 files)
-│   │   │   ├── services/  (4 files)
+│   │   │   ├── rbac/  (2 files)
+│   │   │   ├── repositories/  (3 files)
+│   │   │   ├── routes/  (15 files)
+│   │   │   ├── services/  (14 files)
+│   │   │   ├── stores/  (3 files)
+│   │   │   ├── verification/  (3 files)
 │   │   │   ├── app.ts
+│   │   │   ├── db.ts
 │   │   │   └── index.ts
 │   │   ├── test/
+│   │   │   ├── helpers/  (5 files)
 │   │   │   ├── adversarial-auth-tracks.test.ts
 │   │   │   ├── adversarial.test.ts
 │   │   │   ├── app.test.ts
+│   │   │   ├── business-team.test.ts
 │   │   │   ├── infisical-secrets.test.ts
+│   │   │   ├── security-regressions.test.ts
+│   │   │   ├── setup.ts
 │   │   │   ├── storage-kyc.test.ts
 │   │   │   ├── storage-media.test.ts
 │   │   │   ├── token.test.ts
-│   │   │   └── turnstile.test.ts
+│   │   │   ├── track1-firebase.test.ts
+│   │   │   ├── turnstile.test.ts
+│   │   │   └── verification.test.ts
 │   │   ├── .infisical.json
+│   │   ├── compose.yaml
+│   │   ├── Dockerfile
 │   │   ├── package.json
-│   │   └── tsconfig.json
+│   │   ├── tsconfig.json
+│   │   └── vitest.config.ts
 │   └── zolexora-platform-admin/
 │       ├── backend/
 │       │   ├── app/  (23 files)
@@ -143,7 +161,7 @@ Zolexora_Platform/
 │       │   └── requirements.txt
 │       ├── frontend/
 │       │   ├── public/  (2 files)
-│       │   ├── src/  (20 files)
+│       │   ├── src/  (27 files)
 │       │   ├── tests/  (1 files)
 │       │   ├── .eslintrc.json
 │       │   ├── Dockerfile
@@ -159,14 +177,15 @@ Zolexora_Platform/
 │       │   └── docker-start.sh
 │       ├── .infisical.json
 │       ├── compose.yaml
-│       ├── Dockerfile.nginx
-│       └── nginx.conf
+│       └── Dockerfile.nginx
 ├── docs/
 │   ├── architecture/
 │   │   ├── adrs/
 │   │   │   ├── 0001-record-architecture-decisions.md
 │   │   │   ├── 0002-monorepo-tooling.md
-│   │   │   └── 0003-secrets-management-infisical.md
+│   │   │   ├── 0003-secrets-management-infisical.md
+│   │   │   ├── 0004-shared-identity-org-profile-kyc.md
+│   │   │   └── 0005-roles-permissions-engine.md
 │   │   ├── infrastructure/
 │   │   │   ├── 01-supabase-management.md
 │   │   │   ├── 02-mongodb-management.md
@@ -185,6 +204,7 @@ Zolexora_Platform/
 │   │   └── unified-firebase-auth-guide.md
 │   ├── architecture.md
 │   ├── ports.md
+│   ├── project-tree.md
 │   └── secrets.md
 ├── infrastructure/
 │   ├── cloud/
@@ -233,8 +253,8 @@ Zolexora_Platform/
 │   │   ├── tsconfig.json
 │   │   └── wrangler.jsonc
 │   ├── auth-client/
-│   │   ├── src/  (20 files)
-│   │   ├── tests/  (6 files)
+│   │   ├── src/  (23 files)
+│   │   ├── tests/  (8 files)
 │   │   ├── package.json
 │   │   ├── README.md
 │   │   ├── tsconfig.json
@@ -417,25 +437,16 @@ Zolexora_Platform/
 │   │   ├── compose.yaml
 │   │   └── README.md
 │   ├── zolexora-ims/
-│   │   ├── .cursor/
-│   │   │   └── mcp.json
-│   │   ├── .gemini/
-│   │   │   ├── config/  (3 files)
-│   │   │   ├── GEMINI.md
-│   │   │   ├── mcp_config.json
-│   │   │   └── settings.json
-│   │   ├── .vscode/
-│   │   │   ├── mcp.json
-│   │   │   └── settings.json
 │   │   ├── apps/
-│   │   │   ├── ims-admin/  (17 files)
-│   │   │   └── ims-user/  (63 files)
+│   │   │   └── ims-user/  (58 files)
+│   │   ├── database/
+│   │   │   └── migrations/  (1 files)
 │   │   ├── docs/
 │   │   │   ├── planning/  (2 files)
 │   │   │   └── security/  (2 files)
 │   │   ├── infra/
-│   │   │   ├── cloudflare-pages/  (2 files)
-│   │   │   ├── fly/  (2 files)
+│   │   │   ├── cloudflare-pages/  (1 files)
+│   │   │   ├── fly/  (1 files)
 │   │   │   ├── koyeb/  (1 files)
 │   │   │   └── render/  (1 files)
 │   │   ├── nginx-conf.d/
@@ -453,15 +464,12 @@ Zolexora_Platform/
 │   │   │   ├── run-all-tests.sh
 │   │   │   └── setup.sh
 │   │   ├── services/
-│   │   │   ├── admin-api/  (9 files)
-│   │   │   ├── shared/  (4 files)
-│   │   │   └── user-api/  (12 files)
+│   │   │   └── user-api/  (16 files)
 │   │   ├── .gitignore
 │   │   ├── .infisical.json
 │   │   ├── compose.yaml
+│   │   ├── docker-entrypoint-env.sh
 │   │   ├── Dockerfile.nginx
-│   │   ├── GEMINI.md
-│   │   ├── nginx.conf
 │   │   ├── package.json
 │   │   └── README.md
 │   ├── zolexora-ironclub/
@@ -495,8 +503,8 @@ Zolexora_Platform/
 │   │   └── README.md
 │   ├── zolexora-marketplace/
 │   │   ├── apps/
-│   │   │   ├── portals/  (74 files)
-│   │   │   └── storefronts/  (123 files)
+│   │   │   ├── portals/  (79 files)
+│   │   │   └── storefronts/  (127 files)
 │   │   ├── contracts/
 │   │   │   ├── marketplace/  (1 files)
 │   │   │   └── zolexora-erp/  (21 files)
@@ -515,8 +523,10 @@ Zolexora_Platform/
 │   │   ├── nginx-conf.d/
 │   │   │   └── default.conf
 │   │   ├── packages/
+│   │   │   ├── mobile-sign-in/  (7 files)
 │   │   │   ├── shared-api/  (9 files)
-│   │   │   └── shared-config/  (3 files)
+│   │   │   ├── shared-config/  (3 files)
+│   │   │   └── sign-in/  (9 files)
 │   │   ├── scripts/
 │   │   │   ├── tests/  (1 files)
 │   │   │   ├── check-openapi-drift.sh
@@ -526,9 +536,10 @@ Zolexora_Platform/
 │   │   │   ├── validate-doc-links.py
 │   │   │   ├── validate-erp-contracts.py
 │   │   │   ├── validate-postgresql-schema.py
-│   │   │   └── verify-workspace.mjs
+│   │   │   ├── verify-workspace.mjs
+│   │   │   └── web-env-config.sh
 │   │   ├── services/
-│   │   │   └── marketplace-api/  (228 files)
+│   │   │   └── marketplace-api/  (232 files)
 │   │   ├── .gitignore
 │   │   ├── .infisical.json
 │   │   ├── compose.yaml
@@ -637,8 +648,8 @@ Zolexora_Platform/
 │   ├── zolexora-tms/
 │   │   ├── apps/
 │   │   │   ├── tms-admin/  (19 files)
-│   │   │   ├── tms-mobile/  (32 files)
-│   │   │   └── tms-web/  (62 files)
+│   │   │   ├── tms-mobile/  (35 files)
+│   │   │   └── tms-web/  (61 files)
 │   │   ├── docs/
 │   │   │   ├── agents/  (2 files)
 │   │   │   ├── architecture/  (25 files)
@@ -653,7 +664,7 @@ Zolexora_Platform/
 │   │   │   ├── docker-start.sh
 │   │   │   └── local-start.sh
 │   │   ├── services/
-│   │   │   └── backend/  (186 files)
+│   │   │   └── backend/  (187 files)
 │   │   ├── .gitignore
 │   │   ├── .infisical.json
 │   │   ├── compose.yaml
@@ -671,10 +682,15 @@ Zolexora_Platform/
 │   ├── auth/
 │   │   └── assign-admin.py
 │   ├── db/
+│   │   ├── auth-service-admin-schema.sql
 │   │   ├── auth-service-schema.sql
+│   │   ├── auth-service-upgrade-identity.sql
+│   │   ├── auth-service-upgrade-track1-firebase.sql
+│   │   ├── auth-service-upgrade-users.sql
 │   │   ├── migrate-schemas.sql
 │   │   └── stress_test_render_postgres.py
 │   ├── dev/
+│   │   ├── project-tree.py
 │   │   ├── scaffold-product-docker.sh
 │   │   ├── setup-cli-ecosystem.sh
 │   │   ├── setup-devcontainer.sh

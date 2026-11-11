@@ -18,8 +18,8 @@ CYAN='\033[0;36m'
 BOLD='\033[1m'
 NC='\033[0m'
 
-DB_NAME="zolexora-ims-db"
-MIGRATIONS_DIR="${ROOT_DIR}/apps/ims-user/migrations"
+DB_NAME="zolexora-ims-1-db"
+MIGRATIONS_DIR="${ROOT_DIR}/database/migrations"
 BACKUPS_DIR="${ROOT_DIR}/backups"
 MODE="--local"
 

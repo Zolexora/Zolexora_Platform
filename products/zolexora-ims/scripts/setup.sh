@@ -235,10 +235,6 @@ log_info "Installing Python dependencies for User API (FastAPI)..."
 python3 -m pip install -q --no-cache-dir -r "$ROOT_DIR/services/user-api/requirements.txt"
 log_success "User API dependencies installed."
 
-log_info "Installing Python dependencies for Admin API (FastAPI)..."
-python3 -m pip install -q --no-cache-dir -r "$ROOT_DIR/services/admin-api/requirements.txt"
-log_success "Admin API dependencies installed."
-
 log_info "Installing Frontend monorepo packages via pnpm..."
 pnpm install
 log_success "Frontend packages installed cleanly."
@@ -305,8 +301,8 @@ fi
 log_step "Step 9: Running Automated Health & Test Suite"
 
 log_info "Running backend pytest suite..."
-python3 -m pytest -q "$ROOT_DIR/services/user-api/tests" "$ROOT_DIR/services/admin-api/tests"
-log_success "Backend pytest tests: ALL PASSED (11/11)."
+(cd "$ROOT_DIR/services/user-api" && python3 -m pytest -q tests)
+log_success "Backend pytest tests passed."
 
 # ------------------------------------------------------------------------------
 # STEP 10: Launch Selection
@@ -320,12 +316,10 @@ echo -e "${BOLD}Your monorepo is fully configured, secure, authenticated, and re
 echo ""
 echo -e "Available Services:"
 echo -e "  • ${BOLD}POS & Inventory Frontend:${RESET}    ${CYAN}http://localhost:3000${RESET}  (/pos/dashboard & /inv/dashboard)"
-echo -e "  • ${BOLD}SuperAdmin Portal:${RESET}            ${CYAN}http://localhost:3001${RESET}  (Organization & Tenant Control)"
 echo -e "  • ${BOLD}Core User API (FastAPI):${RESET}      ${CYAN}http://localhost:8000${RESET}  (Docs at /docs)"
-echo -e "  • ${BOLD}SuperAdmin API (FastAPI):${RESET}     ${CYAN}http://localhost:8001${RESET}  (Docs at /docs)"
 echo ""
 echo -e "${BOLD}How would you like to launch the apps right now?${RESET}"
-echo -e "  ${BOLD}[1]${RESET} Launch via ${GREEN}Docker Compose${RESET} (All 4 apps containerized)"
+echo -e "  ${BOLD}[1]${RESET} Launch via ${GREEN}Docker Compose${RESET} (web, API and gateway)"
 echo -e "  ${BOLD}[2]${RESET} Launch via ${BLUE}Local Dev Servers${RESET} (pnpm dev + uvicorn)"
 echo -e "  ${BOLD}[3]${RESET} Exit (I will run them myself)"
 echo ""
@@ -338,15 +332,13 @@ case "$launch_choice" in
     docker compose pull --ignore-pull-failures
     bash "${ROOT_DIR}/../../scripts/setup/with-infisical.sh" "${ROOT_DIR}" docker compose up -d
     echo ""
-    log_success "All 4 containers are live and running!"
+    log_success "IMS containers are running."
     docker compose ps
     ;;
   2)
     log_info "Launching development servers..."
     pnpm dev:user:frontend &
-    pnpm dev:admin:frontend &
     cd "$ROOT_DIR/services/user-api" && uvicorn main:app --port 8000 &
-    cd "$ROOT_DIR/services/admin-api" && uvicorn main:app --port 8001 &
     wait
     ;;
   *)

@@ -42,29 +42,3 @@ services:
         value: "@cloudflare-api-token"
       - key: CLOUDFLARE_D1_DATABASE_ID
         value: "@cloudflare-d1-database-id"
-
-  # ----------------------------------------------------------------------------
-  # 2. Zolexora Admin API
-  # ----------------------------------------------------------------------------
-  - name: zolexora-admin-api
-    type: web
-    instance_type: nano
-    regions:
-      - fra
-    docker:
-      dockerfile: products/zolexora-ims/services/admin-api/Dockerfile
-    ports:
-      - port: 8001
-        path: /
-    routes:
-      - path: /
-    health_checks:
-      - path: /health
-        port: 8001
-        interval: 30
-        timeout: 5
-    env:
-      - key: PORT
-        value: "8001"
-      - key: ENVIRONMENT
-        value: "production"

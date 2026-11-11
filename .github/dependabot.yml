@@ -15,7 +15,6 @@ updates:
       - /apps/zolexora-platform-admin/backend
       - /products/zolexora-ai/services/api
       - /products/zolexora-ai/services/api/backend
-      - /products/zolexora-ims/services/admin-api
       - /products/zolexora-ims/services/user-api
       - /products/zolexora-ironclub/services/backend
       - /products/zolexora-marketplace/services/marketplace-api

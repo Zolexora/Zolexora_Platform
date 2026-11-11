@@ -88,10 +88,8 @@ run_check() {
   # Define targets: NAME | URL | EXPECTED_CODE
   local targets=(
     "User Core API (FastAPI)|http://127.0.0.1:8000/health|200"
-    "Admin API (FastAPI)|http://127.0.0.1:8001/health|200"
     "Aggregator API (Swiggy/Zomato)|http://127.0.0.1:8000/api/v1/aggregator/platforms|200"
     "User POS & Inventory Web|http://127.0.0.1:3000|200"
-    "Admin Control Center Web|http://127.0.0.1:3001|200"
   )
 
   if [[ "${JSON_OUTPUT}" == "true" ]]; then

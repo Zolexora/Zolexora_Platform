@@ -21,25 +21,21 @@ permissions:
 jobs:
   backend-tests:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        service: [user-api, admin-api]
     defaults:
       run:
-        working-directory: products/zolexora-ims/services/${{ matrix.service }}
+        working-directory: products/zolexora-ims/services/user-api
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-python
         with:
           python-version: '3.11'
-          requirements: products/zolexora-ims/services/${{ matrix.service }}/requirements.txt
+          requirements: products/zolexora-ims/services/user-api/requirements.txt
           packages: pytest
-      - run: PYTHONPATH=.:../shared pytest tests
+      - run: PYTHONPATH=. pytest tests
 
   frontend-build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-node
-      - run: pnpm --filter "@zolexora/ims-user-frontend..." --filter @zolexora/ims-admin-frontend build
+      - run: pnpm --filter "@zolexora/ims-user-frontend..." build
