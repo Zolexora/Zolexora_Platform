@@ -1,23 +1,23 @@
 # Zolexora Platform — Product Descriptions
 
-Always use these canonical names, descriptions and paths. Never use the old folder names (`ZolexoraMarketplace`, `TheTextileCare`, `Zolexora_TMS`, …): every product lives at `products/zolexora-<product>/`. The full list is in [products/README.md](../../products/README.md).
+Always use these canonical names, descriptions and paths. Never use the old folder names (`ZolexoraMarketplace`, `TheTextileCare`, `Zolexora_TMS`, …): every product lives at `apps/<category>/<product>/` (`core-platform/zolexora-<name>` or `standalone-apps/<name>`). The full list is in [apps/README.md](../../apps/README.md).
 
 ## Product Reference Table
 
 | Product | Description | Path |
 | --- | --- | --- |
-| Zolexora Shop | Ecom marketplace app | `products/zolexora-shop/` |
-| The Textile Care | Laundry app | `products/zolexora-textile-care/` |
-| Zolexora TMS | Transport management | `products/zolexora-tms/` |
-| Zolexora IMS | Inventory management | `products/zolexora-ims/` |
-| Zolexora ERP | ERP on Frappe/ERPNext | `products/zolexora-erp/` |
-| Zolexora IronClub | Gym management | `products/zolexora-ironclub/` |
-| Rento Easy | Property rental | `products/zolexora-rentoeasy/` |
-| Zolexora AppSuite | Commissioned-app intake + dev console | `products/zolexora-appsuite/` |
-| Zolexora AI | Multi-agent codebase generator | `products/zolexora-ai/` |
-| Zolexora Engage | WhatsApp driver dispatch | `products/zolexora-engage/` |
-| ClarityFi | Personal finance tracker | `products/zolexora-clarityfi/` |
-| Maun Kavach | Encrypted messenger | `products/zolexora-maunkavach/` |
+| Zolexora Shop | Ecom marketplace app | `apps/core-platform/zolexora-shop/` |
+| The Textile Care | Laundry app | `apps/standalone-apps/textile-care/` |
+| Zolexora TMS | Transport management | `apps/core-platform/zolexora-tms/` |
+| Zolexora IMS | Inventory management | `apps/core-platform/zolexora-ims/` |
+| Zolexora ERP | ERP on Frappe/ERPNext | `apps/core-platform/zolexora-erp/` |
+| Zolexora IronClub | Gym management | `apps/standalone-apps/ironclub/` |
+| Rento Easy | Property rental | `apps/standalone-apps/rentoeasy/` |
+| Zolexora AppSuite | Commissioned-app intake + dev console | `apps/core-platform/zolexora-appsuite/` |
+| Zolexora AI | Multi-agent codebase generator | `apps/core-platform/zolexora-ai/` |
+| Zolexora Engage | WhatsApp driver dispatch | `apps/core-platform/zolexora-engage/` |
+| ClarityFi | Personal finance tracker | `apps/standalone-apps/clarityfi/` |
+| Maun Kavach | Encrypted messenger | `apps/standalone-apps/maunkavach/` |
 
 ## Zolexora Shop — Ecom Marketplace App
 
@@ -28,7 +28,7 @@ Always use these canonical names, descriptions and paths. Never use the old fold
 - Backend: FastAPI (Python 3.12) · PostgreSQL · Redis — `services/marketplace-api/`
 - Frontend: Next.js (web) + Expo React Native (mobile)
 - Product-local packages: `packages/shared-api`, `packages/shared-config`
-- Path: `products/zolexora-shop/`
+- Path: `apps/core-platform/zolexora-shop/`
 
 ## The Textile Care — Laundry App
 
@@ -41,4 +41,4 @@ Always use these canonical names, descriptions and paths. Never use the old fold
 - Backend: FastAPI (Python 3.12) · PostgreSQL · Redis — `services/backend/`
 - Frontend: Next.js (web) + Expo React Native (mobile)
 - Key domains: orders, pickups, driver assignment, pricing, billing, settlement, memberships, multi-tenant RBAC
-- Path: `products/zolexora-textile-care/`
+- Path: `apps/standalone-apps/textile-care/`

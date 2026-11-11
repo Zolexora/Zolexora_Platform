@@ -6,7 +6,7 @@ def git(*a): return subprocess.run(['git', *a], capture_output=True, text=True, 
 
 files = [f for f in git('ls-files') if f]
 subs = {l.split()[1] for l in git('submodule', 'status')}
-DEPTH = {'products': 4, 'apps': 4, 'docs': 4, 'scripts': 4, 'infrastructure': 4, 'tests': 4, 'packages': 3, '.github': 3, '.agents': 3}
+DEPTH = {'apps': 5, 'docs': 4, 'scripts': 4, 'infrastructure': 4, 'tests': 4, 'packages': 3, '.github': 3, '.agents': 3}
 COLLAPSE = {'.agents/skills/': 'vendored agent skills'}
 
 tree = {}
@@ -41,7 +41,7 @@ Generated from `git ls-files` by `python3 scripts/dev/project-tree.py`; rerun it
 
 | Path | Holds |
 | --- | --- |
-| `products/zolexora-<product>/` | One product each: `apps/` (frontends, mobile), `services/` (backends), `packages/` (product-local libs), `scripts/docker-start.sh`, `docs/`, `compose.yaml`, `.infisical.json` |
+| `apps/<category>/<product>/` (`core-platform/zolexora-<name>` or `standalone-apps/<name>`) | One product each: `apps/` (frontends, mobile), `services/` (backends), `packages/` (product-local libs), `scripts/docker-start.sh`, `docs/`, `compose.yaml`, `.infisical.json` |
 | `apps/` | Cross-product apps: `zolexora-auth-service` (identity, :3081), `zolexora-platform-admin` (:3095) |
 | `packages/` | Shared libraries, published as `@zolexora/<folder>` |
 | `infrastructure/` | Shared Dockerfiles, nginx gateway image, database schemas/migrations, Supabase, Render spec |
@@ -49,7 +49,7 @@ Generated from `git ls-files` by `python3 scripts/dev/project-tree.py`; rerun it
 | `tests/e2e/` | Cross-product E2E suites (auth-service, TMS) |
 | `docs/` | Architecture, ADRs, ports, secrets, this tree |
 | `.agents/` | AI agent rules, skills, MCP config |
-| `.github/` | Workflows (`zolexora-<product>-<purpose>.yml`), composite actions, templates |
+| `.github/` | Workflows (`<product-folder>-<purpose>.yml`), composite actions, templates |
 
 ```text
 {chr(10).join(out)}

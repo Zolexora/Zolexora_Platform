@@ -1,7 +1,7 @@
 #!/bin/bash
 # Zolexora Platform — Product Docker Scaffolder & Auditor
 # Usage:
-#   bash scripts/dev/scaffold-product-docker.sh <product-name>
+#   bash scripts/dev/scaffold-product-docker.sh <category>/<product>   (e.g. core-platform/zolexora-foo, standalone-apps/foo)
 #   bash scripts/dev/scaffold-product-docker.sh --check
 set -e
 
@@ -14,13 +14,13 @@ GREEN='\033[0;32m'; BLUE='\033[0;34m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; CY
 print_usage() {
   echo -e "${CYAN}Zolexora Platform — Product Docker Scaffolder & Auditor${NC}"
   echo "Usage:"
-  echo "  $0 <product-name>       Scaffold Docker setup & GHCR workflow for a product"
-  echo "  $0 --check              Audit all products in products/ for Docker & GHCR compliance"
+  echo "  $0 <category>/<product> Scaffold Docker setup & GHCR workflow for a product"
+  echo "  $0 --check              Audit all products in apps/{core-platform,standalone-apps}/ for Docker & GHCR compliance"
   echo "  $0 --help               Display this help message"
   echo ""
   echo "Example:"
-  echo "  $0 rentoeasy"
-  echo "  $0 clarityfi"
+  echo "  $0 standalone-apps/rentoeasy"
+  echo "  $0 core-platform/zolexora-tms"
 }
 
 # ── AUDIT MODE (--check) ─────────────────────────────────────────────────────
@@ -32,7 +32,7 @@ run_audit() {
   printf "%-24s %-12s %-16s %-14s %-12s\n" "PRODUCT" "COMPOSE" "GHCR IMAGE" "PULL POLICY" "START SCRIPT"
   echo "----------------------------------------------------------------------------------------"
 
-  for dir in products/*/; do
+  for dir in apps/core-platform/*/ apps/standalone-apps/*/; do
     [ -d "$dir" ] || continue
     pname=$(basename "$dir")
     [ "$pname" = "README.md" ] && continue
@@ -78,8 +78,8 @@ if [ "$1" = "--help" ] || [ -z "$1" ]; then
   exit 0
 fi
 
-PRODUCT="$1"
-PRODUCT_DIR="products/$PRODUCT"
+PRODUCT="$(basename "$1")"
+PRODUCT_DIR="apps/$1"
 
 if [ ! -d "$PRODUCT_DIR" ]; then
   echo -e "${YELLOW}Notice: Directory '$PRODUCT_DIR' does not exist yet. Creating it...${NC}"
@@ -124,9 +124,9 @@ else
 fi
 
 # 1b. Infisical link (the only secret source)
-if [ ! -f "products/${PRODUCT}/.infisical.json" ]; then
-  printf '{\n  "workspaceId": "c4ac7d07-f26f-4fb8-bd04-6d3e037079f9",\n  "defaultEnvironment": "dev",\n  "secretsPath": "/%s"\n}\n' "$PRODUCT" > "products/${PRODUCT}/.infisical.json"
-  echo -e "  ${GREEN}✔ Created products/${PRODUCT}/.infisical.json — set secretsPath to its Infisical folder (e.g. /Zolexora_TMS).${NC}"
+if [ ! -f "${PRODUCT_DIR}/.infisical.json" ]; then
+  printf '{\n  "workspaceId": "c4ac7d07-f26f-4fb8-bd04-6d3e037079f9",\n  "defaultEnvironment": "dev",\n  "secretsPath": "/%s"\n}\n' "$PRODUCT" > "${PRODUCT_DIR}/.infisical.json"
+  echo -e "  ${GREEN}✔ Created ${PRODUCT_DIR}/.infisical.json — set secretsPath to its Infisical folder (e.g. /Zolexora_TMS).${NC}"
 fi
 
 # 2. docker-start.sh
@@ -135,7 +135,7 @@ if [ ! -f "$START_SCRIPT" ]; then
   cat <<'EOF' > "$START_SCRIPT"
 #!/bin/bash
 # {start|stop|restart|pull|status|logs} [services...] — runs this stack from GHCR images built in CI.
-exec bash "$(dirname "$0")/../../../scripts/docker/product-stack.sh" "$(dirname "$0")/.." "$@"
+exec bash "$(dirname "$0")/../../../../scripts/docker/product-stack.sh" "$(dirname "$0")/.." "$@"
 EOF
   chmod +x "$START_SCRIPT"
   echo -e "  ${GREEN}✔ Created $START_SCRIPT (wraps scripts/docker/product-stack.sh)${NC}"
@@ -153,7 +153,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'products/${PRODUCT}/**'
+      - '${PRODUCT_DIR}/**'
       - 'packages/**'
       - 'pnpm-lock.yaml'
       - '${WORKFLOW_FILE}'
@@ -170,8 +170,8 @@ jobs:
       product: ${SLUG}
       services: |
         [
-          {"service": "backend", "file": "products/${PRODUCT}/Dockerfile.api"},
-          {"service": "web", "file": "products/${PRODUCT}/Dockerfile.web"}
+          {"service": "backend", "file": "${PRODUCT_DIR}/Dockerfile.api"},
+          {"service": "web", "file": "${PRODUCT_DIR}/Dockerfile.web"}
         ]
 EOF
   echo -e "  ${GREEN}✔ Created $WORKFLOW_FILE using reusable-docker-ghcr.yml${NC}"
@@ -185,11 +185,11 @@ echo -e "${GREEN}===============================================================
 echo -e "To wire into package.json, add these scripts:"
 echo -e "${CYAN}"
 cat <<EOF
-    "docker:${PRODUCT}:start": "bash products/${PRODUCT}/scripts/docker-start.sh start",
-    "docker:${PRODUCT}:stop": "bash products/${PRODUCT}/scripts/docker-start.sh stop",
-    "docker:${PRODUCT}:restart": "bash products/${PRODUCT}/scripts/docker-start.sh restart",
-    "docker:${PRODUCT}:pull": "bash products/${PRODUCT}/scripts/docker-start.sh pull",
-    "docker:${PRODUCT}:logs": "bash products/${PRODUCT}/scripts/docker-start.sh logs",
-    "docker:${PRODUCT}:status": "bash products/${PRODUCT}/scripts/docker-start.sh status",
+    "docker:${SLUG}:start": "bash ${PRODUCT_DIR}/scripts/docker-start.sh start",
+    "docker:${SLUG}:stop": "bash ${PRODUCT_DIR}/scripts/docker-start.sh stop",
+    "docker:${SLUG}:restart": "bash ${PRODUCT_DIR}/scripts/docker-start.sh restart",
+    "docker:${SLUG}:pull": "bash ${PRODUCT_DIR}/scripts/docker-start.sh pull",
+    "docker:${SLUG}:logs": "bash ${PRODUCT_DIR}/scripts/docker-start.sh logs",
+    "docker:${SLUG}:status": "bash ${PRODUCT_DIR}/scripts/docker-start.sh status",
 EOF
 echo -e "${NC}"

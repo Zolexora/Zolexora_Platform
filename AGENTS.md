@@ -6,10 +6,11 @@ This repository is a Turborepo/pnpm monorepo housing the Zolexora ecosystem prod
 
 ## 1. Monorepo Organization
 
-- **`products/`**: 12 independent vertical products ([products/README.md](products/README.md)), all named `zolexora-<product>` (e.g. `zolexora-tms`, `zolexora-shop`, `zolexora-textile-care`). Each uses the same layout: `apps/` (frontends, mobile), `services/` (backends), `packages/` (product-local libs), `scripts/`, `docs/` — see [docs/architecture.md](docs/architecture.md#product-layout).
 - **`packages/`**: All shared libraries and configs, one folder per `@zolexora/<folder>` package (e.g. `utils`, `tsconfig`, `api-shield`, `user-auth-firebase`).
-- **`apps/`**: Cross-product apps: `zolexora-auth-service`, `zolexora-platform-admin`.
-- **`.github/`**: Workflows are named `zolexora-<product>-<purpose>.yml`; image builds call `reusable-docker-ghcr.yml`; shared steps live in `.github/actions/` (`setup-node`, `setup-python`, `docker-login`, `infisical`, `notify`).
+- **`apps/`**: Everything deployable ([apps/README.md](apps/README.md)).
+  - **Cross-product apps**: `apps/zolexora-auth-service`, `apps/zolexora-platform-admin`.
+  - **Products**: 12 independent vertical products in two categories: `apps/core-platform/zolexora-<product>` (tms, shop, ims, ai, appsuite, engage, erp) and `apps/standalone-apps/<product>` (textile-care, ironclub, rentoeasy, clarityfi, maunkavach — no `zolexora-` prefix). Each uses the same layout: `apps/` (frontends, mobile), `services/` (backends), `packages/` (product-local libs), `scripts/`, `docs/` — see [docs/architecture.md](docs/architecture.md#product-layout).
+- **`.github/`**: Workflows are named `<product-folder>-<purpose>.yml` (e.g. `zolexora-tms-docker.yml`, `textile-care-ci.yml`); image builds call `reusable-docker-ghcr.yml`; shared steps live in `.github/actions/` (`setup-node`, `setup-python`, `docker-login`, `infisical`, `notify`).
 - **Naming**: npm packages `@zolexora/<product>-<app>`; GHCR images `ghcr.io/zolexora/zolexora-<product>-<service>`.
 - **`scripts/`**: Monorepo orchestration scripts (`scripts/dev/`, `scripts/setup/`, `scripts/docker/`).
 - **`infrastructure/`**: Shared Dockerfiles, nginx gateway image, database schemas/migrations, Supabase config.
@@ -26,7 +27,7 @@ This repository is a Turborepo/pnpm monorepo housing the Zolexora ecosystem prod
 When creating, updating, or debugging Docker infrastructure for any product:
 
 1. **Follow the Rule**: Adhere strictly to [.agents/rules/docker-product-standards.md](file:///.agents/rules/docker-product-standards.md).
-2. **Images are built only in GitHub CI, never locally**: no `build:` blocks in compose, no `docker build` / `compose build` / `--build` in scripts. CI (`reusable-docker-ghcr.yml`) builds every image with the monorepo root (`.`) as context; Dockerfiles use root-relative paths (e.g. `COPY products/<product>/...`).
+2. **Images are built only in GitHub CI, never locally**: no `build:` blocks in compose, no `docker build` / `compose build` / `--build` in scripts. CI (`reusable-docker-ghcr.yml`) builds every image with the monorepo root (`.`) as context; Dockerfiles use root-relative paths (e.g. `COPY apps/<category>/<product>/...`).
 3. **Pull, then start**: startup scripts run a strict `docker compose pull` and then `up -d`. A failed pull stops with a message (run the product's image workflow / log in to GHCR); never fall back to building or `--ignore-pull-failures`.
 4. **GHCR Image & Pull Policy** in every `compose.yaml`:
    ```yaml
@@ -34,14 +35,14 @@ When creating, updating, or debugging Docker infrastructure for any product:
    pull_policy: missing
    ```
 5. **Standard Subcommands**:
-   Every `products/<product>/scripts/docker-start.sh` wraps `scripts/docker/product-stack.sh` and supports:
+   Every `apps/<category>/<product>/scripts/docker-start.sh` wraps `scripts/docker/product-stack.sh` and supports:
    `start`, `stop`, `restart`, `pull`, `status`, `logs`.
 6. **Standard Package Scripts**:
    Register `docker:<product>:{start|stop|restart|pull|logs|status}` in root `package.json`.
 7. **Automate with Scaffolder**:
    When adding a new product or scripts, run:
    ```bash
-   bash scripts/dev/scaffold-product-docker.sh <product-name>
+   bash scripts/dev/scaffold-product-docker.sh <category>/<product>   # e.g. standalone-apps/foo
    ```
 8. **Safe Cleanup (Never use raw `docker system prune -a`)**:
    - `pnpm docker:clean`: Fast, safe cleanup of stopped containers, unused networks, and dangling build cache.

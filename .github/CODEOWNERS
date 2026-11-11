@@ -2,13 +2,13 @@
 * @Zolexora/core-team
 
 # Zolexora Shop
-/products/zolexora-shop/services/ @Zolexora/backend-team
-/products/zolexora-shop/contracts/ @Zolexora/backend-team
-/products/zolexora-shop/apps/ @Zolexora/frontend-team
-/products/zolexora-shop/packages/ @Zolexora/frontend-team
+/apps/core-platform/zolexora-shop/services/ @Zolexora/backend-team
+/apps/core-platform/zolexora-shop/contracts/ @Zolexora/backend-team
+/apps/core-platform/zolexora-shop/apps/ @Zolexora/frontend-team
+/apps/core-platform/zolexora-shop/packages/ @Zolexora/frontend-team
 
 # The Textile Care
-/products/zolexora-textile-care/ @TheTextileCare
+/apps/standalone-apps/textile-care/ @TheTextileCare
 
 # Infrastructure & CI/CD
 /infrastructure/ @Zolexora/devops-team

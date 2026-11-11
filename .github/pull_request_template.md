@@ -6,7 +6,7 @@ Closes #
 
 ## Products / areas touched
 
-<!-- e.g. products/zolexora-tms, apps/zolexora-auth-service, packages/auth-client, .github -->
+<!-- e.g. apps/core-platform/zolexora-tms, apps/zolexora-auth-service, packages/auth-client, .github -->
 
 ## How it was verified
 

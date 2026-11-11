@@ -7,7 +7,7 @@ body:
     id: where
     attributes:
       label: Page or file
-      placeholder: docs/ports.md, products/zolexora-tms/README.md, ...
+      placeholder: docs/ports.md, apps/core-platform/zolexora-tms/README.md, ...
     validations:
       required: true
   - type: textarea

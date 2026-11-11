@@ -42,7 +42,7 @@ echo -e "  ${GREEN}✔ Done${NC}"
 echo -e "\n${YELLOW}[4/4] Scanning for Dockerized products...${NC}"
 PRODUCTS=(); PATHS=()
 
-for dir in products/*/ apps/*/; do
+for dir in apps/core-platform/*/ apps/standalone-apps/*/ apps/*/; do
   [ -d "$dir" ] || continue
   pname=$(basename "$dir")
   if [ -f "$dir/compose.yaml" ]; then

@@ -8,7 +8,7 @@ Closes #
 
 ## Checklist
 
-- [ ] Docker builds use the repo root as context (`context: ../../`, `dockerfile: products/<p>/Dockerfile.<svc>`)
+- [ ] Docker builds use the repo root as context (`context: ../../../`, `dockerfile: apps/<category>/<p>/Dockerfile.<svc>`)
 - [ ] Compose services have `image: ${..._IMAGE:-ghcr.io/zolexora/zolexora-<product>-<svc>:latest}` and `pull_policy: missing`
 - [ ] No local image builds: compose has no `build:`, start scripts wrap `scripts/docker/product-stack.sh` (strict pull + `up -d`, through `scripts/setup/with-infisical.sh`)
 - [ ] `docker compose config` passes for every touched stack

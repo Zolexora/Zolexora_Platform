@@ -10,7 +10,7 @@
 set -eo pipefail
 
 WORKSPACE_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || (cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd))"
-DOCS_FILE="${WORKSPACE_ROOT}/products/zolexora-tms/docs/ecosystem_and_tooling/ecosystem_cli_guide.md"
+DOCS_FILE="${WORKSPACE_ROOT}/apps/core-platform/zolexora-tms/docs/ecosystem_and_tooling/ecosystem_cli_guide.md"
 MCP_CANONICAL="${WORKSPACE_ROOT}/mcp.json"
 DOT_ENV="${WORKSPACE_ROOT}/.env"
 

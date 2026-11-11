@@ -1,0 +1,20 @@
+FROM node:22-alpine AS builder
+RUN corepack enable && corepack prepare pnpm@9.12.3 --activate
+WORKDIR /app
+
+COPY apps/core-platform/zolexora-engage/tsconfig.base.json ./tsconfig.base.json
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+COPY packages ./packages
+COPY apps/core-platform/zolexora-engage ./apps/core-platform/zolexora-engage
+RUN ln -s /app/packages /packages
+RUN pnpm config set ignore-scripts true && pnpm install --no-frozen-lockfile
+ARG PORT=3040
+ENV PORT=$PORT
+RUN pnpm --filter "@zolexora/engage-api-server" build
+
+FROM node:22-alpine
+WORKDIR /app/apps/core-platform/zolexora-engage/services/api
+COPY --from=builder /app/apps/core-platform/zolexora-engage/services/api/dist ./dist
+RUN mkdir -p /app && ln -s /app/apps/core-platform/zolexora-engage/services/api/dist /app/dist
+EXPOSE 3000
+CMD ["node", "--enable-source-maps", "./dist/index.mjs"]

@@ -487,7 +487,7 @@ class TestTier5Domain6EnvAndResources(unittest.TestCase):
 
     def test_adv_33_subcommand_flag_passthrough_in_script(self):
         """Verify startup script passes subcommands and flags (e.g. ps --services) cleanly."""
-        script = get_repo_root() / "products" / "zolexora-tms" / "scripts" / "docker-start.sh"
+        script = get_repo_root() / "apps" / "core-platform" / "zolexora-tms" / "scripts" / "docker-start.sh"
         rc, stdout, stderr = run_cmd([str(script), "ps", "--services"], timeout=10.0)
         self.assertEqual(rc, 0)
         services = set(stdout.strip().split())
@@ -543,7 +543,7 @@ class TestTier5Domain7OperationalHardening(unittest.TestCase):
 
     def test_adv_37_nginx_websocket_upgrade_headers_configured(self):
         """Verify Nginx default.conf defines WebSocket Upgrade and Connection headers."""
-        conf_path = get_repo_root() / "products" / "zolexora-tms" / "nginx-conf.d" / "default.conf"
+        conf_path = get_repo_root() / "apps" / "core-platform" / "zolexora-tms" / "nginx-conf.d" / "default.conf"
         self.assertTrue(conf_path.exists())
         content = conf_path.read_text(encoding="utf-8")
         self.assertIn("proxy_set_header Upgrade $http_upgrade;", content)
@@ -551,7 +551,7 @@ class TestTier5Domain7OperationalHardening(unittest.TestCase):
 
     def test_adv_38_script_invocation_from_external_cwd(self):
         """Verify startup script executes properly when invoked from external working directory."""
-        script = get_repo_root() / "products" / "zolexora-tms" / "scripts" / "docker-start.sh"
+        script = get_repo_root() / "apps" / "core-platform" / "zolexora-tms" / "scripts" / "docker-start.sh"
         rc, stdout, stderr = run_cmd([str(script), "status"], cwd=Path("/tmp"), timeout=10.0)
         self.assertEqual(rc, 0)
         self.assertIn("tms-backend", stdout)

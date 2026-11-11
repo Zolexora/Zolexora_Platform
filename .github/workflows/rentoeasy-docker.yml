@@ -1,0 +1,51 @@
+name: Rento Easy — Docker images
+
+# Builds every image in apps/standalone-apps/rentoeasy/compose.yaml and pushes ghcr.io/zolexora/zolexora-rentoeasy-<service>:{latest,<sha>}.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/standalone-apps/rentoeasy/**'
+      - 'packages/**'
+      - 'infrastructure/containers/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/rentoeasy-docker.yml'
+      - '.github/workflows/reusable-docker-ghcr.yml'
+      - '.github/actions/docker-login/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  images:
+    uses: ./.github/workflows/reusable-docker-ghcr.yml
+    with:
+      product: rentoeasy
+      services: |
+        [
+          {
+            "service": "api",
+            "file": "apps/standalone-apps/rentoeasy/Dockerfile.api"
+          },
+          {
+            "service": "nginx",
+            "file": "apps/standalone-apps/rentoeasy/Dockerfile.nginx"
+          },
+          {
+            "service": "web-admin",
+            "file": "apps/standalone-apps/rentoeasy/Dockerfile.web",
+            "build-args": "APP_DIR=apps/standalone-apps/rentoeasy/apps/web-admin"
+          },
+          {
+            "service": "web-owner",
+            "file": "apps/standalone-apps/rentoeasy/Dockerfile.web",
+            "build-args": "APP_DIR=apps/standalone-apps/rentoeasy/apps/web-owner"
+          },
+          {
+            "service": "web-tenant",
+            "file": "apps/standalone-apps/rentoeasy/Dockerfile.web",
+            "build-args": "APP_DIR=apps/standalone-apps/rentoeasy/apps/web-tenant"
+          }
+        ]

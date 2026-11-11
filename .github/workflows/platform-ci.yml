@@ -18,13 +18,13 @@ jobs:
         run: git ls-files '*.sh' | grep -v '/services/frappe/' | xargs -r -n1 bash -n
       - name: Compose files are valid
         run: |
-          for f in apps/*/compose.yaml products/*/compose.yaml; do
+          for f in apps/*/compose.yaml apps/core-platform/*/compose.yaml apps/standalone-apps/*/compose.yaml; do
             echo "::group::$f"; docker compose -f "$f" config -q; echo "::endgroup::"
           done
       - name: Compose only pulls CI-built GHCR images (no local builds)
         run: |
           bad=0
-          for f in apps/*/compose.yaml products/*/compose.yaml; do
+          for f in apps/*/compose.yaml apps/core-platform/*/compose.yaml apps/standalone-apps/*/compose.yaml; do
             docker compose -f "$f" config --no-interpolate --format json | F="$f" python3 -c '
           import json, os, sys
           d = json.load(sys.stdin); f = os.environ["F"]; bad = 0

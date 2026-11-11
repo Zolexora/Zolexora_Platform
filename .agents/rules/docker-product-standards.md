@@ -6,10 +6,10 @@ This rule governs how all products in the Zolexora Platform monorepo must config
 
 ## 1. Product Directory Layout
 
-Each product resides under `products/<product-name>/` and follows this layout:
+Each product resides under `apps/<category>/<product>/` (`core-platform/zolexora-<name>` or `standalone-apps/<name>`) and follows this layout:
 
 ```text
-products/zolexora-<product>/
+apps/<category>/<product>/
 ├── apps/                             # Frontends, mobile, edge workers
 ├── services/                         # Backends (FastAPI, Express, NestJS, Frappe)
 ├── packages/                         # Product-local shared code
@@ -63,7 +63,7 @@ Heavy images (>500MB) cause 20–40 minute network pull delays. Every Dockerfile
 
 0. **Root Build Context & Root-Relative COPY Paths**:
    - CI builds every image with the monorepo root (`.`) as context; never a product subfolder.
-   - Because of that, all `COPY` commands must use repository root-relative paths (e.g., `COPY products/<product>/apps/web ...`, `COPY package.json ...`).
+   - Because of that, all `COPY` commands must use repository root-relative paths (e.g., `COPY apps/<category>/<product>/apps/web ...`, `COPY package.json ...`).
    - Never assume the Dockerfile's local directory is the build context.
 1. **Separate Builder and Runner Stages**:
    - Compilers (`build-essential`, `gcc`, `make`, build SDKs) must ONLY live in the `builder` stage.
@@ -133,12 +133,12 @@ Instead, use the two-tier platform commands:
 When a product is dockerized, register these scripts in root `package.json`:
 
 ```json
-"docker:<product>:start": "bash products/<product>/scripts/docker-start.sh start",
-"docker:<product>:stop": "bash products/<product>/scripts/docker-start.sh stop",
-"docker:<product>:restart": "bash products/<product>/scripts/docker-start.sh restart",
-"docker:<product>:pull": "bash products/<product>/scripts/docker-start.sh pull",
-"docker:<product>:logs": "bash products/<product>/scripts/docker-start.sh logs",
-"docker:<product>:status": "bash products/<product>/scripts/docker-start.sh status"
+"docker:<product>:start": "bash apps/<category>/<product>/scripts/docker-start.sh start",
+"docker:<product>:stop": "bash apps/<category>/<product>/scripts/docker-start.sh stop",
+"docker:<product>:restart": "bash apps/<category>/<product>/scripts/docker-start.sh restart",
+"docker:<product>:pull": "bash apps/<category>/<product>/scripts/docker-start.sh pull",
+"docker:<product>:logs": "bash apps/<category>/<product>/scripts/docker-start.sh logs",
+"docker:<product>:status": "bash apps/<category>/<product>/scripts/docker-start.sh status"
 ```
 
 ---
@@ -147,15 +147,15 @@ When a product is dockerized, register these scripts in root `package.json`:
 
 Every product's image workflow is a thin caller of `.github/workflows/reusable-docker-ghcr.yml`:
 
-- **Trigger**: push to `main` with `paths: ['products/zolexora-<product>/**', 'packages/**', ...]` + `workflow_dispatch`.
+- **Trigger**: push to `main` with `paths: ['apps/<category>/<product>/**', 'packages/**', ...]` + `workflow_dispatch`.
 - **Permissions**: `packages: write`, `contents: read`.
 - **Input `services`**: a JSON list with one entry per image the product's `compose.yaml` uses (this is the only place build settings live):
-  `[{"service":"backend","file":"products/zolexora-<product>/services/backend/Dockerfile","build-args":"K=V","target":""}]`.
+  `[{"service":"backend","file":"apps/<category>/<product>/services/backend/Dockerfile","build-args":"K=V","target":""}]`.
 - The reusable workflow builds from the repo root, logs in via `.github/actions/docker-login`, and pushes
   `ghcr.io/zolexora/zolexora-<product>-<service>:<sha>` plus `:latest` from `main` only (a manual run on another
   branch pushes `:<branch>` instead, so it never replaces what everyone pulls), with Buildx GHA cache and OCI labels.
 - To run a branch build locally, set the compose image variable, e.g.
-  `IMS_USER_BACKEND_IMAGE=ghcr.io/zolexora/zolexora-ims-user-backend:<branch> bash products/zolexora-ims/scripts/docker-start.sh start`.
+  `IMS_USER_BACKEND_IMAGE=ghcr.io/zolexora/zolexora-ims-user-backend:<branch> bash apps/core-platform/zolexora-ims/scripts/docker-start.sh start`.
 - The image name must equal the compose `image:` default.
 - Builds that need build-time secrets (e.g. AppSuite `NEXT_PUBLIC_*`) load them with `.github/actions/infisical`.
 

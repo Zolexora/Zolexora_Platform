@@ -1,0 +1,3 @@
+# Build context: repo root (docker build -f apps/core-platform/zolexora-engage/Dockerfile.nginx .)
+FROM nginx:alpine
+COPY apps/core-platform/zolexora-engage/nginx-conf.d/ /etc/nginx/conf.d/

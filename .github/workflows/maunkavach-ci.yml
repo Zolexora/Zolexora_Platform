@@ -1,0 +1,75 @@
+name: Maun Kavach — CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/standalone-apps/maunkavach/apps/web/**'
+      - 'apps/standalone-apps/maunkavach/services/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/maunkavach-ci.yml'
+  pull_request:
+    paths:
+      - 'apps/standalone-apps/maunkavach/apps/web/**'
+      - 'apps/standalone-apps/maunkavach/services/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/maunkavach-ci.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  web:
+    name: Web build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node
+        with:
+          node-version: '22'
+          install: --frozen-lockfile --ignore-scripts
+      - run: pnpm --filter @zolexora/maunkavach-web build
+
+  backend:
+    name: Backend test and startup
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/standalone-apps/maunkavach/services/backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npm test
+      # Startup check runs on main only, with secrets from Infisical (MaunKavach folder).
+      - if: github.event_name == 'push'
+        uses: ./.github/actions/infisical
+        with:
+          client-id: ${{ secrets.INFISICAL_CLIENT_ID }}
+          client-secret: ${{ secrets.INFISICAL_CLIENT_SECRET }}
+          project-id: c4ac7d07-f26f-4fb8-bd04-6d3e037079f9
+          path: /Zolexora_MaunKavach
+      - name: Required keys present
+        if: github.event_name == 'push'
+        run: |
+          missing=0
+          for key in DATABASE_URL SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY SUPABASE_STORAGE_BUCKET JWT_SECRET; do
+            [ -n "${!key:-}" ] || { echo "::error title=Missing Infisical key::$key (MaunKavach folder)"; missing=1; }
+          done
+          exit "$missing"
+      - name: Start backend and check health
+        if: github.event_name == 'push'
+        env:
+          PORT: 8080
+        run: |
+          npm start > /tmp/maunkavach-backend.log 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 10); do
+            curl -fsS http://127.0.0.1:8080/health && exit 0
+            sleep 1
+          done
+          cat /tmp/maunkavach-backend.log
+          exit 1

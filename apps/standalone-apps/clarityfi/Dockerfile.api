@@ -1,0 +1,30 @@
+FROM node:22-alpine AS builder
+
+RUN corepack enable && corepack prepare pnpm@9 --activate
+WORKDIR /app
+
+# Copy workspace config and dependencies
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages ./packages
+COPY apps/standalone-apps/clarityfi ./apps/standalone-apps/clarityfi
+
+# Install dependencies and build
+RUN pnpm config set ignore-scripts true && pnpm install --no-frozen-lockfile
+RUN pnpm --filter @zolexora/clarityfi-api build
+
+FROM node:22-alpine
+WORKDIR /app/apps/standalone-apps/clarityfi/services/api
+COPY --from=builder /app/apps/standalone-apps/clarityfi/services/api/dist ./dist
+
+# Create alias link so worker threads resolve accurately from either path
+RUN mkdir -p /app && ln -sf /app/apps/standalone-apps/clarityfi/services/api/dist /app/dist
+
+ENV PORT=8080 \
+    NODE_ENV=production
+
+EXPOSE 8080
+
+HEALTHCHECK --interval=15s --timeout=5s --retries=3 \
+  CMD wget -qO- http://localhost:8080/api/healthz || exit 1
+
+CMD ["node", "--enable-source-maps", "./dist/index.mjs"]

@@ -3,9 +3,9 @@ name: Zolexora AI — E2E (Playwright)
 on:
   push:
     branches: [main]
-    paths: ['products/zolexora-ai/apps/web/**', '.github/workflows/zolexora-ai-e2e.yml']
+    paths: ['apps/core-platform/zolexora-ai/apps/web/**', '.github/workflows/zolexora-ai-e2e.yml']
   pull_request:
-    paths: ['products/zolexora-ai/apps/web/**', '.github/workflows/zolexora-ai-e2e.yml']
+    paths: ['apps/core-platform/zolexora-ai/apps/web/**', '.github/workflows/zolexora-ai-e2e.yml']
 
 permissions:
   contents: read
@@ -28,19 +28,19 @@ jobs:
 
       - name: Serve built frontend
         run: |
-          npx http-server products/zolexora-ai/apps/web/dist -p 8080 &
+          npx http-server apps/core-platform/zolexora-ai/apps/web/dist -p 8080 &
           sleep 2
 
       - name: Install Playwright browsers
         run: |
-          cd products/zolexora-ai/apps/web/e2e
+          cd apps/core-platform/zolexora-ai/apps/web/e2e
           npx playwright install --with-deps chromium
 
       - name: Run E2E tests
         env:
           E2E_BASE_URL: http://localhost:8080
         run: |
-          cd products/zolexora-ai/apps/web/e2e
+          cd apps/core-platform/zolexora-ai/apps/web/e2e
           npx playwright test
 
       - name: Upload Playwright report
@@ -48,5 +48,5 @@ jobs:
         if: always()
         with:
           name: playwright-report
-          path: products/zolexora-ai/apps/web/e2e/playwright-report/
+          path: apps/core-platform/zolexora-ai/apps/web/e2e/playwright-report/
           retention-days: 14

@@ -1,40 +1,40 @@
 # Auto-labels PRs by changed paths. Used by .github/workflows/labeler.yml (actions/labeler v5).
 product:ai:
   - changed-files:
-      - any-glob-to-any-file: 'products/zolexora-ai/**'
+      - any-glob-to-any-file: 'apps/core-platform/zolexora-ai/**'
 product:appsuite:
   - changed-files:
-      - any-glob-to-any-file: 'products/zolexora-appsuite/**'
+      - any-glob-to-any-file: 'apps/core-platform/zolexora-appsuite/**'
 product:clarityfi:
   - changed-files:
-      - any-glob-to-any-file: 'products/zolexora-clarityfi/**'
+      - any-glob-to-any-file: 'apps/standalone-apps/clarityfi/**'
 product:engage:
   - changed-files:
-      - any-glob-to-any-file: 'products/zolexora-engage/**'
+      - any-glob-to-any-file: 'apps/core-platform/zolexora-engage/**'
 product:erp:
   - changed-files:
-      - any-glob-to-any-file: 'products/zolexora-erp/**'
+      - any-glob-to-any-file: 'apps/core-platform/zolexora-erp/**'
 product:ims:
   - changed-files:
-      - any-glob-to-any-file: 'products/zolexora-ims/**'
+      - any-glob-to-any-file: 'apps/core-platform/zolexora-ims/**'
 product:ironclub:
   - changed-files:
-      - any-glob-to-any-file: 'products/zolexora-ironclub/**'
+      - any-glob-to-any-file: 'apps/standalone-apps/ironclub/**'
 product:marketplace:
   - changed-files:
-      - any-glob-to-any-file: 'products/zolexora-shop/**'
+      - any-glob-to-any-file: 'apps/core-platform/zolexora-shop/**'
 product:maunkavach:
   - changed-files:
-      - any-glob-to-any-file: 'products/zolexora-maunkavach/**'
+      - any-glob-to-any-file: 'apps/standalone-apps/maunkavach/**'
 product:rentoeasy:
   - changed-files:
-      - any-glob-to-any-file: 'products/zolexora-rentoeasy/**'
+      - any-glob-to-any-file: 'apps/standalone-apps/rentoeasy/**'
 product:textile-care:
   - changed-files:
-      - any-glob-to-any-file: 'products/zolexora-textile-care/**'
+      - any-glob-to-any-file: 'apps/standalone-apps/textile-care/**'
 product:tms:
   - changed-files:
-      - any-glob-to-any-file: 'products/zolexora-tms/**'
+      - any-glob-to-any-file: 'apps/core-platform/zolexora-tms/**'
 area:auth-service:
   - changed-files:
       - any-glob-to-any-file:

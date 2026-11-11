@@ -1,11 +1,11 @@
 name: Zolexora AI — Docker images
 
-# Builds every image in products/zolexora-ai/compose.yaml and pushes ghcr.io/zolexora/zolexora-ai-<service>:{latest,<sha>}.
+# Builds every image in apps/core-platform/zolexora-ai/compose.yaml and pushes ghcr.io/zolexora/zolexora-ai-<service>:{latest,<sha>}.
 on:
   push:
     branches: [main]
     paths:
-      - 'products/zolexora-ai/**'
+      - 'apps/core-platform/zolexora-ai/**'
       - 'packages/**'
       - 'infrastructure/containers/**'
       - 'pnpm-lock.yaml'
@@ -27,15 +27,15 @@ jobs:
         [
           {
             "service": "backend",
-            "file": "products/zolexora-ai/services/api/Dockerfile",
+            "file": "apps/core-platform/zolexora-ai/services/api/Dockerfile",
             "target": "production"
           },
           {
             "service": "frontend",
-            "file": "products/zolexora-ai/apps/web/Dockerfile"
+            "file": "apps/core-platform/zolexora-ai/apps/web/Dockerfile"
           },
           {
             "service": "nginx",
-            "file": "products/zolexora-ai/Dockerfile.nginx"
+            "file": "apps/core-platform/zolexora-ai/Dockerfile.nginx"
           }
         ]

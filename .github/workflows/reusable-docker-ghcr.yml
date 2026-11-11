@@ -10,7 +10,7 @@ on:
         required: true
         type: string
       services:
-        description: 'JSON array: [{"service":"backend","file":"products/zolexora-tms/services/backend/Dockerfile","build-args":"A=1","target":"","context":"."}]'
+        description: 'JSON array: [{"service":"backend","file":"apps/core-platform/zolexora-tms/services/backend/Dockerfile","build-args":"A=1","target":"","context":"."}]'
         required: true
         type: string
 

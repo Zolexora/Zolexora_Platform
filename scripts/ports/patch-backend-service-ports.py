@@ -22,24 +22,24 @@ def replace_in_files(directory, old_str, new_str, extensions=None):
                 pass
 
 print("Patching Zolexora AI (8000 -> 4090)")
-replace_in_files('products/zolexora-ai', '8000', '4090')
+replace_in_files('apps/core-platform/zolexora-ai', '8000', '4090')
 
 print("Patching Zolexora Shop (8000 -> 4100)")
-replace_in_files('products/zolexora-shop', '8000', '4100')
+replace_in_files('apps/core-platform/zolexora-shop', '8000', '4100')
 
 print("Patching Zolexora TMS (8000 -> 4030)")
-replace_in_files('products/zolexora-tms', '8000', '4030')
+replace_in_files('apps/core-platform/zolexora-tms', '8000', '4030')
 
 print("Patching Zolexora IMS User (8000 -> 4050)")
-replace_in_files('products/zolexora-ims/apps/ims-user', '8000', '4050')
+replace_in_files('apps/core-platform/zolexora-ims/apps/ims-user', '8000', '4050')
 
 # Also IMS root package.json for its scripts
-replace_in_files('products/zolexora-ims', '8000', '4050', extensions=['.json'])
+replace_in_files('apps/core-platform/zolexora-ims', '8000', '4050', extensions=['.json'])
 
 print("Patching The Textile Care (8000 -> 4010)")
-replace_in_files('products/zolexora-textile-care', '8000', '4010')
+replace_in_files('apps/standalone-apps/textile-care', '8000', '4010')
 
 print("Patching Rento Easy (8000 -> 4020)")
-replace_in_files('products/zolexora-rentoeasy', '8000', '4020')
+replace_in_files('apps/standalone-apps/rentoeasy', '8000', '4020')
 
 print("Done.")

@@ -4,14 +4,14 @@ on:
   push:
     branches: [main]
     paths:
-      - 'products/zolexora-ims/**'
+      - 'apps/core-platform/zolexora-ims/**'
       - 'packages/**'
       - 'pnpm-lock.yaml'
       - '.github/workflows/zolexora-ims-ci.yml'
       - '.github/actions/**'
   pull_request:
     paths:
-      - 'products/zolexora-ims/**'
+      - 'apps/core-platform/zolexora-ims/**'
       - 'packages/**'
       - 'pnpm-lock.yaml'
       - '.github/workflows/zolexora-ims-ci.yml'
@@ -25,13 +25,13 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: products/zolexora-ims/services/user-api
+        working-directory: apps/core-platform/zolexora-ims/services/user-api
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-python
         with:
           python-version: '3.11'
-          requirements: products/zolexora-ims/services/user-api/requirements.txt
+          requirements: apps/core-platform/zolexora-ims/services/user-api/requirements.txt
           packages: pytest
       - run: PYTHONPATH=. pytest tests
 
