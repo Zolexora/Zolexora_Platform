@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-python
         with:
           python-version: ${{ env.PYTHON_VERSION }}
@@ -41,7 +41,7 @@ jobs:
     outputs:
       image_uri: ${{ steps.image.outputs.uri }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Validate Azure secrets
         env:
@@ -106,7 +106,7 @@ jobs:
     timeout-minutes: 20
     environment: production
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Validate deployment secrets
         env:
