@@ -28,7 +28,7 @@ jobs:
           {
             "service": "admin-web",
             "file": "infrastructure/containers/docker/Dockerfile.nextjs",
-            "build-args": "APP_DIR=apps/core-platform/zolexora-shop/apps/portals/marketplace-admin/web\nAPP_NAME=@zolexora/shop-admin"
+            "build-args": "APP_DIR=apps/core-platform/zolexora-shop/apps/admin\nAPP_NAME=@zolexora/shop-admin"
           },
           {
             "service": "backend",
@@ -38,7 +38,7 @@ jobs:
           {
             "service": "mahila-web",
             "file": "infrastructure/containers/docker/Dockerfile.cra",
-            "build-args": "APP_DIR=apps/core-platform/zolexora-shop/apps/storefronts/mahila-madel/web\nAPP_NAME=@zolexora/shop-mahila-madel-web"
+            "build-args": "APP_DIR=apps/core-platform/zolexora-shop/apps/web/mahila-madel\nAPP_NAME=@zolexora/shop-mahila-madel-web"
           },
           {
             "service": "nginx",
@@ -47,11 +47,11 @@ jobs:
           {
             "service": "seller-web",
             "file": "infrastructure/containers/docker/Dockerfile.nextjs",
-            "build-args": "APP_DIR=apps/core-platform/zolexora-shop/apps/portals/seller/web\nAPP_NAME=@zolexora/shop-seller-web"
+            "build-args": "APP_DIR=apps/core-platform/zolexora-shop/apps/web/seller\nAPP_NAME=@zolexora/shop-seller-web"
           },
           {
             "service": "shop-web",
             "file": "infrastructure/containers/docker/Dockerfile.nextjs",
-            "build-args": "APP_DIR=apps/core-platform/zolexora-shop/apps/storefronts/zolexora-shop/web\nAPP_NAME=@zolexora/shop-web"
+            "build-args": "APP_DIR=apps/core-platform/zolexora-shop/apps/web/shop\nAPP_NAME=@zolexora/shop-web"
           }
         ]
