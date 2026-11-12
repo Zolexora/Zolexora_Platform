@@ -4,7 +4,7 @@ import { useAuthStore } from "@/store";
 import { useAuth } from "@zolexora/auth-client/react";
 import { setActiveOrganizationId } from "@zolexora/shop-sign-in";
 import { authApi } from "@/lib/api";
-import { User, Mail, Coins, Shield, Save, Loader2 } from "lucide-react";
+import { User, Mail, Shield, Save, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 
@@ -80,9 +80,8 @@ export default function SettingsPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 gap-4">
         {[
-          { icon: Coins, label: "Coin Balance", value: user.coin_balance?.toLocaleString(), color: "text-amber-700 bg-amber-50" },
           { icon: Shield, label: "Account Status", value: user.is_active ? "Active" : "Suspended", color: user.is_active ? "text-green-700 bg-green-50" : "text-red-600 bg-red-50" },
           { icon: User, label: "Email Verified", value: user.is_email_verified ? "Yes" : "No", color: user.is_email_verified ? "text-green-700 bg-green-50" : "text-amber-700 bg-amber-50" },
         ].map(({ icon: Icon, label, value, color }) => (

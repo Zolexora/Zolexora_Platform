@@ -38,7 +38,7 @@ This file is the shortest durable context for anyone resuming work on the reposi
 - Shared TypeScript packages are under `packages/`.
 - The root pnpm workspace owns exactly ten packages and rejects missing canonical paths.
 - FastAPI has a dynamic PostgreSQL-backed storefront resolver using `TRUSTED_PROXIES` for secure proxy/forwarded-host extraction.
-- Every PostgreSQL store (catalog, cart, orders, shipping, reels, wishlist) filters by storefront on all reads and writes.
+- Every PostgreSQL store (catalog, cart, orders, shipping, wishlist) filters by storefront on all reads and writes.
 - PostgreSQL migration chain up through `0010_erp_outbox_inbox` owns the canonical relational, identity/RBAC, multitenant isolation foundation, seller grants, master catalog, storefront listings, inventory ledgers, pricing, taxes, promotions, shopping carts, wishlists, checkout quotations, payment webhook receipts, payment transaction ledgers, order history, fulfillment records, returns, disputes, and asynchronous ERP integration patterns (outbox/inbox). Redis holds only expiring opaque sessions and verification state. The Oracle proof and revision are retained only as historical evidence.
 
 ## Target ownership

@@ -60,7 +60,7 @@ async def list_managed_users(
         total = await conn.fetchval(f"SELECT count(*) FROM public.users u {where}", *args)
         args.extend([limit, offset])
         rows = await conn.fetch(
-            f"""SELECT u.id, u.email, u.phone_number, u.full_name, p.name, p.coin_balance,
+            f"""SELECT u.id, u.email, u.phone_number, u.full_name, p.name,
                        u.status::text AS status, u.is_active, u.is_email_verified,
                        u.is_phone_verified,
                        u.created_at, u.last_login_at
@@ -92,7 +92,7 @@ async def update_user_status(
         active = patch.status == "active"
         await conn.execute("UPDATE public.users SET status=$2::user_status, is_active=$3, updated_at=NOW() WHERE id=$1", target, patch.status, active)
         await _audit(conn, admin, request, "USER_STATUS_CHANGED", user_id, {"from": current["status"], "to": patch.status, "reason": patch.reason})
-        row = await conn.fetchrow("""SELECT u.id,u.email,u.phone_number,u.full_name,p.name,p.coin_balance,u.status::text AS status,
+        row = await conn.fetchrow("""SELECT u.id,u.email,u.phone_number,u.full_name,p.name,u.status::text AS status,
             u.is_active,u.is_email_verified,u.is_phone_verified,
             u.created_at,u.last_login_at
             FROM users u LEFT JOIN user_profile p ON p.user_id=u.id WHERE u.id=$1""", target)

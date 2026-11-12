@@ -219,7 +219,7 @@ class ShippingService:
         if not order:
             return {"error": "Order not found"}
 
-        if order.get("payment_status") != "paid" and order.get("payment_method") != "coins":
+        if order.get("payment_status") != "paid":
             return {"error": "Order must be paid before shipping"}
 
         # Get or create shipment

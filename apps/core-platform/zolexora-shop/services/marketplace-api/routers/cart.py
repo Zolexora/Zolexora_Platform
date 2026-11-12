@@ -1,5 +1,5 @@
-"""Cart, checkout quote and checkout. The cart, prices, stock and coins are PostgreSQL; placing
-an order reserves stock, spends coins, closes the cart and stores the orders in one transaction."""
+"""Cart, checkout quote and checkout. The cart, prices and stock are PostgreSQL; placing an
+order reserves stock, closes the cart and stores the orders in one transaction."""
 
 import base64
 import hashlib
@@ -23,7 +23,6 @@ from commerce import cart as cart_store
 from commerce import orders as order_store
 from commerce import stock
 from core.config import settings
-from commerce import coins
 from core.deps import shopper
 from models.primitives import EntityId, Money, UTCDateTime
 from shared.database.postgres import pg_conn_dep
@@ -155,16 +154,14 @@ def _get(line, name):
 
 
 async def place_orders(pg, buyer_id: str, storefront_key: str, orders: list[dict], *,
-                       coins_used: int = 0, paid: bool = False, quote_signature: str | None = None) -> None:
-    """One PostgreSQL transaction: hold (or, when paid, take) the stock, spend the coins, use up
-    the quote, close the cart, then store the orders. Any failure undoes all of it."""
+                       paid: bool = False, quote_signature: str | None = None) -> None:
+    """One PostgreSQL transaction: hold (or, when paid, take) the stock, use up the quote, close
+    the cart, then store the orders. Any failure undoes all of it."""
     async with pg.transaction():
         for order in orders:
             await stock.reserve(pg, order["id"], _lines_for_stock(order["lines"]), order.get("payment_method") or "")
             if paid:
                 await stock.consume(pg, order["id"])
-        if coins_used:
-            await coins.move(pg, buyer_id, -coins_used, "spent", f"Order {orders[0]['order_number']}", orders[0]["id"])
         if quote_signature:
             used = await pg.fetchval(
                 """UPDATE checkout_quote SET status = 'CONVERTED', updated_at = now()
@@ -374,7 +371,6 @@ async def checkout_quote(context: StorefrontContext=Depends(require_storefront_c
 class CheckoutRequest(BaseModel):
     payment_method: str
     delivery_address: dict = {}
-    coins_to_use: int = Field(default=0, ge=0)
 
 @router.post("/cart/checkout")
 async def checkout_stub(
@@ -389,15 +385,7 @@ async def checkout_stub(
     if not cart.lines:
         raise HTTPException(400, "Cart is empty")
     groups = _split(cart)
-    payable_minor = sum(g["subtotal"] + g["tax"] + g["shipping"] for g in groups)
-    # Coins cover at most the total and what the buyer holds; they are spent in the same
-    # transaction that places the orders, never just trusted.
-    coin_minor = round(settings.COIN_VALUE * 100)
-    coins_used = min(req.coins_to_use, payable_minor // coin_minor if coin_minor > 0 else 0)
-    if coins_used > int(user.get("coin_balance") or 0):
-        raise HTTPException(400, "Insufficient coin balance")
-    discount_left = coins_used * coin_minor
-    grand_total_minor = payable_minor - discount_left
+    grand_total_minor = sum(g["subtotal"] + g["tax"] + g["shipping"] for g in groups)
 
     now = datetime.now(timezone.utc).isoformat()
     checkout_id = str(uuid.uuid4())
@@ -406,8 +394,6 @@ async def checkout_stub(
     orders = []
     for g in groups:
         payable = g["subtotal"] + g["tax"] + g["shipping"]
-        discount = min(discount_left, payable)
-        discount_left -= discount
         orders.append({
             "id": str(uuid.uuid4()),
             "order_number": f"ORD-{datetime.now(timezone.utc).strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}",
@@ -428,9 +414,8 @@ async def checkout_stub(
             "item_subtotal": money(g["subtotal"]),
             "shipping_total": money(g["shipping"]),
             "tax_total": money(g["tax"]),
-            "discount_total": money(discount),
-            "coins_used": discount // coin_minor if coin_minor else 0,
-            "grand_total": money(payable - discount),
+            "discount_total": money(0),
+            "grand_total": money(payable),
             "shipments": [],
             "cancellations": [],
             "returns": [],
@@ -444,8 +429,8 @@ async def checkout_stub(
         for order in orders:
             order.update(fields)
 
-    async def place_order(paid: bool = False) -> None:
-        await place_orders(pg, user["id"], sf, orders, coins_used=coins_used, paid=paid)
+    async def place_order() -> None:
+        await place_orders(pg, user["id"], sf, orders)
 
     # Dynamically select gateway based on storefront config
     raw_provider = (
@@ -533,11 +518,6 @@ async def checkout_stub(
                 "key_id": settings.RAZORPAY_KEY_ID
             }
     
-    elif req.payment_method == "coins" and grand_total_minor == 0:
-        tag(payment_status="paid")
-        await place_order(paid=True)
-        return {"type": "coins", "order_id": order_id}
-
     elif req.payment_method == "upi":
         if not settings.UPI_ID:
             raise HTTPException(503, "UPI payments are not configured")

@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { adminApi } from "@/lib/api";
-import { Users, Package, Video, ShoppingBag, Eye, Zap, AlertTriangle, Clock, TrendingUp } from "lucide-react";
+import { Users, Package, ShoppingBag, AlertTriangle, Clock, TrendingUp } from "lucide-react";
 import { motion } from "framer-motion";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import Link from "next/link";
@@ -22,17 +22,13 @@ export default function AdminDashboard() {
   const cards = stats ? [
     {label:"Users",    value:stats.total_users,     icon:Users,      cls:"bg-blue-50 text-blue-600",    href:"/users"},
     {label:"Products", value:stats.active_products, icon:Package,    cls:"bg-orange-50 text-orange-600",href:"/products"},
-    {label:"Reels",    value:stats.total_reels,     icon:Video,      cls:"bg-pink-50 text-pink-600",    href:"/reels"},
-    {label:"Sponsored",value:stats.sponsored_reels, icon:Zap,        cls:"bg-gold/10 text-amber-700",   href:"/reels"},
     {label:"Paid Orders",value:stats.paid_orders,   icon:ShoppingBag,cls:"bg-green-50 text-green-600",  href:"/orders"},
-    {label:"Reel Views",value:stats.total_reel_views,icon:Eye,       cls:"bg-indigo-50 text-indigo-600",href:"/analytics"},
     {label:"Pending",  value:stats.pending_orders,  icon:Clock,      cls:"bg-amber-50 text-amber-700",  href:"/orders"},
   ] : [];
 
   const payData = analytics ? [
     {name:"Razorpay",value:analytics.razorpay_orders_30d,fill:"#3B82F6"},
     {name:"UPI",     value:analytics.upi_orders_30d,     fill:"#10B981"},
-    {name:"Coins",   value:analytics.coins_orders_30d,   fill:"#F59E0B"},
   ] : [];
 
   const growData = analytics ? [
@@ -67,7 +63,7 @@ export default function AdminDashboard() {
       )}
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {loading?[...Array(8)].map((_,i)=><div key={i} className="h-24 bg-gray-100 rounded-2xl animate-pulse"/>)
         :cards.map((c,i)=>(
           <motion.div key={c.label} initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{delay:i*0.05}}>
@@ -112,12 +108,12 @@ export default function AdminDashboard() {
         <div className="grid md:grid-cols-2 gap-4 text-xs">
           <div><p className="font-semibold text-orange-800 mb-1">☁️ Cloudinary (media)</p>
             <ul className="text-orange-700 space-y-0.5 list-disc list-inside">
-              <li>Product images → /products/</li><li>Reel videos → /reels/</li><li>User avatars → /avatars/</li>
+              <li>Product images → /products/</li><li>User avatars → /avatars/</li>
               <li className="text-gray-500">Free: 25GB + global CDN</li>
             </ul></div>
           <div><p className="font-semibold text-blue-800 mb-1">🔵 PostgreSQL</p>
             <ul className="text-blue-700 space-y-0.5 list-disc list-inside">
-              <li>catalog, stock, carts, orders</li><li>payments, shipments, pickup addresses</li><li>coins, reels, wishlists</li>
+              <li>catalog, stock, carts, orders</li><li>payments, shipments, pickup addresses</li><li>wishlists</li>
             </ul></div>
         </div>
       </div>

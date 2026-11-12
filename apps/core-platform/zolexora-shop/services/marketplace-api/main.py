@@ -14,13 +14,12 @@ from core.middleware import RequestIDMiddleware, SecurityHeadersMiddleware
 
 # ── Legacy routers (Sprint 3+ will migrate these) ────────────────────────────
 from routers.products import router as products_router
-from routers.reels import router as reels_router
 from routers.cart import router as cart_router
 from routers.wishlist import router as wishlist_router
 from routers.orders import orders_router
 from routers.admin_orders import admin_orders_router
 from routers.portal_catalog import admin_catalog_router, seller_catalog_router
-from routers.other import coins_router, subs_router, admin_router
+from routers.other import admin_router
 from shipping.router import router as shipping_router
 from shipping.webhooks import router as shipping_webhooks_router
 from routers.erp_webhooks import router as erp_webhooks_router
@@ -124,7 +123,6 @@ for prefix in [P, ""]:
 
     # ── Legacy routers (to be migrated in Sprint 3 & 4) ──────────────────────
     app.include_router(products_router,          prefix=prefix)
-    app.include_router(reels_router,             prefix=prefix)
     app.include_router(cart_router,              prefix=prefix)
     app.include_router(wishlist_router,          prefix=prefix)
     # admin_orders first: /orders/admin must not be captured by /orders/{order_id}
@@ -132,8 +130,6 @@ for prefix in [P, ""]:
     app.include_router(orders_router,            prefix=prefix)
     app.include_router(seller_catalog_router,    prefix=prefix)
     app.include_router(admin_catalog_router,     prefix=prefix)
-    app.include_router(coins_router,             prefix=prefix)
-    app.include_router(subs_router,              prefix=prefix)
     app.include_router(admin_router,             prefix=prefix)
     app.include_router(shipping_router,          prefix=prefix)
     app.include_router(shipping_webhooks_router, prefix=prefix)

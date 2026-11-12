@@ -12,7 +12,6 @@ class AdminUserItem(BaseModel):
     phone_number: str | None = None
     full_name: str
     name: str | None = None
-    coin_balance: int = 0
     status: Literal["active", "suspended", "banned", "pending_verification"]
     is_active: bool
     is_email_verified: bool

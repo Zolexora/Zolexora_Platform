@@ -3,9 +3,9 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useCartStore, useAuthStore } from "@/store";
-import { cartApi, coinsApi, usersApi, Address } from "@/lib/api";
+import { cartApi, usersApi, Address } from "@/lib/api";
 import {
-  Trash2, Plus, Minus, ShoppingBag, Coins, ArrowRight,
+  Trash2, Plus, Minus, ShoppingBag, ArrowRight,
   QrCode, Smartphone, CreditCard, CheckCircle, Copy, Loader2,
   MapPin, Check, PlusCircle, CheckCircle2, ShieldCheck, Phone,
 } from "lucide-react";
@@ -13,7 +13,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import toast from "react-hot-toast";
 
-type PayMethod = "razorpay" | "upi" | "coins";
+type PayMethod = "razorpay" | "upi";
 type Step = "cart" | "address" | "payment" | "upi_scan" | "done";
 
 interface Addr { name:string; phone:string; email:string; address:string; city:string; state:string; pincode:string; }
@@ -54,8 +54,6 @@ export default function CartPage() {
 
   const [step,       setStep]       = useState<Step>("cart");
   const [busy,       setBusy]       = useState(false);
-  const [coinBal,    setCoinBal]    = useState(0);
-  const [coinsToUse, setCoinsToUse] = useState(0);
   const [payMethod,  setPayMethod]  = useState<PayMethod>("razorpay");
   const [upiData,    setUpiData]    = useState<UpiData | null>(null);
   const [utr,        setUtr]        = useState("");
@@ -220,7 +218,6 @@ export default function CartPage() {
   useEffect(()=>{
     if(!user){router.push("/auth");return;}
     fetch();
-    coinsApi.balance().then(d=>setCoinBal(d.coin_balance)).catch(()=>{});
     if(user) {
       setAddr(a=>({...a,name:user.name||"",email:user.email||""}));
       setNewAddrForm(a=>({...a,name:user.name||"",email:user.email||""}));
@@ -238,9 +235,7 @@ export default function CartPage() {
   const subtotal     = subtotalMinor / 100;
   const tax          = Object.values(bySeller).reduce((s,v) => s + Math.floor(v * 0.18), 0) / 100;
   const delivery     = subtotalMinor >= 49900 ? 0 : 49;
-  const maxCoins     = Math.min(coinBal,Math.floor((subtotal*0.5)/0.01));
-  const coinDiscount = parseFloat((coinsToUse*0.01).toFixed(2));
-  const total        = Math.max(0,Math.round((subtotal+tax+delivery-coinDiscount)*100)/100);
+  const total        = Math.round((subtotal+tax+delivery)*100)/100;
 
   const go = async (fn:()=>Promise<void>) => {
     setBusy(true);
@@ -256,11 +251,9 @@ export default function CartPage() {
 
   const handleCheckout = () => go(async()=>{
     const res = await cartApi.checkout({
-      coins_to_use:coinsToUse, payment_method:payMethod,
+      payment_method:payMethod,
       delivery_address:addr,
     });
-
-    if(res.type==="coins"){ setOrderId(res.order_id); setStep("done"); fetch(); return; }
 
     if(res.type==="upi"){
       setUpiData(res as UpiData); setOrderId(res.order_id); setStep("upi_scan");
@@ -437,7 +430,6 @@ export default function CartPage() {
         {[
           {id:"razorpay",label:"Card / Net Banking / Wallet",desc:"Visa, Mastercard, UPI apps, wallets via Razorpay",icon:<CreditCard size={20} className="text-blue-600"/>,badge:"Instant"},
           {id:"upi",label:"UPI / QR Code",desc:"Pay directly to our UPI ID — manual verification within hours",icon:<QrCode size={20} className="text-green-600"/>,badge:"Manual verify"},
-          ...(total===0?[{id:"coins",label:"Pay with Coins",desc:"Your coins cover the full amount",icon:<Coins size={20} className="text-amber-500"/>,badge:"Free!"}]:[]),
         ].map((opt)=>(
           <button key={opt.id} onClick={()=>setPayMethod(opt.id as PayMethod)}
             className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all ${payMethod===opt.id?"border-gold bg-amber-50":"border-gray-100 bg-white hover:border-gray-200"}`}>
@@ -453,24 +445,8 @@ export default function CartPage() {
           </button>
         ))}
       </div>
-      {coinBal>0&&payMethod!=="coins"&&(
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6">
-          <div className="flex items-center gap-2 mb-3">
-            <Coins size={15} className="text-gold"/>
-            <span className="font-semibold text-sm text-ink">Use coins for discount</span>
-            <span className="ml-auto text-xs text-gray-500">{coinBal} available</span>
-          </div>
-          <input type="range" min={0} max={maxCoins} step={10} value={coinsToUse}
-            onChange={e=>setCoinsToUse(Number(e.target.value))} className="w-full accent-gold" title="Coins to use"/>
-          <div className="flex justify-between mt-2 text-xs">
-            <span className="text-gray-500">{coinsToUse} coins</span>
-            <span className="font-bold text-green-600">-₹{coinDiscount.toFixed(0)}</span>
-          </div>
-        </div>
-      )}
       <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-5 space-y-2 text-sm">
         <div className="flex justify-between text-gray-500"><span>Subtotal</span><span>₹{subtotal.toLocaleString("en-IN")}</span></div>
-        {coinDiscount>0&&<div className="flex justify-between text-green-600"><span>Coin discount</span><span>-₹{coinDiscount.toFixed(0)}</span></div>}
         <div className="flex justify-between text-gray-500"><span>GST (18%)</span><span>₹{tax.toLocaleString("en-IN")}</span></div>
         <div className="flex justify-between text-gray-500"><span>Delivery</span><span className={delivery===0?"text-green-600":""}>{delivery===0?"FREE":`₹${delivery}`}</span></div>
         <div className="border-t pt-2 flex justify-between font-bold text-base text-ink"><span>Total</span><span>₹{total.toLocaleString("en-IN")}</span></div>
@@ -480,7 +456,6 @@ export default function CartPage() {
         {busy?<Loader2 size={16} className="animate-spin"/>:<>
           {payMethod==="upi"&&<><QrCode size={16}/>Pay ₹{total.toLocaleString("en-IN")} via UPI</>}
           {payMethod==="razorpay"&&<><CreditCard size={16}/>Pay ₹{total.toLocaleString("en-IN")}</>}
-          {payMethod==="coins"&&<><Coins size={16}/>Place Order (Free)</>}
         </>}
       </button>
     </div>
@@ -1080,7 +1055,7 @@ export default function CartPage() {
             <div className="bg-gray-50 rounded-2xl p-4">
               <p className="text-xs font-semibold text-gray-500 mb-2">We accept</p>
               <div className="flex flex-wrap gap-2">
-                {["💳 Cards","🏦 Net Banking","📱 UPI / QR","🟡 Coins"].map(m=>(
+                {["💳 Cards","🏦 Net Banking","📱 UPI / QR"].map(m=>(
                   <span key={m} className="text-[11px] bg-white px-2.5 py-1 rounded-lg border border-gray-100 font-medium text-gray-600">{m}</span>
                 ))}
               </div>

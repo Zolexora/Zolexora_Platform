@@ -59,7 +59,6 @@ export default function HeroSection() {
           {[
             { icon: Truck, text: "Free delivery over ₹499" },
             { icon: ShieldCheck, text: "Buyer protection on all orders" },
-            { icon: Sparkles, text: "Earn coins on every purchase" },
           ].map(({ icon: Icon, text }) => (
             <div key={text} className="flex items-center gap-2 text-xs text-gray-600">
               <Icon size={14} className="text-gold" /> {text}

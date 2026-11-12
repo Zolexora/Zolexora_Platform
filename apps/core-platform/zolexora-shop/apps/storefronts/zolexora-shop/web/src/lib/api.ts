@@ -20,7 +20,6 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  coin_balance?: number;
   phone_number?: string | null;
   picture?: string | null;
 }
@@ -70,8 +69,6 @@ export interface Order {
   total_paid?: number;
   grand_total?: { amount_minor: number; currency: string };
   subtotal?: number;
-  coins_used?: number;
-  coins_discount: number;
   items?: OrderItem[];
   lines?: any[];
   shipping_address?: any;
@@ -86,29 +83,7 @@ export interface Order {
   admin_note?: string;
 }
 
-export interface CoinBalance {
-  coin_balance: number;
-}
-
-export interface CoinTransaction {
-  id: string;
-  amount: number;
-  type: "earned" | "spent" | string;
-  description: string;
-  created_at: string;
-}
-
-export interface DiscountCode {
-  id: string;
-  code: string;
-  discount_percent: number;
-  coins_spent: number;
-  is_used: boolean;
-  created_at: string;
-}
-
 export interface CheckoutRequest {
-  coins_to_use?: number;
   payment_method: string;
   delivery_address?: {
     name: string;
@@ -173,14 +148,6 @@ export const cartApi = {
 export const ordersApi = {
   my:  ()           => api.get<Order[]>("/orders/my").then(r => r.data),
   get: (id: string) => api.get(`/orders/${id}`).then(r => r.data),
-};
-
-export const coinsApi = {
-  balance:   ()           => api.get<CoinBalance>("/coins/balance").then(r => r.data),
-  history:   ()           => api.get<CoinTransaction[]>("/coins/history").then(r => r.data),
-  discounts: ()           => api.get<DiscountCode[]>("/coins/discounts").then(r => r.data),
-  generate:  (coins: number, product_id?: string) =>
-    api.post("/coins/generate-discount", { coins_to_spend: coins, product_id }).then(r => r.data),
 };
 
 export interface Address {
@@ -251,7 +218,6 @@ export interface UserProfileDetails {
   id: string;
   name: string;
   picture?: string | null;
-  coin_balance: number;
   created_at: string;
   contacts: UserContacts;
   addresses: Address[];

@@ -3,7 +3,7 @@ import { authApi, cartApi, type CartItem, type User } from "@/lib/api";
 
 // ── Auth Store ────────────────────────────────────────────────────────────────
 // The session is the Zolexora auth service's (ZolexoraAuthProvider); this store only holds the
-// marketplace profile for it (role, coins). Nothing is persisted here.
+// marketplace profile for it. Nothing is persisted here.
 interface AuthState {
   user: User | null;
   loading: boolean;

@@ -19,7 +19,7 @@ The repository currently contains two partially independent commerce systems.
 | Mahila buyer mobile | Expo shell at `apps/storefronts/mahila-madel/mobile` |
 | Shared seller mobile | Expo app at `apps/portals/seller/mobile` |
 | API | FastAPI at `services/marketplace-api/` |
-| Persistence | PostgreSQL for everything: users, catalog, stock, carts, orders, payments, shipping, coins, reels, wishlists (MongoDB retired in migration 0024) |
+| Persistence | PostgreSQL for everything: users, catalog, stock, carts, orders, payments, shipping, wishlists (MongoDB retired in migration 0024; reels, coins and subscriptions dropped in 0026) |
 | Sign-in | Zolexora auth service (`apps/zolexora-auth-service`); the API introspects its tokens |
 | Cache | Redis |
 | Media | Cloudinary |
@@ -69,13 +69,12 @@ The API edge resolves a trusted storefront context before calling commerce modul
 | Listings | Store-specific publication state, price, merchandising, and visibility |
 | Inventory | Shared stock ledger, reservations, adjustments, and availability |
 | Cart | Storefront-bound customer intent; rejects cross-store mixing |
-| Pricing | Server-side price, discount, tax, shipping, coin, and total calculation |
+| Pricing | Server-side price, discount, tax, shipping, and total calculation |
 | Checkout | Validates cart, reserves inventory, creates immutable order snapshots |
 | Payments | Routes to the storefront's provider account and owns payment lifecycle |
 | Orders | Order state, item snapshots, fulfillment, cancellation, returns, and refunds |
 | Shipping | Pickup locations, provider discovery, booking, tracking, and webhooks |
 | Media | Provider-neutral uploads and OCI Object Storage references |
-| Engagement | Reels, view rewards, coins, and eligible discount conversion |
 | Administration | Cross-store governance, moderation, support, and audit operations |
 | Analytics | Storefront-aware operational and business events |
 

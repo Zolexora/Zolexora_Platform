@@ -10,14 +10,14 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Zolexora – Shop Premium",
-  description: "India's cleanest shopping experience. Earn coins while you shop.",
+  description: "India's cleanest shopping experience.",
   metadataBase: new URL("https://zolexora.com"),
   icons: {
     icon: "/Zolexora_logo.png",
     shortcut: "/Zolexora_logo.png",
     apple: "/Zolexora_logo.png",
   },
-  openGraph: { title: "Zolexora", description: "Shop Premium. Earn Coins.", url: "https://zolexora.com" },
+  openGraph: { title: "Zolexora", description: "Shop Premium.", url: "https://zolexora.com" },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

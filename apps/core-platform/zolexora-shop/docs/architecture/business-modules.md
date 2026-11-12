@@ -15,12 +15,11 @@ The target platform is one modular marketplace application with explicit busines
 | Listings | Per-store publication, price, compare-at price, SEO, merchandising | Physical stock ledger |
 | Inventory | Stock ledger, reservations, availability, adjustments | Presentation price or gateway selection |
 | Cart | Store-bound cart and selected variants | Authoritative final totals |
-| Pricing | Item price, promotions, coins, tax, shipping quote, total | Capturing payments |
+| Pricing | Item price, promotions, tax, shipping quote, total | Capturing payments |
 | Checkout | Validation, inventory reservation, order creation | Provider-specific API details |
 | Payments | Account selection, attempts, captures, webhooks, refunds, reconciliation | Order fulfillment decisions |
 | Orders | Immutable commercial snapshot and lifecycle | Mutable catalog content |
 | Shipping | Pickup, rate discovery, booking, shipment events | Payment authorization |
-| Engagement | Reels, views, rewards, coins | Directly mutating order totals outside pricing policy |
 | Media | Upload policy and object references | Catalog ownership or public authorization |
 | Admin | Moderation, support, configuration, audit workflows | Bypassing domain authorization |
 | Analytics | Event contracts, aggregates, store segmentation | Source-of-truth transactional mutations |
@@ -86,7 +85,6 @@ The server recalculates every commercial value at checkout from current listings
 - Unit and compare-at prices.
 - Quantity and stock availability.
 - Promotions and coupon eligibility.
-- Coin balance and redemption caps.
 - Taxes and shipping fees.
 - Rounding and final payable amount.
 
@@ -112,15 +110,9 @@ Required lifecycle concepts:
 
 If one checkout includes multiple sellers, the platform may create a parent checkout with seller-specific orders while preserving one customer-facing transaction reference.
 
-## Engagement and coins
+## Earnings (outside the marketplace)
 
-The repository currently supports reels and coin rewards. The target keeps those capabilities behind a ledger-based module.
-
-- Rewards are idempotent and include a source event reference.
-- Storefront scope is captured when engagement occurred.
-- Redemption rules are applied by pricing, not by the client.
-- A coin transaction is immutable; corrections use compensating entries.
-- Cross-store coin eligibility must be an explicit policy. The initial target may share the balance while still attributing earn and spend events to a storefront.
+Reels live in PostCread and earnings in the Zolexora auth service (wallet). When checkout can spend earnings, it will place a hold keyed to the order, confirm it on payment and release it on cancellation; the marketplace stores no balance.
 
 ## Shipping
 

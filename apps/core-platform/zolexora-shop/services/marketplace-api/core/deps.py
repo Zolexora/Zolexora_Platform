@@ -38,7 +38,6 @@ def _admin(identity: dict) -> dict:
         "is_admin": True,
         "admin_role": identity.get("role") or "",
         "permissions": list(identity.get("permissions") or []),
-        "coin_balance": 0,
         "is_active": True,
         "status": "active",
     }

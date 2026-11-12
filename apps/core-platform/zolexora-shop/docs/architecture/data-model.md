@@ -139,7 +139,7 @@ An order is seller-specific if a checkout spans sellers. It includes:
 
 - Immutable `storefront_id`, buyer ID, seller organization ID, checkout ID, currency, and public order number.
 - Address and contact snapshots.
-- Subtotal, discount, coin discount, tax, shipping, and final total snapshots.
+- Subtotal, discount, tax, shipping, and final total snapshots.
 - Independent payment, fulfillment, cancellation, return, and refund states.
 - Created and updated timestamps plus optimistic version.
 
@@ -171,13 +171,10 @@ References payment attempt and order, includes requested amount, reason, provide
 
 Tracks provider settlement/capture comparison, expected and observed amounts, date, account, discrepancy state, and resolution audit.
 
-## Promotions, coins, and engagement
+## Promotions
 
 - `promotion` and `promotion_storefront`: eligibility, schedule, limits, and store scope.
 - `coupon_redemption`: user/order use with unique idempotent reference.
-- `coin_ledger`: immutable signed quantity, source type, source ID, storefront attribution, balance sequence, and timestamp.
-- `reel`: creator content, publication state, media keys, and optional linked listing/product.
-- `reel_view_event`: deduplicated reward-eligible view record with retention policy.
 
 ## Current-to-target gaps
 

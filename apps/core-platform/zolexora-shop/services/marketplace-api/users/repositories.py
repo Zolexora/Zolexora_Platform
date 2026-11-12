@@ -8,7 +8,7 @@ from fastapi import HTTPException
 from shared.database.postgres import connection, is_pool_ready, transaction
 
 _PUBLIC_SELECT = """
-SELECT u.id, u.auth_user_id, u.email, p.name, p.coin_balance,
+SELECT u.id, u.auth_user_id, u.email, p.name,
        u.phone_number, COALESCE(NULLIF(u.full_name, ''), p.name) AS full_name,
        u.status::text AS status, u.is_phone_verified,
        u.last_login_at, u.metadata, u.is_active, u.is_email_verified,
@@ -58,7 +58,7 @@ class UserRepository:
         """The marketplace profile for an auth-service public user, created on first sight.
 
         An existing profile with the same (auth-service verified) email is adopted once, so
-        accounts from before the auth service keep their orders and coins. Email and phone
+        accounts from before the auth service keep their orders. Email and phone
         follow the auth service, which owns and verifies them.
         """
         _require_pool()
@@ -89,7 +89,7 @@ class UserRepository:
                         user_id, email, name,
                     )
                     await conn.execute(
-                        "INSERT INTO user_profile (id, user_id, name, coin_balance) VALUES ($1, $1, $2, 20)", user_id, name,
+                        "INSERT INTO user_profile (id, user_id, name) VALUES ($1, $1, $2)", user_id, name,
                     )
             if phone:
                 # A phone belongs to one auth-service account; drop it from any stale profile.
@@ -125,7 +125,7 @@ class UserRepository:
                     "INSERT INTO users (id, auth_user_id, email, is_email_verified, full_name) VALUES ($1, $1, $2, TRUE, $3)",
                     user_id, email, name,
                 )
-                await conn.execute("INSERT INTO user_profile (id, user_id, name, coin_balance) VALUES ($1, $1, $2, 0)", user_id, name)
+                await conn.execute("INSERT INTO user_profile (id, user_id, name) VALUES ($1, $1, $2)", user_id, name)
             # Joins on first sign-in; a membership the organisation removed or suspended stays so.
             await conn.execute(
                 """INSERT INTO seller_org_member (id, organization_id, user_id, role, status)
@@ -172,19 +172,6 @@ class UserRepository:
                 "UPDATE users SET is_active=$2, status=CASE WHEN $2 THEN 'active'::user_status ELSE 'suspended'::user_status END, updated_at=NOW() WHERE id=$1", _as_uuid(user_id), active,
             )
         return result != "UPDATE 0"
-
-    async def adjust_coin_balance(self, user_id: str, delta: int, conn=None) -> int:
-        """Changes the balance (never below zero); pass conn to join the caller's transaction."""
-        sql = """UPDATE user_profile SET coin_balance=coin_balance+$2
-                 WHERE user_id=$1 AND coin_balance+$2>=0 RETURNING coin_balance"""
-        if conn is not None:
-            value = await conn.fetchval(sql, _as_uuid(user_id), delta)
-        else:
-            async with connection() as db:
-                value = await db.fetchval(sql, _as_uuid(user_id), delta)
-        if value is None:
-            raise HTTPException(400, "Insufficient coin balance")
-        return value
 
 
 async def get_user_repository() -> UserRepository:

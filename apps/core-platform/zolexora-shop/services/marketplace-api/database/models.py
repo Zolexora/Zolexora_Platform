@@ -5,7 +5,6 @@ from sqlalchemy import (
     Boolean,
     CheckConstraint,
     Column,
-    Date,
     DateTime,
     ForeignKey,
     ForeignKeyConstraint,
@@ -69,11 +68,9 @@ user_profile = Table(
     "user_profile", metadata, id_column(),
     Column("user_id", Uuid, ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
     Column("name", String(200), nullable=False),
-    Column("coin_balance", BigInteger, nullable=False, server_default="0"),
     Column("picture", String(2048)),
     created_column(), updated_column(),
     UniqueConstraint("user_id", name="uq_user_profile_user"),
-    CheckConstraint(f"coin_balance BETWEEN 0 AND {MAX_SAFE_INTEGER}", name="user_profile_coin_bounds"),
 )
 
 admin_audit_logs = Table(
@@ -847,73 +844,6 @@ erp_outbox = Table(
 )
 Index("ix_erp_outbox_claim", erp_outbox.c.status, erp_outbox.c.available_at, erp_outbox.c.next_attempt_at)
 
-
-# ── Coins, subscriptions and reels (migration 0024; formerly MongoDB) ─────────
-coin_transaction = Table(
-    "coin_transaction", metadata, id_column(),
-    Column("user_id", Uuid, ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
-    Column("amount", BigInteger, nullable=False),
-    Column("type", String(16), nullable=False),
-    Column("description", String(500), nullable=False, server_default=""),
-    Column("ref_id", String(128)), created_column(),
-    CheckConstraint("type IN ('earned','spent','refund')", name="type_values"),
-)
-Index("ix_coin_transaction_user_created", coin_transaction.c.user_id, coin_transaction.c.created_at)
-Index("ix_coin_transaction_type_created", coin_transaction.c.type, coin_transaction.c.created_at)
-
-coin_discount_code = Table(
-    "coin_discount_code", metadata, id_column(),
-    Column("user_id", Uuid, ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
-    Column("code", String(16), nullable=False),
-    Column("discount_percent", Integer, nullable=False),
-    Column("coins_spent", BigInteger, nullable=False),
-    Column("product_id", String(64)),
-    Column("is_used", Boolean, nullable=False, server_default=text("false")), created_column(),
-    UniqueConstraint("code", name="uq_coin_discount_code_code"),
-    CheckConstraint("discount_percent BETWEEN 1 AND 100", name="percent_bounds"),
-)
-Index("ix_coin_discount_code_user", coin_discount_code.c.user_id, coin_discount_code.c.created_at)
-
-subscription_payment = Table(
-    "subscription_payment", metadata, id_column(),
-    Column("user_id", Uuid, ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
-    Column("razorpay_order_id", String(64), nullable=False),
-    Column("plan_type", String(32), nullable=False),
-    Column("amount_minor", BigInteger, nullable=False),
-    Column("status", String(16), nullable=False, server_default="pending"), created_column(),
-    UniqueConstraint("razorpay_order_id", name="uq_subscription_payment_razorpay_order"),
-)
-
-reel = Table(
-    "reel", metadata, id_column(),
-    Column("storefront_id", Uuid, ForeignKey("storefront.id", ondelete="RESTRICT"), nullable=False),
-    Column("creator_id", Uuid, nullable=False),
-    Column("creator_name", String(200), nullable=False, server_default=""),
-    Column("title", String(300), nullable=False),
-    Column("description", Text, nullable=False, server_default=""),
-    Column("video_url", Text), Column("thumbnail_url", Text),
-    Column("media_type", String(16), nullable=False, server_default="image"),
-    Column("content_type", String(16), nullable=False, server_default="organic"),
-    Column("linked_product_id", String(64)),
-    Column("sponsor_data", JSONB),
-    Column("is_active", Boolean, nullable=False, server_default=text("true")),
-    Column("views_count", BigInteger, nullable=False, server_default="0"),
-    Column("likes_count", BigInteger, nullable=False, server_default="0"),
-    created_column(),
-)
-Index("ix_reel_storefront_created", reel.c.storefront_id, reel.c.created_at)
-Index("ix_reel_creator", reel.c.creator_id, reel.c.created_at)
-
-reel_view = Table(
-    "reel_view", metadata, id_column(),
-    Column("reel_id", Uuid, ForeignKey("reel.id", ondelete="CASCADE"), nullable=False),
-    Column("storefront_id", Uuid, ForeignKey("storefront.id", ondelete="RESTRICT"), nullable=False),
-    Column("user_id", Uuid, nullable=False),
-    Column("view_date", Date, nullable=False, server_default=text("((now() AT TIME ZONE 'UTC'))::date")),
-    created_column(),
-    UniqueConstraint("user_id", "reel_id", "view_date", name="uq_reel_view_daily"),
-)
-Index("ix_reel_view_storefront_created", reel_view.c.storefront_id, reel_view.c.created_at)
 
 # Encrypted seller KYC (migration 0025); organisation metadata keeps only last-four digits.
 seller_kyc = Table(

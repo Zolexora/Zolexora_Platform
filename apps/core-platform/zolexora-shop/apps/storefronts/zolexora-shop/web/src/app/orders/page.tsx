@@ -245,12 +245,6 @@ export default function OrdersPage() {
                           <div className="flex justify-between text-xs text-gray-500">
                             <span>Subtotal</span><span>₹{(order.subtotal || totalPaid).toLocaleString("en-IN")}</span>
                           </div>
-                          {(order.coins_discount || 0) > 0 && (
-                            <div className="flex justify-between text-xs text-green-600">
-                              <span>Coin discount ({order.coins_used} coins)</span>
-                              <span>- ₹{order.coins_discount}</span>
-                            </div>
-                          )}
                           <div className="flex justify-between text-sm font-bold text-ink">
                             <span>Total Paid</span><span>₹{totalPaid.toLocaleString("en-IN")}</span>
                           </div>

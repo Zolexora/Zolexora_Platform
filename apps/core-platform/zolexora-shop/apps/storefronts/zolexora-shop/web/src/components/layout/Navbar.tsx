@@ -2,7 +2,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ShoppingCart, Search, Package, Coins, LogOut, ChevronDown, Truck, User as UserIcon } from "lucide-react";
+import { ShoppingCart, Search, Package, LogOut, ChevronDown, Truck, User as UserIcon } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@zolexora/auth-client/react";
@@ -137,10 +137,6 @@ export default function Navbar() {
                     <Link href="/profile" onClick={() => setUserOpen(false)} className="flex items-center gap-3 px-4 py-2.5 hover:bg-cream text-sm text-ink transition-colors">
                       <UserIcon size={15} className="text-gray-400" />
                       <span>My Profile</span>
-                    </Link>
-                    <Link href="/wallet" onClick={() => setUserOpen(false)} className="flex items-center gap-3 px-4 py-2.5 hover:bg-cream text-sm text-ink transition-colors">
-                      <Coins size={15} className="text-gold" />
-                      <span>{user.coin_balance?.toLocaleString()} coins</span>
                     </Link>
                     <Link href="/orders" onClick={() => setUserOpen(false)} className="flex items-center gap-3 px-4 py-2.5 hover:bg-cream text-sm text-ink transition-colors">
                       <Package size={15} className="text-gray-400" />

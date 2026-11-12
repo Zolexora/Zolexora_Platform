@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Package, Video, ShoppingBag, BarChart3, Settings, LogOut, Coins, ChevronRight, Menu, X, Truck } from "lucide-react";
+import { LayoutDashboard, Package, ShoppingBag, BarChart3, Settings, LogOut, ChevronRight, Menu, X, Truck } from "lucide-react";
 import { useAuth } from "@zolexora/auth-client/react";
 import { useAuthStore } from "@/store";
 import { activeOrganizationId, setActiveOrganizationId } from "@zolexora/shop-sign-in";
@@ -12,7 +12,6 @@ import { motion, AnimatePresence } from "framer-motion";
 const NAV = [
   { href: "/dashboard",  icon: LayoutDashboard, label: "Dashboard" },
   { href: "/products",   icon: Package,          label: "Products" },
-  { href: "/reels",      icon: Video,             label: "Reels" },
   { href: "/orders",     icon: ShoppingBag,       label: "Orders" },
   { href: "/shipping",   icon: Truck,             label: "Shipping" },
   { href: "/analytics",  icon: BarChart3,         label: "Analytics" },
@@ -97,7 +96,6 @@ export default function SellerShell({ children }: { children: React.ReactNode })
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-white text-sm font-medium truncate">{user.name}</p>
-            <div className="flex items-center gap-1 text-gold text-xs"><Coins size={10} />{user.coin_balance}</div>
           </div>
         </div>
         {!user.zolexora_org_id && (

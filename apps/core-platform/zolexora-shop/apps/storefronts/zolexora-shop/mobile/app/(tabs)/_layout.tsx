@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { Home, Search, ShoppingCart, Coins, Package } from "lucide-react-native";
+import { Home, Search, ShoppingCart, Package } from "lucide-react-native";
 import { useCartStore } from "../../src/store";
 import { View, Text, StyleSheet } from "react-native";
 
@@ -38,7 +38,6 @@ export default function TabsLayout() {
       <Tabs.Screen name="index" options={{ title:"Home", tabBarIcon:(p) => <TabIcon icon={Home} {...p} /> }} />
       <Tabs.Screen name="shop" options={{ title:"Shop", tabBarIcon:(p) => <TabIcon icon={Search} {...p} /> }} />
       <Tabs.Screen name="cart" options={{ title:"Cart", tabBarIcon:(p) => <CartIcon {...p} /> }} />
-      <Tabs.Screen name="wallet" options={{ title:"Wallet", tabBarIcon:(p) => <TabIcon icon={Coins} {...p} /> }} />
       <Tabs.Screen name="orders" options={{ title:"Orders", tabBarIcon:(p) => <TabIcon icon={Package} {...p} /> }} />
     </Tabs>
   );

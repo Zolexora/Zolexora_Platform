@@ -1,4 +1,4 @@
-"""Provider-neutral Redis pool for caches, rate limits and trending reels.
+"""Provider-neutral Redis pool for caches and rate limits.
 
 Sessions belong to the Zolexora auth service; nothing here holds credentials."""
 
@@ -14,7 +14,6 @@ from core.config import settings
 
 logger = logging.getLogger("zolexora.redis")
 TTL_PRODUCT = 60 * 60
-TTL_TRENDING = 15 * 60
 TTL_RATE_LIMIT = 60
 
 _pool: ConnectionPool | None = None
@@ -96,17 +95,6 @@ async def check_rate_limit(identity: str, limit: int = 60) -> bool:
     if count == 1:
         await redis.expire(key, TTL_RATE_LIMIT)
     return count <= limit
-
-
-async def add_reel_score(reel_id: str, score: float) -> None:
-    redis = get_redis()
-    key = _key("reels", "trending")
-    await redis.zadd(key, {reel_id: score})
-    await redis.expire(key, TTL_TRENDING)
-
-
-async def get_trending_reels(limit: int = 20) -> list[str]:
-    return await get_redis().zrevrange(_key("reels", "trending"), 0, limit - 1)
 
 
 async def ping() -> bool:

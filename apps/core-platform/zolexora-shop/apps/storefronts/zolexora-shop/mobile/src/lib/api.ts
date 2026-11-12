@@ -41,11 +41,6 @@ export const productsApi = {
   get:  (id: string)   => api.get(`/products/${id}`).then(r => r.data),
 };
 
-export const reelsApi = {
-  list: (params?: any) => api.get("/reels", { params }).then(r => r.data),
-  view: (id: string)   => api.post(`/reels/${id}/view`).then(r => r.data),
-};
-
 export const cartApi = {
   get:    ()                                 => api.get("/cart").then(r => r.data),
   count:  ()                                 => api.get("/cart/count").then(r => r.data),
@@ -63,12 +58,4 @@ export const cartApi = {
 export const ordersApi = {
   my:  ()           => api.get("/orders/my").then(r => r.data),
   get: (id: string) => api.get(`/orders/${id}`).then(r => r.data),
-};
-
-export const coinsApi = {
-  balance:   ()           => api.get("/coins/balance").then(r => r.data),
-  history:   ()           => api.get("/coins/history").then(r => r.data),
-  discounts: ()           => api.get("/coins/discounts").then(r => r.data),
-  generate:  (coins: number, product_id?: string) =>
-    api.post("/coins/generate-discount", { coins_to_spend: coins, product_id }).then(r => r.data),
 };

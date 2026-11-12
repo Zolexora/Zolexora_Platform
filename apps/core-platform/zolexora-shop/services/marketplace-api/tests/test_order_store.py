@@ -13,11 +13,11 @@ SELLER = {"id": "staff", "seller_org_id": SEL_1}
 
 @pytest.mark.asyncio
 async def test_an_order_reads_back_as_it_was_written(pg):
-    written = await seed_order(pg, ORDER_1, checkout_id=ORDER_2, coins_used=5, cancellations=[], payment_method="upi")
+    written = await seed_order(pg, ORDER_1, checkout_id=ORDER_2, cancellations=[], payment_method="upi")
     doc = await order_store.get(pg, id=ORDER_1)
     assert (doc["id"], doc["buyer_id"], doc["seller_id"], doc["storefront_id"]) == (ORDER_1, BUYER_1, SEL_1, "zolexora-shop")
     assert doc["seller_name"] == "Seller One" and doc["checkout_id"] == ORDER_2 and doc["payment_method"] == "upi"
-    assert doc["coins_used"] == 5 and doc["cancellations"] == []
+    assert doc["cancellations"] == []
     assert doc["grand_total"] == {"amount_minor": 1000, "currency": "INR"}
     [line] = doc["lines"]
     assert line["product_id"] == written["lines"][0]["product_id"] and line["line_id"]
@@ -76,12 +76,12 @@ async def test_the_apps_get_orders_in_their_simple_shape(pg):
 
     address = {"full_name": "Alice", "phone": "9876543210", "email": "a@example.com", "address_line1": "1 Main St",
                "city": "Mumbai", "state": "MH", "postal_code": "400001", "country": "IN"}
-    await seed_order(pg, ORDER_1, total=25_000, shipping_address=address, coins_used=500)
+    await seed_order(pg, ORDER_1, total=25_000, shipping_address=address)
     await update_order_status(ORDER_1, "shipped", user=SELLER, context=ctx_zol, pg=pg)
 
     [mine] = await legacy_my_orders(context=ctx_zol, user={"id": BUYER_1}, pg=pg)
     assert (mine["id"], mine["status"], mine["order_status"]) == (ORDER_1, "shipped", "fulfilled")
-    assert (mine["total_paid"], mine["coins_discount"], mine["delivery_pincode"]) == (250.0, 5.0, "400001")
+    assert (mine["total_paid"], mine["delivery_pincode"]) == (250.0, "400001")
     assert mine["items"][0]["quantity"] == 1 and mine["items"][0]["price"] == 250.0
 
     assert [o["id"] for o in await legacy_seller_orders(context=ctx_zol, user=SELLER, pg=pg)] == [ORDER_1]

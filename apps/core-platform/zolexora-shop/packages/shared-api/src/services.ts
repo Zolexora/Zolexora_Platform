@@ -1,9 +1,8 @@
 import { getApiClient } from "./client";
 import type {
-  Product, ProductCreateRequest, Reel, ReelCreateRequest,
+  Product, ProductCreateRequest,
   CartItem, Order, CheckoutRequest, CheckoutResponse,
-  CoinTransaction, CoinBalance, DiscountCode,
-  SubscriptionPlans, AdminStats, User,
+  AdminStats, User,
 } from "./types";
 
 // ─── Products ─────────────────────────────────────────────────────────────────
@@ -17,22 +16,6 @@ export const products = {
   uploadImage: (id: string, file: File)  => {
     const fd = new FormData(); fd.append("file", file);
     return getApiClient().post<{ image_url: string; storage: string }>(`/products/${id}/upload-image`, fd, {
-      headers: { "Content-Type": "multipart/form-data" },
-    }).then(r => r.data);
-  },
-};
-
-// ─── Reels ────────────────────────────────────────────────────────────────────
-export const reels = {
-  list:   (params?: any)                 => getApiClient().get<Reel[]>("/reels", { params }).then(r => r.data),
-  my:     ()                            => getApiClient().get<Reel[]>("/reels/my").then(r => r.data),
-  create: (d: ReelCreateRequest)        => getApiClient().post<Reel>("/reels", d).then(r => r.data),
-  update: (id: string, d: any)          => getApiClient().put(`/reels/${id}`, d).then(r => r.data),
-  delete: (id: string)                  => getApiClient().delete(`/reels/${id}`).then(r => r.data),
-  view:   (id: string)                  => getApiClient().post<{ coins_earned: number; message: string }>(`/reels/${id}/view`).then(r => r.data),
-  uploadMedia: (id: string, file: File) => {
-    const fd = new FormData(); fd.append("file", file);
-    return getApiClient().post<{ video_url: string; storage: string }>(`/reels/${id}/upload`, fd, {
       headers: { "Content-Type": "multipart/form-data" },
     }).then(r => r.data);
   },
@@ -62,21 +45,6 @@ export const orders = {
   updateStatus: (id: string, status: string)   => getApiClient().put(`/orders/${id}/status`, null, { params: { status } }).then(r => r.data),
 };
 
-// ─── Coins ────────────────────────────────────────────────────────────────────
-export const coins = {
-  balance:          ()                                   => getApiClient().get<CoinBalance>("/coins/balance").then(r => r.data),
-  history:          ()                                   => getApiClient().get<CoinTransaction[]>("/coins/history").then(r => r.data),
-  generateDiscount: (coins_to_spend: number, product_id?: string) =>
-    getApiClient().post<DiscountCode>("/coins/generate-discount", { coins_to_spend, product_id }).then(r => r.data),
-  myDiscounts:      ()                                   => getApiClient().get<DiscountCode[]>("/coins/discounts").then(r => r.data),
-};
-
-// ─── Subscriptions ────────────────────────────────────────────────────────────
-export const subscriptions = {
-  plans:    ()              => getApiClient().get<SubscriptionPlans>("/subscriptions/plans").then(r => r.data),
-  checkout: (plan_type: string) => getApiClient().post("/subscriptions/checkout", { plan_type }).then(r => r.data),
-};
-
 // ─── Admin ────────────────────────────────────────────────────────────────────
 export const admin = {
   stats:          ()                               => getApiClient().get<AdminStats>("/admin/stats").then(r => r.data),
@@ -86,9 +54,6 @@ export const admin = {
   products:       ()                               => getApiClient().get<Product[]>("/admin/products").then(r => r.data),
   toggleProduct:  (pid: string)                    => getApiClient().put(`/admin/products/${pid}/toggle`).then(r => r.data),
   deleteProduct:  (pid: string)                    => getApiClient().delete(`/admin/products/${pid}`).then(r => r.data),
-  reels:          ()                               => getApiClient().get<Reel[]>("/admin/reels").then(r => r.data),
-  toggleReel:     (rid: string)                    => getApiClient().put(`/admin/reels/${rid}/toggle`).then(r => r.data),
-  deleteReel:     (rid: string)                    => getApiClient().delete(`/admin/reels/${rid}`).then(r => r.data),
   orders:         ()                               => getApiClient().get<Order[]>("/admin/orders").then(r => r.data),
   pendingUpiOrders: ()                             => getApiClient().get<Order[]>("/admin/orders/pending-upi").then(r => r.data),
   verifyUpi:      (order_id: string, approve: boolean, admin_note?: string) =>

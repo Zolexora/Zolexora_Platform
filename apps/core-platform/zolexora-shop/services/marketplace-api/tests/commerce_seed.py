@@ -35,9 +35,9 @@ async def pg():
                    VALUES ($1, $2, $3, 'INR', 'en-IN') ON CONFLICT (storefront_key) DO NOTHING""",
                 uuid.uuid4(), key, name,
             )
-        for buyer, coins in ((BUYER_1, 1000), (BUYER_2, 0)):
+        for buyer in (BUYER_1, BUYER_2):
             await conn.execute("INSERT INTO users (id, email, full_name) VALUES ($1, $2, 'Buyer')", uuid.UUID(buyer), f"{buyer}@example.com")
-            await conn.execute("INSERT INTO user_profile (id, user_id, name, coin_balance) VALUES (gen_random_uuid(), $1, 'Buyer', $2)", uuid.UUID(buyer), coins)
+            await conn.execute("INSERT INTO user_profile (id, user_id, name) VALUES (gen_random_uuid(), $1, 'Buyer')", uuid.UUID(buyer))
         for org, name in SELLER_NAMES.items():
             await conn.execute("INSERT INTO seller_organization (id, name, slug, status) VALUES ($1, $2, $3, 'ACTIVE')",
                                uuid.UUID(org), name, name.lower().replace(" ", "-"))

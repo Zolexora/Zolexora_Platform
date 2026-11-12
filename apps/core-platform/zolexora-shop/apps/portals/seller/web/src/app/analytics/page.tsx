@@ -1,8 +1,8 @@
 "use client";
 import { useState, useEffect } from "react";
-import { ordersApi, productsApi, reelsApi } from "@/lib/api";
+import { ordersApi, productsApi } from "@/lib/api";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts";
-import { TrendingUp, Package, ShoppingBag, Video, IndianRupee } from "lucide-react";
+import { TrendingUp, Package, ShoppingBag, IndianRupee } from "lucide-react";
 import { motion } from "framer-motion";
 
 const COLORS = ["#FFB800", "#111111", "#10B981", "#8B5CF6", "#EF4444"];
@@ -16,12 +16,11 @@ interface CategoryData {
 export default function AnalyticsPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
-  const [reels, setReels] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([ordersApi.seller(), productsApi.my(), reelsApi.my()])
-      .then(([o, p, r]) => { setOrders(o); setProducts(p); setReels(r); })
+    Promise.all([ordersApi.seller(), productsApi.my()])
+      .then(([o, p]) => { setOrders(o); setProducts(p); })
       .finally(() => setLoading(false));
   }, []);
 
@@ -29,7 +28,6 @@ export default function AnalyticsPage() {
   const paidOrders = orders.filter((o) => o.payment_status === "paid" && o.status !== "cancelled");
   const totalRevenue = paidOrders.reduce((s, o) => s + o.total_paid, 0);
   const avgOrderValue = paidOrders.length ? totalRevenue / paidOrders.length : 0;
-  const totalViews = reels.reduce((s, r) => s + r.views_count, 0);
 
   // Orders by day (last 14 days)
   const ordersByDay = (() => {
@@ -72,7 +70,7 @@ export default function AnalyticsPage() {
     { label: "Total Revenue", value: `₹${totalRevenue.toLocaleString("en-IN")}`, icon: IndianRupee, color: "bg-green-50 text-green-600" },
     { label: "Paid Orders", value: paidOrders.length, icon: ShoppingBag, color: "bg-blue-50 text-blue-600" },
     { label: "Avg Order Value", value: `₹${Math.round(avgOrderValue).toLocaleString("en-IN")}`, icon: TrendingUp, color: "bg-purple-50 text-purple-600" },
-    { label: "Reel Views", value: totalViews.toLocaleString(), icon: Video, color: "bg-amber-50 text-amber-600" },
+    { label: "Products", value: products.length, icon: Package, color: "bg-amber-50 text-amber-600" },
   ];
 
   const CustomTooltip = ({ active, payload, label }: any) => {

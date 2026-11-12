@@ -50,7 +50,7 @@ class Settings:
     GST_CLEARTAX_TAXABLE_ENTITY_ID: str = os.environ.get("GST_CLEARTAX_TAXABLE_ENTITY_ID", "").strip()
     GST_LOOKUP_MODE: str = os.environ.get("GST_LOOKUP_MODE", "provider").strip().lower()
 
-    # ── Redis — caches, rate limits, trending reels (no sessions)
+    # ── Redis — caches and rate limits (no sessions)
     REDIS_URL: str = os.environ.get("REDIS_URL", "").strip()
     REDIS_NAMESPACE: str = os.environ.get("REDIS_NAMESPACE", "zolexora")
     REDIS_POOL_MAX: int = int(os.environ.get("REDIS_POOL_MAX", "20"))
@@ -117,18 +117,8 @@ class Settings:
     )
     SHIPWAY_BASE_URL: str = os.environ.get("SHIPWAY_BASE_URL", "https://app.shipway.com/api")
 
-    # ── Coins
-    COINS_PER_REEL_VIEW:   int   = 3
-    COINS_CREATOR_PER_VIEW: int  = 3
-    MAX_DAILY_COINS:       int   = 150
-    COIN_VALUE:            float = 0.01
-    MAX_COIN_DISCOUNT:     float = 0.50
     MAX_CART_QUANTITY:     int   = int(os.environ.get("MAX_CART_QUANTITY", "100"))
 
-    SUBSCRIPTION_PLANS: dict = {
-        "basic":   {"name": "Basic",   "price": 399, "coins_bonus": 100},
-        "premium": {"name": "Premium", "price": 799, "coins_bonus": 250},
-    }
     CATEGORIES: list = ["Electronics","Fashion","Home & Living","Beauty","Sports","Food","Other"]
 
     def validate(self) -> None:

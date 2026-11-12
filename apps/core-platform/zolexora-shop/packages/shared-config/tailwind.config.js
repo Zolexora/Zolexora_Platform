@@ -45,7 +45,6 @@ module.exports = {
         "scale-in":  "scaleIn 0.3s cubic-bezier(0.22,1,0.36,1) forwards",
         "spin-slow": "spin 3s linear infinite",
         shimmer:     "shimmer 1.5s infinite",
-        coin:        "coin 0.6s cubic-bezier(0.22,1,0.36,1) forwards",
       },
       keyframes: {
         fadeUp:   { "0%": { opacity: 0, transform: "translateY(16px)" }, "100%": { opacity: 1, transform: "translateY(0)" } },
@@ -53,7 +52,6 @@ module.exports = {
         slideUp:  { "0%": { transform: "translateY(100%)" }, "100%": { transform: "translateY(0)" } },
         scaleIn:  { "0%": { transform: "scale(0.92)", opacity: 0 }, "100%": { transform: "scale(1)", opacity: 1 } },
         shimmer:  { "0%": { backgroundPosition: "-200% 0" }, "100%": { backgroundPosition: "200% 0" } },
-        coin:     { "0%": { transform: "scale(1) translateY(0)", opacity: 1 }, "60%": { transform: "scale(1.4) translateY(-20px)", opacity: 1 }, "100%": { transform: "scale(0) translateY(-40px)", opacity: 0 } },
       },
     },
   },

@@ -1,13 +1,10 @@
 
-import uuid
-
 import pytest
 from fastapi import HTTPException
 from starlette.requests import Request
 
 from core.deps import admin_only
-from routers.other import DiscountReq, admin_stats, admin_users, coin_balance, coin_history, generate_discount, my_discounts
-from tests.commerce_seed import BUYER_1, BUYER_2
+from routers.other import admin_stats, admin_users
 from storefronts.models import StorefrontContext, StorefrontKey, StorefrontContextSource, StorefrontDefinition
 
 def _mock_context() -> StorefrontContext:
@@ -25,7 +22,6 @@ def _mock_context() -> StorefrontContext:
 class FakeUserRepo:
     def __init__(self, users=None):
         self.users = users or {}
-        self.adjustments = []
         self.active_updates = []
 
     async def get_by_id(self, user_id, *, internal=False):
@@ -40,45 +36,12 @@ class FakeUserRepo:
         users = await self.list_users()
         return len(users)
 
-    async def adjust_coin_balance(self, user_id, delta):
-        self.adjustments.append((user_id, delta))
-        self.users[user_id]["coin_balance"] += delta
-        if self.users[user_id]["coin_balance"] < 0:
-            raise AssertionError("test attempted an overdraw")
-        return self.users[user_id]["coin_balance"]
-
     async def set_active(self, user_id, active):
         self.active_updates.append((user_id, active))
         if user_id not in self.users:
             return False
         self.users[user_id]["is_active"] = active
         return True
-
-
-# Removed obsolete cart and checkout tests
-
-
-@pytest.mark.asyncio
-async def test_coin_balance_uses_authenticated_postgres_user():
-    assert await coin_balance({"id": "buyer-1", "coin_balance": 42}) == {"coin_balance": 42}
-
-
-@pytest.mark.asyncio
-async def test_generate_discount_spends_coins_and_stores_the_code(pg):
-    discount = await generate_discount(DiscountReq(coins_to_spend=50), user={"id": BUYER_1, "coin_balance": 1000}, pg=pg)
-    assert discount["coins_spent"] == 50 and len(discount["code"]) == 8
-    assert await pg.fetchval("SELECT coin_balance FROM user_profile WHERE user_id = $1", uuid.UUID(BUYER_1)) == 950
-    assert [d["code"] for d in await my_discounts(user={"id": BUYER_1}, pg=pg)] == [discount["code"]]
-    assert [t["amount"] for t in await coin_history(user={"id": BUYER_1}, pg=pg)] == [-50]
-
-
-@pytest.mark.asyncio
-async def test_generate_discount_rejects_insufficient_coin_balance(pg):
-    with pytest.raises(HTTPException) as exc:  # the profile said 100, the balance is 0
-        await generate_discount(DiscountReq(coins_to_spend=50), user={"id": BUYER_2, "coin_balance": 100}, pg=pg)
-    assert exc.value.status_code == 400
-    assert await my_discounts(user={"id": BUYER_2}, pg=pg) == []
-    assert await coin_history(user={"id": BUYER_2}, pg=pg) == []
 
 
 @pytest.mark.asyncio

@@ -1,22 +1,21 @@
 import { useState, useEffect } from "react";
 import { View, Text, ScrollView, StyleSheet, ActivityIndicator } from "react-native";
-import { TrendingUp, Package, ShoppingBag, Video, IndianRupee } from "lucide-react-native";
-import { ordersApi, productsApi, reelsApi } from "../../src/lib/api";
+import { TrendingUp, Package, ShoppingBag, IndianRupee } from "lucide-react-native";
+import { ordersApi, productsApi } from "../../src/lib/api";
 
 export default function SellerAnalyticsScreen() {
-  const [data, setData] = useState<any>({ orders:[], products:[], reels:[] });
+  const [data, setData] = useState<any>({ orders:[], products:[] });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([ordersApi.seller(), productsApi.my(), reelsApi.my()])
-      .then(([orders, products, reels]) => setData({ orders, products, reels }))
+    Promise.all([ordersApi.seller(), productsApi.my()])
+      .then(([orders, products]) => setData({ orders, products }))
       .finally(() => setLoading(false));
   }, []);
 
   const paid = data.orders.filter((o: any) => o.payment_status === "paid" && o.status !== "cancelled");
   const revenue = paid.reduce((s: number, o: any) => s + o.total_paid, 0);
   const avgOrder = paid.length ? revenue / paid.length : 0;
-  const totalViews = data.reels.reduce((s: number, r: any) => s + r.views_count, 0);
   const pendingCount = data.orders.filter((o: any) => o.status==="pending"||o.status==="processing").length;
 
   const statCards = [
@@ -25,7 +24,6 @@ export default function SellerAnalyticsScreen() {
     { label:"Avg Order", value:`₹${Math.round(avgOrder).toLocaleString("en-IN")}`, icon:TrendingUp, color:"#7C3AED" },
     { label:"Pending", value:pendingCount, icon:Package, color:"#D97706" },
     { label:"Products", value:data.products.length, icon:Package, color:"#0891B2" },
-    { label:"Reel Views", value:totalViews.toLocaleString(), icon:Video, color:"#DB2777" },
   ];
 
   const catBreakdown = data.products.reduce((acc: any, p: any) => { acc[p.category] = (acc[p.category]||0)+1; return acc; }, {});
@@ -92,23 +90,6 @@ export default function SellerAnalyticsScreen() {
         </View>
       )}
 
-      {/* Top reels */}
-      {data.reels.length > 0 && (
-        <View style={ss.section}>
-          <Text style={ss.sectionTitle}>Reel Performance</Text>
-          {data.reels.sort((a:any,b:any)=>b.views_count-a.views_count).slice(0,5).map((r:any) => (
-            <View key={r.id} style={ss.reelRow}>
-              <View style={[ss.reelType, r.content_type==="sponsored" && ss.reelTypeSponsored]}>
-                <Text style={[ss.reelTypeText, r.content_type==="sponsored" && { color:"#111" }]}>
-                  {r.content_type==="sponsored"?"S":"O"}
-                </Text>
-              </View>
-              <Text style={ss.reelTitle} numberOfLines={1}>{r.title}</Text>
-              <Text style={ss.reelViews}>{r.views_count} views</Text>
-            </View>
-          ))}
-        </View>
-      )}
 
       <View style={{ height:60 }} />
     </ScrollView>
@@ -138,10 +119,4 @@ const ss = StyleSheet.create({
   topTitle: { fontSize:13, fontWeight:"600", color:"#fff" },
   topUnits: { fontSize:10, color:"rgba(255,255,255,0.3)", marginTop:1 },
   topRevenue: { fontSize:13, fontWeight:"900", color:"#FFB800" },
-  reelRow: { flexDirection:"row", alignItems:"center", gap:10, paddingVertical:9, borderBottomWidth:1, borderBottomColor:"rgba(255,255,255,0.05)" },
-  reelType: { width:26, height:26, borderRadius:8, backgroundColor:"rgba(255,255,255,0.06)", alignItems:"center", justifyContent:"center" },
-  reelTypeSponsored: { backgroundColor:"rgba(255,184,0,0.2)" },
-  reelTypeText: { fontSize:11, fontWeight:"900", color:"rgba(255,255,255,0.4)" },
-  reelTitle: { flex:1, fontSize:13, fontWeight:"600", color:"rgba(255,255,255,0.8)" },
-  reelViews: { fontSize:11, color:"rgba(255,255,255,0.3)" },
 });

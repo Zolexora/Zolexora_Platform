@@ -8,7 +8,7 @@ Zolexora Shop and Mahila Madel must feel like distinct customer brands while sha
 
 | Surface | Design character | Primary users |
 | --- | --- | --- |
-| Zolexora Shop | General marketplace and engagement-led shopping | Customers and reel viewers |
+| Zolexora Shop | General marketplace | Customers |
 | Mahila Madel | Focused brand storefront; preserve useful visual identity from the current React app | Mahila Madel customers |
 | Seller portal | Dense, task-oriented, store-aware operations | Sellers and seller staff |
 | Admin panel | Neutral, auditable, cross-store control plane | Operators and administrators |
@@ -40,7 +40,6 @@ Storefront selection is derived from the deployed application/host configuration
 - Global header: brand, search, account, wishlist if enabled, cart.
 - Primary catalog navigation: categories and campaigns supported by that storefront.
 - Product journey: discovery, listing, details, cart, checkout, confirmation, order tracking.
-- Engagement features such as reels and coins appear only when enabled for that storefront.
 
 ### Seller portal
 
@@ -58,7 +57,7 @@ Storefront selection is derived from the deployed application/host configuration
 ## Checkout design rules
 
 1. Display a server-issued quote; never calculate the authoritative total only in the browser.
-2. Group subtotal, discounts, coins, tax, shipping, and total consistently.
+2. Group subtotal, discounts, tax, shipping, and total consistently.
 3. If price or stock changes, show the affected lines and require the user to accept the refreshed quote.
 4. Show only payment methods returned as eligible by the backend for this order and storefront.
 5. Never display or accept a raw merchant-account selector.

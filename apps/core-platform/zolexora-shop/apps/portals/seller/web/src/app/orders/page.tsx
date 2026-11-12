@@ -137,8 +137,8 @@ export default function OrdersPage() {
                         </div>
 
                         {/* Payment info */}
-                        <div className="grid grid-cols-3 gap-3 bg-gray-50 rounded-xl p-3">
-                          {[["Payment", order.payment_status], ["Method", order.payment_method], ["Coins used", order.coins_used]].map(([k, v]) => (
+                        <div className="grid grid-cols-2 gap-3 bg-gray-50 rounded-xl p-3">
+                          {[["Payment", order.payment_status], ["Method", order.payment_method]].map(([k, v]) => (
                             <div key={k}><p className="text-xs text-ink-muted">{k}</p><p className="text-sm font-semibold capitalize text-ink">{v}</p></div>
                           ))}
                         </div>

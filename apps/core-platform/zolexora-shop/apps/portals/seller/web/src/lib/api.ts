@@ -4,10 +4,8 @@ import {
   products,
   sellerOrg,
   sellerCatalog,
-  reels,
   orders,
   admin,
-  coins
 } from "@zolexora/shop-shared-api";
 
 export const api = {
@@ -31,12 +29,8 @@ export const productsApi = {
 export const sellerOrgApi = sellerOrg;
 export const sellerCatalogApi = sellerCatalog;
 
-export const reelsApi = reels;
-
 export const ordersApi = orders;
 
 export const analyticsApi = {
   stats: () => admin.stats(),
 };
-
-export const coinsApi = coins;

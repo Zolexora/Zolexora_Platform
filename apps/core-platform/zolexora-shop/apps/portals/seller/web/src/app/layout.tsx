@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Zolexora Seller — Dashboard",
-  description: "Manage your products, reels, orders and analytics",
+  description: "Manage your products, orders and analytics",
   icons: {
     icon: "/Zolexora_logo.png",
     shortcut: "/Zolexora_logo.png",

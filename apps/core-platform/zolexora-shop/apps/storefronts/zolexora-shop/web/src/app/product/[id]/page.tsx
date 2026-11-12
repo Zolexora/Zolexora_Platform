@@ -136,18 +136,6 @@ export default function ProductDetailPage() {
                 <Zap size={17} /> Buy Now
               </button>
             </div>
-
-            <div className="bg-[#fffdf7] border border-[#f5ead1] rounded-xl p-4">
-              <div className="flex items-start gap-3">
-                <span className="text-2xl mt-0.5">💰</span>
-                <div>
-                  <h4 className="font-bold text-ink text-sm">Zolexora Coins</h4>
-                  <p className="text-sm text-gray-600 leading-snug">
-                    Earn {Math.floor(product.price.amount_minor / 10000)} coins with this purchase.
-                  </p>
-                </div>
-              </div>
-            </div>
           </div>
 
           <p className="text-gray-600 text-sm leading-relaxed">{product.description}</p>
@@ -193,12 +181,6 @@ export default function ProductDetailPage() {
               <Zap size={17} /> Buy Now
             </button>
           </div>
-
-          {user && (
-            <p className="text-xs text-gray-400 text-center">
-              💰 Earn {Math.floor((product.price.amount_minor / 100) / 100)} coins with this purchase
-            </p>
-          )}
         </div>
       </div>
     </div>

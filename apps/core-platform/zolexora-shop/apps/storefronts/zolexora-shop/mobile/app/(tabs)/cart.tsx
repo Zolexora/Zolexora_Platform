@@ -4,13 +4,13 @@ import {
   ActivityIndicator, TextInput, ScrollView, Alert, Linking, Clipboard,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Coins, QrCode, CreditCard, CheckCircle, Copy, Smartphone } from "lucide-react-native";
+import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, QrCode, CreditCard, CheckCircle, Copy, Smartphone } from "lucide-react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
-import { cartApi, coinsApi } from "../../src/lib/api";
+import { cartApi } from "../../src/lib/api";
 import { useAuthStore, useCartStore } from "../../src/store";
 import Toast from "react-native-toast-message";
 
-type PayMethod = "razorpay" | "upi" | "coins";
+type PayMethod = "razorpay" | "upi";
 type Step = "cart" | "address" | "payment" | "upi_pending" | "done";
 
 interface Addr { name:string; phone:string; email:string; address:string; city:string; state:string; pincode:string; }
@@ -21,8 +21,6 @@ export default function CartScreen() {
   const { setCount } = useCartStore();
   const [items, setItems]           = useState<any[]>([]);
   const [loading, setLoading]       = useState(true);
-  const [coinBal, setCoinBal]       = useState(0);
-  const [coinsToUse, setCoinsToUse] = useState(0);
   const [payMethod, setPayMethod]   = useState<PayMethod>("razorpay");
   const [busy, setBusy]             = useState(false);
   const [step, setStep]             = useState<Step>("cart");
@@ -34,14 +32,14 @@ export default function CartScreen() {
   const load = useCallback(async () => {
     if (!user) { setLoading(false); return; }
     try {
-      const [cartData, coinData] = await Promise.all([cartApi.get(), coinsApi.balance()]);
+      const cartData = await cartApi.get();
       // The API sends { lines: [...] } with prices as money in paise; this screen works in rupees.
       const lines = (cartData?.lines ?? []).map((l: any) => ({
         product_id: l.product_id, quantity: l.quantity,
         product: { id: l.product_id, title: l.product_title, images: l.image ? [l.image] : [],
                    seller_id: l.seller_id, seller_name: l.seller_name, price: (l.unit_price?.amount_minor ?? 0) / 100 },
       }));
-      setItems(lines); setCount(cartData?.item_count ?? lines.length); setCoinBal(coinData.coin_balance);
+      setItems(lines); setCount(cartData?.item_count ?? lines.length);
     } catch {} finally { setLoading(false); }
   }, [user]);
 
@@ -58,9 +56,7 @@ export default function CartScreen() {
   const subtotal     = subtotalMinor / 100;
   const tax          = Object.values(bySeller).reduce((s, v) => s + Math.floor(v * 0.18), 0) / 100;
   const delivery     = subtotalMinor >= 49900 ? 0 : 49;
-  const maxCoins     = Math.min(coinBal, Math.floor((subtotal * 0.5) / 0.01));
-  const coinDiscount = parseFloat((coinsToUse * 0.01).toFixed(2));
-  const total        = Math.max(0, Math.round((subtotal + tax + delivery - coinDiscount) * 100) / 100);
+  const total        = Math.round((subtotal + tax + delivery) * 100) / 100;
 
   const updateQty = async (product_id: string, qty: number) => {
     try {
@@ -84,12 +80,9 @@ export default function CartScreen() {
     setBusy(true);
     try {
       const res = await cartApi.checkout({
-        coins_to_use: coinsToUse,
         payment_method: payMethod,
         delivery_address: addr,
       });
-
-      if (res.type === "coins") { setOrderId(res.order_id); setStep("done"); load(); return; }
 
       if (res.type === "upi") {
         setUpiData(res); setOrderId(res.order_id); setStep("upi_pending");
@@ -204,7 +197,6 @@ export default function CartScreen() {
         {[
           { id:"razorpay", label:"Card / Net Banking", sub:"Visa, Mastercard, wallets via Razorpay", emoji:"💳" },
           { id:"upi",      label:"UPI / QR Code",      sub:"Pay directly — manual verify within hours", emoji:"📱" },
-          ...(total===0 ? [{ id:"coins", label:"Pay with Coins", sub:"Your coins cover the full amount", emoji:"🪙" }] : []),
         ].map((opt: any) => (
           <TouchableOpacity key={opt.id} style={[ss.payOption, payMethod===opt.id && ss.payOptionActive]}
             onPress={() => setPayMethod(opt.id)}>
@@ -218,25 +210,9 @@ export default function CartScreen() {
         ))}
       </View>
 
-      {/* Coin discount */}
-      {coinBal > 0 && payMethod !== "coins" && (
-        <View style={ss.coinBox}>
-          <Text style={ss.coinTitle}>💰 Use coins for discount ({coinBal} available)</Text>
-          {[0, Math.min(50,maxCoins), Math.min(100,maxCoins), Math.min(200,maxCoins)]
-            .filter((v,i,a) => a.indexOf(v)===i && v<=maxCoins).map(v => (
-            <TouchableOpacity key={v} style={[ss.coinOpt, coinsToUse===v && ss.coinOptActive]} onPress={() => setCoinsToUse(v)}>
-              <Text style={[ss.coinOptText, coinsToUse===v && ss.coinOptTextActive]}>
-                {v===0 ? "No coins" : `${v} coins (-₹${(v*0.01).toFixed(0)})`}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
-
       {/* Summary */}
       <View style={ss.summaryBox}>
         <View style={ss.summaryRow}><Text style={ss.summaryLabel}>Subtotal</Text><Text style={ss.summaryVal}>₹{subtotal.toLocaleString("en-IN")}</Text></View>
-        {coinDiscount>0 && <View style={ss.summaryRow}><Text style={[ss.summaryLabel,{color:"#22C55E"}]}>Coin discount</Text><Text style={{color:"#22C55E",fontWeight:"700"}}>-₹{coinDiscount.toFixed(0)}</Text></View>}
         <View style={ss.summaryRow}><Text style={ss.summaryLabel}>GST (18%)</Text><Text style={ss.summaryVal}>₹{tax.toLocaleString("en-IN")}</Text></View>
         <View style={ss.summaryRow}><Text style={ss.summaryLabel}>Delivery</Text><Text style={[ss.summaryVal, delivery===0 && {color:"#22C55E"}]}>{delivery===0?"FREE":`₹${delivery}`}</Text></View>
         <View style={[ss.summaryRow,{borderTopWidth:1,borderTopColor:"#F0F0F0",paddingTop:10,marginTop:4}]}>
@@ -372,12 +348,6 @@ const ss = StyleSheet.create({
   paySub:    { fontSize:11, color:"#888", marginTop:1 },
   radio:     { width:18, height:18, borderRadius:9, borderWidth:2, borderColor:"#DDD" },
   radioActive:{ backgroundColor:"#FFB800", borderColor:"#FFB800" },
-  coinBox:   { backgroundColor:"#FFF8E1", borderRadius:18, padding:14, marginBottom:16, borderWidth:1.5, borderColor:"#FFE082" },
-  coinTitle: { fontSize:13, fontWeight:"700", color:"#111", marginBottom:10 },
-  coinOpt:   { paddingHorizontal:12, paddingVertical:7, borderRadius:20, backgroundColor:"#fff", borderWidth:1.5, borderColor:"#E0E0E0", marginBottom:6 },
-  coinOptActive:{ backgroundColor:"#FFB800", borderColor:"#FFB800" },
-  coinOptText:{ fontSize:12, fontWeight:"700", color:"#666" },
-  coinOptTextActive:{ color:"#111" },
   upiCard:   { backgroundColor:"#fff", borderRadius:20, padding:20, gap:10, marginBottom:16, borderWidth:1.5, borderColor:"#F0F0F0" },
   upiIdLabel:{ fontSize:11, color:"#AAA", fontWeight:"700", textTransform:"uppercase" },
   upiIdRow:  { flexDirection:"row", alignItems:"center", gap:10 },

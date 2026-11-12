@@ -9,7 +9,6 @@ Why Cloudinary instead of local disk:
 
 Folders:
   zolexora/products/   → product images
-  zolexora/reels/      → reel videos & thumbnails
   zolexora/avatars/    → user profile pictures
 """
 import asyncio
@@ -78,10 +77,6 @@ async def delete(public_id: str, resource_type: str = "image") -> None:
 
 async def upload_product_image(data: bytes, content_type: str = "image/jpeg") -> str:
     return await upload(data, "products", resource_type="image")
-
-async def upload_reel_media(data: bytes, content_type: str = "video/mp4") -> str:
-    rt = "video" if content_type.startswith("video/") else "image"
-    return await upload(data, "reels", resource_type=rt)
 
 async def upload_avatar(user_id: str, data: bytes, content_type: str = "image/jpeg") -> str:
     return await upload(data, "avatars", public_id=user_id, resource_type="image")

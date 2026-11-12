@@ -1,7 +1,6 @@
-"""Checkout is one PostgreSQL transaction: stock held (never oversold), coins spent, quote used
+"""Checkout is one PostgreSQL transaction: stock held (never oversold), quote used
 once, cart closed and orders stored, or none of it."""
 
-import uuid
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -31,10 +30,8 @@ def quote_secret(monkeypatch):
     monkeypatch.setattr(settings, "CHECKOUT_QUOTE_SIGNING_SECRET", SecretStr("test-only-quote-secret-1234567890"))
 
 
-async def checkout(pg, user, method="upi", coins=0):
-    balance = await pg.fetchval("SELECT coin_balance FROM user_profile WHERE user_id = $1", uuid.UUID(user["id"]))
-    return await checkout_stub(CheckoutRequest(payment_method=method, coins_to_use=coins), None, context=ctx_zol,
-                               user={**user, "coin_balance": balance}, pg=pg)
+async def checkout(pg, user, method="upi"):
+    return await checkout_stub(CheckoutRequest(payment_method=method), None, context=ctx_zol, user=user, pg=pg)
 
 
 async def shown_stock(pg) -> int:
@@ -66,7 +63,7 @@ async def test_the_last_unit_is_sold_once(pg):
 
 
 @pytest.mark.asyncio
-async def test_a_failed_order_write_undoes_stock_coins_and_cart(pg, monkeypatch):
+async def test_a_failed_order_write_undoes_stock_and_cart(pg, monkeypatch):
     await seed_listing(pg, PROD_1, price=50_000, stock=10)
     await add_to_cart(CartItemCreate(product_id=PROD_1, quantity=1), context=ctx_zol, user=buyer_1, pg=pg)
 
@@ -74,21 +71,9 @@ async def test_a_failed_order_write_undoes_stock_coins_and_cart(pg, monkeypatch)
         raise RuntimeError("order write failed")
     monkeypatch.setattr(order_store, "insert", broken)
     with pytest.raises(RuntimeError):
-        await checkout(pg, buyer_1, coins=500)
+        await checkout(pg, buyer_1)
     assert await stock_of(pg, PROD_1) == (10, 0)
-    assert await pg.fetchval("SELECT coin_balance FROM user_profile WHERE user_id = $1", uuid.UUID(BUYER_1)) == 1000
     assert len(await cart_store.items(pg, BUYER_1, "zolexora-shop")) == 1
-
-
-@pytest.mark.asyncio
-async def test_an_order_paid_in_coins_takes_its_stock(pg):
-    await seed_listing(pg, PROD_1, price=50_000, stock=10)  # free delivery from ₹499
-    await pg.execute("UPDATE user_profile SET coin_balance = 100000 WHERE user_id = $1", uuid.UUID(BUYER_1))
-    await add_to_cart(CartItemCreate(product_id=PROD_1, quantity=1), context=ctx_zol, user=buyer_1, pg=pg)
-    res = await checkout(pg, buyer_1, method="coins", coins=100000)
-    assert res["type"] == "coins" and (await order_store.find(pg))[0]["payment_status"] == "paid"
-    assert await stock_of(pg, PROD_1) == (9, 0)
-    assert await pg.fetchval("SELECT coin_balance FROM user_profile WHERE user_id = $1", uuid.UUID(BUYER_1)) == 100000 - 59000
 
 
 @pytest.mark.asyncio

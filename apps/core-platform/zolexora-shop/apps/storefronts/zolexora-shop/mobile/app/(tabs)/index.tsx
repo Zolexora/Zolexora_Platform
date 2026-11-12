@@ -4,7 +4,7 @@ import {
   StyleSheet, RefreshControl, Image, Dimensions, StatusBar,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { Search, Sparkles, ArrowRight, Coins } from "lucide-react-native";
+import { Search, Sparkles, ArrowRight } from "lucide-react-native";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import { productsApi } from "../../src/lib/api";
 import { useAuthStore, useCartStore } from "../../src/store";
@@ -96,12 +96,6 @@ export default function HomeScreen() {
             <Text style={ss.greeting}>Hello{user ? `, ${user.name?.split(" ")[0]}` : ""} 👋</Text>
             <Text style={ss.subGreeting}>What are you shopping for?</Text>
           </View>
-          {user && (
-            <TouchableOpacity style={ss.coinPill} onPress={() => router.push("/(tabs)/wallet")}>
-              <Coins size={14} color="#111" />
-              <Text style={ss.coinText}>{user.coin_balance}</Text>
-            </TouchableOpacity>
-          )}
         </Animated.View>
 
         {/* Search bar */}
@@ -149,14 +143,6 @@ export default function HomeScreen() {
           </ScrollView>
         </View>
 
-        {/* Earn coins banner */}
-        <Animated.View entering={FadeInDown.delay(300)} style={ss.earnBanner}>
-          <View>
-            <Text style={ss.earnTitle}>Earn Coins 🪙</Text>
-            <Text style={ss.earnSub}>Watch reels & earn up to 150 coins/day. Use them for discounts!</Text>
-          </View>
-        </Animated.View>
-
         {/* Products */}
         <View style={ss.section}>
           <View style={ss.sectionRow}>
@@ -197,8 +183,6 @@ const ss = StyleSheet.create({
   header: { flexDirection:"row", alignItems:"center", justifyContent:"space-between", paddingHorizontal:20, paddingTop:56, paddingBottom:16, backgroundColor:"#fff" },
   greeting: { fontSize:20, fontWeight:"800", color:"#111" },
   subGreeting: { fontSize:13, color:"#888", marginTop:2 },
-  coinPill: { flexDirection:"row", alignItems:"center", gap:5, backgroundColor:"#FFB800", paddingHorizontal:12, paddingVertical:6, borderRadius:20 },
-  coinText: { fontSize:13, fontWeight:"800", color:"#111" },
   searchBox: { flexDirection:"row", alignItems:"center", marginHorizontal:16, marginBottom:16, backgroundColor:"#fff", borderRadius:14, paddingHorizontal:14, height:46, borderWidth:1.5, borderColor:"#F0F0F0" },
   searchInput: { flex:1, fontSize:14, color:"#111" },
   heroBanner: { marginHorizontal:16, backgroundColor:"#1C1C1C", borderRadius:22, padding:22, flexDirection:"row", alignItems:"center", overflow:"hidden", marginBottom:8 },
@@ -216,9 +200,6 @@ const ss = StyleSheet.create({
   seeAll: { fontSize:13, fontWeight:"700", color:"#FFB800" },
   catChip: { alignItems:"center", justifyContent:"center", width:72, height:72, borderRadius:18, gap:4 },
   catLabel: { fontSize:10, fontWeight:"700", color:"#333" },
-  earnBanner: { marginHorizontal:16, marginTop:20, backgroundColor:"#FFF8E1", borderRadius:18, padding:16, borderWidth:1.5, borderColor:"#FFE082" },
-  earnTitle: { fontSize:15, fontWeight:"800", color:"#111", marginBottom:4 },
-  earnSub: { fontSize:12, color:"#666", lineHeight:17 },
   productsGrid: { flexDirection:"row", flexWrap:"wrap", gap:12 },
   productCard: { width:(width-44)/2, backgroundColor:"#fff", borderRadius:18, overflow:"hidden" },
   productImgBox: { width:"100%", aspectRatio:1, backgroundColor:"#F5F5F5", alignItems:"center", justifyContent:"center" },

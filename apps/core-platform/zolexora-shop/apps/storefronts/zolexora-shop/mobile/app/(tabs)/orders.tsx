@@ -83,12 +83,6 @@ export default function OrdersScreen() {
                       <Text style={ss.itemTotal}>₹{(item.price*item.quantity)?.toLocaleString("en-IN")}</Text>
                     </View>
                   ))}
-                  {order.coins_discount > 0 && (
-                    <View style={ss.summaryRow}>
-                      <Text style={ss.summaryLabel}>Coin discount</Text>
-                      <Text style={[ss.summaryVal,{color:"#22C55E"}]}>-₹{order.coins_discount}</Text>
-                    </View>
-                  )}
                   <View style={ss.summaryRow}>
                     <Text style={[ss.summaryLabel,{fontWeight:"800",color:"#111"}]}>Total paid</Text>
                     <Text style={[ss.summaryVal,{fontWeight:"900",color:"#111"}]}>₹{order.total_paid?.toLocaleString("en-IN")}</Text>

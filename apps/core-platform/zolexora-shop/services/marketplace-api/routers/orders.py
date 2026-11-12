@@ -10,7 +10,6 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from core.config import settings
 from core.deps import current_user, is_admin, seller_only, shopper
 from shared.database.postgres import pg_conn_dep
 from integrations.zolexora_erp.outbox import sync_to_erp_outbox
@@ -27,7 +26,7 @@ from models.orders import (
     CancellationRequest, CancellationResponse, SellerCancellationActionRequest,
     ReturnRequest, ReturnResponse, SellerReturnActionRequest,
 )
-from commerce import coins, orders as order_store
+from commerce import orders as order_store
 from routers.cart import verify_quote_token, _get_active_product, place_orders, settle
 
 orders_router = APIRouter(prefix="/orders", tags=["orders"])
@@ -317,13 +316,10 @@ async def get_buyer_order_detail(
 
 
 async def close_cancelled(pg, doc: dict) -> dict:
-    """What a cancelled order gives back: its stock goes back on sale, spent coins return, and an
-    unpaid payment is voided; a paid one is marked refund due until an admin records the refund.
+    """What a cancelled order gives back: its stock goes back on sale, and an unpaid payment is
+    voided; a paid one is marked refund due until an admin records the refund.
     Returns the order fields to save. Run inside the caller's transaction."""
     await settle(pg, [doc["id"]], paid=False)
-    if doc.get("coins_used"):
-        await coins.move(pg, doc["buyer_id"], int(doc["coins_used"]), "refund",
-                         f"Order {doc.get('order_number', doc['id'])} cancelled", doc["id"])
     if doc.get("payment_status") == PaymentStatus.paid.value:
         return {"refund_due": True}
     return {"payment_status": PaymentStatus.voided.value}
@@ -351,7 +347,7 @@ async def request_buyer_cancellation(
 
     all_line_ids = [line["line_id"] for line in doc.get("lines", [])]
     if req.line_item_ids and set(req.line_item_ids) != set(all_line_ids):
-        # Each order has one seller; it is cancelled whole (totals, coins and refunds stay simple).
+        # Each order has one seller; it is cancelled whole (totals and refunds stay simple).
         raise HTTPException(400, "Cancel the whole order; single items cannot be cancelled")
     if any(c["status"] == CancellationStatus.requested.value for c in doc.get("cancellations", [])):
         raise HTTPException(409, "A cancellation is already requested")
@@ -780,7 +776,6 @@ def portal_order(doc: dict) -> dict:
     return {
         **doc, "status": portal_status(doc), "order_status": doc.get("status"), "items": items,
         "subtotal": rupees(doc.get("item_subtotal")), "total_paid": rupees(doc.get("grand_total")),
-        "coins_discount": (doc.get("coins_used") or 0) * settings.COIN_VALUE,
         "buyer_name": doc.get("buyer_name") or address.get("full_name") or "",
         "delivery_name": address.get("full_name", ""), "delivery_phone": address.get("phone", ""),
         "delivery_email": address.get("email", ""),

@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Users, Package, Video, ShoppingBag, BarChart3, LogOut, ChevronRight, Menu, Truck } from "lucide-react";
+import { LayoutDashboard, Users, Package, ShoppingBag, BarChart3, LogOut, ChevronRight, Menu, Truck } from "lucide-react";
 import { useAuth } from "@zolexora/auth-client/react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -14,7 +14,6 @@ const NAV = [
   { href:"/catalog",   icon:Package,         label:"Catalog" },
   { href:"/inventory", icon:Package,         label:"Inventory" },
   { href:"/products",  icon:Package,         label:"Products" },
-  { href:"/reels",     icon:Video,           label:"Reels" },
   { href:"/orders",    icon:ShoppingBag,     label:"Orders" },
   { href:"/shipping",  icon:Truck,           label:"Shipping" },
   { href:"/payments",  icon:BarChart3,       label:"Payments" },

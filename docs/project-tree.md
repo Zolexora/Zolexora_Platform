@@ -250,8 +250,8 @@ Zolexora_Platform/
 │   │   │   └── README.md
 │   │   ├── zolexora-shop/
 │   │   │   ├── apps/
-│   │   │   │   ├── portals/  (79 files)
-│   │   │   │   └── storefronts/  (127 files)
+│   │   │   │   ├── portals/  (76 files)
+│   │   │   │   └── storefronts/  (125 files)
 │   │   │   ├── contracts/
 │   │   │   │   ├── marketplace/  (1 files)
 │   │   │   │   └── zolexora-erp/  (21 files)
@@ -286,7 +286,7 @@ Zolexora_Platform/
 │   │   │   │   ├── verify-workspace.mjs
 │   │   │   │   └── web-env-config.sh
 │   │   │   ├── services/
-│   │   │   │   └── marketplace-api/  (232 files)
+│   │   │   │   └── marketplace-api/  (226 files)
 │   │   │   ├── .gitignore
 │   │   │   ├── .infisical.json
 │   │   │   ├── compose.yaml
@@ -411,6 +411,8 @@ Zolexora_Platform/
 │   │   │   ├── nginx.conf
 │   │   │   ├── README.md
 │   │   │   └── settings.gradle.kts
+│   │   ├── postcread/
+│   │   │   └── README.md
 │   │   ├── rentoeasy/
 │   │   │   ├── apps/
 │   │   │   │   ├── web-admin/  (16 files)

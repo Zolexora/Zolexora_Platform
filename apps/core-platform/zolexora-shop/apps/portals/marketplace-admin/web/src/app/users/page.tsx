@@ -47,15 +47,15 @@ export default function UsersPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-surface border-b border-gray-100">
-              <tr>{["User","Email","Status","Coins","Joined","Actions"].map(h => (
+              <tr>{["User","Email","Status","Joined","Actions"].map(h => (
                 <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-ink-muted whitespace-nowrap">{h}</th>
               ))}</tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {loading ? Array.from({length:8}).map((_,i) => (
-                <tr key={i}><td colSpan={6} className="px-4 py-3"><div className="h-8 shimmer rounded-lg" /></td></tr>
+                <tr key={i}><td colSpan={5} className="px-4 py-3"><div className="h-8 shimmer rounded-lg" /></td></tr>
               )) : filtered.length === 0 ? (
-                <tr><td colSpan={6} className="px-4 py-10 text-center text-ink-muted">No users found</td></tr>
+                <tr><td colSpan={5} className="px-4 py-10 text-center text-ink-muted">No users found</td></tr>
               ) : filtered.map((u,i) => {
                 return (
                   <motion.tr key={u.id} initial={{ opacity:0 }} animate={{ opacity:1 }} transition={{ delay:i*0.02 }}
@@ -74,7 +74,6 @@ export default function UsersPage() {
                         {u.is_active ? "Active" : "Suspended"}
                       </span>
                     </td>
-                    <td className="px-4 py-3 font-mono text-xs text-ink-muted">{u.coin_balance}</td>
                     <td className="px-4 py-3 text-xs text-ink-muted whitespace-nowrap">
                       {new Date(u.created_at).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"2-digit"})}
                     </td>

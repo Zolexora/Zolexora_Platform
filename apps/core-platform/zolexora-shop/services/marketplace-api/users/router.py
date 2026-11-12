@@ -62,7 +62,7 @@ class ServiceabilityRequest(BaseModel):
 
 @router.get("/me", response_model=UserProfile)
 async def get_me(user: dict = Depends(current_user)) -> UserProfile:
-    """The signed-in user's marketplace profile (coins, picture)."""
+    """The signed-in user's marketplace profile (name, picture)."""
     return UserProfile(**user)
 
 
@@ -142,7 +142,6 @@ async def get_my_profile_details(
         id=profile["id"],
         name=profile["name"],
         picture=profile.get("picture"),
-        coin_balance=profile.get("coin_balance", 0),
         created_at=profile["created_at"],
         contacts=contacts,
         addresses=addresses,

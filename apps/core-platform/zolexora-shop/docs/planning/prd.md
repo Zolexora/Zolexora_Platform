@@ -83,7 +83,7 @@ Zolexora ERP is a separate commercial product/company, and Marketplace is one ex
 ### Cart, pricing, and checkout
 
 - FR-15: A cart is bound to one storefront and cannot contain another store's listings.
-- FR-16: The backend recalculates item price, promotions, coins, tax, shipping, and total.
+- FR-16: The backend recalculates item price, promotions, tax, shipping, and total.
 - FR-17: Checkout returns a clear price/stock change response before initiating payment.
 - FR-18: Duplicate checkout submissions with the same idempotency key create at most one commercial result.
 
@@ -187,7 +187,7 @@ The product is ready for controlled production only when:
 
 - Select and contract the exact gateway/provider and merchant account for each storefront.
 - Confirm legal entity, tax, invoice, refund, and settlement ownership for each brand.
-- Decide whether coin balances and promotions are shared across stores or merely attributed across them.
+- Decide whether promotions are shared across stores or merely attributed across them.
 - Define initial catalog ownership/import rules for Mahila Madel content.
 - Set measured availability, latency, recovery, retention, and support targets.
 - Confirm OCI region, tenancy/compartment ownership, production capacity, and cost envelope.

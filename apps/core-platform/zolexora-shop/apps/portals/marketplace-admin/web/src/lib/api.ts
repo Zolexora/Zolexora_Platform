@@ -25,9 +25,6 @@ export const adminApi = {
   products:       () => api.get("/admin/products").then(r=>r.data),
   toggleProduct:  (pid:string) => api.put(`/admin/products/${pid}/toggle`).then(r=>r.data),
   deleteProduct:  (pid:string) => api.delete(`/admin/products/${pid}`).then(r=>r.data),
-  reels:          () => api.get("/admin/reels").then(r=>r.data),
-  toggleReel:     (rid:string) => api.put(`/admin/reels/${rid}/toggle`).then(r=>r.data),
-  deleteReel:     (rid:string) => api.delete(`/admin/reels/${rid}`).then(r=>r.data),
   orders:         () => api.get("/admin/orders").then(r=>r.data),
   pendingUpi:     () => api.get("/admin/orders/pending-upi").then(r=>r.data),
   verifyUpi:      (order_id:string,approve:boolean,admin_note?:string) =>

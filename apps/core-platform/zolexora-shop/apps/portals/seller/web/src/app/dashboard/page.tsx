@@ -1,27 +1,25 @@
 "use client";
 import { useState, useEffect } from "react";
-import { productsApi, ordersApi, reelsApi, coinsApi } from "@/lib/api";
+import { productsApi, ordersApi } from "@/lib/api";
 import { useAuthStore } from "@/store";
-import { Package, ShoppingBag, Video, Coins, TrendingUp, ArrowRight, Clock, CheckCircle, Truck } from "lucide-react";
+import { Package, ShoppingBag, TrendingUp, ArrowRight, Clock, CheckCircle, Truck } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
-  const [stats, setStats] = useState({ products: 0, orders: 0, reels: 0, pending: 0, coins: 0, revenue: 0 });
+  const [stats, setStats] = useState({ products: 0, orders: 0, pending: 0, revenue: 0 });
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([productsApi.my(), ordersApi.seller(), reelsApi.my(), coinsApi.balance()])
-      .then(([products, orders, reels, coinData]) => {
+    Promise.all([productsApi.my(), ordersApi.seller()])
+      .then(([products, orders]) => {
         const revenue = orders.filter((o: any) => o.payment_status === "paid" && o.status !== "cancelled").reduce((s: number, o: any) => s + (o.total_paid || 0), 0);
         setStats({
           products: products.length,
           orders: orders.length,
-          reels: reels.length,
           pending: orders.filter((o: any) => o.status === "pending" || o.status === "processing").length,
-          coins: coinData.coin_balance,
           revenue,
         });
         setRecentOrders(orders.slice(0, 5));
@@ -37,9 +35,7 @@ export default function DashboardPage() {
     { label: "Total Products", value: stats.products, icon: Package, color: "bg-blue-50 text-blue-600", href: "/products" },
     { label: "Total Orders", value: stats.orders, icon: ShoppingBag, color: "bg-green-50 text-green-600", href: "/orders" },
     { label: "Pending Actions", value: stats.pending, icon: Clock, color: "bg-amber-50 text-amber-600", href: "/orders" },
-    { label: "Total Reels", value: stats.reels, icon: Video, color: "bg-purple-50 text-purple-600", href: "/reels" },
     { label: "Revenue (₹)", value: `₹${stats.revenue.toLocaleString("en-IN")}`, icon: TrendingUp, color: "bg-emerald-50 text-emerald-600", href: "/analytics" },
-    { label: "Coin Balance", value: stats.coins.toLocaleString(), icon: Coins, color: "bg-gold/10 text-amber-700", href: "#" },
   ];
 
   return (
@@ -50,7 +46,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {cards.map((card, i) => (
           <motion.div key={card.label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.06 }}>
@@ -70,10 +66,9 @@ export default function DashboardPage() {
       {/* Quick actions */}
       <div>
         <h2 className="font-display text-base font-bold text-ink mb-3">Quick Actions</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {[
             { label: "Add New Product", sub: "List a product for sale", href: "/products/new", icon: Package, color: "border-blue-200 hover:border-blue-400 hover:bg-blue-50/50" },
-            { label: "Upload Reel", sub: "Create organic or sponsored reel", href: "/reels", icon: Video, color: "border-purple-200 hover:border-purple-400 hover:bg-purple-50/50" },
             { label: "Manage Orders", sub: `${stats.pending} need attention`, href: "/orders", icon: ShoppingBag, color: "border-amber-200 hover:border-amber-400 hover:bg-amber-50/50" },
           ].map((a) => (
             <Link key={a.label} href={a.href}

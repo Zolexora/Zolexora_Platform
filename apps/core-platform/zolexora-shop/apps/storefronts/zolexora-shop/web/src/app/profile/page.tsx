@@ -270,9 +270,6 @@ export default function ProfilePage() {
             </div>
             <div>
               <h2 className="text-lg font-bold text-[#1C1C1C]">{profile.name}</h2>
-              <div className="flex items-center space-x-2 mt-1">
-                <span className="text-xs text-gray-400">Coins: {profile.coin_balance}</span>
-              </div>
             </div>
           </div>
         </div>

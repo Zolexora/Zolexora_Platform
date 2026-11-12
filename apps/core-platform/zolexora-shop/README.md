@@ -1,6 +1,8 @@
 # Zolexora — Complete Super App Platform
 
-> Watch. Earn. Shop. — India's cleanest super app.
+> India's cleanest marketplace.
+
+Reels and earnings moved out of the shop: reels to PostCread (`apps/standalone-apps/postcread/`) and earnings to the Zolexora auth service (wallet).
 
 Zolexora is a transitional multi-app marketplace monorepo. Builds and tests are deterministic, but database isolation, payment routing, secure sessions, Oracle infrastructure, and production readiness are not complete.
 
@@ -14,11 +16,11 @@ Zolexora comprises six main applications and services that work together seamles
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Zolexora Buyer Web** | `shop.zolexora.com` | `http://localhost:3000` | Port `3000` | Next.js 15 App Router | Zolexora customer storefront |
 | **Mahila Buyer Web** | `mahilamadel.store` | legacy local client | — | React 18 | Transitional Mahila customer storefront |
-| **Seller Web** | `seller.zolexora.com` | `http://localhost:3001` | Port `3001` | Next.js 15 App Router | Product uploads, reels management, order fullfilment |
+| **Seller Web** | `seller.zolexora.com` | `http://localhost:3001` | Port `3001` | Next.js 15 App Router | Product uploads, order fulfilment |
 | **Admin Web** | `admin.marketplace.zolexora.com` | `http://localhost:3002` | Port `3002` | Next.js 15 App Router | Shared marketplace operations |
 | **Zolexora Buyer Mobile** | — | `http://localhost:8081` | Metro `8081` | Expo React Native | Zolexora customer binary |
 | **Mahila Buyer Mobile** | — | `http://localhost:8083` | Metro `8083` | Expo React Native | Mahila customer shell |
-| **Seller Mobile**| — | `http://localhost:8082` | Metro `8082` | Expo React Native | Mobile creator dashboard, product & reel uploads |
+| **Seller Mobile**| — | `http://localhost:8082` | Metro `8082` | Expo React Native | Mobile seller dashboard, product uploads |
 | **Backend API** | `api.zolexora.com` | `http://127.0.0.1:4100`| Port `4100` | FastAPI (Python 3.12) | Core business logic, auth, payments, shipping engine |
 
 ## Storefront request context
@@ -41,30 +43,16 @@ graph TD
     B --> E[(Cloudinary)]
 ```
 
-* **PostgreSQL** is the only data store: users and coin balances, catalog and stock, carts and quotes, orders and payments, shipments and pickup addresses, coins history, reels and wishlists. The schema is the Alembic chain in `services/marketplace-api/migrations/postgresql_versions/` (MongoDB was retired in migration 0024; old MongoDB data was not imported).
+* **PostgreSQL** is the only data store: users, catalog and stock, carts and quotes, orders and payments, shipments and pickup addresses, and wishlists. The schema is the Alembic chain in `services/marketplace-api/migrations/postgresql_versions/` (MongoDB was retired in migration 0024; old MongoDB data was not imported).
 * **Zolexora auth service** signs everyone in; the API checks its tokens. There are no local passwords or roles.
 * **Redis** holds caches and rate-limit counters only.
-* **Cloudinary** holds media: `zolexora/products/`, `zolexora/reels/`, `zolexora/avatars/`.
+* **Cloudinary** holds media: `zolexora/products/`, `zolexora/avatars/`.
 
 ---
 
 ## ⚙️ Core Engines & Mechanisms
 
-### 🪙 1. Coin Rewards Economy
-Designed to drive engagement. Users earn coins by viewing creator content, which they can redeem for discount codes applied at checkout.
-
-* **Reward Values**:
-  * **Watching a Reel**: +3 coins to the viewer, +3 coins to the creator.
-  * **Daily Cap**: Maximum of 150 coins per user per day.
-  * **Welcome Bonus**: 20 coins awarded upon new registration.
-* **Redemption Thresholds**:
-  * Redeem **50 coins**: Generates a **10% discount** code.
-  * Redeem **100 coins**: Generates a **20% discount** code.
-  * Redeem **200 coins**: Generates a **30% discount** code.
-* **Checkout Restriction**: The maximum coin-based discount is capped at **50% of the total order value**.
-* **Financial Value**: 1 coin = ₹0.01.
-
-### 🚚 2. Parallel Shipping Orchestration
+### 🚚 1. Parallel Shipping Orchestration
 Zolexora integrates with 7 Indian shipping providers: **Delhivery**, **NimbusPost**, **Shiprocket**, **DTDC**, **Blue Dart**, **India Post**, and **Pickrr**. 
 
 When a seller marks an order as **Ready to Ship** (via `services/marketplace-api/routers/shipping.py` and the shipping module), the auto-selection engine acts as follows:
@@ -260,7 +248,7 @@ zolexora/
 │   │   ├── supabase_client.py      ← Relational DB connector
 │   │   └── cloudinary_client.py    ← Media CDN uploader
 │   ├── models/                     ← Pydantic documents and collections types
-│   ├── routers/                    ← HTTP API endpoints (Auth, Products, Reels, Payments)
+│   ├── routers/                    ← HTTP API endpoints (Auth, Products, Payments)
 │   ├── migrations/             ← PostgreSQL schema (Alembic, forward-only)
 │   └── shipping/                   ← Courier selection logic
 │       ├── base.py                 ← Shipping abstract structures
@@ -322,12 +310,6 @@ Expected output:
 * `PUT /products/:id` — Edits product attributes
 * `DELETE /products/:id` — Deletes product index
 * `POST /products/:id/upload-image` — Uploads image to Cloudinary
-
-### Content Reels Feed
-* `GET /reels` — Retrives public scrollable video reels
-* `POST /reels` — Posts a new reel (Organic / Sponsored)
-* `POST /reels/:id/upload` — Uploads video content to Cloudinary
-* `POST /reels/:id/view` — Saves view metrics & awards coins to user/creator
 
 ### Checkout & Cart
 * `GET /cart` — Retrives current items in cart

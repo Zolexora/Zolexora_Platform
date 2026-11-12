@@ -13,7 +13,6 @@ class UserProfile(BaseModel):
     id: str
     email: str
     name: str
-    coin_balance: int
     is_active: bool
     is_email_verified: bool = True
     phone_number: Optional[str] = None
@@ -85,7 +84,6 @@ class UserProfileDetails(BaseModel):
     id: str
     name: str
     picture: Optional[str] = None
-    coin_balance: int = 0
     created_at: str
     contacts: UserContacts
     addresses: List[AddressResponse] = Field(default_factory=list)

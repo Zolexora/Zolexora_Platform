@@ -115,7 +115,7 @@ Provider idempotency features should be used in addition to—not instead of—i
 
 ## Amount integrity
 
-- Price, discount, coins, tax, shipping, and total are calculated on the server.
+- Price, discount, tax, shipping, and total are calculated on the server.
 - The payment amount and currency must match the persisted order/checkout snapshot.
 - Use integer paise for INR or a rigorously enforced fixed-precision convention.
 - Validate capture and refund amounts against the provider response.
