@@ -4,14 +4,14 @@ on:
   push:
     branches: [main]
     paths:
-      - 'apps/standalone-apps/maunkavach/apps/web/**'
-      - 'apps/standalone-apps/maunkavach/services/**'
+      - 'apps/platform-apps/maunkavach/apps/web/**'
+      - 'apps/platform-apps/maunkavach/services/**'
       - 'pnpm-lock.yaml'
       - '.github/workflows/maunkavach-ci.yml'
   pull_request:
     paths:
-      - 'apps/standalone-apps/maunkavach/apps/web/**'
-      - 'apps/standalone-apps/maunkavach/services/**'
+      - 'apps/platform-apps/maunkavach/apps/web/**'
+      - 'apps/platform-apps/maunkavach/services/**'
       - 'pnpm-lock.yaml'
       - '.github/workflows/maunkavach-ci.yml'
 
@@ -35,7 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: apps/standalone-apps/maunkavach/services/backend
+        working-directory: apps/platform-apps/maunkavach/services/backend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

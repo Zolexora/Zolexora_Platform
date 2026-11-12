@@ -13,27 +13,27 @@ updates:
   - package-ecosystem: pip
     directories:
       - /apps/platform-admin/backend
-      - /apps/core-platform/zolexora-ai/services/api
-      - /apps/core-platform/zolexora-ai/services/api/backend
-      - /apps/core-platform/zolexora-ims/services/user-api
-      - /apps/standalone-apps/ironclub/services/backend
-      - /apps/standalone-apps/marketplace/services/marketplace-api
-      - /apps/standalone-apps/textile-care/services/backend
-      - /apps/core-platform/zolexora-tms/services/backend
+      - /apps/platform-core/zolexora-ai/services/api
+      - /apps/platform-core/zolexora-ai/services/api/backend
+      - /apps/platform-core/zolexora-ims/services/user-api
+      - /apps/platform-apps/ironclub/services/backend
+      - /apps/platform-apps/marketplace/services/marketplace-api
+      - /apps/platform-apps/textile-care/services/backend
+      - /apps/platform-core/zolexora-tms/services/backend
     schedule:
       interval: weekly
     open-pull-requests-limit: 10
 
   - package-ecosystem: gradle
-    directory: /apps/standalone-apps/maunkavach
+    directory: /apps/platform-apps/maunkavach
     schedule:
       interval: weekly
 
   - package-ecosystem: docker
     directories:
       - /infrastructure/containers/docker
-      - /apps/core-platform/*
-      - /apps/standalone-apps/*
+      - /apps/platform-core/*
+      - /apps/platform-apps/*
     schedule:
       interval: monthly
 

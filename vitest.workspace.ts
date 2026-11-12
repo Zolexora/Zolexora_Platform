@@ -1,8 +1,8 @@
 import { defineWorkspace } from 'vitest/config';
 
 export default defineWorkspace([
-  'apps/core-platform/*',
-  'apps/standalone-apps/*',
+  'apps/platform-core/*',
+  'apps/platform-apps/*',
   'packages/*',
   'apps/*'
 ]);

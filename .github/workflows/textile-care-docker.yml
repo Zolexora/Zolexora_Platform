@@ -1,11 +1,11 @@
 name: The Textile Care — Docker images
 
-# Builds every image in apps/standalone-apps/textile-care/compose.yaml and pushes ghcr.io/zolexora/zolexora-textile-care-<service>:{latest,<sha>}.
+# Builds every image in apps/platform-apps/textile-care/compose.yaml and pushes ghcr.io/zolexora/zolexora-textile-care-<service>:{latest,<sha>}.
 on:
   push:
     branches: [main]
     paths:
-      - 'apps/standalone-apps/textile-care/**'
+      - 'apps/platform-apps/textile-care/**'
       - 'packages/**'
       - 'infrastructure/containers/**'
       - 'pnpm-lock.yaml'
@@ -27,25 +27,25 @@ jobs:
         [
           {
             "service": "admin-web",
-            "file": "apps/standalone-apps/textile-care/Dockerfile.web",
+            "file": "apps/platform-apps/textile-care/Dockerfile.web",
             "build-args": "APP_PATH=apps/admin-web"
           },
           {
             "service": "backend",
-            "file": "apps/standalone-apps/textile-care/services/backend/Dockerfile"
+            "file": "apps/platform-apps/textile-care/services/backend/Dockerfile"
           },
           {
             "service": "marketplace-web",
-            "file": "apps/standalone-apps/textile-care/Dockerfile.web",
+            "file": "apps/platform-apps/textile-care/Dockerfile.web",
             "build-args": "APP_PATH=apps/marketplace-web"
           },
           {
             "service": "nginx",
-            "file": "apps/standalone-apps/textile-care/Dockerfile.nginx"
+            "file": "apps/platform-apps/textile-care/Dockerfile.nginx"
           },
           {
             "service": "seller-web",
-            "file": "apps/standalone-apps/textile-care/Dockerfile.web",
+            "file": "apps/platform-apps/textile-care/Dockerfile.web",
             "build-args": "APP_PATH=apps/seller-web"
           }
         ]

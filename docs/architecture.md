@@ -6,7 +6,7 @@ One pnpm workspace (root `pnpm-workspace.yaml`) orchestrated by Turborepo. Produ
 
 | Path | Holds |
 | --- | --- |
-| `apps/<category>/<product>/` | One deployable product each (`core-platform/zolexora-<name>` or `standalone-apps/<name>`): its apps, services, product-local packages, `compose.yaml`, Dockerfiles, scripts, docs. |
+| `apps/<category>/<product>/` | One deployable product each (`platform-core/zolexora-<name>` or `platform-apps/<name>`): its apps, services, product-local packages, `compose.yaml`, Dockerfiles, scripts, docs. |
 | `apps/` | Cross-product apps: `zolexora-auth-service` (central identity, Node, port 3081) and `zolexora-platform-admin` (FastAPI `backend/` + `frontend/`). |
 | `packages/` | All shared code, one folder per npm package (`@zolexora/<folder>`): `api-contracts`, `auth-client`, `utils`, `tsconfig`, `eslint-config`, `api-shield` (Cloudflare Worker), `user-auth-firebase` (Firebase login SDK), `user-auth-zolexora` (Postgres + Resend email/password auth, used by AppSuite), `auth-functions` (Firebase Cloud Functions). |
 | `infrastructure/` | Shared Dockerfiles (`containers/docker`), the shared nginx gateway image (`containers/compose`), database schemas/migrations (`database`, used by `supabase/`), cloud specs (`cloud`). |
@@ -53,7 +53,7 @@ Stays inside a product (never extracted):
 
 - ERP business domains: accounting/GL, B2B/B2C invoicing, inventory, logistics, selling/CRM, manufacturing, and their data (orders, customers, items, invoices, payroll).
 - Fine-grained business permissions (the platform only answers "may this org use product X?").
-- Integrations that serve a single product (e.g. ERP bank reconciliation lives in `apps/core-platform/zolexora-erp/services/frappe/zolexora_integrations/`).
+- Integrations that serve a single product (e.g. ERP bank reconciliation lives in `apps/platform-core/zolexora-erp/services/frappe/zolexora_integrations/`).
 
 ## Tenant naming
 

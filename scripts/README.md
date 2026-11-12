@@ -43,17 +43,17 @@ Product-specific deployment, lifecycle, and testing scripts are located in their
 
 | Product | Canonical Path | Key Scripts |
 |---|---|---|
-| **ClarityFi** | [`apps/standalone-apps/clarityfi/scripts/`](../apps/standalone-apps/clarityfi/scripts/) | `verify-tunnel.js` |
-| **RentoEasy** | [`apps/standalone-apps/rentoeasy/scripts/`](../apps/standalone-apps/rentoeasy/scripts/) | `migrate-prisma-codespaces.sh` |
-| **The Textile Care** | [`apps/standalone-apps/textile-care/scripts/`](../apps/standalone-apps/textile-care/scripts/) | `start-docker.sh`, `start-local.sh` |
-| **Zolexora AI** | [`apps/core-platform/zolexora-ai/scripts/`](../apps/core-platform/zolexora-ai/scripts/) | `deploy-azure.sh`, `seed-ai-memory.sh`, `setup-azure-resources.sh` |
-| **Zolexora Engage** | [`apps/core-platform/zolexora-engage/scripts/`](../apps/core-platform/zolexora-engage/scripts/) | `start-project.sh`, `start-web-dev.sh`, `run-post-merge-hooks.sh` |
-| **Zolexora ERP** | [`apps/core-platform/zolexora-erp/scripts/`](../apps/core-platform/zolexora-erp/scripts/) | `bootstrap-frappe-site.sh`, `backup-frappe-site.sh`, `restore-frappe-site.sh`, `schedule-daily-backup.sh`, `check-frappe-stack-health.sh`, `report-frappe-stack-status.sh`, `cleanup-workspaces.py`, `tests/` |
-| **Zolexora IMS** | [`apps/core-platform/zolexora-ims/scripts/`](../apps/core-platform/zolexora-ims/scripts/) | `setup.sh`, `deploy.sh`, `check-health.sh`, `db-ops.sh`, `docker-start.sh`, `menu.sh`, `run-all-tests.sh`, `mcp-payments-server.py` |
-| **Zolexora IronClub** | [`apps/standalone-apps/ironclub/scripts/`](../apps/standalone-apps/ironclub/scripts/) | `dev.sh`, `test.sh` |
-| **Zolexora Shop** | [`apps/standalone-apps/marketplace/scripts/`](../apps/standalone-apps/marketplace/scripts/) | `check-openapi-drift.sh`, `generate-openapi.py`, `validate-doc-links.py`, `verify-workspace.mjs` |
+| **ClarityFi** | [`apps/platform-apps/clarityfi/scripts/`](../apps/platform-apps/clarityfi/scripts/) | `verify-tunnel.js` |
+| **RentoEasy** | [`apps/platform-apps/rentoeasy/scripts/`](../apps/platform-apps/rentoeasy/scripts/) | `migrate-prisma-codespaces.sh` |
+| **The Textile Care** | [`apps/platform-apps/textile-care/scripts/`](../apps/platform-apps/textile-care/scripts/) | `start-docker.sh`, `start-local.sh` |
+| **Zolexora AI** | [`apps/platform-core/zolexora-ai/scripts/`](../apps/platform-core/zolexora-ai/scripts/) | `deploy-azure.sh`, `seed-ai-memory.sh`, `setup-azure-resources.sh` |
+| **Zolexora Engage** | [`apps/platform-core/zolexora-engage/scripts/`](../apps/platform-core/zolexora-engage/scripts/) | `start-project.sh`, `start-web-dev.sh`, `run-post-merge-hooks.sh` |
+| **Zolexora ERP** | [`apps/platform-core/zolexora-erp/scripts/`](../apps/platform-core/zolexora-erp/scripts/) | `bootstrap-frappe-site.sh`, `backup-frappe-site.sh`, `restore-frappe-site.sh`, `schedule-daily-backup.sh`, `check-frappe-stack-health.sh`, `report-frappe-stack-status.sh`, `cleanup-workspaces.py`, `tests/` |
+| **Zolexora IMS** | [`apps/platform-core/zolexora-ims/scripts/`](../apps/platform-core/zolexora-ims/scripts/) | `setup.sh`, `deploy.sh`, `check-health.sh`, `db-ops.sh`, `docker-start.sh`, `menu.sh`, `run-all-tests.sh`, `mcp-payments-server.py` |
+| **Zolexora IronClub** | [`apps/platform-apps/ironclub/scripts/`](../apps/platform-apps/ironclub/scripts/) | `dev.sh`, `test.sh` |
+| **Zolexora Shop** | [`apps/platform-apps/marketplace/scripts/`](../apps/platform-apps/marketplace/scripts/) | `check-openapi-drift.sh`, `generate-openapi.py`, `validate-doc-links.py`, `verify-workspace.mjs` |
 | **Every product** | `apps/<category>/<product>/scripts/` | `docker-start.sh` (start, stop, restart, build, pull, status, logs) |
-| **Zolexora TMS** | [`apps/core-platform/zolexora-tms/scripts/`](../apps/core-platform/zolexora-tms/scripts/) | `docker-start.sh`, `local-start.sh` |
+| **Zolexora TMS** | [`apps/platform-core/zolexora-tms/scripts/`](../apps/platform-core/zolexora-tms/scripts/) | `docker-start.sh`, `local-start.sh` |
 
 ---
 
@@ -62,19 +62,19 @@ Product-specific deployment, lifecycle, and testing scripts are located in their
 ### Zolexora ERP Operations
 
 ```bash
-./apps/core-platform/zolexora-erp/scripts/bootstrap-frappe-site.sh            # First-time site setup
-./apps/core-platform/zolexora-erp/scripts/backup-frappe-site.sh               # Create verified backup
-./apps/core-platform/zolexora-erp/scripts/restore-frappe-site.sh <backup-dir> # Restore from backup
-./apps/core-platform/zolexora-erp/scripts/check-frappe-stack-health.sh        # Health check all services
-./apps/core-platform/zolexora-erp/scripts/report-frappe-stack-status.sh       # Operational status report
+./apps/platform-core/zolexora-erp/scripts/bootstrap-frappe-site.sh            # First-time site setup
+./apps/platform-core/zolexora-erp/scripts/backup-frappe-site.sh               # Create verified backup
+./apps/platform-core/zolexora-erp/scripts/restore-frappe-site.sh <backup-dir> # Restore from backup
+./apps/platform-core/zolexora-erp/scripts/check-frappe-stack-health.sh        # Health check all services
+./apps/platform-core/zolexora-erp/scripts/report-frappe-stack-status.sh       # Operational status report
 ```
 
 ### Zolexora ERP Tests
 
 ```bash
-ZOLEXORA_ALLOW_DESTRUCTIVE_DR=1 ./apps/core-platform/zolexora-erp/scripts/tests/test-disaster-recovery.sh
-ZOLEXORA_ALLOW_CLEAN_SITE_TEST=1 ./apps/core-platform/zolexora-erp/scripts/tests/test-payments-clean-site.sh
-RUN_UPGRADE_BUILD=1 ./apps/core-platform/zolexora-erp/scripts/tests/test-upgrade-validation.sh
+ZOLEXORA_ALLOW_DESTRUCTIVE_DR=1 ./apps/platform-core/zolexora-erp/scripts/tests/test-disaster-recovery.sh
+ZOLEXORA_ALLOW_CLEAN_SITE_TEST=1 ./apps/platform-core/zolexora-erp/scripts/tests/test-payments-clean-site.sh
+RUN_UPGRADE_BUILD=1 ./apps/platform-core/zolexora-erp/scripts/tests/test-upgrade-validation.sh
 ```
 
 ### Developer Environment

@@ -1,0 +1,50 @@
+# =============================================================
+# Swarm Factory — Production Dockerfile
+# Multi-stage build: keeps final image small
+# Build context: repo root (docker build -f apps/platform-core/zolexora-ai/services/api/Dockerfile .)
+# =============================================================
+
+# Stage 1: Frontend build
+FROM node:22-alpine AS frontend-builder
+WORKDIR /app/frontend
+COPY apps/platform-core/zolexora-ai/apps/web/package*.json ./
+RUN npm install --silent
+COPY apps/platform-core/zolexora-ai/apps/web/ ./
+ARG VITE_API_KEY
+ENV VITE_API_KEY=$VITE_API_KEY
+RUN npm run build
+
+# Stage 2: Python deps
+FROM python:3.11-slim AS python-deps
+WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential curl git && rm -rf /var/lib/apt/lists/*
+COPY apps/platform-core/zolexora-ai/services/api/requirements.txt ./
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+
+# Stage 3: Final production image
+FROM python:3.11-slim AS production
+LABEL maintainer="Swarm Factory Team"
+WORKDIR /app
+ENV PYTHONPATH=/app/backend
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl git && rm -rf /var/lib/apt/lists/*
+
+COPY --from=python-deps /install /usr/local
+COPY apps/platform-core/zolexora-ai/services/api/backend/ ./backend/
+COPY apps/platform-core/zolexora-ai/services/api/main.py ./
+COPY --from=frontend-builder /app/frontend/dist/ ./frontend/dist/
+
+RUN mkdir -p ./sessions
+RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+USER appuser
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:4090/health || exit 1
+
+EXPOSE 4090
+
+CMD ["uvicorn", "backend.api.server:app", \
+     "--host", "0.0.0.0", "--port", "4090", \
+     "--workers", "1", "--log-level", "info"]

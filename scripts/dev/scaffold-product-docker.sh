@@ -1,7 +1,7 @@
 #!/bin/bash
 # Zolexora Platform — Product Docker Scaffolder & Auditor
 # Usage:
-#   bash scripts/dev/scaffold-product-docker.sh <category>/<product>   (e.g. core-platform/zolexora-foo, standalone-apps/foo)
+#   bash scripts/dev/scaffold-product-docker.sh <category>/<product>   (e.g. platform-core/zolexora-foo, platform-apps/foo)
 #   bash scripts/dev/scaffold-product-docker.sh --check
 set -e
 
@@ -15,12 +15,12 @@ print_usage() {
   echo -e "${CYAN}Zolexora Platform — Product Docker Scaffolder & Auditor${NC}"
   echo "Usage:"
   echo "  $0 <category>/<product> Scaffold Docker setup & GHCR workflow for a product"
-  echo "  $0 --check              Audit all products in apps/{core-platform,standalone-apps}/ for Docker & GHCR compliance"
+  echo "  $0 --check              Audit all products in apps/{platform-core,platform-apps}/ for Docker & GHCR compliance"
   echo "  $0 --help               Display this help message"
   echo ""
   echo "Example:"
-  echo "  $0 standalone-apps/rentoeasy"
-  echo "  $0 core-platform/zolexora-tms"
+  echo "  $0 platform-apps/rentoeasy"
+  echo "  $0 platform-core/zolexora-tms"
 }
 
 # ── AUDIT MODE (--check) ─────────────────────────────────────────────────────
@@ -32,7 +32,7 @@ run_audit() {
   printf "%-24s %-12s %-16s %-14s %-12s\n" "PRODUCT" "COMPOSE" "GHCR IMAGE" "PULL POLICY" "START SCRIPT"
   echo "----------------------------------------------------------------------------------------"
 
-  for dir in apps/core-platform/*/ apps/standalone-apps/*/; do
+  for dir in apps/platform-core/*/ apps/platform-apps/*/; do
     [ -d "$dir" ] || continue
     pname=$(basename "$dir")
     [ "$pname" = "README.md" ] && continue

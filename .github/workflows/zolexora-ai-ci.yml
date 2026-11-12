@@ -4,12 +4,12 @@ on:
   push:
     branches: [main]
     paths:
-      - 'apps/core-platform/zolexora-ai/**'
+      - 'apps/platform-core/zolexora-ai/**'
       - '.github/workflows/zolexora-ai-ci.yml'
       - '.github/actions/**'
   pull_request:
     paths:
-      - 'apps/core-platform/zolexora-ai/**'
+      - 'apps/platform-core/zolexora-ai/**'
       - '.github/workflows/zolexora-ai-ci.yml'
       - '.github/actions/**'
 
@@ -23,13 +23,13 @@ jobs:
     timeout-minutes: 20
     defaults:
       run:
-        working-directory: apps/core-platform/zolexora-ai/services/api
+        working-directory: apps/platform-core/zolexora-ai/services/api
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-python
         with:
           python-version: '3.11'
-          requirements: apps/core-platform/zolexora-ai/services/api/requirements.txt
+          requirements: apps/platform-core/zolexora-ai/services/api/requirements.txt
           packages: ruff pytest pytest-cov pytest-asyncio
       - name: Lint (advisory)
         run: ruff check backend/
@@ -41,7 +41,7 @@ jobs:
         if: always()
         with:
           name: zolexora-ai-coverage
-          path: apps/core-platform/zolexora-ai/services/api/coverage.xml
+          path: apps/platform-core/zolexora-ai/services/api/coverage.xml
           retention-days: 14
 
   frontend:

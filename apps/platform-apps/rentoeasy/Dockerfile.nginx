@@ -1,0 +1,3 @@
+# Build context: repo root (docker build -f apps/platform-apps/rentoeasy/Dockerfile.nginx .)
+FROM nginx:alpine
+COPY apps/platform-apps/rentoeasy/nginx-conf.d /etc/nginx/conf.d

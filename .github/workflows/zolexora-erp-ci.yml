@@ -1,18 +1,18 @@
 name: Zolexora ERP — CI
 
-# Lint the first-party Frappe apps, then bring up the ERP stack (apps/core-platform/zolexora-erp/compose.yaml) and run
+# Lint the first-party Frappe apps, then bring up the ERP stack (apps/platform-core/zolexora-erp/compose.yaml) and run
 # bootstrap, health, backup/restore and upgrade checks. Secrets come from Infisical (Zolexora_ERP).
 on:
   push:
     branches: [main]
     paths:
-      - 'apps/core-platform/zolexora-erp/**'
+      - 'apps/platform-core/zolexora-erp/**'
       - 'infrastructure/containers/**'
       - 'scripts/docker/**'
       - '.github/workflows/zolexora-erp-ci.yml'
   pull_request:
     paths:
-      - 'apps/core-platform/zolexora-erp/**'
+      - 'apps/platform-core/zolexora-erp/**'
       - 'infrastructure/containers/**'
       - 'scripts/docker/**'
       - '.github/workflows/zolexora-erp-ci.yml'
@@ -22,10 +22,10 @@ permissions:
 
 env:
   APPS: >-
-    apps/core-platform/zolexora-erp/services/frappe/zolexora_core
-    apps/core-platform/zolexora-erp/services/frappe/zolexora_branding
-    apps/core-platform/zolexora-erp/services/frappe/zolexora_platform
-    apps/core-platform/zolexora-erp/services/frappe/zolexora_integrations
+    apps/platform-core/zolexora-erp/services/frappe/zolexora_core
+    apps/platform-core/zolexora-erp/services/frappe/zolexora_branding
+    apps/platform-core/zolexora-erp/services/frappe/zolexora_platform
+    apps/platform-core/zolexora-erp/services/frappe/zolexora_integrations
 
 jobs:
   lint:
@@ -62,23 +62,23 @@ jobs:
       - name: Build Docker images
         env:
           INSTALL_PAYMENTS: ${{ matrix.install_payments }}
-        run: bash scripts/setup/with-infisical.sh apps/core-platform/zolexora-erp docker compose -f apps/core-platform/zolexora-erp/compose.yaml build --pull
+        run: bash scripts/setup/with-infisical.sh apps/platform-core/zolexora-erp docker compose -f apps/platform-core/zolexora-erp/compose.yaml build --pull
       - name: Start Compose stack
         env:
           INSTALL_PAYMENTS: ${{ matrix.install_payments }}
-        run: bash scripts/setup/with-infisical.sh apps/core-platform/zolexora-erp docker compose -f apps/core-platform/zolexora-erp/compose.yaml up -d
+        run: bash scripts/setup/with-infisical.sh apps/platform-core/zolexora-erp docker compose -f apps/platform-core/zolexora-erp/compose.yaml up -d
       - name: Run clean bootstrap
-        run: ./apps/core-platform/zolexora-erp/scripts/bootstrap-frappe-site.sh
+        run: ./apps/platform-core/zolexora-erp/scripts/bootstrap-frappe-site.sh
       - name: Run idempotent bootstrap
-        run: ./apps/core-platform/zolexora-erp/scripts/bootstrap-frappe-site.sh
+        run: ./apps/platform-core/zolexora-erp/scripts/bootstrap-frappe-site.sh
       - name: Run healthcheck
-        run: ./apps/core-platform/zolexora-erp/scripts/check-frappe-stack-health.sh
+        run: ./apps/platform-core/zolexora-erp/scripts/check-frappe-stack-health.sh
       - name: Verify Payments matrix path
         run: |
-          docker compose -f apps/core-platform/zolexora-erp/compose.yaml exec -T backend bench --site site1.example.com list-apps
+          docker compose -f apps/platform-core/zolexora-erp/compose.yaml exec -T backend bench --site site1.example.com list-apps
           if [ "${{ matrix.install_payments }}" = "1" ]; then
-            docker compose -f apps/core-platform/zolexora-erp/compose.yaml exec -T backend bench --site site1.example.com list-apps | awk '{print $1}' | grep -qx "payments"
-            docker compose -f apps/core-platform/zolexora-erp/compose.yaml exec -T backend bench --site site1.example.com console <<'PY'
+            docker compose -f apps/platform-core/zolexora-erp/compose.yaml exec -T backend bench --site site1.example.com list-apps | awk '{print $1}' | grep -qx "payments"
+            docker compose -f apps/platform-core/zolexora-erp/compose.yaml exec -T backend bench --site site1.example.com console <<'PY'
           import frappe
           assert "payments" in frappe.get_installed_apps(), "payments app not installed"
           assert frappe.db.exists("DocType", "Payment Gateway"), "Payment Gateway DocType missing"
@@ -88,19 +88,19 @@ jobs:
             echo "INSTALL_PAYMENTS=0 path validated"
           fi
       - name: Generate verified backup
-        run: ./apps/core-platform/zolexora-erp/scripts/backup-frappe-site.sh
+        run: ./apps/platform-core/zolexora-erp/scripts/backup-frappe-site.sh
       - name: Restore latest backup
         run: |
           latest_backup="$(find storage/backups -mindepth 1 -maxdepth 1 -type d | sort | tail -n 1)"
           (cd "$latest_backup" && sha256sum -c SHA256SUMS)
-          ./apps/core-platform/zolexora-erp/scripts/restore-frappe-site.sh "$latest_backup"
+          ./apps/platform-core/zolexora-erp/scripts/restore-frappe-site.sh "$latest_backup"
       - name: Run post-restore healthcheck
-        run: ./apps/core-platform/zolexora-erp/scripts/check-frappe-stack-health.sh
+        run: ./apps/platform-core/zolexora-erp/scripts/check-frappe-stack-health.sh
       - name: Verify post-restore Payments state
         run: |
           if [ "${{ matrix.install_payments }}" = "1" ]; then
-            docker compose -f apps/core-platform/zolexora-erp/compose.yaml exec -T backend bench --site site1.example.com list-apps | awk '{print $1}' | grep -qx "payments"
-            docker compose -f apps/core-platform/zolexora-erp/compose.yaml exec -T backend bench --site site1.example.com console <<'PY'
+            docker compose -f apps/platform-core/zolexora-erp/compose.yaml exec -T backend bench --site site1.example.com list-apps | awk '{print $1}' | grep -qx "payments"
+            docker compose -f apps/platform-core/zolexora-erp/compose.yaml exec -T backend bench --site site1.example.com console <<'PY'
           import frappe
           assert "payments" in frappe.get_installed_apps(), "payments app not installed after restore"
           assert frappe.db.exists("DocType", "Payment Gateway"), "Payment Gateway DocType missing after restore"
@@ -111,12 +111,12 @@ jobs:
           fi
       - name: Custom app import checks
         run: |
-          docker compose -f apps/core-platform/zolexora-erp/compose.yaml exec -T backend bench --site site1.example.com execute zolexora_core.site_setup.validate_custom_app_imports
+          docker compose -f apps/platform-core/zolexora-erp/compose.yaml exec -T backend bench --site site1.example.com execute zolexora_core.site_setup.validate_custom_app_imports
       - name: Upgrade compatibility validation
-        run: RUN_UPGRADE_BUILD=1 ./apps/core-platform/zolexora-erp/scripts/tests/test-upgrade-validation.sh
+        run: RUN_UPGRADE_BUILD=1 ./apps/platform-core/zolexora-erp/scripts/tests/test-upgrade-validation.sh
       - name: Cleanup
         if: always()
-        run: docker compose -f apps/core-platform/zolexora-erp/compose.yaml down -v
+        run: docker compose -f apps/platform-core/zolexora-erp/compose.yaml down -v
 
   destructive-disaster-recovery:
     runs-on: ubuntu-latest
@@ -125,4 +125,4 @@ jobs:
     steps:
       - run: |
           echo "Full destructive DR is intentionally disabled in lightweight CI."
-          echo "Run locally or in staging with ZOLEXORA_ALLOW_DESTRUCTIVE_DR=1 ./apps/core-platform/zolexora-erp/scripts/tests/test-disaster-recovery.sh"
+          echo "Run locally or in staging with ZOLEXORA_ALLOW_DESTRUCTIVE_DR=1 ./apps/platform-core/zolexora-erp/scripts/tests/test-disaster-recovery.sh"

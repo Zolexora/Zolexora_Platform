@@ -37,7 +37,7 @@ class TestTier2Domain1InfisicalFallback(unittest.TestCase):
 
     def test_b1_01_fallback_when_token_unset(self):
         """Verify startup script proceeds without hanging when INFISICAL_TOKEN is unset."""
-        canonical_script = get_repo_root() / "apps" / "core-platform" / "zolexora-tms" / "scripts" / "docker-start.sh"
+        canonical_script = get_repo_root() / "apps" / "platform-core" / "zolexora-tms" / "scripts" / "docker-start.sh"
         self.assertTrue(canonical_script.exists())
         # Run with empty token and stdin closed
         env = {"INFISICAL_TOKEN": ""}
@@ -53,7 +53,7 @@ class TestTier2Domain1InfisicalFallback(unittest.TestCase):
 
     def test_b1_02_fallback_warning_message_emitted(self):
         """Verify the start script goes through the Infisical wrapper, which tells the user how to log in."""
-        canonical_script = get_repo_root() / "apps" / "core-platform" / "zolexora-tms" / "scripts" / "docker-start.sh"
+        canonical_script = get_repo_root() / "apps" / "platform-core" / "zolexora-tms" / "scripts" / "docker-start.sh"
         wrapper = get_repo_root() / "scripts" / "setup" / "with-infisical.sh"
         self.assertIn("scripts/setup/with-infisical.sh", canonical_script.read_text(encoding="utf-8"))
         guidance = wrapper.read_text(encoding="utf-8")
@@ -62,9 +62,9 @@ class TestTier2Domain1InfisicalFallback(unittest.TestCase):
 
     def test_b1_03_fallback_preserves_clean_disk(self):
         """Verify unauthenticated fallback execution does not create .env.docker on disk."""
-        canonical_script = get_repo_root() / "apps" / "core-platform" / "zolexora-tms" / "scripts" / "docker-start.sh"
+        canonical_script = get_repo_root() / "apps" / "platform-core" / "zolexora-tms" / "scripts" / "docker-start.sh"
         env_docker = get_repo_root() / ".env.docker"
-        tms_env_docker = get_repo_root() / "apps" / "core-platform" / "zolexora-tms" / ".env.docker"
+        tms_env_docker = get_repo_root() / "apps" / "platform-core" / "zolexora-tms" / ".env.docker"
         if env_docker.exists():
             env_docker.unlink()
         if tms_env_docker.exists():
@@ -72,11 +72,11 @@ class TestTier2Domain1InfisicalFallback(unittest.TestCase):
 
         run_cmd(["bash", str(canonical_script), "status"], timeout=5.0)
         self.assertFalse(env_docker.exists(), "Found unexpected .env.docker in repo root")
-        self.assertFalse(tms_env_docker.exists(), "Found unexpected .env.docker in apps/core-platform/zolexora-tms")
+        self.assertFalse(tms_env_docker.exists(), "Found unexpected .env.docker in apps/platform-core/zolexora-tms")
 
     def test_b1_04_fallback_exits_cleanly_on_status(self):
         """Verify script status check exits cleanly with code 0 without active auth."""
-        canonical_script = get_repo_root() / "apps" / "core-platform" / "zolexora-tms" / "scripts" / "docker-start.sh"
+        canonical_script = get_repo_root() / "apps" / "platform-core" / "zolexora-tms" / "scripts" / "docker-start.sh"
         rc, _, stderr = run_cmd(["bash", str(canonical_script), "status"], timeout=10.0)
         self.assertEqual(rc, 0, f"docker-start.sh status failed in unauthenticated environment: {stderr}")
 
@@ -121,7 +121,7 @@ class TestTier2Domain2MissingEnvVariables(unittest.TestCase):
     def test_b2_03_missing_sentry_dsn_safe(self):
         """Verify backend app/main.py safely guards Sentry initialization if SENTRY_DSN is None."""
         main_py = (
-            get_repo_root() / "apps" / "core-platform" / "zolexora-tms" / "services" / "backend" / "app" / "main.py"
+            get_repo_root() / "apps" / "platform-core" / "zolexora-tms" / "services" / "backend" / "app" / "main.py"
         )
         content = main_py.read_text(encoding="utf-8")
         self.assertIn("if settings.SENTRY_DSN:", content)
@@ -153,7 +153,7 @@ class TestTier2Domain3ContainerIdempotency(unittest.TestCase):
 
     def test_b3_02_script_status_idempotent(self):
         """Verify executing status repeatedly causes zero state alterations."""
-        canonical_script = get_repo_root() / "apps" / "core-platform" / "zolexora-tms" / "scripts" / "docker-start.sh"
+        canonical_script = get_repo_root() / "apps" / "platform-core" / "zolexora-tms" / "scripts" / "docker-start.sh"
         rc1, out1, _ = run_cmd(["bash", str(canonical_script), "status"], timeout=10.0)
         rc2, out2, _ = run_cmd(["bash", str(canonical_script), "status"], timeout=10.0)
         self.assertEqual(rc1, 0)
@@ -165,7 +165,7 @@ class TestTier2Domain3ContainerIdempotency(unittest.TestCase):
 
     def test_b3_03_restart_command_syntax_idempotent(self):
         """Verify restart command implementation performs down before start."""
-        canonical_script = get_repo_root() / "apps" / "core-platform" / "zolexora-tms" / "scripts" / "docker-start.sh"
+        canonical_script = get_repo_root() / "apps" / "platform-core" / "zolexora-tms" / "scripts" / "docker-start.sh"
         content = canonical_script.read_text(encoding="utf-8")
         self.assertIn("restart)", content)
         self.assertIn("down", content)
@@ -195,14 +195,14 @@ class TestTier2Domain4InvalidSubcommands(unittest.TestCase):
 
     def test_b4_01_unknown_subcommand_rejected(self):
         """Verify script exits with non-zero status on unknown subcommand."""
-        canonical_script = get_repo_root() / "apps" / "core-platform" / "zolexora-tms" / "scripts" / "docker-start.sh"
+        canonical_script = get_repo_root() / "apps" / "platform-core" / "zolexora-tms" / "scripts" / "docker-start.sh"
         rc, stdout, stderr = run_cmd(["bash", str(canonical_script), "unknown_cmd_xyz"], timeout=5.0)
         self.assertNotEqual(rc, 0)
         self.assertIn("Usage", stdout + stderr)
 
     def test_b4_02_special_character_injection_safety(self):
         """Verify passing special shell metacharacters does not trigger command injection."""
-        canonical_script = get_repo_root() / "apps" / "core-platform" / "zolexora-tms" / "scripts" / "docker-start.sh"
+        canonical_script = get_repo_root() / "apps" / "platform-core" / "zolexora-tms" / "scripts" / "docker-start.sh"
         rc, stdout, stderr = run_cmd(
             ["bash", str(canonical_script), "; echo 'INJECTED';"],
             timeout=5.0,
@@ -212,7 +212,7 @@ class TestTier2Domain4InvalidSubcommands(unittest.TestCase):
 
     def test_b4_03_empty_string_argument(self):
         """Verify passing an empty string argument defaults cleanly to start action."""
-        canonical_script = get_repo_root() / "apps" / "core-platform" / "zolexora-tms" / "scripts" / "docker-start.sh"
+        canonical_script = get_repo_root() / "apps" / "platform-core" / "zolexora-tms" / "scripts" / "docker-start.sh"
         # Test dry-run default action expansion without executing network compose up
         test_cmd = (
             f"bash -c 'ACTION=\"${{1:-start}}\"; case \"$ACTION\" in "
@@ -224,7 +224,7 @@ class TestTier2Domain4InvalidSubcommands(unittest.TestCase):
 
     def test_b4_04_non_interactive_stdin_pipe(self):
         """Verify piping empty string into script executes without hanging on interactive read."""
-        canonical_script = get_repo_root() / "apps" / "core-platform" / "zolexora-tms" / "scripts" / "docker-start.sh"
+        canonical_script = get_repo_root() / "apps" / "platform-core" / "zolexora-tms" / "scripts" / "docker-start.sh"
         start = time.time()
         rc, _, _ = run_cmd(
             ["bash", str(canonical_script), "status"],
@@ -237,7 +237,7 @@ class TestTier2Domain4InvalidSubcommands(unittest.TestCase):
 
     def test_b4_05_invalid_flag_handling(self):
         """Verify passing invalid option flags outputs usage and returns non-zero."""
-        canonical_script = get_repo_root() / "apps" / "core-platform" / "zolexora-tms" / "scripts" / "docker-start.sh"
+        canonical_script = get_repo_root() / "apps" / "platform-core" / "zolexora-tms" / "scripts" / "docker-start.sh"
         rc, stdout, stderr = run_cmd(["bash", str(canonical_script), "--invalid-flag"], timeout=5.0)
         self.assertNotEqual(rc, 0)
         self.assertIn("Usage", stdout + stderr)
@@ -253,7 +253,7 @@ class TestTier2Domain5GitignoreRules(unittest.TestCase):
 
     def test_b5_02_nested_env_ignored(self):
         """Verify deeply nested .env inside services/backend is ignored by git."""
-        rc, _, _ = run_cmd(["git", "check-ignore", "-q", "apps/core-platform/zolexora-tms/services/backend/.env"])
+        rc, _, _ = run_cmd(["git", "check-ignore", "-q", "apps/platform-core/zolexora-tms/services/backend/.env"])
         self.assertEqual(rc, 0, "Nested .env must be ignored by git")
 
     def test_b5_03_arbitrary_wildcard_env_ignored(self):
@@ -265,7 +265,7 @@ class TestTier2Domain5GitignoreRules(unittest.TestCase):
     def test_b5_04_env_local_and_production_ignored(self):
         """Verify .env.local and .env.production are ignored by git."""
         for env_file in [".env.local", ".env.production", ".env.staging"]:
-            rc, _, _ = run_cmd(["git", "check-ignore", "-q", f"apps/core-platform/zolexora-tms/{env_file}"])
+            rc, _, _ = run_cmd(["git", "check-ignore", "-q", f"apps/platform-core/zolexora-tms/{env_file}"])
             self.assertEqual(rc, 0, f"File {env_file} must be ignored by git")
 
 

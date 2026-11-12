@@ -14,10 +14,10 @@
     { "path": "./packages/user-auth-firebase" },
     { "path": "./packages/auth-functions" },
     { "path": "./apps/platform-admin/frontend" },
-    { "path": "./apps/core-platform/zolexora-tms/apps/tms-web" },
-    { "path": "./apps/core-platform/zolexora-tms/apps/tms-admin" },
-    { "path": "./apps/standalone-apps/clarityfi" },
-    { "path": "./apps/core-platform/zolexora-engage" },
-    { "path": "./apps/standalone-apps/textile-care" }
+    { "path": "./apps/platform-core/zolexora-tms/apps/tms-web" },
+    { "path": "./apps/platform-core/zolexora-tms/apps/tms-admin" },
+    { "path": "./apps/platform-apps/clarityfi" },
+    { "path": "./apps/platform-core/zolexora-engage" },
+    { "path": "./apps/platform-apps/textile-care" }
   ]
 }

@@ -18,24 +18,24 @@ def get_repo_root() -> Path:
 
 def get_tms_compose_path() -> Path:
     """Return the path to canonical compose.yaml."""
-    return get_repo_root() / "apps" / "core-platform" / "zolexora-tms" / "compose.yaml"
+    return get_repo_root() / "apps" / "platform-core" / "zolexora-tms" / "compose.yaml"
 
 
 def get_infisical_config_path() -> Path:
     """Return the path to TMS .infisical.json."""
-    return get_repo_root() / "apps" / "core-platform" / "zolexora-tms" / ".infisical.json"
+    return get_repo_root() / "apps" / "platform-core" / "zolexora-tms" / ".infisical.json"
 
 
 def get_nginx_conf_path() -> Path:
     """Return the path to TMS Nginx default.conf."""
-    return get_repo_root() / "apps" / "core-platform" / "zolexora-tms" / "nginx-conf.d" / "default.conf"
+    return get_repo_root() / "apps" / "platform-core" / "zolexora-tms" / "nginx-conf.d" / "default.conf"
 
 
 def find_tms_startup_scripts() -> List[Path]:
     """Return existing TMS startup scripts in priority order."""
     root = get_repo_root()
     candidates = [
-        root / "apps" / "core-platform" / "zolexora-tms" / "scripts" / "docker-start.sh",
+        root / "apps" / "platform-core" / "zolexora-tms" / "scripts" / "docker-start.sh",
     ]
     return [p for p in candidates if p.exists()]
 

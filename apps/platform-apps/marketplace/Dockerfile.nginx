@@ -1,0 +1,3 @@
+# Build context: repo root (docker build -f apps/platform-apps/marketplace/Dockerfile.nginx .)
+FROM nginx:alpine
+COPY apps/platform-apps/marketplace/nginx-conf.d /etc/nginx/conf.d

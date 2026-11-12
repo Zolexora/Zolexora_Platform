@@ -1,2 +1,0 @@
-FROM nginx:alpine
-COPY apps/core-platform/zolexora-tms/nginx-conf.d/ /etc/nginx/conf.d/

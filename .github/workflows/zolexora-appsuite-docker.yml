@@ -1,12 +1,12 @@
 name: Zolexora AppSuite — Docker images
 
 # Next.js images bake NEXT_PUBLIC_* Firebase config at build time, so this workflow loads it from
-# Infisical (project in apps/core-platform/zolexora-appsuite/.infisical.json) before building.
+# Infisical (project in apps/platform-core/zolexora-appsuite/.infisical.json) before building.
 on:
   push:
     branches: [main]
     paths:
-      - 'apps/core-platform/zolexora-appsuite/**'
+      - 'apps/platform-core/zolexora-appsuite/**'
       - 'packages/**'
       - 'pnpm-lock.yaml'
       - '.github/workflows/zolexora-appsuite-docker.yml'
@@ -26,13 +26,13 @@ jobs:
       matrix:
         include:
           - service: backend
-            file: apps/core-platform/zolexora-appsuite/Dockerfile.backend
+            file: apps/platform-core/zolexora-appsuite/Dockerfile.backend
           - service: client
-            file: apps/core-platform/zolexora-appsuite/Dockerfile.client
+            file: apps/platform-core/zolexora-appsuite/Dockerfile.client
           - service: devteam
-            file: apps/core-platform/zolexora-appsuite/Dockerfile.devteam
+            file: apps/platform-core/zolexora-appsuite/Dockerfile.devteam
           - service: nginx
-            file: apps/core-platform/zolexora-appsuite/Dockerfile.nginx
+            file: apps/platform-core/zolexora-appsuite/Dockerfile.nginx
     steps:
       - uses: actions/checkout@v4
         with:

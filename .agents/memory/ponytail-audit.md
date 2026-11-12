@@ -10,7 +10,7 @@ Shared resume point for any agent performing a repository-wide over-engineering 
 ## Scope and method
 
 - Repository: `/workspaces/Zolexora_Platform`.
-- Initial inventory: 3,268 Git-tracked files; 1,557 tracked code files by source extension; three Git submodules under `apps/core-platform/zolexora-erp/services/frappe/`.
+- Initial inventory: 3,268 Git-tracked files; 1,557 tracked code files by source extension; three Git submodules under `apps/platform-core/zolexora-erp/services/frappe/`.
 - Review first-party code/configuration in bounded product and infrastructure sections. Inspect full files for concrete candidates; use search/checksums only to locate likely duplication, not as proof of code quality.
 - Treat vendored/generated/build/cache/dependency output as out of scope unless the repository authors maintain it or it creates a clear first-party maintenance burden. Review the ERP submodule integration and local custom code; upstream submodule internals are not first-party code.
 - Audit over-engineering only: dead code, duplicate logic/config, unnecessary abstractions/dependencies, wrappers, excess configuration, and straightforward shrink opportunities. Correctness, security, and performance issues are separate review topics.
@@ -22,30 +22,30 @@ Shared resume point for any agent performing a repository-wide over-engineering 
 | --- | --- | --- |
 | Root workspace and shared packages | Initial pass | Read root manifests/configs; detailed package-source review pending. |
 | `.agents`, docs, config, scripts, infrastructure | Initial pass | Inventory done; some configs/manifests/scripts reviewed; broad review pending. |
-| `apps/standalone-apps/clarityfi` | Initial pass | README, workspace/package usage, API server routes, and mobile API call sites reviewed; full mobile source review pending. |
-| `apps/standalone-apps/maunkavach` | Initial pass | README, web manifest, app composition, and UI consumers reviewed; Android/backend source review pending. |
+| `apps/platform-apps/clarityfi` | Initial pass | README, workspace/package usage, API server routes, and mobile API call sites reviewed; full mobile source review pending. |
+| `apps/platform-apps/maunkavach` | Initial pass | README, web manifest, app composition, and UI consumers reviewed; Android/backend source review pending. |
 | `products/platform-admin` | Code reviewed | 325 lines read; database router/health/R2 modules are disconnected from the FastAPI app, whose only route is static health. |
-| `apps/standalone-apps/rentoeasy` | Initial pass | Root/API/workspace manifests reviewed; detailed frontend/backend code review pending. |
-| `apps/standalone-apps/textile-care` | Initial pass | Exact asset duplicate scan and shared-package/call-site review started; backend and app source review pending. |
-| `apps/core-platform/zolexora-ai` | Initial pass | README/architecture, package manifests, requirement files, Docker/Compose references, source inventory and project history/file/change call graph reviewed; full source files remain pending. |
-| `apps/core-platform/zolexora-appsuite` | Code reviewed | Read 2,631 lines of app/config/schema/README source; excluded `.next`, tsbuildinfo, and `.env.local`. Two unreferenced server actions; request creation also exists as a page handler and API endpoint. |
-| `apps/core-platform/zolexora-engage` | Initial pass | README, workspace/package usage, and exact duplicate packages reviewed; detailed app/API flow review pending. |
-| `apps/core-platform/zolexora-erp` first-party code | Not reviewed | Inspect local customization/integration only; upstream submodules excluded. |
-| `apps/core-platform/zolexora-ims` | Not reviewed | |
+| `apps/platform-apps/rentoeasy` | Initial pass | Root/API/workspace manifests reviewed; detailed frontend/backend code review pending. |
+| `apps/platform-apps/textile-care` | Initial pass | Exact asset duplicate scan and shared-package/call-site review started; backend and app source review pending. |
+| `apps/platform-core/zolexora-ai` | Initial pass | README/architecture, package manifests, requirement files, Docker/Compose references, source inventory and project history/file/change call graph reviewed; full source files remain pending. |
+| `apps/platform-core/zolexora-appsuite` | Code reviewed | Read 2,631 lines of app/config/schema/README source; excluded `.next`, tsbuildinfo, and `.env.local`. Two unreferenced server actions; request creation also exists as a page handler and API endpoint. |
+| `apps/platform-core/zolexora-engage` | Initial pass | README, workspace/package usage, and exact duplicate packages reviewed; detailed app/API flow review pending. |
+| `apps/platform-core/zolexora-erp` first-party code | Not reviewed | Inspect local customization/integration only; upstream submodules excluded. |
+| `apps/platform-core/zolexora-ims` | Not reviewed | |
 | `apps/core-platform/zolexora-shop` | Not reviewed | Follow its local agent instructions before detailed review. |
-| `apps/core-platform/zolexora-tms` | Initial pass | Agent instructions read; first-pass abstraction inventory only. |
+| `apps/platform-core/zolexora-tms` | Initial pass | Agent instructions read; first-pass abstraction inventory only. |
 | Git submodule internals | Excluded | Third-party ERPNext, Frappe, and Payments upstream trees; assess only first-party integration. |
 
 ## Candidate findings (preliminary, verify before final report)
 
-- `shrink:` Remove the repeated `apps/core-platform/zolexora-engage/apps/*` glob from root `pnpm-workspace.yaml` (one duplicate line).
+- `shrink:` Remove the repeated `apps/platform-core/zolexora-engage/apps/*` glob from root `pnpm-workspace.yaml` (one duplicate line).
 - `delete:` Consolidate byte-identical Nginx and PostgreSQL test Compose configs under `infrastructure/containers/{compose,docker}`; verify all references and compatibility paths before recommending a canonical path.
 - `delete:` The Textile Care `logo.png` and `logo-white.png` assets are byte-identical across seller, marketplace, and admin web public directories; consider a shared canonical asset source. Determine build/deploy constraints before finalizing.
 - `yagni:` The Zolexora Shop buyer mobile apps contain nine identical route/store files (1,435 duplicate lines) despite ADR 0007 rejecting copied full-app behavior and requiring two distinct binaries. Share identical app behavior while retaining separate app identities, storefront config, and release artifacts.
 
 These candidates are not yet final findings; validate file ownership, consumers, and intended product boundaries during the detailed pass.
 
-- `delete:` In untracked `apps/core-platform/zolexora-appsuite`, `lib/actions/contracts.ts` (`signContract`) has no callers; `lib/actions/requests.ts` (`createApplicationRequest`) has no callers and overlaps the page's direct insert. Both are removable unless an external integration is planned. Verify with `rg` before finalizing.
+- `delete:` In untracked `apps/platform-core/zolexora-appsuite`, `lib/actions/contracts.ts` (`signContract`) has no callers; `lib/actions/requests.ts` (`createApplicationRequest`) has no callers and overlaps the page's direct insert. Both are removable unless an external integration is planned. Verify with `rg` before finalizing.
 - `yagni:` The App Suite `app/api/requests` route has no in-app callers and duplicates request listing/creation already done directly via Supabase in pages. Keep it only if it is an intentional external API contract; no local docs currently describe one.
 - `delete:` `infrastructure/containers/compose/postgres-test.yml` is identical to `infrastructure/containers/docker/postgres-test.compose.yml`; current marketplace tests use the latter path through the documented `infrastructure/docker` compatibility symlink. Verify no other consumer of the former before finalizing.
 - `delete:` TheTextileCare `packages/tenant` is listed as a workspace dependency but has no code imports; its resolver is only a no-op placeholder. Remove the unused package/dependency/path alias unless the frontend implementation is scheduled imminently.
@@ -57,17 +57,17 @@ These candidates are not yet final findings; validate file ownership, consumers,
 - `delete:` Clarity FI's `packages/db` is an unused scaffold (empty schema, no code imports); the API server only exposes health and the mobile app stores data locally. Remove the package and its API-server dependency unless a database-backed feature is scheduled now.
 - `delete:` Clarity FI declares `@workspace/api-client-react` in the mobile app but imports no client functions; its optional API server exposes only health. Drop the client package/dependency until a real API feature consumes it.
 - `delete:` Clarity FI and Zolexora Engage each carry an identical empty Drizzle schema package; Engage also has no code imports of `@workspace/db` (only a manifest dependency and setup docs). Remove the unused DB package/dependencies or add an actual schema/consumer when required.
-- `shrink:` Simplify `apps/standalone-apps/rentoeasy/package.json`: remove the npm/Yarn `workspaces` list and duplicated Nest dependencies; pnpm already defines workspace globs in `pnpm-workspace.yaml`, and `services/api` declares its own runtime dependencies.
+- `shrink:` Simplify `apps/platform-apps/rentoeasy/package.json`: remove the npm/Yarn `workspaces` list and duplicated Nest dependencies; pnpm already defines workspace globs in `pnpm-workspace.yaml`, and `services/api` declares its own runtime dependencies.
 - `delete:` Remove `products/platform-admin/backend/app/db/` and its unused dependencies until an admin route consumes it; the only FastAPI route returns a static health payload and no code imports the database package.
 - `delete:` Trim the Maun Kavach marketing site's generated `components/ui` catalog and its Radix/form/chart/carousel dependencies to the components actually used. The live app imports only Card, while its Toaster and TooltipProvider have no feature consumers; `@tanstack/react-query` is only mounted in an app with no query hooks.
 - `delete:` Remove `createSignedDownloadUrl` from Maun Kavach storage until a caller needs direct streaming; the Android client currently proxies downloads through the API and the exported function has no callers.
 
-- `delete:` `apps/core-platform/zolexora-ai/services/api/backend/requirements.txt` repeats the root requirements list with only two additional Azure packages; repository setup and the production Dockerfile use the root file, and no local installer references the backend copy. Remove the duplicate file or have the root manifest include those Azure packages. Verify any external backend-only workflow before finalizing.
+- `delete:` `apps/platform-core/zolexora-ai/services/api/backend/requirements.txt` repeats the root requirements list with only two additional Azure packages; repository setup and the production Dockerfile use the root file, and no local installer references the backend copy. Remove the duplicate file or have the root manifest include those Azure packages. Verify any external backend-only workflow before finalizing.
 
 ## Progress updates
 
 - 2026-10-12: Created this shared ledger and linked it from `.agents/rules/ponytail.md` so agents have a repository-wide resume point.
-- 2026-10-12: Initial workspace inventory and quick candidate discovery completed. Existing worktree changes at start: modified root `pnpm-lock.yaml`, modified root `pnpm-workspace.yaml`, untracked `apps/core-platform/zolexora-appsuite/`; preserve these.
+- 2026-10-12: Initial workspace inventory and quick candidate discovery completed. Existing worktree changes at start: modified root `pnpm-lock.yaml`, modified root `pnpm-workspace.yaml`, untracked `apps/platform-core/zolexora-appsuite/`; preserve these.
 - 2026-10-12: Read the App Suite's first-party source, schema, package manifests, and README. Excluded generated `.next` files and did not open the local `.env.local`. Confirmed both server-action exports lack local callers; `createApplicationRequest` duplicates the active new-request page flow. No code fixes applied.
 - 2026-10-12: Verified marketplace ADR 0007 and package manifests; nine route/store files are byte-identical in the two buyer mobile workspaces (1,435 duplicated lines). The two apps retain distinct storefront config and identities, so only shared behavior is a simplification candidate.
 - 2026-10-12: Initial infrastructure/config read-through found duplicate PostgreSQL test stacks, with the `docker/` path used through the backward-compatibility symlink. Full scripts and infrastructure read-through remains pending.

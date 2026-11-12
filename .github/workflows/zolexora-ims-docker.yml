@@ -1,11 +1,11 @@
 name: Zolexora IMS — Docker images
 
-# Builds every image in apps/core-platform/zolexora-ims/compose.yaml and pushes ghcr.io/zolexora/zolexora-ims-<service>:{latest,<sha>}.
+# Builds every image in apps/platform-core/zolexora-ims/compose.yaml and pushes ghcr.io/zolexora/zolexora-ims-<service>:{latest,<sha>}.
 on:
   push:
     branches: [main]
     paths:
-      - 'apps/core-platform/zolexora-ims/**'
+      - 'apps/platform-core/zolexora-ims/**'
       - 'packages/**'
       - 'infrastructure/containers/**'
       - 'pnpm-lock.yaml'
@@ -27,10 +27,10 @@ jobs:
         [
           {
             "service": "user-backend",
-            "file": "apps/core-platform/zolexora-ims/services/user-api/Dockerfile"
+            "file": "apps/platform-core/zolexora-ims/services/user-api/Dockerfile"
           },
           {
             "service": "user-frontend",
-            "file": "apps/core-platform/zolexora-ims/apps/ims-user/frontend/Dockerfile"
+            "file": "apps/platform-core/zolexora-ims/apps/ims-user/frontend/Dockerfile"
           }
         ]

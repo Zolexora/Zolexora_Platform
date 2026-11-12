@@ -1,0 +1,3 @@
+# Build context: repo root (docker build -f apps/platform-apps/textile-care/Dockerfile.nginx .)
+FROM nginx:alpine
+COPY apps/platform-apps/textile-care/nginx-conf.d/ /etc/nginx/conf.d/

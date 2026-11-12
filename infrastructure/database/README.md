@@ -19,7 +19,7 @@ infrastructure/database/
 ## Operational Tooling
 
 Platform-wide database operations are managed via standardized operational scripts:
-- **ERP (MariaDB) backup & restore** — `apps/core-platform/zolexora-erp/scripts/`:
+- **ERP (MariaDB) backup & restore** — `apps/platform-core/zolexora-erp/scripts/`:
   - `backup-frappe-site.sh`: Creates a verified site backup.
   - `restore-frappe-site.sh <backup-dir>`: Restores a site from backup.
   - `check-frappe-stack-health.sh`: Health-checks the ERP stack.

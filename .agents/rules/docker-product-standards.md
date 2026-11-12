@@ -6,7 +6,7 @@ This rule governs how all products in the Zolexora Platform monorepo must config
 
 ## 1. Product Directory Layout
 
-Each product resides under `apps/<category>/<product>/` (`core-platform/zolexora-<name>` or `standalone-apps/<name>`) and follows this layout:
+Each product resides under `apps/<category>/<product>/` (`platform-core/zolexora-<name>` or `platform-apps/<name>`) and follows this layout:
 
 ```text
 apps/<category>/<product>/
@@ -155,7 +155,7 @@ Every product's image workflow is a thin caller of `.github/workflows/reusable-d
   `ghcr.io/zolexora/zolexora-<product>-<service>:<sha>` plus `:latest` from `main` only (a manual run on another
   branch pushes `:<branch>` instead, so it never replaces what everyone pulls), with Buildx GHA cache and OCI labels.
 - To run a branch build locally, set the compose image variable, e.g.
-  `IMS_USER_BACKEND_IMAGE=ghcr.io/zolexora/zolexora-ims-user-backend:<branch> bash apps/core-platform/zolexora-ims/scripts/docker-start.sh start`.
+  `IMS_USER_BACKEND_IMAGE=ghcr.io/zolexora/zolexora-ims-user-backend:<branch> bash apps/platform-core/zolexora-ims/scripts/docker-start.sh start`.
 - The image name must equal the compose `image:` default.
 - Builds that need build-time secrets (e.g. AppSuite `NEXT_PUBLIC_*`) load them with `.github/actions/infisical`.
 

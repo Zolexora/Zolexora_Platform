@@ -12,21 +12,21 @@ Source of truth: the `ports:` entries in each `compose.yaml` (verified 2026-10-3
 
 | Product | Gateway (nginx) | Backend API | Postgres | Other | Defined in |
 | --- | --- | --- | --- | --- | --- |
-| Zolexora AppSuite | `3070` (`APPSUITE_PORT`), `3443` TLS; local dev: client `3073`, dev-team `3074`, backend `3078` | — | — | — | `apps/core-platform/zolexora-appsuite/compose.yaml` |
-| Maun Kavach | `3071` (`MAUN_KAVACH_PORT`) | — | — | — | `apps/standalone-apps/maunkavach/compose.yaml` |
-| Zolexora IMS | `3072` | — | — | — | `apps/core-platform/zolexora-ims/compose.yaml` |
-| Rento Easy | `3076` | — | — | — | `apps/standalone-apps/rentoeasy/compose.yaml` |
-| Zolexora Engage | `3077` | — | — | — | `apps/core-platform/zolexora-engage/compose.yaml` |
-| Zolexora Shop | `3079` | — | — | — | `apps/standalone-apps/marketplace/compose.yaml` |
-| Zolexora Shop (API tests) | — | — | `5434` (`MARKETPLACE_TEST_POSTGRES_PORT`, 127.0.0.1, throwaway) | — | `apps/standalone-apps/marketplace/services/marketplace-api/tests/postgres-test.compose.yml` |
-| The Textile Care | `3080` | — | — | — | `apps/standalone-apps/textile-care/compose.yaml` |
+| Zolexora AppSuite | `3070` (`APPSUITE_PORT`), `3443` TLS; local dev: client `3073`, dev-team `3074`, backend `3078` | — | — | — | `apps/platform-core/zolexora-appsuite/compose.yaml` |
+| Maun Kavach | `3071` (`MAUN_KAVACH_PORT`) | — | — | — | `apps/platform-apps/maunkavach/compose.yaml` |
+| Zolexora IMS | `3072` | — | — | — | `apps/platform-core/zolexora-ims/compose.yaml` |
+| Rento Easy | `3076` | — | — | — | `apps/platform-apps/rentoeasy/compose.yaml` |
+| Zolexora Engage | `3077` | — | — | — | `apps/platform-core/zolexora-engage/compose.yaml` |
+| Zolexora Shop | `3079` | — | — | — | `apps/platform-apps/marketplace/compose.yaml` |
+| Zolexora Shop (API tests) | — | — | `5434` (`MARKETPLACE_TEST_POSTGRES_PORT`, 127.0.0.1, throwaway) | — | `apps/platform-apps/marketplace/services/marketplace-api/tests/postgres-test.compose.yml` |
+| The Textile Care | `3080` | — | — | — | `apps/platform-apps/textile-care/compose.yaml` |
 | Auth Service | — | `3081` (`AUTH_SERVICE_PORT`) | — (Supabase) | — | `apps/auth-service/compose.yaml` |
-| Zolexora TMS | `3090` (`TMS_PORT`) | `4031` (`TMS_BACKEND_PORT`) | — | — | `apps/core-platform/zolexora-tms/compose.yaml` |
-| Zolexora AI | `3091` | `4090` | — | — | `apps/core-platform/zolexora-ai/compose.yaml` |
+| Zolexora TMS | `3090` (`TMS_PORT`) | `4031` (`TMS_BACKEND_PORT`) | — | — | `apps/platform-core/zolexora-tms/compose.yaml` |
+| Zolexora AI | `3091` | `4090` | — | — | `apps/platform-core/zolexora-ai/compose.yaml` |
 | Platform Admin | `3095` (`PLATFORM_ADMIN_GATEWAY_PORT`; `pnpm dev:admin` uses it too), frontend `3092` (localhost only) | `4041` (localhost only) | — (Supabase) | — | `apps/platform-admin/compose.yaml` |
-| ClarityFi | `3110` (`CLARITYFI_PORT`) | — | — | — | `apps/standalone-apps/clarityfi/compose.yaml` |
-| Zolexora IronClub | `8085` | `4060` | `5452` (`IRONCLUB_POSTGRES_PORT`) | Redis `6382` | `apps/standalone-apps/ironclub/compose.yaml` |
-| Zolexora ERP | `8080` / `8443` (`HTTP_PORT`/`HTTPS_PORT`) | Frappe `8000` (`FRAPPE_PORT`) | — | — | `apps/core-platform/zolexora-erp/compose.yaml` (secrets from Infisical `Zolexora_ERP`) |
+| ClarityFi | `3110` (`CLARITYFI_PORT`) | — | — | — | `apps/platform-apps/clarityfi/compose.yaml` |
+| Zolexora IronClub | `8085` | `4060` | `5452` (`IRONCLUB_POSTGRES_PORT`) | Redis `6382` | `apps/platform-apps/ironclub/compose.yaml` |
+| Zolexora ERP | `8080` / `8443` (`HTTP_PORT`/`HTTPS_PORT`) | Frappe `8000` (`FRAPPE_PORT`) | — | — | `apps/platform-core/zolexora-erp/compose.yaml` (secrets from Infisical `Zolexora_ERP`) |
 
 Gateways not listed expose no other host ports; their APIs and databases are reachable only inside the Docker network.
 

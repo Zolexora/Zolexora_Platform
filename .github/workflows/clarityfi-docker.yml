@@ -1,11 +1,11 @@
 name: ClarityFi — Docker images
 
-# Builds every image in apps/standalone-apps/clarityfi/compose.yaml and pushes ghcr.io/zolexora/zolexora-clarityfi-<service>:{latest,<sha>}.
+# Builds every image in apps/platform-apps/clarityfi/compose.yaml and pushes ghcr.io/zolexora/zolexora-clarityfi-<service>:{latest,<sha>}.
 on:
   push:
     branches: [main]
     paths:
-      - 'apps/standalone-apps/clarityfi/**'
+      - 'apps/platform-apps/clarityfi/**'
       - 'packages/**'
       - 'infrastructure/containers/**'
       - 'pnpm-lock.yaml'
@@ -27,14 +27,14 @@ jobs:
         [
           {
             "service": "backend",
-            "file": "apps/standalone-apps/clarityfi/Dockerfile.api"
+            "file": "apps/platform-apps/clarityfi/Dockerfile.api"
           },
           {
             "service": "frontend",
-            "file": "apps/standalone-apps/clarityfi/Dockerfile.web"
+            "file": "apps/platform-apps/clarityfi/Dockerfile.web"
           },
           {
             "service": "nginx",
-            "file": "apps/standalone-apps/clarityfi/Dockerfile.nginx"
+            "file": "apps/platform-apps/clarityfi/Dockerfile.nginx"
           }
         ]

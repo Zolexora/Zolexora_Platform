@@ -41,7 +41,7 @@ Generated from `git ls-files` by `python3 scripts/dev/project-tree.py`; rerun it
 
 | Path | Holds |
 | --- | --- |
-| `apps/<category>/<product>/` (`core-platform/zolexora-<name>` or `standalone-apps/<name>`) | One product each: `apps/` (frontends, mobile), `services/` (backends), `packages/` (product-local libs), `scripts/docker-start.sh`, `docs/`, `compose.yaml`, `.infisical.json` |
+| `apps/<category>/<product>/` (`platform-core/zolexora-<name>` or `platform-apps/<name>`) | One product each: `apps/` (frontends, mobile), `services/` (backends), `packages/` (product-local libs), `scripts/docker-start.sh`, `docs/`, `compose.yaml`, `.infisical.json` |
 | `apps/` | Cross-product apps: `zolexora-auth-service` (identity, :3081), `zolexora-platform-admin` (:3095) |
 | `packages/` | Shared libraries, published as `@zolexora/<folder>` |
 | `infrastructure/` | Shared Dockerfiles, nginx gateway image, database schemas/migrations, Supabase, Render spec |

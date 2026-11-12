@@ -1,11 +1,11 @@
 name: Rento Easy — Docker images
 
-# Builds every image in apps/standalone-apps/rentoeasy/compose.yaml and pushes ghcr.io/zolexora/zolexora-rentoeasy-<service>:{latest,<sha>}.
+# Builds every image in apps/platform-apps/rentoeasy/compose.yaml and pushes ghcr.io/zolexora/zolexora-rentoeasy-<service>:{latest,<sha>}.
 on:
   push:
     branches: [main]
     paths:
-      - 'apps/standalone-apps/rentoeasy/**'
+      - 'apps/platform-apps/rentoeasy/**'
       - 'packages/**'
       - 'infrastructure/containers/**'
       - 'pnpm-lock.yaml'
@@ -27,25 +27,25 @@ jobs:
         [
           {
             "service": "api",
-            "file": "apps/standalone-apps/rentoeasy/Dockerfile.api"
+            "file": "apps/platform-apps/rentoeasy/Dockerfile.api"
           },
           {
             "service": "nginx",
-            "file": "apps/standalone-apps/rentoeasy/Dockerfile.nginx"
+            "file": "apps/platform-apps/rentoeasy/Dockerfile.nginx"
           },
           {
             "service": "web-admin",
-            "file": "apps/standalone-apps/rentoeasy/Dockerfile.web",
-            "build-args": "APP_DIR=apps/standalone-apps/rentoeasy/apps/web-admin"
+            "file": "apps/platform-apps/rentoeasy/Dockerfile.web",
+            "build-args": "APP_DIR=apps/platform-apps/rentoeasy/apps/web-admin"
           },
           {
             "service": "web-owner",
-            "file": "apps/standalone-apps/rentoeasy/Dockerfile.web",
-            "build-args": "APP_DIR=apps/standalone-apps/rentoeasy/apps/web-owner"
+            "file": "apps/platform-apps/rentoeasy/Dockerfile.web",
+            "build-args": "APP_DIR=apps/platform-apps/rentoeasy/apps/web-owner"
           },
           {
             "service": "web-tenant",
-            "file": "apps/standalone-apps/rentoeasy/Dockerfile.web",
-            "build-args": "APP_DIR=apps/standalone-apps/rentoeasy/apps/web-tenant"
+            "file": "apps/platform-apps/rentoeasy/Dockerfile.web",
+            "build-args": "APP_DIR=apps/platform-apps/rentoeasy/apps/web-tenant"
           }
         ]

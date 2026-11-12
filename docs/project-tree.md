@@ -4,7 +4,7 @@ Generated from `git ls-files` by `python3 scripts/dev/project-tree.py`; rerun it
 
 | Path | Holds |
 | --- | --- |
-| `apps/<category>/<product>/` (`core-platform/zolexora-<name>` or `standalone-apps/<name>`) | One product each: `apps/` (frontends, mobile), `services/` (backends), `packages/` (product-local libs), `scripts/docker-start.sh`, `docs/`, `compose.yaml`, `.infisical.json` |
+| `apps/<category>/<product>/` (`platform-core/zolexora-<name>` or `platform-apps/<name>`) | One product each: `apps/` (frontends, mobile), `services/` (backends), `packages/` (product-local libs), `scripts/docker-start.sh`, `docs/`, `compose.yaml`, `.infisical.json` |
 | `apps/` | Cross-product apps: `zolexora-auth-service` (identity, :3081), `zolexora-platform-admin` (:3095) |
 | `packages/` | Shared libraries, published as `@zolexora/<folder>` |
 | `infrastructure/` | Shared Dockerfiles, nginx gateway image, database schemas/migrations, Supabase, Render spec |
@@ -193,170 +193,6 @@ Zolexora_Platform/
 │   │   ├── package.json
 │   │   ├── tsconfig.json
 │   │   └── vitest.config.ts
-│   ├── core-platform/
-│   │   ├── zolexora-ai/
-│   │   │   ├── .devcontainer/
-│   │   │   │   ├── devcontainer-lock.json
-│   │   │   │   └── devcontainer.json
-│   │   │   ├── apps/
-│   │   │   │   └── web/  (36 files)
-│   │   │   ├── docs/
-│   │   │   │   └── planning/  (1 files)
-│   │   │   ├── infra/
-│   │   │   │   └── azure/  (3 files)
-│   │   │   ├── nginx-conf.d/
-│   │   │   │   └── default.conf
-│   │   │   ├── scripts/
-│   │   │   │   ├── deploy-azure.sh
-│   │   │   │   ├── docker-start.sh
-│   │   │   │   ├── seed-ai-memory.sh
-│   │   │   │   └── setup-azure-resources.sh
-│   │   │   ├── services/
-│   │   │   │   └── api/  (105 files)
-│   │   │   ├── .gitignore
-│   │   │   ├── .infisical.json
-│   │   │   ├── ARCHITECTURE.md
-│   │   │   ├── compose.yaml
-│   │   │   ├── Dockerfile.nginx
-│   │   │   ├── GEMINI.md
-│   │   │   ├── nginx.conf
-│   │   │   └── README.md
-│   │   ├── zolexora-appsuite/
-│   │   │   ├── apps/
-│   │   │   │   ├── client/  (66 files)
-│   │   │   │   └── dev-team/  (50 files)
-│   │   │   ├── docs/
-│   │   │   │   ├── branding/  (2 files)
-│   │   │   │   └── ARCHITECTURE.md
-│   │   │   ├── nginx-conf.d/
-│   │   │   │   ├── default.conf
-│   │   │   │   └── ssl.conf.template
-│   │   │   ├── scripts/
-│   │   │   │   ├── docker-start.sh
-│   │   │   │   └── setup-production-vm.sh
-│   │   │   ├── services/
-│   │   │   │   └── backend/  (14 files)
-│   │   │   ├── .infisical.json
-│   │   │   ├── compose.yaml
-│   │   │   ├── Dockerfile.backend
-│   │   │   ├── Dockerfile.client
-│   │   │   ├── Dockerfile.devteam
-│   │   │   ├── Dockerfile.nginx
-│   │   │   ├── nginx.conf
-│   │   │   ├── package.json
-│   │   │   └── README.md
-│   │   ├── zolexora-engage/
-│   │   │   ├── apps/
-│   │   │   │   └── web/  (31 files)
-│   │   │   ├── docs/
-│   │   │   │   └── setup/  (1 files)
-│   │   │   ├── nginx-conf.d/
-│   │   │   │   └── default.conf
-│   │   │   ├── packages/
-│   │   │   │   ├── api-client-react/  (6 files)
-│   │   │   │   ├── api-spec/  (3 files)
-│   │   │   │   ├── api-zod/  (14 files)
-│   │   │   │   └── db/  (5 files)
-│   │   │   ├── scripts/
-│   │   │   │   ├── docker-start.sh
-│   │   │   │   ├── run-post-merge-hooks.sh
-│   │   │   │   ├── start-project.sh
-│   │   │   │   └── start-web-dev.sh
-│   │   │   ├── services/
-│   │   │   │   └── api/  (9 files)
-│   │   │   ├── .gitignore
-│   │   │   ├── .infisical.json
-│   │   │   ├── .npmrc
-│   │   │   ├── compose.yaml
-│   │   │   ├── Dockerfile.api
-│   │   │   ├── Dockerfile.nginx
-│   │   │   ├── Dockerfile.web
-│   │   │   ├── nginx.conf
-│   │   │   ├── package.json
-│   │   │   ├── README.md
-│   │   │   ├── tsconfig.base.json
-│   │   │   └── tsconfig.json
-│   │   ├── zolexora-erp/
-│   │   │   ├── docs/
-│   │   │   │   ├── admin-guide.md
-│   │   │   │   ├── api-guide.md
-│   │   │   │   ├── architecture.md
-│   │   │   │   ├── backup.md
-│   │   │   │   ├── cloudflare.md
-│   │   │   │   ├── deployment.md
-│   │   │   │   ├── developer-guide.md
-│   │   │   │   ├── installation.md
-│   │   │   │   ├── northflank.md
-│   │   │   │   ├── production-guide.md
-│   │   │   │   ├── README.md
-│   │   │   │   ├── restore.md
-│   │   │   │   ├── roadmap.md
-│   │   │   │   ├── security-guide.md
-│   │   │   │   ├── testing-guide.md
-│   │   │   │   └── user-guide.md
-│   │   │   ├── scripts/
-│   │   │   │   ├── tests/  (3 files)
-│   │   │   │   ├── backup-frappe-site.sh
-│   │   │   │   ├── bootstrap-frappe-site.sh
-│   │   │   │   ├── check-frappe-stack-health.sh
-│   │   │   │   ├── cleanup-workspaces.py
-│   │   │   │   ├── docker-start.sh
-│   │   │   │   ├── report-frappe-stack-status.sh
-│   │   │   │   ├── restore-frappe-site.sh
-│   │   │   │   └── schedule-daily-backup.sh
-│   │   │   ├── services/
-│   │   │   │   └── frappe/  (80 files)  [contains git submodules]
-│   │   │   ├── .infisical.json
-│   │   │   ├── compose.yaml
-│   │   │   └── README.md
-│   │   ├── zolexora-ims/
-│   │   │   ├── apps/
-│   │   │   │   └── ims-user/  (58 files)
-│   │   │   ├── scripts/
-│   │   │   │   ├── check-health.sh
-│   │   │   │   ├── db-ops.sh
-│   │   │   │   ├── docker-start.sh
-│   │   │   │   ├── menu.sh
-│   │   │   │   ├── run-all-tests.sh
-│   │   │   │   └── setup.sh
-│   │   │   ├── services/
-│   │   │   │   └── user-api/  (26 files)
-│   │   │   ├── .gitignore
-│   │   │   ├── .infisical.json
-│   │   │   ├── compose.yaml
-│   │   │   ├── docker-entrypoint-env.sh
-│   │   │   ├── package.json
-│   │   │   └── README.md
-│   │   └── zolexora-tms/
-│   │       ├── apps/
-│   │       │   ├── tms-admin/  (19 files)
-│   │       │   ├── tms-mobile/  (35 files)
-│   │       │   └── tms-web/  (61 files)
-│   │       ├── docs/
-│   │       │   ├── agents/  (2 files)
-│   │       │   ├── architecture/  (25 files)
-│   │       │   ├── authentication/  (1 files)
-│   │       │   ├── branding/  (2 files)
-│   │       │   ├── customizations/  (1 files)
-│   │       │   ├── database/  (1 files)
-│   │       │   └── ecosystem_and_tooling/  (1 files)
-│   │       ├── nginx-conf.d/
-│   │       │   └── default.conf
-│   │       ├── scripts/
-│   │       │   ├── docker-start.sh
-│   │       │   └── local-start.sh
-│   │       ├── services/
-│   │       │   └── backend/  (187 files)
-│   │       ├── .gitignore
-│   │       ├── .infisical.json
-│   │       ├── compose.yaml
-│   │       ├── docker-entrypoint-env.sh
-│   │       ├── Dockerfile.nginx
-│   │       ├── Dockerfile.web
-│   │       ├── nginx-web.conf
-│   │       ├── nginx.conf
-│   │       ├── package.json
-│   │       └── README.md
 │   ├── platform-admin/
 │   │   ├── backend/
 │   │   │   ├── app/
@@ -407,7 +243,7 @@ Zolexora_Platform/
 │   │   ├── .infisical.json
 │   │   ├── compose.yaml
 │   │   └── Dockerfile.nginx
-│   ├── standalone-apps/
+│   ├── platform-apps/
 │   │   ├── clarityfi/
 │   │   │   ├── apps/
 │   │   │   │   ├── mobile/  (50 files)
@@ -614,6 +450,170 @@ Zolexora_Platform/
 │   │       ├── README.md
 │   │       ├── tsconfig.base.json
 │   │       └── tsconfig.json
+│   ├── platform-core/
+│   │   ├── zolexora-ai/
+│   │   │   ├── .devcontainer/
+│   │   │   │   ├── devcontainer-lock.json
+│   │   │   │   └── devcontainer.json
+│   │   │   ├── apps/
+│   │   │   │   └── web/  (36 files)
+│   │   │   ├── docs/
+│   │   │   │   └── planning/  (1 files)
+│   │   │   ├── infra/
+│   │   │   │   └── azure/  (3 files)
+│   │   │   ├── nginx-conf.d/
+│   │   │   │   └── default.conf
+│   │   │   ├── scripts/
+│   │   │   │   ├── deploy-azure.sh
+│   │   │   │   ├── docker-start.sh
+│   │   │   │   ├── seed-ai-memory.sh
+│   │   │   │   └── setup-azure-resources.sh
+│   │   │   ├── services/
+│   │   │   │   └── api/  (105 files)
+│   │   │   ├── .gitignore
+│   │   │   ├── .infisical.json
+│   │   │   ├── ARCHITECTURE.md
+│   │   │   ├── compose.yaml
+│   │   │   ├── Dockerfile.nginx
+│   │   │   ├── GEMINI.md
+│   │   │   ├── nginx.conf
+│   │   │   └── README.md
+│   │   ├── zolexora-appsuite/
+│   │   │   ├── apps/
+│   │   │   │   ├── client/  (66 files)
+│   │   │   │   └── dev-team/  (50 files)
+│   │   │   ├── docs/
+│   │   │   │   ├── branding/  (2 files)
+│   │   │   │   └── ARCHITECTURE.md
+│   │   │   ├── nginx-conf.d/
+│   │   │   │   ├── default.conf
+│   │   │   │   └── ssl.conf.template
+│   │   │   ├── scripts/
+│   │   │   │   ├── docker-start.sh
+│   │   │   │   └── setup-production-vm.sh
+│   │   │   ├── services/
+│   │   │   │   └── backend/  (14 files)
+│   │   │   ├── .infisical.json
+│   │   │   ├── compose.yaml
+│   │   │   ├── Dockerfile.backend
+│   │   │   ├── Dockerfile.client
+│   │   │   ├── Dockerfile.devteam
+│   │   │   ├── Dockerfile.nginx
+│   │   │   ├── nginx.conf
+│   │   │   ├── package.json
+│   │   │   └── README.md
+│   │   ├── zolexora-engage/
+│   │   │   ├── apps/
+│   │   │   │   └── web/  (31 files)
+│   │   │   ├── docs/
+│   │   │   │   └── setup/  (1 files)
+│   │   │   ├── nginx-conf.d/
+│   │   │   │   └── default.conf
+│   │   │   ├── packages/
+│   │   │   │   ├── api-client-react/  (6 files)
+│   │   │   │   ├── api-spec/  (3 files)
+│   │   │   │   ├── api-zod/  (14 files)
+│   │   │   │   └── db/  (5 files)
+│   │   │   ├── scripts/
+│   │   │   │   ├── docker-start.sh
+│   │   │   │   ├── run-post-merge-hooks.sh
+│   │   │   │   ├── start-project.sh
+│   │   │   │   └── start-web-dev.sh
+│   │   │   ├── services/
+│   │   │   │   └── api/  (9 files)
+│   │   │   ├── .gitignore
+│   │   │   ├── .infisical.json
+│   │   │   ├── .npmrc
+│   │   │   ├── compose.yaml
+│   │   │   ├── Dockerfile.api
+│   │   │   ├── Dockerfile.nginx
+│   │   │   ├── Dockerfile.web
+│   │   │   ├── nginx.conf
+│   │   │   ├── package.json
+│   │   │   ├── README.md
+│   │   │   ├── tsconfig.base.json
+│   │   │   └── tsconfig.json
+│   │   ├── zolexora-erp/
+│   │   │   ├── docs/
+│   │   │   │   ├── admin-guide.md
+│   │   │   │   ├── api-guide.md
+│   │   │   │   ├── architecture.md
+│   │   │   │   ├── backup.md
+│   │   │   │   ├── cloudflare.md
+│   │   │   │   ├── deployment.md
+│   │   │   │   ├── developer-guide.md
+│   │   │   │   ├── installation.md
+│   │   │   │   ├── northflank.md
+│   │   │   │   ├── production-guide.md
+│   │   │   │   ├── README.md
+│   │   │   │   ├── restore.md
+│   │   │   │   ├── roadmap.md
+│   │   │   │   ├── security-guide.md
+│   │   │   │   ├── testing-guide.md
+│   │   │   │   └── user-guide.md
+│   │   │   ├── scripts/
+│   │   │   │   ├── tests/  (3 files)
+│   │   │   │   ├── backup-frappe-site.sh
+│   │   │   │   ├── bootstrap-frappe-site.sh
+│   │   │   │   ├── check-frappe-stack-health.sh
+│   │   │   │   ├── cleanup-workspaces.py
+│   │   │   │   ├── docker-start.sh
+│   │   │   │   ├── report-frappe-stack-status.sh
+│   │   │   │   ├── restore-frappe-site.sh
+│   │   │   │   └── schedule-daily-backup.sh
+│   │   │   ├── services/
+│   │   │   │   └── frappe/  (80 files)  [contains git submodules]
+│   │   │   ├── .infisical.json
+│   │   │   ├── compose.yaml
+│   │   │   └── README.md
+│   │   ├── zolexora-ims/
+│   │   │   ├── apps/
+│   │   │   │   └── ims-user/  (58 files)
+│   │   │   ├── scripts/
+│   │   │   │   ├── check-health.sh
+│   │   │   │   ├── db-ops.sh
+│   │   │   │   ├── docker-start.sh
+│   │   │   │   ├── menu.sh
+│   │   │   │   ├── run-all-tests.sh
+│   │   │   │   └── setup.sh
+│   │   │   ├── services/
+│   │   │   │   └── user-api/  (26 files)
+│   │   │   ├── .gitignore
+│   │   │   ├── .infisical.json
+│   │   │   ├── compose.yaml
+│   │   │   ├── docker-entrypoint-env.sh
+│   │   │   ├── package.json
+│   │   │   └── README.md
+│   │   └── zolexora-tms/
+│   │       ├── apps/
+│   │       │   ├── tms-admin/  (19 files)
+│   │       │   ├── tms-mobile/  (35 files)
+│   │       │   └── tms-web/  (61 files)
+│   │       ├── docs/
+│   │       │   ├── agents/  (2 files)
+│   │       │   ├── architecture/  (25 files)
+│   │       │   ├── authentication/  (1 files)
+│   │       │   ├── branding/  (2 files)
+│   │       │   ├── customizations/  (1 files)
+│   │       │   ├── database/  (1 files)
+│   │       │   └── ecosystem_and_tooling/  (1 files)
+│   │       ├── nginx-conf.d/
+│   │       │   └── default.conf
+│   │       ├── scripts/
+│   │       │   ├── docker-start.sh
+│   │       │   └── local-start.sh
+│   │       ├── services/
+│   │       │   └── backend/  (187 files)
+│   │       ├── .gitignore
+│   │       ├── .infisical.json
+│   │       ├── compose.yaml
+│   │       ├── docker-entrypoint-env.sh
+│   │       ├── Dockerfile.nginx
+│   │       ├── Dockerfile.web
+│   │       ├── nginx-web.conf
+│   │       ├── nginx.conf
+│   │       ├── package.json
+│   │       └── README.md
 │   └── README.md
 ├── docs/
 │   ├── architecture/

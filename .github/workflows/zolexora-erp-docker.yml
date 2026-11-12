@@ -1,11 +1,11 @@
 name: Zolexora ERP — Docker images
 
-# Builds every image in apps/core-platform/zolexora-erp/compose.yaml and pushes ghcr.io/zolexora/zolexora-erp-<service>:{latest,<sha>}.
+# Builds every image in apps/platform-core/zolexora-erp/compose.yaml and pushes ghcr.io/zolexora/zolexora-erp-<service>:{latest,<sha>}.
 on:
   push:
     branches: [main]
     paths:
-      - 'apps/core-platform/zolexora-erp/**'
+      - 'apps/platform-core/zolexora-erp/**'
       - 'scripts/docker/**'
       - 'packages/**'
       - 'infrastructure/containers/**'

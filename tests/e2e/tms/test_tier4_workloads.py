@@ -44,7 +44,7 @@ class TestTier4RealWorldScenarios(unittest.TestCase):
         Validates startup script execution contract, service definitions,
         and container health initialization.
         """
-        canonical_script = get_repo_root() / "apps" / "core-platform" / "zolexora-tms" / "scripts" / "docker-start.sh"
+        canonical_script = get_repo_root() / "apps" / "platform-core" / "zolexora-tms" / "scripts" / "docker-start.sh"
         self.assertTrue(canonical_script.exists())
 
         # Test status inquiry via startup script
@@ -114,7 +114,7 @@ class TestTier4RealWorldScenarios(unittest.TestCase):
         and NO plaintext decrypted files (.env.docker, .env, or keys) exist on host disk.
         """
         root = get_repo_root()
-        tms_dir = root / "apps" / "core-platform" / "zolexora-tms"
+        tms_dir = root / "apps" / "platform-core" / "zolexora-tms"
 
         # Check for forbidden ephemeral secret files
         forbidden_patterns = [
@@ -142,7 +142,7 @@ class TestTier4RealWorldScenarios(unittest.TestCase):
         Validates that querying service status repeatedly produces stable output
         without introducing state drift or triggering service restarts.
         """
-        canonical_script = get_repo_root() / "apps" / "core-platform" / "zolexora-tms" / "scripts" / "docker-start.sh"
+        canonical_script = get_repo_root() / "apps" / "platform-core" / "zolexora-tms" / "scripts" / "docker-start.sh"
         rc1, out1, _ = run_cmd(["bash", str(canonical_script), "status"], timeout=10.0)
         rc2, out2, _ = run_cmd(["bash", str(canonical_script), "status"], timeout=10.0)
 
@@ -157,7 +157,7 @@ class TestTier4RealWorldScenarios(unittest.TestCase):
         and preserves named volume postgres_data.
         """
         compose_path = get_tms_compose_path()
-        canonical_script = get_repo_root() / "apps" / "core-platform" / "zolexora-tms" / "scripts" / "docker-start.sh"
+        canonical_script = get_repo_root() / "apps" / "platform-core" / "zolexora-tms" / "scripts" / "docker-start.sh"
 
         # Verify down syntax in startup script
         content = canonical_script.read_text(encoding="utf-8")

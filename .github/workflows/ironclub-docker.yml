@@ -1,11 +1,11 @@
 name: Zolexora IronClub — Docker images
 
-# Builds every image in apps/standalone-apps/ironclub/compose.yaml and pushes ghcr.io/zolexora/zolexora-ironclub-<service>:{latest,<sha>}.
+# Builds every image in apps/platform-apps/ironclub/compose.yaml and pushes ghcr.io/zolexora/zolexora-ironclub-<service>:{latest,<sha>}.
 on:
   push:
     branches: [main]
     paths:
-      - 'apps/standalone-apps/ironclub/**'
+      - 'apps/platform-apps/ironclub/**'
       - 'packages/**'
       - 'infrastructure/containers/**'
       - 'pnpm-lock.yaml'
@@ -27,6 +27,6 @@ jobs:
         [
           {
             "service": "backend",
-            "file": "apps/standalone-apps/ironclub/services/backend/Dockerfile"
+            "file": "apps/platform-apps/ironclub/services/backend/Dockerfile"
           }
         ]

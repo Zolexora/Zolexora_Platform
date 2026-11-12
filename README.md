@@ -6,18 +6,18 @@ Monorepo for every Zolexora product plus the shared identity, admin and library 
 
 | Product | Path | What it is | Stack | Local gateway |
 | --- | --- | --- | --- | --- |
-| Zolexora Shop | `apps/standalone-apps/marketplace` | Multi-storefront e-commerce (Zolexora Shop, Mahila Madel) + seller and admin portals | FastAPI, Next.js, Expo | :3079 |
-| The Textile Care | `apps/standalone-apps/textile-care` | Multi-tenant white-label laundry platform (customer, seller, driver, admin apps) | FastAPI, Next.js, Expo | :3080 |
-| Zolexora TMS | `apps/core-platform/zolexora-tms` | Transport management (web, admin, mobile) | FastAPI, Vite, Expo | :3090 |
-| Zolexora IMS | `apps/core-platform/zolexora-ims` | Multi-tenant inventory management | FastAPI, SQLite, Vite | :3072 |
-| Zolexora ERP | `apps/core-platform/zolexora-erp` | ERP on Frappe/ERPNext (submodules) + Zolexora Frappe apps | Frappe, MariaDB | :8080 |
-| Zolexora IronClub | `apps/standalone-apps/ironclub` | Gym & health-club management (admin, manager, marketing, member apps) | FastAPI, Vite, Expo | :8085 |
-| Rento Easy | `apps/standalone-apps/rentoeasy` | Property rental (tenant, owner, admin portals) | NestJS, Prisma, Vite | :3076 |
-| Zolexora AppSuite | `apps/core-platform/zolexora-appsuite` | Client intake + dev-team console for commissioned apps | Next.js, Express | :3070 |
-| Zolexora AI | `apps/core-platform/zolexora-ai` | Multi-agent "Swarm Factory" that turns requirements into codebases | FastAPI, Celery, Vite | :3091 |
-| Zolexora Engage | `apps/core-platform/zolexora-engage` | WhatsApp dispatch for driver duty sheets | Express, Vite, Supabase | :3077 |
-| ClarityFi | `apps/standalone-apps/clarityfi` | Privacy-first personal finance + lifestyle tracker | Expo, Express | :3110 |
-| Maun Kavach | `apps/standalone-apps/maunkavach` | Encrypted messenger (Android client + Node backend + web) | Kotlin, Node, Vite | :3071 |
+| Zolexora Shop | `apps/platform-apps/marketplace` | Multi-storefront e-commerce (Zolexora Shop, Mahila Madel) + seller and admin portals | FastAPI, Next.js, Expo | :3079 |
+| The Textile Care | `apps/platform-apps/textile-care` | Multi-tenant white-label laundry platform (customer, seller, driver, admin apps) | FastAPI, Next.js, Expo | :3080 |
+| Zolexora TMS | `apps/platform-core/zolexora-tms` | Transport management (web, admin, mobile) | FastAPI, Vite, Expo | :3090 |
+| Zolexora IMS | `apps/platform-core/zolexora-ims` | Multi-tenant inventory management | FastAPI, SQLite, Vite | :3072 |
+| Zolexora ERP | `apps/platform-core/zolexora-erp` | ERP on Frappe/ERPNext (submodules) + Zolexora Frappe apps | Frappe, MariaDB | :8080 |
+| Zolexora IronClub | `apps/platform-apps/ironclub` | Gym & health-club management (admin, manager, marketing, member apps) | FastAPI, Vite, Expo | :8085 |
+| Rento Easy | `apps/platform-apps/rentoeasy` | Property rental (tenant, owner, admin portals) | NestJS, Prisma, Vite | :3076 |
+| Zolexora AppSuite | `apps/platform-core/zolexora-appsuite` | Client intake + dev-team console for commissioned apps | Next.js, Express | :3070 |
+| Zolexora AI | `apps/platform-core/zolexora-ai` | Multi-agent "Swarm Factory" that turns requirements into codebases | FastAPI, Celery, Vite | :3091 |
+| Zolexora Engage | `apps/platform-core/zolexora-engage` | WhatsApp dispatch for driver duty sheets | Express, Vite, Supabase | :3077 |
+| ClarityFi | `apps/platform-apps/clarityfi` | Privacy-first personal finance + lifestyle tracker | Expo, Express | :3110 |
+| Maun Kavach | `apps/platform-apps/maunkavach` | Encrypted messenger (Android client + Node backend + web) | Kotlin, Node, Vite | :3071 |
 
 Shared: `apps/auth-service` (central identity, :3081), `apps/platform-admin` (:3095), `packages/*` (shared libraries). Every product uses `apps/` (frontends, mobile) + `services/` (backends) + `packages/`. Full layout, naming and dependency rules: [docs/architecture.md](docs/architecture.md). All host ports: [docs/ports.md](docs/ports.md).
 

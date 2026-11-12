@@ -1,11 +1,11 @@
 name: Maun Kavach — Docker images
 
-# Builds every image in apps/standalone-apps/maunkavach/compose.yaml and pushes ghcr.io/zolexora/zolexora-maunkavach-<service>:{latest,<sha>}.
+# Builds every image in apps/platform-apps/maunkavach/compose.yaml and pushes ghcr.io/zolexora/zolexora-maunkavach-<service>:{latest,<sha>}.
 on:
   push:
     branches: [main]
     paths:
-      - 'apps/standalone-apps/maunkavach/**'
+      - 'apps/platform-apps/maunkavach/**'
       - 'packages/**'
       - 'infrastructure/containers/**'
       - 'pnpm-lock.yaml'
@@ -27,14 +27,14 @@ jobs:
         [
           {
             "service": "backend",
-            "file": "apps/standalone-apps/maunkavach/Dockerfile.api"
+            "file": "apps/platform-apps/maunkavach/Dockerfile.api"
           },
           {
             "service": "frontend",
-            "file": "apps/standalone-apps/maunkavach/Dockerfile.web"
+            "file": "apps/platform-apps/maunkavach/Dockerfile.web"
           },
           {
             "service": "nginx",
-            "file": "apps/standalone-apps/maunkavach/Dockerfile.nginx"
+            "file": "apps/platform-apps/maunkavach/Dockerfile.nginx"
           }
         ]

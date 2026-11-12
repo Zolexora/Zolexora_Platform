@@ -3,7 +3,7 @@ name: Zolexora AI — Deploy to Azure
 on:
   push:
     branches: [main]
-    paths: ['apps/core-platform/zolexora-ai/**', '.github/workflows/zolexora-ai-deploy.yml']
+    paths: ['apps/platform-core/zolexora-ai/**', '.github/workflows/zolexora-ai-deploy.yml']
   workflow_dispatch:
 
 permissions:
@@ -25,11 +25,11 @@ jobs:
       - uses: ./.github/actions/setup-python
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-          requirements: apps/core-platform/zolexora-ai/services/api/requirements.txt
+          requirements: apps/platform-core/zolexora-ai/services/api/requirements.txt
           packages: pytest pytest-asyncio
       - name: Test
         # backend/tests/conftest.py provides test-only stub settings
-        working-directory: apps/core-platform/zolexora-ai/services/api
+        working-directory: apps/platform-core/zolexora-ai/services/api
         run: pytest backend/tests tests
 
   build:
@@ -91,7 +91,7 @@ jobs:
         run: |
           API_KEY="$(printf '%s' "$API_KEY" | sed 's/[[:space:]]*$//')"
           docker build \
-            --file apps/core-platform/zolexora-ai/services/api/Dockerfile \
+            --file apps/platform-core/zolexora-ai/services/api/Dockerfile \
             --build-arg VITE_API_KEY="$API_KEY" \
             --tag "${{ steps.image.outputs.uri }}" \
             --tag "${{ env.ACR_NAME }}.azurecr.io/${{ env.APP_NAME }}:latest" \

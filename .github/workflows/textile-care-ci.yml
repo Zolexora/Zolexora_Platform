@@ -4,14 +4,14 @@ on:
   push:
     branches: [main]
     paths:
-      - 'apps/standalone-apps/textile-care/**'
+      - 'apps/platform-apps/textile-care/**'
       - 'packages/**'
       - 'pnpm-lock.yaml'
       - '.github/workflows/textile-care-ci.yml'
       - '.github/actions/**'
   pull_request:
     paths:
-      - 'apps/standalone-apps/textile-care/**'
+      - 'apps/platform-apps/textile-care/**'
       - 'packages/**'
       - 'pnpm-lock.yaml'
       - '.github/workflows/textile-care-ci.yml'
@@ -25,19 +25,19 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: apps/standalone-apps/textile-care/services/backend
+        working-directory: apps/platform-apps/textile-care/services/backend
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-python
         with:
-          packages: -e apps/standalone-apps/textile-care/services/backend[dev]
+          packages: -e apps/platform-apps/textile-care/services/backend[dev]
       - run: pytest tests -q
 
   web:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: apps/standalone-apps/textile-care
+        working-directory: apps/platform-apps/textile-care
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-node

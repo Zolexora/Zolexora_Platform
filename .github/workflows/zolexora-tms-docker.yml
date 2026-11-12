@@ -1,11 +1,11 @@
 name: Zolexora TMS — Docker images
 
-# Builds every image in apps/core-platform/zolexora-tms/compose.yaml and pushes ghcr.io/zolexora/zolexora-tms-<service>:{latest,<sha>}.
+# Builds every image in apps/platform-core/zolexora-tms/compose.yaml and pushes ghcr.io/zolexora/zolexora-tms-<service>:{latest,<sha>}.
 on:
   push:
     branches: [main]
     paths:
-      - 'apps/core-platform/zolexora-tms/**'
+      - 'apps/platform-core/zolexora-tms/**'
       - 'packages/**'
       - 'infrastructure/containers/**'
       - 'pnpm-lock.yaml'
@@ -27,20 +27,20 @@ jobs:
         [
           {
             "service": "backend",
-            "file": "apps/core-platform/zolexora-tms/services/backend/Dockerfile"
+            "file": "apps/platform-core/zolexora-tms/services/backend/Dockerfile"
           },
           {
             "service": "nginx",
-            "file": "apps/core-platform/zolexora-tms/Dockerfile.nginx"
+            "file": "apps/platform-core/zolexora-tms/Dockerfile.nginx"
           },
           {
             "service": "admin",
-            "file": "apps/core-platform/zolexora-tms/Dockerfile.web",
+            "file": "apps/platform-core/zolexora-tms/Dockerfile.web",
             "build-args": "APP_PATH=apps/tms-admin"
           },
           {
             "service": "web",
-            "file": "apps/core-platform/zolexora-tms/Dockerfile.web",
+            "file": "apps/platform-core/zolexora-tms/Dockerfile.web",
             "build-args": "APP_PATH=apps/tms-web"
           }
         ]

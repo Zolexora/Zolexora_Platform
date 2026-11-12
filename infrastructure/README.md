@@ -47,4 +47,4 @@ For seamless backward compatibility with existing build tooling and workflows:
 - `infrastructure/docker` -> `containers/docker`
 - `infrastructure/supabase/migrations` -> `database/migrations`
 
-There is no host-level deployment framework here; ERP backup/restore scripts live in `apps/core-platform/zolexora-erp/scripts/`.
+There is no host-level deployment framework here; ERP backup/restore scripts live in `apps/platform-core/zolexora-erp/scripts/`.

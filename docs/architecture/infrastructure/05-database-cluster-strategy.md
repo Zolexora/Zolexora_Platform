@@ -285,9 +285,9 @@ A single, clearly organised environment variable template that consolidates all 
 ### Why You Need It
 Currently you have:
 ```
-apps/core-platform/zolexora-ims/.env         → has SUPABASE_URL (which project?)
-apps/standalone-apps/marketplace/.env → has SUPABASE_URL (different project!)
-apps/core-platform/zolexora-ai/.env          → has SUPABASE_URL (yet another!)
+apps/platform-core/zolexora-ims/.env         → has SUPABASE_URL (which project?)
+apps/platform-apps/marketplace/.env → has SUPABASE_URL (different project!)
+apps/platform-core/zolexora-ai/.env          → has SUPABASE_URL (yet another!)
 ```
 
 Nobody knows which `SUPABASE_URL` belongs to which project. When you rotate a key, you update all of them manually and inevitably miss one.
