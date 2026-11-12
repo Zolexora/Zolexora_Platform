@@ -31,5 +31,6 @@ Independent consumer and vertical apps (folders without the prefix).
 | Rento Easy | [`standalone-apps/rentoeasy/`](standalone-apps/rentoeasy/) | Property rental (tenant, owner, admin) | `docker:rentoeasy:*` |
 | ClarityFi | [`standalone-apps/clarityfi/`](standalone-apps/clarityfi/) | Privacy-first personal finance + lifestyle tracker | `docker:clarityfi:*` |
 | Maun Kavach | [`standalone-apps/maunkavach/`](standalone-apps/maunkavach/) | Encrypted messenger (Android, Node backend, web) | `docker:maunkavach:*` |
+| PostCread | [`standalone-apps/postcread/`](standalone-apps/postcread/) | Reels app (placeholder, no code yet) | — |
 
 `*` = `start|stop|restart|build|pull|logs|status`. Add a product with `bash scripts/dev/scaffold-product-docker.sh <product>`.
