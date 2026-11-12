@@ -30,11 +30,11 @@ ENV HOSTNAME="0.0.0.0"
 
 RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs
 
-COPY --from=installer /app/apps/zolexora-platform-admin/frontend/public ./apps/zolexora-platform-admin/frontend/public
-COPY --from=installer --chown=nextjs:nodejs /app/apps/zolexora-platform-admin/frontend/.next/standalone ./
-COPY --from=installer --chown=nextjs:nodejs /app/apps/zolexora-platform-admin/frontend/.next/static ./apps/zolexora-platform-admin/frontend/.next/static
+COPY --from=installer /app/apps/platform-admin/frontend/public ./apps/platform-admin/frontend/public
+COPY --from=installer --chown=nextjs:nodejs /app/apps/platform-admin/frontend/.next/standalone ./
+COPY --from=installer --chown=nextjs:nodejs /app/apps/platform-admin/frontend/.next/static ./apps/platform-admin/frontend/.next/static
 
 USER nextjs
 EXPOSE 3000
 
-CMD ["node", "apps/zolexora-platform-admin/frontend/server.js"]
+CMD ["node", "apps/platform-admin/frontend/server.js"]

@@ -9,12 +9,12 @@ const updates = [
   { file: 'apps/standalone-apps/maunkavach/apps/web/package.json', search: '"vite"', replace: '"vite --port 3071"' },
   { file: 'apps/standalone-apps/clarityfi/apps/web/package.json', search: '"npx serve ."', replace: '"npx serve . -l 3081"' },
   { file: 'apps/core-platform/zolexora-ai/apps/web/package.json', search: '"vite"', replace: '"vite --port 3091"' },
-  { file: 'apps/core-platform/zolexora-shop/apps/admin/package.json', search: 'next dev -p 3002', replace: 'next dev -p 3101' },
-  { file: 'apps/core-platform/zolexora-shop/apps/web/seller/package.json', search: 'next dev -p 3001', replace: 'next dev -p 3102' },
-  { file: 'apps/core-platform/zolexora-shop/apps/web/shop/package.json', search: 'next dev -p 3000', replace: 'next dev -p 3103' },
-  { file: 'apps/core-platform/zolexora-shop/apps/mobile/shop/package.json', search: 'expo start --clear --port 8081', replace: 'expo start --clear --port 8083' },
-  { file: 'apps/core-platform/zolexora-shop/apps/mobile/mahila-madel/package.json', search: 'expo start --clear --port 8081', replace: 'expo start --clear --port 8084' },
-  { file: 'apps/core-platform/zolexora-shop/apps/web/mahila-madel/package.json', search: 'PORT=3003 react-scripts start', replace: 'PORT=3104 react-scripts start' }
+  { file: 'apps/standalone-apps/marketplace/apps/admin/package.json', search: 'next dev -p 3002', replace: 'next dev -p 3101' },
+  { file: 'apps/standalone-apps/marketplace/apps/web/seller/package.json', search: 'next dev -p 3001', replace: 'next dev -p 3102' },
+  { file: 'apps/standalone-apps/marketplace/apps/web/shop/package.json', search: 'next dev -p 3000', replace: 'next dev -p 3103' },
+  { file: 'apps/standalone-apps/marketplace/apps/mobile/shop/package.json', search: 'expo start --clear --port 8081', replace: 'expo start --clear --port 8083' },
+  { file: 'apps/standalone-apps/marketplace/apps/mobile/mahila-madel/package.json', search: 'expo start --clear --port 8081', replace: 'expo start --clear --port 8084' },
+  { file: 'apps/standalone-apps/marketplace/apps/web/mahila-madel/package.json', search: 'PORT=3003 react-scripts start', replace: 'PORT=3104 react-scripts start' }
 ];
 
 updates.forEach(u => {

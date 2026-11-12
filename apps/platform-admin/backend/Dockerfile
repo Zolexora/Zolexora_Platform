@@ -2,7 +2,7 @@
 FROM python:3.12-slim AS builder
 
 RUN python -m venv /opt/venv
-COPY apps/zolexora-platform-admin/backend/requirements.txt /tmp/requirements.txt
+COPY apps/platform-admin/backend/requirements.txt /tmp/requirements.txt
 RUN /opt/venv/bin/pip install --no-cache-dir -r /tmp/requirements.txt
 
 # Stage 2: minimal runtime image, non-root
@@ -21,7 +21,7 @@ ENV PYTHONUNBUFFERED=1 \
 RUN useradd --system --uid 1001 admin && mkdir /data && chown admin /data
 
 COPY --from=builder /opt/venv /opt/venv
-COPY apps/zolexora-platform-admin/backend/app ./app
+COPY apps/platform-admin/backend/app ./app
 
 USER admin
 EXPOSE 8000

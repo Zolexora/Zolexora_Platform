@@ -11,7 +11,7 @@ const orgAdminAuth = () => ({
 });
 
 
-describe("apps/zolexora-auth-service integration tests", () => {
+describe("apps/auth-service integration tests", () => {
   let app: FastifyInstance;
   let repo: InMemoryAuthRepository;
 

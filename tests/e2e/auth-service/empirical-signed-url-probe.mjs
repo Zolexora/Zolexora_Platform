@@ -2,8 +2,8 @@
 // Target: Live Zolexora Auth Service at http://localhost:3081
 // Tests: Signed URL Expiry Bounds, 3-Tier RBAC Access Control, Authorized Verification, Signature Tampering
 
-import { TokenService } from "../../../apps/zolexora-auth-service/dist/services/token.service.js";
-import { StorageService } from "../../../apps/zolexora-auth-service/dist/services/storage.service.js";
+import { TokenService } from "../../../apps/auth-service/dist/services/token.service.js";
+import { StorageService } from "../../../apps/auth-service/dist/services/storage.service.js";
 
 const BASE_URL = "http://localhost:3081";
 

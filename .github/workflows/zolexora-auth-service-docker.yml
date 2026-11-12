@@ -1,11 +1,11 @@
 name: Auth Service — Docker images
 
-# Builds image in apps/zolexora-auth-service/compose.yaml and pushes ghcr.io/zolexora/zolexora-auth-service:{latest,<sha>}.
+# Builds image in apps/auth-service/compose.yaml and pushes ghcr.io/zolexora/zolexora-auth-service:{latest,<sha>}.
 on:
   push:
     branches: [main]
     paths:
-      - 'apps/zolexora-auth-service/**'
+      - 'apps/auth-service/**'
       - 'packages/**'
       - 'pnpm-lock.yaml'
       - '.github/workflows/zolexora-auth-service-docker.yml'
@@ -26,6 +26,6 @@ jobs:
         [
           {
             "service": "service",
-            "file": "apps/zolexora-auth-service/Dockerfile"
+            "file": "apps/auth-service/Dockerfile"
           }
         ]

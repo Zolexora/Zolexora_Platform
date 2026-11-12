@@ -1,11 +1,11 @@
 name: Zolexora Shop — Docker images
 
-# Builds every image in apps/core-platform/zolexora-shop/compose.yaml and pushes ghcr.io/zolexora/zolexora-shop-<service>:{latest,<sha>}.
+# Builds every image in apps/standalone-apps/marketplace/compose.yaml and pushes ghcr.io/zolexora/zolexora-shop-<service>:{latest,<sha>}.
 on:
   push:
     branches: [main]
     paths:
-      - 'apps/core-platform/zolexora-shop/**'
+      - 'apps/standalone-apps/marketplace/**'
       - 'packages/**'
       - 'infrastructure/containers/**'
       - 'pnpm-lock.yaml'
@@ -28,30 +28,30 @@ jobs:
           {
             "service": "admin-web",
             "file": "infrastructure/containers/docker/Dockerfile.nextjs",
-            "build-args": "APP_DIR=apps/core-platform/zolexora-shop/apps/admin\nAPP_NAME=@zolexora/shop-admin"
+            "build-args": "APP_DIR=apps/standalone-apps/marketplace/apps/admin\nAPP_NAME=@zolexora/shop-admin"
           },
           {
             "service": "backend",
             "file": "infrastructure/containers/docker/Dockerfile.api-python",
-            "build-args": "APP_DIR=apps/core-platform/zolexora-shop/services/marketplace-api"
+            "build-args": "APP_DIR=apps/standalone-apps/marketplace/services/marketplace-api"
           },
           {
             "service": "mahila-web",
             "file": "infrastructure/containers/docker/Dockerfile.cra",
-            "build-args": "APP_DIR=apps/core-platform/zolexora-shop/apps/web/mahila-madel\nAPP_NAME=@zolexora/shop-mahila-madel-web"
+            "build-args": "APP_DIR=apps/standalone-apps/marketplace/apps/web/mahila-madel\nAPP_NAME=@zolexora/shop-mahila-madel-web"
           },
           {
             "service": "nginx",
-            "file": "apps/core-platform/zolexora-shop/Dockerfile.nginx"
+            "file": "apps/standalone-apps/marketplace/Dockerfile.nginx"
           },
           {
             "service": "seller-web",
             "file": "infrastructure/containers/docker/Dockerfile.nextjs",
-            "build-args": "APP_DIR=apps/core-platform/zolexora-shop/apps/web/seller\nAPP_NAME=@zolexora/shop-seller-web"
+            "build-args": "APP_DIR=apps/standalone-apps/marketplace/apps/web/seller\nAPP_NAME=@zolexora/shop-seller-web"
           },
           {
             "service": "shop-web",
             "file": "infrastructure/containers/docker/Dockerfile.nextjs",
-            "build-args": "APP_DIR=apps/core-platform/zolexora-shop/apps/web/shop\nAPP_NAME=@zolexora/shop-web"
+            "build-args": "APP_DIR=apps/standalone-apps/marketplace/apps/web/shop\nAPP_NAME=@zolexora/shop-web"
           }
         ]

@@ -1,4 +1,4 @@
-import { TEST_PRODUCT_KEYS } from "../../../../apps/zolexora-auth-service/test/helpers/test-env";
+import { TEST_PRODUCT_KEYS } from "../../../../apps/auth-service/test/helpers/test-env";
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
 import { TestHarness, createTestZolexoraFetch } from "../helpers/http-client";
 import { FIXTURES } from "../helpers/fixtures";

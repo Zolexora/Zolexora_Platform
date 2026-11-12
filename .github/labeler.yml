@@ -22,7 +22,7 @@ product:ironclub:
       - any-glob-to-any-file: 'apps/standalone-apps/ironclub/**'
 product:marketplace:
   - changed-files:
-      - any-glob-to-any-file: 'apps/core-platform/zolexora-shop/**'
+      - any-glob-to-any-file: 'apps/standalone-apps/marketplace/**'
 product:maunkavach:
   - changed-files:
       - any-glob-to-any-file: 'apps/standalone-apps/maunkavach/**'
@@ -38,12 +38,12 @@ product:tms:
 area:auth-service:
   - changed-files:
       - any-glob-to-any-file:
-          - 'apps/zolexora-auth-service/**'
+          - 'apps/auth-service/**'
           - 'packages/auth-client/**'
 area:platform-admin:
   - changed-files:
       - any-glob-to-any-file:
-          - 'apps/zolexora-platform-admin/**'
+          - 'apps/platform-admin/**'
 area:platform:
   - changed-files:
       - any-glob-to-any-file:

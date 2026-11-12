@@ -81,7 +81,7 @@ importers:
         specifier: ^5.0.3
         version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(happy-dom@17.6.3)(jsdom@29.1.1)(vite@8.3.3(@types/node@26.6.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
 
-  apps/zolexora-auth-service:
+  apps/auth-service:
     dependencies:
       '@fastify/cors':
         specifier: ^10.0.2
@@ -148,7 +148,7 @@ importers:
         specifier: ^5.0.3
         version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@25.9.9)(happy-dom@17.6.3)(jsdom@29.1.1)(vite@8.3.3(@types/node@25.9.9)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
 
-  apps/zolexora-platform-admin/frontend:
+  apps/platform-admin/frontend:
     dependencies:
       '@zolexora/auth-client':
         specifier: workspace:*
@@ -1427,7 +1427,7 @@ importers:
         specifier: ^5.7.2
         version: 5.9.3
 
-  apps/core-platform/zolexora-shop:
+  apps/standalone-apps/marketplace:
     devDependencies:
       '@types/node':
         specifier: ^26.2.0
@@ -1445,7 +1445,7 @@ importers:
         specifier: ^5.4.5
         version: 5.9.3
 
-  apps/core-platform/zolexora-shop/apps/admin:
+  apps/standalone-apps/marketplace/apps/admin:
     dependencies:
       '@zolexora/auth-client':
         specifier: workspace:*
@@ -1515,7 +1515,7 @@ importers:
         specifier: ^5.6.0
         version: 5.9.3
 
-  apps/core-platform/zolexora-shop/apps/mobile/seller:
+  apps/standalone-apps/marketplace/apps/mobile/seller:
     dependencies:
       '@babel/runtime':
         specifier: ^7.25.0
@@ -1615,7 +1615,7 @@ importers:
         specifier: ^5.3.3
         version: 5.9.3
 
-  apps/core-platform/zolexora-shop/apps/web/seller:
+  apps/standalone-apps/marketplace/apps/web/seller:
     dependencies:
       '@radix-ui/react-dialog':
         specifier: ^1.1.2
@@ -1700,7 +1700,7 @@ importers:
         specifier: ^5.6.0
         version: 5.9.3
 
-  apps/core-platform/zolexora-shop/apps/mobile/mahila-madel:
+  apps/standalone-apps/marketplace/apps/mobile/mahila-madel:
     dependencies:
       '@babel/runtime':
         specifier: ^7.25.0
@@ -1803,7 +1803,7 @@ importers:
         specifier: ^4.1.10
         version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(happy-dom@17.6.3)(jsdom@29.1.1)(vite@8.3.3(@types/node@26.6.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
 
-  apps/core-platform/zolexora-shop/apps/web/mahila-madel:
+  apps/standalone-apps/marketplace/apps/web/mahila-madel:
     dependencies:
       '@testing-library/jest-dom':
         specifier: ^5.17.0
@@ -1852,7 +1852,7 @@ importers:
         specifier: 8.57.1
         version: 8.57.1
 
-  apps/core-platform/zolexora-shop/apps/mobile/shop:
+  apps/standalone-apps/marketplace/apps/mobile/shop:
     dependencies:
       '@babel/runtime':
         specifier: ^7.25.0
@@ -1955,7 +1955,7 @@ importers:
         specifier: ^4.1.10
         version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(happy-dom@17.6.3)(jsdom@29.1.1)(vite@8.3.3(@types/node@26.6.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
 
-  apps/core-platform/zolexora-shop/apps/web/shop:
+  apps/standalone-apps/marketplace/apps/web/shop:
     dependencies:
       '@radix-ui/react-dialog':
         specifier: ^1.1.2
@@ -2058,7 +2058,7 @@ importers:
         specifier: ^4.1.10
         version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(happy-dom@17.6.3)(jsdom@29.1.1)(vite@8.3.3(@types/node@26.6.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
 
-  apps/core-platform/zolexora-shop/packages/mobile-sign-in:
+  apps/standalone-apps/marketplace/packages/mobile-sign-in:
     devDependencies:
       '@types/react':
         specifier: ^19.1.17
@@ -2082,7 +2082,7 @@ importers:
         specifier: ^5.4.5
         version: 5.9.3
 
-  apps/core-platform/zolexora-shop/packages/shared-api:
+  apps/standalone-apps/marketplace/packages/shared-api:
     dependencies:
       axios:
         specifier: ^1.7.0
@@ -2098,9 +2098,9 @@ importers:
         specifier: ^5.4.5
         version: 5.9.3
 
-  apps/core-platform/zolexora-shop/packages/shared-config: {}
+  apps/standalone-apps/marketplace/packages/shared-config: {}
 
-  apps/core-platform/zolexora-shop/packages/sign-in:
+  apps/standalone-apps/marketplace/packages/sign-in:
     dependencies:
       '@zolexora/auth-client':
         specifier: workspace:*

@@ -25,7 +25,7 @@ print("Patching Zolexora AI (8000 -> 4090)")
 replace_in_files('apps/core-platform/zolexora-ai', '8000', '4090')
 
 print("Patching Zolexora Shop (8000 -> 4100)")
-replace_in_files('apps/core-platform/zolexora-shop', '8000', '4100')
+replace_in_files('apps/standalone-apps/marketplace', '8000', '4100')
 
 print("Patching Zolexora TMS (8000 -> 4030)")
 replace_in_files('apps/core-platform/zolexora-tms', '8000', '4030')

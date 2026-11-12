@@ -5,7 +5,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'apps/zolexora-auth-service/**'
+      - 'apps/auth-service/**'
       - 'packages/auth-client/**'
       - 'packages/utils/**'
       - 'pnpm-lock.yaml'
@@ -13,7 +13,7 @@ on:
       - '.github/actions/**'
   pull_request:
     paths:
-      - 'apps/zolexora-auth-service/**'
+      - 'apps/auth-service/**'
       - 'packages/auth-client/**'
       - 'packages/utils/**'
       - 'pnpm-lock.yaml'

@@ -1,7 +1,7 @@
 -- ==============================================================================
 -- ZOLEXORA PLATFORM — CENTRALIZED AUTH & IDENTITY SERVICE SCHEMA
 -- ==============================================================================
--- Service: apps/zolexora-auth-service (Port 3081)
+-- Service: apps/auth-service (Port 3081)
 -- Target: PostgreSQL (Multi-tenant Auth & Platform Admin databases)
 -- Description: Complete schema for Organization Tenancy, Scoped Employee
 --              Memberships, Global User Identities, Platform Superadmins,

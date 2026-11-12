@@ -3,7 +3,7 @@ import { createHmac } from "node:crypto";
 import { TestHarness } from "../helpers/http-client";
 import { FIXTURES } from "../helpers/fixtures";
 import { validatePassword } from "../helpers/crypto";
-import { TokenService } from "../../../../apps/zolexora-auth-service/src/services/token.service.js";
+import { TokenService } from "../../../../apps/auth-service/src/services/token.service.js";
 import { pdfDataUrl } from "../helpers/files";
 
 describe("Tier 5: Empirical Adversarial Security & Stress Suite (Challenger Probe)", () => {
@@ -15,7 +15,7 @@ describe("Tier 5: Empirical Adversarial Security & Stress Suite (Challenger Prob
     harness = await TestHarness.getInstance();
     tokenService = new TokenService(process.env.SESSION_SECRET!, 3600);
     // Loaded after the harness has set the test config (the service reads it at import time).
-    ({ verifyPresignedUrl } = await import("../../../../apps/zolexora-auth-service/test/helpers/fakes"));
+    ({ verifyPresignedUrl } = await import("../../../../apps/auth-service/test/helpers/fakes"));
   });
 
   afterAll(async () => {

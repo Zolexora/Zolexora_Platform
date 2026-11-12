@@ -4,14 +4,14 @@ on:
   push:
     branches: [main]
     paths:
-      - 'apps/core-platform/zolexora-shop/**'
+      - 'apps/standalone-apps/marketplace/**'
       - 'packages/**'
       - 'pnpm-lock.yaml'
       - '.github/workflows/zolexora-shop-ci.yml'
       - '.github/actions/**'
   pull_request:
     paths:
-      - 'apps/core-platform/zolexora-shop/**'
+      - 'apps/standalone-apps/marketplace/**'
       - 'packages/**'
       - 'pnpm-lock.yaml'
       - '.github/workflows/zolexora-shop-ci.yml'
@@ -22,7 +22,7 @@ permissions:
 
 defaults:
   run:
-    working-directory: apps/core-platform/zolexora-shop
+    working-directory: apps/standalone-apps/marketplace
 
 jobs:
   javascript:
@@ -63,14 +63,14 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-python
         with:
-          requirements: apps/core-platform/zolexora-shop/services/marketplace-api/requirements.txt
+          requirements: apps/standalone-apps/marketplace/services/marketplace-api/requirements.txt
           packages: bandit
       - name: Contracts and schema
         run: |
           python scripts/validate-erp-contracts.py
           python scripts/validate-postgresql-schema.py
       - name: Migrations
-        working-directory: apps/core-platform/zolexora-shop/services/marketplace-api
+        working-directory: apps/standalone-apps/marketplace/services/marketplace-api
         run: |
           alembic heads
           alembic upgrade head --sql >/dev/null
@@ -82,7 +82,7 @@ jobs:
       - name: Bandit (advisory)
         run: bandit -r services/marketplace-api -x services/marketplace-api/tests -ll -ii || true
       - name: Security gates and full test suite
-        working-directory: apps/core-platform/zolexora-shop/services/marketplace-api
+        working-directory: apps/standalone-apps/marketplace/services/marketplace-api
         run: |
           pytest tests/test_storefront_context.py tests/test_storefront_isolation.py tests/test_payments.py
           pytest -q

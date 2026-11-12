@@ -13,7 +13,7 @@
     { "path": "./packages/user-auth-zolexora" },
     { "path": "./packages/user-auth-firebase" },
     { "path": "./packages/auth-functions" },
-    { "path": "./apps/zolexora-platform-admin/frontend" },
+    { "path": "./apps/platform-admin/frontend" },
     { "path": "./apps/core-platform/zolexora-tms/apps/tms-web" },
     { "path": "./apps/core-platform/zolexora-tms/apps/tms-admin" },
     { "path": "./apps/standalone-apps/clarityfi" },

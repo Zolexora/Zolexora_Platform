@@ -75,4 +75,4 @@ hellomr
 *.env.example
 .env.example
 .env.*.example
-apps/zolexora-platform-admin/backend/app/connections.json
+apps/platform-admin/backend/app/connections.json

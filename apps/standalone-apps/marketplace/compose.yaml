@@ -1,3 +1,5 @@
+# Project name pinned to the pre-rename folder name so existing volumes, networks and containers are kept.
+name: zolexora-shop
 services:
   redis:
     image: redis:7-alpine

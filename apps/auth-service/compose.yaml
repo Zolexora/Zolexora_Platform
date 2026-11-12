@@ -1,3 +1,5 @@
+# Project name pinned to the pre-rename folder name so existing volumes, networks and containers are kept.
+name: zolexora-auth-service
 # Every value comes from Infisical — run via scripts/docker-start.sh (wraps scripts/setup/with-infisical.sh).
 # No defaults: Compose refuses to start if a required key is missing.
 # Databases are the two Supabase projects referenced in Infisical (no local Postgres container);

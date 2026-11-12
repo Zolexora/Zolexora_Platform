@@ -1,7 +1,7 @@
 """One-off: move PAN, payout account and Aadhaar numbers that older organisations keep in plain
 metadata into encrypted seller_kyc (Aadhaar: last four digits only). Safe to re-run.
 
-    bash scripts/setup/with-infisical.sh apps/core-platform/zolexora-shop \\
+    bash scripts/setup/with-infisical.sh apps/standalone-apps/marketplace \\
         python services/marketplace-api/scripts/protect_seller_kyc.py
 """
 

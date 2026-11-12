@@ -1,5 +1,5 @@
 # Multi-stage production build for @zolexora/auth-service
-# Build context MUST be repo root: docker build -f apps/zolexora-auth-service/Dockerfile .
+# Build context MUST be repo root: docker build -f apps/auth-service/Dockerfile .
 # Runtime configuration (PORT, HOST, NODE_ENV, secrets) comes from Infisical via compose.yaml — nothing is baked in.
 
 # Node 24 provides native crypto.argon2 (verifies existing argon2id hashes).
@@ -9,7 +9,7 @@ RUN corepack enable && corepack prepare pnpm@9.12.3 --activate
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json tsconfig.json ./
 COPY packages ./packages
-COPY apps/zolexora-auth-service ./apps/zolexora-auth-service
+COPY apps/auth-service ./apps/auth-service
 
 # Lockfile-exact install; dependency lifecycle scripts stay disabled.
 RUN pnpm install --frozen-lockfile --ignore-scripts --filter @zolexora/auth-service...
@@ -18,7 +18,7 @@ RUN pnpm --filter @zolexora/auth-service build
 # Production-only dependency tree (no devDependencies), plus the compiled output.
 RUN pnpm --filter @zolexora/auth-service deploy --prod --ignore-scripts /out \
  && rm -rf /out/src /out/test \
- && cp -r apps/zolexora-auth-service/dist /out/dist \
+ && cp -r apps/auth-service/dist /out/dist \
  && cp -r packages/utils/dist /out/node_modules/@zolexora/utils/dist
 
 FROM node:24-alpine AS runner

@@ -1,3 +1,5 @@
+# Project name pinned to the pre-rename folder name so existing volumes, networks and containers are kept.
+name: zolexora-platform-admin
 services:
   platform-admin-backend:
     image: ${PLATFORM_ADMIN_BACKEND_IMAGE:-ghcr.io/zolexora/zolexora-platform-admin-backend:latest}

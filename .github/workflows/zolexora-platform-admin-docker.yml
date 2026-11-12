@@ -1,11 +1,11 @@
 name: Platform Admin — Docker images
 
-# Builds every image in apps/zolexora-platform-admin/compose.yaml and pushes ghcr.io/zolexora/zolexora-platform-admin-<service>:{latest,<sha>}.
+# Builds every image in apps/platform-admin/compose.yaml and pushes ghcr.io/zolexora/zolexora-platform-admin-<service>:{latest,<sha>}.
 on:
   push:
     branches: [main]
     paths:
-      - 'apps/zolexora-platform-admin/**'
+      - 'apps/platform-admin/**'
       - 'packages/**'
       - 'infrastructure/containers/**'
       - 'pnpm-lock.yaml'
@@ -27,14 +27,14 @@ jobs:
         [
           {
             "service": "backend",
-            "file": "apps/zolexora-platform-admin/backend/Dockerfile"
+            "file": "apps/platform-admin/backend/Dockerfile"
           },
           {
             "service": "frontend",
-            "file": "apps/zolexora-platform-admin/frontend/Dockerfile"
+            "file": "apps/platform-admin/frontend/Dockerfile"
           },
           {
             "service": "nginx",
-            "file": "apps/zolexora-platform-admin/Dockerfile.nginx"
+            "file": "apps/platform-admin/Dockerfile.nginx"
           }
         ]
