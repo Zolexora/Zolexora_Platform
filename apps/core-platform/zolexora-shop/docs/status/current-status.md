@@ -27,11 +27,11 @@ OpenAPI schema version 3.1.0 is generated cleanly and synced to `contracts/marke
 
 | Surface | Canonical path | Verified result |
 | --- | --- | --- |
-| Zolexora web/mobile | `apps/storefronts/zolexora-shop/web`, `mobile` | web build/fully integrated; mobile export/type-check pass |
-| Mahila web/mobile | `apps/storefronts/mahila-madel/web`, `mobile` | web build/fully integrated; mobile export/type-check pass |
+| Zolexora web/mobile | `apps/web/shop`, `apps/mobile/shop` | web build/fully integrated; mobile export/type-check pass |
+| Mahila web/mobile | `apps/web/mahila-madel`, `apps/mobile/mahila-madel` | web build/fully integrated; mobile export/type-check pass |
 | Mahila legacy server | `apps/storefronts/mahila-madel/legacy-server` | legacy runtime disabled (`410 Gone`); dry-run complete |
-| Seller web/mobile | `apps/portals/seller/web`, `mobile` | builds and applicable type-checks pass |
-| Marketplace admin | `apps/portals/marketplace-admin/web` | domain `admin.marketplace.zolexora.com`; build/type-check pass |
+| Seller web/mobile | `apps/web/seller`, `apps/mobile/seller` | builds and applicable type-checks pass |
+| Marketplace admin | `apps/admin` | domain `admin.marketplace.zolexora.com`; build/type-check pass |
 | FastAPI | `services/marketplace-api` | PostgreSQL 16 identities/RBAC, Redis opaque sessions/OTP, scoped repositories, and existing contracts pass |
 | ERP contract boundary | `contracts/zolexora-erp/v1`, `services/marketplace-api/integrations/zolexora_erp` | proposed schemas/examples and typed interfaces validate offline; no transport |
 | Orders & Fulfillment Contracts | `services/marketplace-api/models/orders.py`, `routers/orders.py`, `routers/admin_orders.py` | ADR 0013 contracts, quote verification, multi-seller split, state machines, compound isolation pass |

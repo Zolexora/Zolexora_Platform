@@ -23,8 +23,8 @@ Always use these canonical names, descriptions and paths. Never use the old fold
 
 **What it is:** Multi-storefront e-commerce marketplace.
 
-- Two branded storefronts: **Zolexora Shop** (`shop.zolexora.com`) and **Mahila Madel** (`mahilamadel.store`) — `apps/storefronts/`
-- Shared **seller portal** (`seller.zolexora.com`) and **marketplace admin** (`admin.marketplace.zolexora.com`) — `apps/portals/`
+- Two branded storefronts: **Zolexora Shop** (`shop.zolexora.com`) and **Mahila Madel** (`mahilamadel.store`) — `apps/web/{shop,mahila-madel}`, `apps/mobile/{shop,mahila-madel}`
+- Shared **seller portal** (`seller.zolexora.com`) and **marketplace admin** (`admin.marketplace.zolexora.com`) — `apps/web/seller`, `apps/mobile/seller`, `apps/admin`
 - Backend: FastAPI (Python 3.12) · PostgreSQL · Redis — `services/marketplace-api/`
 - Frontend: Next.js (web) + Expo React Native (mobile)
 - Product-local packages: `packages/shared-api`, `packages/shared-config`

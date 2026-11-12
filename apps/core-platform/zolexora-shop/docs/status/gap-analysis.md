@@ -50,7 +50,7 @@ Each row supplies ID, severity, current/required state, evidence, risk, dependen
 | ID | Sev | Current → required | Evidence / risk | Dependency; phase; files |
 |---|---|---|---|---|
 | GAP-FE-001 | P1 accepted | duplicated clients/types; shared package unused → shared contracts | local `src/lib/api.ts` files; drift | REP-001; P1/5; packages/apps |
-| GAP-FE-002 | P0 accepted | Mahila client totals/payment and duplicate API/admin → shared server-priced API, retire duplicate after parity | `apps/storefronts/mahila-madel/web/src/pages/Checkout.js:30-42`; tampering/dual truth | FastAPI parity; P3/5; Mahila/shared/FastAPI/tests |
+| GAP-FE-002 | P0 accepted | Mahila client totals/payment and duplicate API/admin → shared server-priced API, retire duplicate after parity | `apps/web/mahila-madel/src/pages/Checkout.js:30-42`; tampering/dual truth | FastAPI parity; P3/5; Mahila/shared/FastAPI/tests |
 
 ## Oracle infrastructure
 
@@ -67,14 +67,14 @@ Each row supplies ID, severity, current/required state, evidence, risk, dependen
 | GAP-TEST-001 | P0 resolved | Root build runs 8 tasks, type-check 7, and tests 3 suites; guard precedes checks | Phase 1.6 command output; `package.json`; `turbo.json` | REP-001; completed P1.6 |
 | GAP-TEST-002 | P1 accepted | Mahila zero-test blocker resolved; seller/admin and broader behavior still need coverage | Mahila web 1 test, Mahila mobile 2, Zolexora mobile 6; legacy server no suite | feature integration; P5; app tests/CI |
 | GAP-TEST-003 | P1 accepted | request resolver has focused unit/integration coverage; persisted cross-store data isolation has no tests or implementation | `services/marketplace-api/tests/test_storefront_context.py`; 52 focused tests | data model; P3; domain repositories/tests |
-| GAP-DESIGN-001 | P1 accepted | Mahila mobile has text identity but no approved icon/splash → approved release artwork | `apps/storefronts/mahila-madel/mobile/app.json`; release branding incomplete | design approval; P5; Mahila mobile assets/config |
+| GAP-DESIGN-001 | P1 accepted | Mahila mobile has text identity but no approved icon/splash → approved release artwork | `apps/mobile/mahila-madel/app.json`; release branding incomplete | design approval; P5; Mahila mobile assets/config |
 
 ## Security
 
 | ID | Sev | Current → required | Evidence / risk | Dependency; phase; files |
 |---|---|---|---|---|
 | GAP-SEC-001 | P0 accepted | OTP value logged → never log secret | `services/marketplace-api/shared/database/redis.py:207-220`; account compromise | tests; P1/4; Redis/auth tests |
-| GAP-SEC-002 | P0 accepted | client-trusted Mahila totals → server calculation | `apps/storefronts/mahila-madel/web/src/pages/Checkout.js:30-42`, `apps/storefronts/mahila-madel/legacy-server/controllers/orderController.js:8-19`; financial tampering | shared checkout; P3/5; FastAPI/Mahila/tests |
+| GAP-SEC-002 | P0 accepted | client-trusted Mahila totals → server calculation | `apps/web/mahila-madel/src/pages/Checkout.js:30-42`, `apps/storefronts/mahila-madel/legacy-server/controllers/orderController.js:8-19`; financial tampering | shared checkout; P3/5; FastAPI/Mahila/tests |
 | GAP-SEC-003 | P1 accepted | critical/high npm findings/deprecated Multer → reviewed upgrades | Phase 0 npm output; known vulnerabilities | REP-001; P1/8; manifests/locks/tests |
 | GAP-SEC-004 | P1 accepted | forwarded headers trust all → trusted OCI proxy range | `services/marketplace-api/Dockerfile:11`; spoofed scheme/IP | OCI LB; P6/8; container/infra/tests |
 

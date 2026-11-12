@@ -250,8 +250,9 @@ Zolexora_Platform/
 │   │   │   └── README.md
 │   │   ├── zolexora-shop/
 │   │   │   ├── apps/
-│   │   │   │   ├── portals/  (76 files)
-│   │   │   │   └── storefronts/  (125 files)
+│   │   │   │   ├── admin/  (28 files)
+│   │   │   │   ├── mobile/  (58 files)
+│   │   │   │   └── web/  (115 files)
 │   │   │   ├── contracts/
 │   │   │   │   ├── marketplace/  (1 files)
 │   │   │   │   └── zolexora-erp/  (21 files)
@@ -263,7 +264,7 @@ Zolexora_Platform/
 │   │   │   │   ├── directory-plan/  (4 files)
 │   │   │   │   ├── legacy/  (3 files)
 │   │   │   │   ├── planning/  (5 files)
-│   │   │   │   ├── runbooks/  (4 files)
+│   │   │   │   ├── runbooks/  (5 files)
 │   │   │   │   ├── status/  (25 files)
 │   │   │   │   ├── README.md
 │   │   │   │   └── SECURITY.md
@@ -286,7 +287,7 @@ Zolexora_Platform/
 │   │   │   │   ├── verify-workspace.mjs
 │   │   │   │   └── web-env-config.sh
 │   │   │   ├── services/
-│   │   │   │   └── marketplace-api/  (226 files)
+│   │   │   │   └── marketplace-api/  (227 files)
 │   │   │   ├── .gitignore
 │   │   │   ├── .infisical.json
 │   │   │   ├── compose.yaml

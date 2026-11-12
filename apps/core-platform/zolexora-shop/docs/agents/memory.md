@@ -32,9 +32,9 @@ This file is the shortest durable context for anyone resuming work on the reposi
 
 - The main API is FastAPI under `services/marketplace-api/`.
 - PostgreSQL through a standard `DATABASE_URL` is the only data store; the API no longer uses MongoDB (retired in migration 0024, old data not imported).
-- Zolexora Shop is under `apps/storefronts/zolexora-shop/web`; shared portals are under `apps/portals/`.
-- Zolexora and Mahila buyer Expo apps live beside their storefronts; shared seller mobile lives at `apps/portals/seller/mobile`.
-- Mahila web and its transitional Express server are separated under `apps/storefronts/mahila-madel/`.
+- Web apps are under `apps/web/<app>` (shop, mahila-madel, seller), mobile apps under `apps/mobile/<app>`, the admin at `apps/admin`.
+- Zolexora and Mahila buyer Expo apps are `apps/mobile/shop` and `apps/mobile/mahila-madel`; shared seller mobile lives at `apps/mobile/seller`.
+- Mahila Madel is an independent store: `apps/web/mahila-madel` and `apps/mobile/mahila-madel`.
 - Shared TypeScript packages are under `packages/`.
 - The root pnpm workspace owns exactly ten packages and rejects missing canonical paths.
 - FastAPI has a dynamic PostgreSQL-backed storefront resolver using `TRUSTED_PROXIES` for secure proxy/forwarded-host extraction.

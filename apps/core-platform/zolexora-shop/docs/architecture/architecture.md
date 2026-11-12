@@ -12,12 +12,12 @@ The repository currently contains two partially independent commerce systems.
 
 | Layer | Current implementation |
 | --- | --- |
-| Buyer web | Next.js app at `apps/storefronts/zolexora-shop/web` |
-| Seller web | Next.js app at `apps/portals/seller/web` |
-| Admin web | Next.js app at `apps/portals/marketplace-admin/web` |
-| Zolexora buyer mobile | Expo app at `apps/storefronts/zolexora-shop/mobile` |
-| Mahila buyer mobile | Expo shell at `apps/storefronts/mahila-madel/mobile` |
-| Shared seller mobile | Expo app at `apps/portals/seller/mobile` |
+| Buyer web | Next.js app at `apps/web/shop` |
+| Seller web | Next.js app at `apps/web/seller` |
+| Admin web | Next.js app at `apps/admin` |
+| Zolexora buyer mobile | Expo app at `apps/mobile/shop` |
+| Mahila buyer mobile | Expo shell at `apps/mobile/mahila-madel` |
+| Shared seller mobile | Expo app at `apps/mobile/seller` |
 | API | FastAPI at `services/marketplace-api/` |
 | Persistence | PostgreSQL for everything: users, catalog, stock, carts, orders, payments, shipping, wishlists (MongoDB retired in migration 0024; reels, coins and subscriptions dropped in 0026) |
 | Sign-in | Zolexora auth service (`apps/zolexora-auth-service`); the API introspects its tokens |
@@ -30,7 +30,7 @@ The repository currently contains two partially independent commerce systems.
 
 Mahila Madel is currently a standalone ShopKart-derived application:
 
-- React 18 client in `apps/storefronts/mahila-madel/web`.
+- React 18 client in `apps/web/mahila-madel`.
 - Express/Mongoose server in `apps/storefronts/mahila-madel/legacy-server`.
 - Its own users, products, carts, wishlists, orders, admin UI, and JWT authentication.
 - Checkout values are accepted from the client and the payment flow is demonstration-level rather than a verified gateway integration.

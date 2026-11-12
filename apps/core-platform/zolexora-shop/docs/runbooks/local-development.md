@@ -20,9 +20,9 @@ The guard must list exactly ten packages.
 
 | Application | Package | Path | Metro |
 | --- | --- | --- | ---: |
-| Zolexora Shop buyer | `@zolexora/shop-mobile` | `apps/storefronts/zolexora-shop/mobile` | 8081 |
-| Mahila Madel buyer | `@zolexora/shop-mahila-madel-mobile` | `apps/storefronts/mahila-madel/mobile` | 8083 |
-| Shared seller | `@zolexora/shop-seller-mobile` | `apps/portals/seller/mobile` | 8082 |
+| Zolexora Shop buyer | `@zolexora/shop-mobile` | `apps/mobile/shop` | 8081 |
+| Mahila Madel buyer | `@zolexora/shop-mahila-madel-mobile` | `apps/mobile/mahila-madel` | 8083 |
+| Shared seller | `@zolexora/shop-seller-mobile` | `apps/mobile/seller` | 8082 |
 
 Run with `pnpm dev:zolexora-mobile`, `pnpm dev:mahila-mobile`, or `pnpm dev:seller-mobile`. Buyer `.env` files require the shared API URL and their matching public storefront key. Seller mobile must not have a fixed customer storefront key.
 

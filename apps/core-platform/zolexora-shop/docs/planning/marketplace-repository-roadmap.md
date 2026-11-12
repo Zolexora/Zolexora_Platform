@@ -38,10 +38,10 @@ This document specifies the authoritative, sequential roadmap for the Zolexora S
     Implement immutable order creation, multi-item fulfillment flows, shipping carrier integration webhooks, returns, and refund flows.
 
 12. **MR-11 Seller Portal Completion**
-    Finalize web and mobile seller portal applications (`apps/portals/seller`) against canonical backend APIs.
+    Finalize web and mobile seller portal applications (`apps/web/seller`, `apps/mobile/seller`) against canonical backend APIs.
 
 13. **MR-12 Marketplace Admin Completion**
-    Finalize Marketplace Admin panel (`apps/portals/marketplace-admin`) at `admin.marketplace.zolexora.com`.
+    Finalize Marketplace Admin panel (`apps/admin`) at `admin.marketplace.zolexora.com`.
 
 14. **MR-13 Storefront Web Completion**
     Complete Zolexora Shop (`shop.zolexora.com`) and Mahila Madel (`mahilamadel.store`) Next.js web applications.

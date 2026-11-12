@@ -2,7 +2,7 @@
 
 These instructions apply to the entire repository.
 
-Canonical code roots are `apps/storefronts/`, `apps/portals/`, `services/marketplace-api/`, `packages/`, and `infrastructure/`. Each storefront owns separate web/mobile apps; the seller portal owns shared web/mobile apps. Read ADRs 0006 and 0007 before changing application ownership.
+Canonical code roots are `apps/web/`, `apps/mobile/`, `apps/admin/`, `services/marketplace-api/`, `packages/`, and `infrastructure/`. Each storefront (shop, mahila-madel) and the seller portal has one app under `apps/web/<app>` and one under `apps/mobile/<app>`; the admin is `apps/admin`. Read ADRs 0006 and 0007 before changing application ownership.
 
 ## Required reading
 

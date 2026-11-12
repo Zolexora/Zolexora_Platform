@@ -125,11 +125,11 @@ python -c "import secrets; print(secrets.token_hex(64))"
 ### 3. Frontend & Mobile Client API Configuration
 Web and mobile clients must configure the API endpoints:
 
-* **Web Frontends (`apps/storefronts/*/web`, `apps/portals/*/web`)**:
+* **Web Frontends (`apps/web/*`, `apps/admin`)**:
   * `NEXT_PUBLIC_API_URL`: The production API URL. During development, it falls back to `http://127.0.0.1:4100/api`.
   * `NEXT_PUBLIC_GOOGLE_CLIENT_ID`: OAuth Client ID.
   * `NEXT_PUBLIC_RAZORPAY_KEY` (Web Buyer only): Razorpay payment gateway key.
-* **Mobile Clients (`apps/storefronts/*/mobile`, `apps/portals/*/mobile`)**:
+* **Mobile Clients (`apps/mobile/*`)**:
   * `EXPO_PUBLIC_API_URL`: The production API URL. During development, it falls back to `http://localhost:4100/api`.
   * `EXPO_PUBLIC_GOOGLE_CLIENT_ID`: OAuth Client ID.
 
@@ -210,17 +210,17 @@ pnpm docker:shop:start   # pulls ghcr.io/zolexora/zolexora-shop-* images if miss
 Open your terminal inside either buyer or seller mobile workspaces:
 ```bash
 # Buyer Expo App
-cd apps/storefronts/zolexora-shop/mobile
+cd apps/mobile/shop
 npx expo start
 
 # Seller Expo App
-cd apps/portals/seller/mobile
+cd apps/mobile/seller
 npx expo start
 ```
 * **Controls**: Press `a` to load on your Android Emulator, `i` for iOS Simulator, or scan the QR Code on your physical phone with the **Expo Go** application.
 
 ### 2. Google Sign-In setup on Mobile
-Modify the client configuration inside `apps/storefronts/zolexora-shop/mobile/app/auth/index.tsx`:
+Modify the client configuration inside `apps/mobile/shop/app/auth/index.tsx`:
 ```typescript
 const [, , googlePromptAsync] = Google.useAuthRequest({
   androidClientId: "YOUR_ANDROID_CLIENT_ID",   // from Google Cloud Console
@@ -355,21 +355,23 @@ Deploy your apps independently:
 npm i -g vercel
 
 # Deploy Buyer Frontend
-cd apps/storefronts/zolexora-shop/web
+cd apps/web/shop
 vercel --prod
 
 # Deploy Seller Frontend
-cd apps/portals/seller/web
+cd apps/web/seller
 vercel --prod
 
 # Deploy Admin Frontend
-cd apps/portals/marketplace-admin/web
+cd apps/admin
 vercel --prod
 ```
 **Vercel Dashboard Routing Settings**:
-* **Zolexora storefront**: `apps/storefronts/zolexora-shop/web`, target domain `shop.zolexora.com`
-* **Seller portal**: `apps/portals/seller/web`, target domain `seller.zolexora.com`
-* **Marketplace admin**: `apps/portals/marketplace-admin/web`, target domain `marketplaceadmin.zolexora.com`
+* **Zolexora storefront**: `apps/web/shop`, target domain `shop.zolexora.com`
+* **Seller portal**: `apps/web/seller`, target domain `seller.zolexora.com`
+* **Marketplace admin**: `apps/admin`, target domain `marketplaceadmin.zolexora.com`
+
+Projects created before the apps layout change need their Root Directory updated: see [docs/runbooks/apps-layout-deployment.md](docs/runbooks/apps-layout-deployment.md).
 
 > [!IMPORTANT]
 > Remember to add `NEXT_PUBLIC_API_URL=https://api--zolexora-api--4m8d68ky29h8.code.run/api` as an environment variable in all your Vercel projects.
@@ -381,11 +383,11 @@ npm install -g eas-cli
 eas login
 
 # Build Buyer Mobile Client
-cd apps/storefronts/zolexora-shop/mobile
+cd apps/mobile/shop
 eas build --platform all --profile preview
 
 # Build Seller Creator Client
-cd apps/portals/seller/mobile
+cd apps/mobile/seller
 eas build --platform all --profile preview
 ```
 

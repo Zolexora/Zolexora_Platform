@@ -53,8 +53,8 @@
 - ERP Contract: `contracts/zolexora-erp/v1/`
 
 ## Code Layout
-- `apps/storefronts/zolexora-shop/web`, `mobile`
-- `apps/storefronts/mahila-madel/web`, `mobile`, `legacy-server`
-- `apps/portals/seller/web`, `mobile`
-- `apps/portals/marketplace-admin/web`
+- `apps/web/shop`, `apps/mobile/shop`
+- `apps/web/mahila-madel`, `apps/mobile/mahila-madel`, `apps/storefronts/mahila-madel/legacy-server`
+- `apps/web/seller`, `apps/mobile/seller`
+- `apps/admin`
 - `services/marketplace-api/`
