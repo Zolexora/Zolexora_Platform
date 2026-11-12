@@ -21,7 +21,9 @@ Zolexora comprises six main applications and services that work together seamles
 | **Zolexora Buyer Mobile** | — | `http://localhost:8081` | Metro `8081` | Expo React Native | Zolexora customer binary |
 | **Mahila Buyer Mobile** | — | `http://localhost:8083` | Metro `8083` | Expo React Native | Mahila customer shell |
 | **Seller Mobile**| — | `http://localhost:8082` | Metro `8082` | Expo React Native | Mobile seller dashboard, product uploads |
-| **Backend API** | `api.zolexora.com` | `http://127.0.0.1:4100`| Port `4100` | FastAPI (Python 3.12) | Core business logic, auth, payments, shipping engine |
+| **Backend API** | `api.marketplace.zolexora.com` | `http://127.0.0.1:4100`| Port `4100` | FastAPI (Python 3.12) | Core business logic, auth, payments, shipping engine |
+
+The API URL each app calls comes from Infisical (`NEXT_PUBLIC_API_URL`, `EXPO_PUBLIC_API_URL`, `CORS_ORIGINS`). The backend still recognises its own host from a hard-coded list that names `api.zolexora.com` (`services/marketplace-api/storefronts/registry.py`, `services/marketplace-api/database/repositories/storefronts.py`, and the `ck_storefront_domain_reject_surface_domains` constraint from migration 0003). It rejects storefront requests to any other host, so add `api.marketplace.zolexora.com` there before pointing Infisical at it.
 
 ## Storefront request context
 
@@ -369,7 +371,7 @@ vercel --prod
 **Vercel Dashboard Routing Settings**:
 * **Zolexora storefront**: `apps/web/shop`, target domain `shop.zolexora.com`
 * **Seller portal**: `apps/web/seller`, target domain `seller.zolexora.com`
-* **Marketplace admin**: `apps/admin`, target domain `marketplaceadmin.zolexora.com`
+* **Marketplace admin**: `apps/admin`, target domain `admin.marketplace.zolexora.com`
 
 Projects created before the apps layout change need their Root Directory updated: see [docs/runbooks/apps-layout-deployment.md](docs/runbooks/apps-layout-deployment.md).
 
@@ -434,5 +436,5 @@ To deploy the backend on a private VPS (like AWS EC2, DigitalOcean, or Hetzner):
 
 ## 📞 Support & Resources
 * **Backend Health Check Route**: `https://api--zolexora-api--4m8d68ky29h8.code.run/api/health`
-* **API Documentation Endpoint**: `https://api.zolexora.com/docs`
+* **API Documentation Endpoint**: `https://api.marketplace.zolexora.com/docs`
 
