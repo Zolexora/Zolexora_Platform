@@ -5,5 +5,5 @@ httpx>=0.27.0
 pytest>=8.0.0
 aiosqlite>=0.20.0
 segno>=1.6.6
-cryptography>=42.0.0  # gateways.py: gateway connection tokens encrypted at rest
+cryptography>=50.0.2  # gateways.py: gateway connection tokens encrypted at rest
 boto3>=1.36.0  # backup_lock.py: conditional writes (If-Match / If-None-Match)
