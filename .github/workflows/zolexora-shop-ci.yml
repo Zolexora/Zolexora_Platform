@@ -29,7 +29,7 @@ jobs:
     name: Workspace, build, type-check, lint, test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-node
       - run: pnpm verify:workspace
       - run: pnpm build
@@ -60,7 +60,7 @@ jobs:
       DATABASE_URL: postgresql://marketplace_ci:marketplace_ci@localhost:5432/marketplace_ci
       REDIS_URL: redis://localhost:6379
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-python
         with:
           requirements: apps/standalone-apps/marketplace/services/marketplace-api/requirements.txt
@@ -91,5 +91,5 @@ jobs:
     name: Docs links
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: python3 scripts/validate-doc-links.py

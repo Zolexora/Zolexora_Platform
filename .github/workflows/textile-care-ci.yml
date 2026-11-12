@@ -27,7 +27,7 @@ jobs:
       run:
         working-directory: apps/standalone-apps/textile-care/services/backend
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-python
         with:
           packages: -e apps/standalone-apps/textile-care/services/backend[dev]
@@ -39,7 +39,7 @@ jobs:
       run:
         working-directory: apps/standalone-apps/textile-care
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-node
       - run: pnpm lint
       - run: pnpm typecheck

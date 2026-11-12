@@ -27,7 +27,7 @@ jobs:
       run:
         working-directory: apps/core-platform/zolexora-ims/services/user-api
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-python
         with:
           python-version: '3.11'
@@ -38,6 +38,6 @@ jobs:
   frontend-build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-node
       - run: pnpm --filter "@zolexora/ims-user-frontend..." build

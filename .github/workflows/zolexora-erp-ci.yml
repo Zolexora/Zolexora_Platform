@@ -31,7 +31,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-python
         with:
           python-version: '3.11'
@@ -49,7 +49,7 @@ jobs:
       matrix:
         install_payments: ["0", "1"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
       - name: Authenticate with Infisical (only secret source)
