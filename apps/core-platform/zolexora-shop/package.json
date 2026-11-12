@@ -4,7 +4,7 @@
   "scripts": {
     "dev:backend": "bash ../../../scripts/setup/with-infisical.sh . sh -c 'cd services/marketplace-api && node ../../scripts/py-exec.mjs -m uvicorn main:app --reload --port 4100'",
     "dev:zolexora-shop": "bash ../../../scripts/setup/with-infisical.sh . pnpm --filter @zolexora/shop-web dev",
-    "dev:mahila-madel": "bash ../../../scripts/setup/with-infisical.sh . sh -c 'sh scripts/web-env-config.sh apps/storefronts/mahila-madel/web/public/env-config.js && pnpm --filter @zolexora/shop-mahila-madel-web dev'",
+    "dev:mahila-madel": "bash ../../../scripts/setup/with-infisical.sh . sh -c 'sh scripts/web-env-config.sh apps/web/mahila-madel/public/env-config.js && pnpm --filter @zolexora/shop-mahila-madel-web dev'",
     "dev:seller": "bash ../../../scripts/setup/with-infisical.sh . pnpm --filter @zolexora/shop-seller-web dev",
     "dev:admin": "bash ../../../scripts/setup/with-infisical.sh . pnpm --filter @zolexora/shop-admin dev",
     "dev:zolexora-mobile": "bash ../../../scripts/setup/with-infisical.sh . pnpm --filter @zolexora/shop-mobile dev",

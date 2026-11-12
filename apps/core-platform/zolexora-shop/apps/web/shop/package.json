@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "bash ../../../../../../../scripts/setup/with-infisical.sh ../../../.. next dev -p 3103",
+    "dev": "bash ../../../../../../scripts/setup/with-infisical.sh ../../.. next dev -p 3103",
     "build": "next build",
-    "start": "bash ../../../../../../../scripts/setup/with-infisical.sh ../../../.. next start",
+    "start": "bash ../../../../../../scripts/setup/with-infisical.sh ../../.. next start",
     "lint": "next lint",
     "test": "vitest run",
     "type-check": "tsc --noEmit"
