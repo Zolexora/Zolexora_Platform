@@ -1,4 +1,4 @@
-FROM node:22-alpine
+FROM node:25-alpine
 WORKDIR /app
 COPY apps/standalone-apps/maunkavach/services/backend/package*.json ./
 RUN npm install --omit=dev
