@@ -305,9 +305,9 @@ Zolexora_Platform/
 │   │   │   └── README.md
 │   │   ├── marketplace/
 │   │   │   ├── apps/
-│   │   │   │   ├── admin/  (28 files)
+│   │   │   │   ├── admin/  (27 files)
 │   │   │   │   ├── mobile/  (58 files)
-│   │   │   │   └── web/  (115 files)
+│   │   │   │   └── web/  (113 files)
 │   │   │   ├── contracts/
 │   │   │   │   ├── marketplace/  (1 files)
 │   │   │   │   └── zolexora-erp/  (21 files)
