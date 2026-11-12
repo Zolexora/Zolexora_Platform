@@ -106,7 +106,7 @@ Make sure you have the following installed on your machine:
 Zolexora uses a multi-layered environment setup across its backend, web frontends, and mobile apps.
 
 ### 1. Quick Local Setup
-Secrets come only from Infisical (`/Zolexora_Marketplace`); there are no `.env` files. Log in with `infisical login` and run commands through `bash scripts/setup/with-infisical.sh apps/core-platform/zolexora-shop <command>`. Required keys per app: [docs/secrets.md](../../../docs/secrets.md).
+Secrets come only from Infisical (`/Zolexora_Marketplace`); there are no `.env` files. Log in with `infisical login` and run commands through `bash scripts/setup/with-infisical.sh apps/standalone-apps/marketplace <command>`. Required keys per app: [docs/secrets.md](../../../docs/secrets.md).
 
 ### 2. Backend & Core Configuration
 Configure these key subsystems in Infisical:
@@ -154,7 +154,7 @@ pip install -r services/marketplace-api/requirements.txt
 Apply the PostgreSQL migrations before starting the API (and after pulling new ones):
 ```bash
 cd services/marketplace-api
-bash ../../../../../scripts/setup/with-infisical.sh apps/core-platform/zolexora-shop python -m alembic upgrade head
+bash ../../../../../scripts/setup/with-infisical.sh apps/standalone-apps/marketplace python -m alembic upgrade head
 cd -
 ```
 
@@ -173,7 +173,7 @@ Open 4 terminal windows:
   ```bash
   cd services/marketplace-api
   source ../../../.venv/bin/activate
-  bash ../../../../../scripts/setup/with-infisical.sh apps/core-platform/zolexora-shop uvicorn main:app --reload --port 4100
+  bash ../../../../../scripts/setup/with-infisical.sh apps/standalone-apps/marketplace uvicorn main:app --reload --port 4100
   ```
   API Docs (Swagger UI) will load at: `http://127.0.0.1:4100/docs`
 
@@ -398,14 +398,14 @@ To deploy the backend on a private VPS (like AWS EC2, DigitalOcean, or Hetzner):
   Configure nginx to reverse proxy and scale backend containers:
   ```bash
   # Boot 4 parallel FastAPI worker instances (images from GHCR, secrets from Infisical)
-  bash scripts/setup/with-infisical.sh apps/core-platform/zolexora-shop \
-    docker compose -f apps/core-platform/zolexora-shop/compose.yaml up -d --scale backend=4
+  bash scripts/setup/with-infisical.sh apps/standalone-apps/marketplace \
+    docker compose -f apps/standalone-apps/marketplace/compose.yaml up -d --scale backend=4
   ```
 
 * **Manual Setup with Nginx Load Balancing**:
   Copy the nginx config and create worker processes:
   ```bash
-  sudo cp apps/core-platform/zolexora-shop/nginx.conf /etc/nginx/sites-available/zolexora
+  sudo cp apps/standalone-apps/marketplace/nginx.conf /etc/nginx/sites-available/zolexora
   sudo ln -s /etc/nginx/sites-available/zolexora /etc/nginx/sites-enabled/
   sudo nginx -t && sudo systemctl reload nginx
   

@@ -114,6 +114,85 @@ Zolexora_Platform/
 │   ├── mcp.json -> ../.agents/mcp.json
 │   └── settings.json
 ├── apps/
+│   ├── auth-service/
+│   │   ├── scripts/
+│   │   │   └── docker-start.sh
+│   │   ├── src/
+│   │   │   ├── business/
+│   │   │   │   └── identifiers.ts
+│   │   │   ├── config/
+│   │   │   │   ├── constants.ts
+│   │   │   │   ├── env.ts
+│   │   │   │   └── infisical.ts
+│   │   │   ├── middleware/
+│   │   │   │   └── auth.middleware.ts
+│   │   │   ├── plugins/
+│   │   │   │   ├── error-handler.ts
+│   │   │   │   └── openapi.ts
+│   │   │   ├── rbac/
+│   │   │   │   ├── engine.ts
+│   │   │   │   └── permissions.ts
+│   │   │   ├── repositories/
+│   │   │   │   ├── index.ts
+│   │   │   │   ├── postgres-auth.repository.ts
+│   │   │   │   └── types.ts
+│   │   │   ├── routes/
+│   │   │   │   ├── auth/  (5 files)
+│   │   │   │   ├── business/  (6 files)
+│   │   │   │   ├── storage/  (3 files)
+│   │   │   │   └── health.routes.ts
+│   │   │   ├── services/
+│   │   │   │   ├── business-session.service.ts
+│   │   │   │   ├── cipher.service.ts
+│   │   │   │   ├── firebase.service.ts
+│   │   │   │   ├── kyc-storage.service.ts
+│   │   │   │   ├── lockout.service.ts
+│   │   │   │   ├── mail.service.ts
+│   │   │   │   ├── otp.service.ts
+│   │   │   │   ├── pwned.service.ts
+│   │   │   │   ├── rate-limit.service.ts
+│   │   │   │   ├── signup-ticket.service.ts
+│   │   │   │   ├── storage.service.ts
+│   │   │   │   ├── token.service.ts
+│   │   │   │   ├── totp.service.ts
+│   │   │   │   └── turnstile.service.ts
+│   │   │   ├── stores/
+│   │   │   │   ├── catalog.store.ts
+│   │   │   │   ├── security.store.ts
+│   │   │   │   └── team.store.ts
+│   │   │   ├── verification/
+│   │   │   │   ├── providers.ts
+│   │   │   │   ├── rules.ts
+│   │   │   │   └── verification.service.ts
+│   │   │   ├── app.ts
+│   │   │   ├── db.ts
+│   │   │   └── index.ts
+│   │   ├── test/
+│   │   │   ├── helpers/
+│   │   │   │   ├── business.ts
+│   │   │   │   ├── fake-network.ts
+│   │   │   │   ├── fakes.ts
+│   │   │   │   ├── in-memory-auth.repository.ts
+│   │   │   │   └── test-env.ts
+│   │   │   ├── adversarial-auth-tracks.test.ts
+│   │   │   ├── adversarial.test.ts
+│   │   │   ├── app.test.ts
+│   │   │   ├── business-team.test.ts
+│   │   │   ├── infisical-secrets.test.ts
+│   │   │   ├── security-regressions.test.ts
+│   │   │   ├── setup.ts
+│   │   │   ├── storage-kyc.test.ts
+│   │   │   ├── storage-media.test.ts
+│   │   │   ├── token.test.ts
+│   │   │   ├── track1-firebase.test.ts
+│   │   │   ├── turnstile.test.ts
+│   │   │   └── verification.test.ts
+│   │   ├── .infisical.json
+│   │   ├── compose.yaml
+│   │   ├── Dockerfile
+│   │   ├── package.json
+│   │   ├── tsconfig.json
+│   │   └── vitest.config.ts
 │   ├── core-platform/
 │   │   ├── zolexora-ai/
 │   │   │   ├── .devcontainer/
@@ -248,53 +327,6 @@ Zolexora_Platform/
 │   │   │   ├── docker-entrypoint-env.sh
 │   │   │   ├── package.json
 │   │   │   └── README.md
-│   │   ├── zolexora-shop/
-│   │   │   ├── apps/
-│   │   │   │   ├── admin/  (28 files)
-│   │   │   │   ├── mobile/  (58 files)
-│   │   │   │   └── web/  (115 files)
-│   │   │   ├── contracts/
-│   │   │   │   ├── marketplace/  (1 files)
-│   │   │   │   └── zolexora-erp/  (21 files)
-│   │   │   ├── docs/
-│   │   │   │   ├── agents/  (4 files)
-│   │   │   │   ├── api-test-reports/  (8 files)
-│   │   │   │   ├── architecture/  (12 files)
-│   │   │   │   ├── decisions/  (16 files)
-│   │   │   │   ├── directory-plan/  (4 files)
-│   │   │   │   ├── legacy/  (3 files)
-│   │   │   │   ├── planning/  (5 files)
-│   │   │   │   ├── runbooks/  (5 files)
-│   │   │   │   ├── status/  (25 files)
-│   │   │   │   ├── README.md
-│   │   │   │   └── SECURITY.md
-│   │   │   ├── nginx-conf.d/
-│   │   │   │   └── default.conf
-│   │   │   ├── packages/
-│   │   │   │   ├── mobile-sign-in/  (7 files)
-│   │   │   │   ├── shared-api/  (9 files)
-│   │   │   │   ├── shared-config/  (3 files)
-│   │   │   │   └── sign-in/  (9 files)
-│   │   │   ├── scripts/
-│   │   │   │   ├── tests/  (1 files)
-│   │   │   │   ├── check-openapi-drift.sh
-│   │   │   │   ├── docker-start.sh
-│   │   │   │   ├── generate-openapi.py
-│   │   │   │   ├── py-exec.mjs
-│   │   │   │   ├── validate-doc-links.py
-│   │   │   │   ├── validate-erp-contracts.py
-│   │   │   │   ├── validate-postgresql-schema.py
-│   │   │   │   ├── verify-workspace.mjs
-│   │   │   │   └── web-env-config.sh
-│   │   │   ├── services/
-│   │   │   │   └── marketplace-api/  (227 files)
-│   │   │   ├── .gitignore
-│   │   │   ├── .infisical.json
-│   │   │   ├── compose.yaml
-│   │   │   ├── Dockerfile.nginx
-│   │   │   ├── nginx.conf
-│   │   │   ├── package.json
-│   │   │   └── README.md
 │   │   └── zolexora-tms/
 │   │       ├── apps/
 │   │       │   ├── tms-admin/  (19 files)
@@ -325,6 +357,56 @@ Zolexora_Platform/
 │   │       ├── nginx.conf
 │   │       ├── package.json
 │   │       └── README.md
+│   ├── platform-admin/
+│   │   ├── backend/
+│   │   │   ├── app/
+│   │   │   │   ├── routers/  (8 files)
+│   │   │   │   ├── schemas/  (6 files)
+│   │   │   │   ├── services/  (4 files)
+│   │   │   │   ├── archive_exclusions.json
+│   │   │   │   ├── auth.py
+│   │   │   │   ├── clients.py
+│   │   │   │   ├── connections.py
+│   │   │   │   └── main.py
+│   │   │   ├── tests/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── conftest.py
+│   │   │   │   ├── fakes.py
+│   │   │   │   ├── test_auth.py
+│   │   │   │   ├── test_connections.py
+│   │   │   │   ├── test_email.py
+│   │   │   │   ├── test_identity.py
+│   │   │   │   ├── test_probes.py
+│   │   │   │   ├── test_storage.py
+│   │   │   │   └── test_telemetry.py
+│   │   │   ├── Dockerfile
+│   │   │   ├── requirements-dev.txt
+│   │   │   └── requirements.txt
+│   │   ├── frontend/
+│   │   │   ├── public/
+│   │   │   │   ├── .gitkeep
+│   │   │   │   └── favicon.ico
+│   │   │   ├── src/
+│   │   │   │   ├── app/  (10 files)
+│   │   │   │   ├── components/  (14 files)
+│   │   │   │   └── lib/  (3 files)
+│   │   │   ├── tests/
+│   │   │   │   └── api.test.mjs
+│   │   │   ├── .eslintrc.json
+│   │   │   ├── Dockerfile
+│   │   │   ├── next-env.d.ts
+│   │   │   ├── next.config.js
+│   │   │   ├── package.json
+│   │   │   ├── postcss.config.js
+│   │   │   ├── tailwind.config.js
+│   │   │   └── tsconfig.json
+│   │   ├── nginx-conf.d/
+│   │   │   └── default.conf
+│   │   ├── scripts/
+│   │   │   └── docker-start.sh
+│   │   ├── .infisical.json
+│   │   ├── compose.yaml
+│   │   └── Dockerfile.nginx
 │   ├── standalone-apps/
 │   │   ├── clarityfi/
 │   │   │   ├── apps/
@@ -382,6 +464,53 @@ Zolexora_Platform/
 │   │   │   ├── compose.yaml
 │   │   │   ├── Dockerfile.nginx
 │   │   │   ├── Dockerfile.vite-app
+│   │   │   ├── nginx.conf
+│   │   │   ├── package.json
+│   │   │   └── README.md
+│   │   ├── marketplace/
+│   │   │   ├── apps/
+│   │   │   │   ├── admin/  (28 files)
+│   │   │   │   ├── mobile/  (58 files)
+│   │   │   │   └── web/  (115 files)
+│   │   │   ├── contracts/
+│   │   │   │   ├── marketplace/  (1 files)
+│   │   │   │   └── zolexora-erp/  (21 files)
+│   │   │   ├── docs/
+│   │   │   │   ├── agents/  (4 files)
+│   │   │   │   ├── api-test-reports/  (8 files)
+│   │   │   │   ├── architecture/  (12 files)
+│   │   │   │   ├── decisions/  (16 files)
+│   │   │   │   ├── directory-plan/  (4 files)
+│   │   │   │   ├── legacy/  (3 files)
+│   │   │   │   ├── planning/  (5 files)
+│   │   │   │   ├── runbooks/  (5 files)
+│   │   │   │   ├── status/  (25 files)
+│   │   │   │   ├── README.md
+│   │   │   │   └── SECURITY.md
+│   │   │   ├── nginx-conf.d/
+│   │   │   │   └── default.conf
+│   │   │   ├── packages/
+│   │   │   │   ├── mobile-sign-in/  (7 files)
+│   │   │   │   ├── shared-api/  (9 files)
+│   │   │   │   ├── shared-config/  (3 files)
+│   │   │   │   └── sign-in/  (9 files)
+│   │   │   ├── scripts/
+│   │   │   │   ├── tests/  (1 files)
+│   │   │   │   ├── check-openapi-drift.sh
+│   │   │   │   ├── docker-start.sh
+│   │   │   │   ├── generate-openapi.py
+│   │   │   │   ├── py-exec.mjs
+│   │   │   │   ├── validate-doc-links.py
+│   │   │   │   ├── validate-erp-contracts.py
+│   │   │   │   ├── validate-postgresql-schema.py
+│   │   │   │   ├── verify-workspace.mjs
+│   │   │   │   └── web-env-config.sh
+│   │   │   ├── services/
+│   │   │   │   └── marketplace-api/  (227 files)
+│   │   │   ├── .gitignore
+│   │   │   ├── .infisical.json
+│   │   │   ├── compose.yaml
+│   │   │   ├── Dockerfile.nginx
 │   │   │   ├── nginx.conf
 │   │   │   ├── package.json
 │   │   │   └── README.md
@@ -485,135 +614,6 @@ Zolexora_Platform/
 │   │       ├── README.md
 │   │       ├── tsconfig.base.json
 │   │       └── tsconfig.json
-│   ├── zolexora-auth-service/
-│   │   ├── scripts/
-│   │   │   └── docker-start.sh
-│   │   ├── src/
-│   │   │   ├── business/
-│   │   │   │   └── identifiers.ts
-│   │   │   ├── config/
-│   │   │   │   ├── constants.ts
-│   │   │   │   ├── env.ts
-│   │   │   │   └── infisical.ts
-│   │   │   ├── middleware/
-│   │   │   │   └── auth.middleware.ts
-│   │   │   ├── plugins/
-│   │   │   │   ├── error-handler.ts
-│   │   │   │   └── openapi.ts
-│   │   │   ├── rbac/
-│   │   │   │   ├── engine.ts
-│   │   │   │   └── permissions.ts
-│   │   │   ├── repositories/
-│   │   │   │   ├── index.ts
-│   │   │   │   ├── postgres-auth.repository.ts
-│   │   │   │   └── types.ts
-│   │   │   ├── routes/
-│   │   │   │   ├── auth/  (5 files)
-│   │   │   │   ├── business/  (6 files)
-│   │   │   │   ├── storage/  (3 files)
-│   │   │   │   └── health.routes.ts
-│   │   │   ├── services/
-│   │   │   │   ├── business-session.service.ts
-│   │   │   │   ├── cipher.service.ts
-│   │   │   │   ├── firebase.service.ts
-│   │   │   │   ├── kyc-storage.service.ts
-│   │   │   │   ├── lockout.service.ts
-│   │   │   │   ├── mail.service.ts
-│   │   │   │   ├── otp.service.ts
-│   │   │   │   ├── pwned.service.ts
-│   │   │   │   ├── rate-limit.service.ts
-│   │   │   │   ├── signup-ticket.service.ts
-│   │   │   │   ├── storage.service.ts
-│   │   │   │   ├── token.service.ts
-│   │   │   │   ├── totp.service.ts
-│   │   │   │   └── turnstile.service.ts
-│   │   │   ├── stores/
-│   │   │   │   ├── catalog.store.ts
-│   │   │   │   ├── security.store.ts
-│   │   │   │   └── team.store.ts
-│   │   │   ├── verification/
-│   │   │   │   ├── providers.ts
-│   │   │   │   ├── rules.ts
-│   │   │   │   └── verification.service.ts
-│   │   │   ├── app.ts
-│   │   │   ├── db.ts
-│   │   │   └── index.ts
-│   │   ├── test/
-│   │   │   ├── helpers/
-│   │   │   │   ├── business.ts
-│   │   │   │   ├── fake-network.ts
-│   │   │   │   ├── fakes.ts
-│   │   │   │   ├── in-memory-auth.repository.ts
-│   │   │   │   └── test-env.ts
-│   │   │   ├── adversarial-auth-tracks.test.ts
-│   │   │   ├── adversarial.test.ts
-│   │   │   ├── app.test.ts
-│   │   │   ├── business-team.test.ts
-│   │   │   ├── infisical-secrets.test.ts
-│   │   │   ├── security-regressions.test.ts
-│   │   │   ├── setup.ts
-│   │   │   ├── storage-kyc.test.ts
-│   │   │   ├── storage-media.test.ts
-│   │   │   ├── token.test.ts
-│   │   │   ├── track1-firebase.test.ts
-│   │   │   ├── turnstile.test.ts
-│   │   │   └── verification.test.ts
-│   │   ├── .infisical.json
-│   │   ├── compose.yaml
-│   │   ├── Dockerfile
-│   │   ├── package.json
-│   │   ├── tsconfig.json
-│   │   └── vitest.config.ts
-│   ├── zolexora-platform-admin/
-│   │   ├── backend/
-│   │   │   ├── app/
-│   │   │   │   ├── routers/  (8 files)
-│   │   │   │   ├── schemas/  (6 files)
-│   │   │   │   ├── services/  (4 files)
-│   │   │   │   ├── archive_exclusions.json
-│   │   │   │   ├── auth.py
-│   │   │   │   ├── clients.py
-│   │   │   │   ├── connections.py
-│   │   │   │   └── main.py
-│   │   │   ├── tests/
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── conftest.py
-│   │   │   │   ├── fakes.py
-│   │   │   │   ├── test_auth.py
-│   │   │   │   ├── test_connections.py
-│   │   │   │   ├── test_email.py
-│   │   │   │   ├── test_identity.py
-│   │   │   │   ├── test_probes.py
-│   │   │   │   ├── test_storage.py
-│   │   │   │   └── test_telemetry.py
-│   │   │   ├── Dockerfile
-│   │   │   ├── requirements-dev.txt
-│   │   │   └── requirements.txt
-│   │   ├── frontend/
-│   │   │   ├── public/
-│   │   │   │   ├── .gitkeep
-│   │   │   │   └── favicon.ico
-│   │   │   ├── src/
-│   │   │   │   ├── app/  (10 files)
-│   │   │   │   ├── components/  (14 files)
-│   │   │   │   └── lib/  (3 files)
-│   │   │   ├── tests/
-│   │   │   │   └── api.test.mjs
-│   │   │   ├── .eslintrc.json
-│   │   │   ├── Dockerfile
-│   │   │   ├── next-env.d.ts
-│   │   │   ├── next.config.js
-│   │   │   ├── package.json
-│   │   │   ├── postcss.config.js
-│   │   │   ├── tailwind.config.js
-│   │   │   └── tsconfig.json
-│   │   ├── nginx-conf.d/
-│   │   │   └── default.conf
-│   │   ├── scripts/
-│   │   │   └── docker-start.sh
-│   │   ├── .infisical.json
-│   │   ├── compose.yaml
-│   │   └── Dockerfile.nginx
 │   └── README.md
 ├── docs/
 │   ├── architecture/

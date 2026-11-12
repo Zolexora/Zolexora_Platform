@@ -1,6 +1,6 @@
 # Deploying after the apps layout change
 
-The apps moved from `apps/storefronts/…` and `apps/portals/…` to `apps/web/<app>`, `apps/mobile/<app>` and `apps/admin`. Package names, ports, bundle IDs, EAS project IDs and environment variable names did not change. The repository is complete; the settings below live outside it and must be changed by someone with access.
+The product folder moved from `apps/core-platform/zolexora-shop` to `apps/standalone-apps/marketplace`, and its apps moved from `apps/storefronts/…` and `apps/portals/…` to `apps/web/<app>`, `apps/mobile/<app>` and `apps/admin`. Package names, ports, bundle IDs, EAS project IDs and environment variable names did not change. The repository is complete; the settings below live outside it and must be changed by someone with access.
 
 ## Vercel: Root Directory
 
@@ -8,9 +8,9 @@ Each Next.js app keeps its own `vercel.json`, so each Vercel project's **Root Di
 
 | Vercel project (package) | Old Root Directory | New Root Directory |
 | --- | --- | --- |
-| `@zolexora/shop-web` | `apps/core-platform/zolexora-shop/apps/storefronts/zolexora-shop/web` | `apps/core-platform/zolexora-shop/apps/web/shop` |
-| `@zolexora/shop-seller-web` | `apps/core-platform/zolexora-shop/apps/portals/seller/web` | `apps/core-platform/zolexora-shop/apps/web/seller` |
-| `@zolexora/shop-admin` | `apps/core-platform/zolexora-shop/apps/portals/marketplace-admin/web` | `apps/core-platform/zolexora-shop/apps/admin` |
+| `@zolexora/shop-web` | `apps/core-platform/zolexora-shop/apps/storefronts/zolexora-shop/web` | `apps/standalone-apps/marketplace/apps/web/shop` |
+| `@zolexora/shop-seller-web` | `apps/core-platform/zolexora-shop/apps/portals/seller/web` | `apps/standalone-apps/marketplace/apps/web/seller` |
+| `@zolexora/shop-admin` | `apps/core-platform/zolexora-shop/apps/portals/marketplace-admin/web` | `apps/standalone-apps/marketplace/apps/admin` |
 
 Change nothing else: build and install commands come from each `vercel.json`, and "Include files outside the Root Directory" stays on.
 
@@ -35,7 +35,7 @@ EAS stores no repository path: `eas build` uses the folder it is run from, and t
 Validate from each app folder, logged in with `eas login`:
 
 ```bash
-cd apps/core-platform/zolexora-shop/apps/mobile/shop     # then apps/mobile/seller
+cd apps/standalone-apps/marketplace/apps/mobile/shop     # then apps/mobile/seller
 npx eas-cli build:inspect --platform android --profile preview --stage archive --output "$(mktemp -d)"
 npx eas-cli build --platform android --profile preview
 ```

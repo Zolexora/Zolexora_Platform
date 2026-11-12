@@ -4,7 +4,7 @@ Closes #
 
 ## Service(s)
 
-<!-- e.g. apps/core-platform/zolexora-tms/services/backend, apps/zolexora-auth-service -->
+<!-- e.g. apps/core-platform/zolexora-tms/services/backend, apps/auth-service -->
 
 ## API / data changes
 

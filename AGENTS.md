@@ -8,8 +8,8 @@ This repository is a Turborepo/pnpm monorepo housing the Zolexora ecosystem prod
 
 - **`packages/`**: All shared libraries and configs, one folder per `@zolexora/<folder>` package (e.g. `utils`, `tsconfig`, `api-shield`, `user-auth-firebase`).
 - **`apps/`**: Everything deployable ([apps/README.md](apps/README.md)).
-  - **Cross-product apps**: `apps/zolexora-auth-service`, `apps/zolexora-platform-admin`.
-  - **Products**: 12 independent vertical products in two categories: `apps/core-platform/zolexora-<product>` (tms, shop, ims, ai, appsuite, engage, erp) and `apps/standalone-apps/<product>` (textile-care, ironclub, rentoeasy, clarityfi, maunkavach — no `zolexora-` prefix). Each uses the same layout: `apps/` (frontends, mobile), `services/` (backends), `packages/` (product-local libs), `scripts/`, `docs/` — see [docs/architecture.md](docs/architecture.md#product-layout).
+  - **Cross-product apps**: `apps/auth-service`, `apps/platform-admin`.
+  - **Products**: 12 independent vertical products in two categories: `apps/core-platform/zolexora-<product>` (tms, ims, ai, appsuite, engage, erp) and `apps/standalone-apps/<product>` (marketplace, textile-care, ironclub, rentoeasy, clarityfi, maunkavach — no `zolexora-` prefix). Each uses the same layout: `apps/` (frontends, mobile), `services/` (backends), `packages/` (product-local libs), `scripts/`, `docs/` — see [docs/architecture.md](docs/architecture.md#product-layout).
 - **`.github/`**: Workflows are named `<product-folder>-<purpose>.yml` (e.g. `zolexora-tms-docker.yml`, `textile-care-ci.yml`); image builds call `reusable-docker-ghcr.yml`; shared steps live in `.github/actions/` (`setup-node`, `setup-python`, `docker-login`, `infisical`, `notify`).
 - **Naming**: npm packages `@zolexora/<product>-<app>`; GHCR images `ghcr.io/zolexora/zolexora-<product>-<service>`.
 - **`scripts/`**: Monorepo orchestration scripts (`scripts/dev/`, `scripts/setup/`, `scripts/docker/`).

@@ -6,7 +6,7 @@ Always use these canonical names, descriptions and paths. Never use the old fold
 
 | Product | Description | Path |
 | --- | --- | --- |
-| Zolexora Shop | Ecom marketplace app | `apps/core-platform/zolexora-shop/` |
+| Zolexora Shop | Ecom marketplace app | `apps/standalone-apps/marketplace/` |
 | The Textile Care | Laundry app | `apps/standalone-apps/textile-care/` |
 | Zolexora TMS | Transport management | `apps/core-platform/zolexora-tms/` |
 | Zolexora IMS | Inventory management | `apps/core-platform/zolexora-ims/` |
@@ -28,7 +28,7 @@ Always use these canonical names, descriptions and paths. Never use the old fold
 - Backend: FastAPI (Python 3.12) · PostgreSQL · Redis — `services/marketplace-api/`
 - Frontend: Next.js (web) + Expo React Native (mobile)
 - Product-local packages: `packages/shared-api`, `packages/shared-config`
-- Path: `apps/core-platform/zolexora-shop/`
+- Path: `apps/standalone-apps/marketplace/`
 
 ## The Textile Care — Laundry App
 

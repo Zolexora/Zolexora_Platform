@@ -20,7 +20,7 @@ The repository currently contains two partially independent commerce systems.
 | Shared seller mobile | Expo app at `apps/mobile/seller` |
 | API | FastAPI at `services/marketplace-api/` |
 | Persistence | PostgreSQL for everything: users, catalog, stock, carts, orders, payments, shipping, wishlists (MongoDB retired in migration 0024; reels, coins and subscriptions dropped in 0026) |
-| Sign-in | Zolexora auth service (`apps/zolexora-auth-service`); the API introspects its tokens |
+| Sign-in | Zolexora auth service (`apps/auth-service`); the API introspects its tokens |
 | Cache | Redis |
 | Media | Cloudinary |
 | Payments | One global Razorpay configuration plus UPI settings |

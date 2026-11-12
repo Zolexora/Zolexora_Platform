@@ -286,7 +286,7 @@ A single, clearly organised environment variable template that consolidates all 
 Currently you have:
 ```
 apps/core-platform/zolexora-ims/.env         → has SUPABASE_URL (which project?)
-apps/core-platform/zolexora-shop/.env → has SUPABASE_URL (different project!)
+apps/standalone-apps/marketplace/.env → has SUPABASE_URL (different project!)
 apps/core-platform/zolexora-ai/.env          → has SUPABASE_URL (yet another!)
 ```
 

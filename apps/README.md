@@ -1,6 +1,6 @@
 # Apps
 
-Cross-product apps: [`zolexora-auth-service/`](zolexora-auth-service/) (sign-in for every product) and [`zolexora-platform-admin/`](zolexora-platform-admin/) (platform admin console).
+Cross-product apps: [`auth-service/`](auth-service/) (sign-in for every product) and [`platform-admin/`](platform-admin/) (platform admin console).
 
 ## Products
 
@@ -12,7 +12,6 @@ Zolexora's own business platforms (folders keep the `zolexora-` prefix).
 
 | Product | Path | What it is | Docker scripts |
 | --- | --- | --- | --- |
-| Zolexora Shop | [`core-platform/zolexora-shop/`](core-platform/zolexora-shop/) | Ecom marketplace app: Zolexora Shop + Mahila Madel storefronts, seller and admin portals | `docker:shop:*` |
 | Zolexora TMS | [`core-platform/zolexora-tms/`](core-platform/zolexora-tms/) | Transport management (web, admin, mobile) | `docker:tms:*` |
 | Zolexora IMS | [`core-platform/zolexora-ims/`](core-platform/zolexora-ims/) | Multi-tenant inventory management | `docker:ims:*` |
 | Zolexora ERP | [`core-platform/zolexora-erp/`](core-platform/zolexora-erp/) | ERP on Frappe/ERPNext + Zolexora Frappe apps | `docker:erp:*` |
@@ -26,6 +25,7 @@ Independent consumer and vertical apps (folders without the prefix).
 
 | Product | Path | What it is | Docker scripts |
 | --- | --- | --- | --- |
+| Zolexora Shop | [`standalone-apps/marketplace/`](standalone-apps/marketplace/) | Ecom marketplace app: Zolexora Shop + Mahila Madel storefronts, seller and admin portals | `docker:shop:*` |
 | The Textile Care | [`standalone-apps/textile-care/`](standalone-apps/textile-care/) | Laundry app: multi-tenant white-label (customer, seller, driver, admin) | `docker:ttc:*` |
 | Zolexora IronClub | [`standalone-apps/ironclub/`](standalone-apps/ironclub/) | Gym and health-club management | `docker:ironclub:*` |
 | Rento Easy | [`standalone-apps/rentoeasy/`](standalone-apps/rentoeasy/) | Property rental (tenant, owner, admin) | `docker:rentoeasy:*` |

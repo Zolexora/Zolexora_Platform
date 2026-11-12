@@ -31,7 +31,7 @@ If Infisical isn't installed or authenticated, the wrapper exits with an error. 
 
 ### Authentication (Zolexora auth service)
 
-TMS has no auth of its own: every app signs in through `apps/zolexora-auth-service`, like platform-admin.
+TMS has no auth of its own: every app signs in through `apps/auth-service`, like platform-admin.
 
 | App | Login | Vault keys |
 |---|---|---|
