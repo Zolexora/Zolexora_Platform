@@ -6,19 +6,19 @@ import { fileURLToPath } from "node:url";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const required = new Map([
-  ["@zolexora/shop-web", "apps/storefronts/zolexora-shop/web"],
-  ["@zolexora/shop-mobile", "apps/storefronts/zolexora-shop/mobile"],
-  ["@zolexora/shop-mahila-madel-web", "apps/storefronts/mahila-madel/web"],
-  ["@zolexora/shop-mahila-madel-mobile", "apps/storefronts/mahila-madel/mobile"],
-  ["@zolexora/shop-seller-web", "apps/portals/seller/web"],
-  ["@zolexora/shop-seller-mobile", "apps/portals/seller/mobile"],
-  ["@zolexora/shop-admin", "apps/portals/marketplace-admin/web"],
+  ["@zolexora/shop-web", "apps/web/shop"],
+  ["@zolexora/shop-mobile", "apps/mobile/shop"],
+  ["@zolexora/shop-mahila-madel-web", "apps/web/mahila-madel"],
+  ["@zolexora/shop-mahila-madel-mobile", "apps/mobile/mahila-madel"],
+  ["@zolexora/shop-seller-web", "apps/web/seller"],
+  ["@zolexora/shop-seller-mobile", "apps/mobile/seller"],
+  ["@zolexora/shop-admin", "apps/admin"],
   ["@zolexora/shop-shared-api", "packages/shared-api"],
   ["@zolexora/shop-shared-config", "packages/shared-config"],
   ["@zolexora/shop-sign-in", "packages/sign-in"],
   ["@zolexora/shop-mobile-sign-in", "packages/mobile-sign-in"],
 ]);
-const stale = ["apps/ZolexoraShop", "apps/MahilaMadel", "apps/web-buyer", "apps/web-seller", "apps/web-admin", "apps/mobile", "backend"];
+const stale = ["apps/ZolexoraShop", "apps/MahilaMadel", "apps/web-buyer", "apps/web-seller", "apps/web-admin", "backend"];
 
 let inventory;
 try {
