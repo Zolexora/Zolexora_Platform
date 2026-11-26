@@ -73,13 +73,6 @@ export function PublicLayout() {
 
             <Link
               to="/authentication"
-              className="hidden sm:inline-flex px-3 py-1.5 text-[13px] font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition"
-            >
-              Sign in
-            </Link>
-
-            <Link
-              to="/authentication"
               className="hidden sm:inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-[13px] font-medium bg-[var(--btn-primary-bg)] text-[var(--btn-primary-fg)] hover:opacity-90 transition"
             >
               Get started
@@ -115,12 +108,6 @@ export function PublicLayout() {
               ))}
             </nav>
             <div className="pt-4 border-t border-[var(--border-subtle)] flex flex-col gap-2">
-              <Link
-                to="/authentication"
-                className="text-center py-2.5 rounded-lg border border-[var(--border-strong)] text-sm font-medium"
-              >
-                Sign in
-              </Link>
               <Link
                 to="/authentication"
                 className="text-center py-2.5 rounded-lg bg-[var(--btn-primary-bg)] text-[var(--btn-primary-fg)] text-sm font-medium"

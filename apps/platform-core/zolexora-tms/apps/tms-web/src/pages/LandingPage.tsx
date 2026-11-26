@@ -11,7 +11,6 @@ import {
   MapPin,
   Clock,
   CheckCircle2,
-  ArrowUpRight,
 } from 'lucide-react';
 import { PricingGrid } from '../components/PricingGrid';
 
@@ -122,23 +121,6 @@ export function LandingPage() {
           <p className="mt-6 text-base sm:text-lg text-[var(--text-secondary)] max-w-2xl mx-auto leading-relaxed font-normal">
             Purpose-built interfaces for Service Providers managing fleets and Clients booking transport — unified by automated dispatch, compliance lockouts, and deterministic billing.
           </p>
-
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link
-              to="/authentication"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--btn-primary-bg)] text-[var(--btn-primary-fg)] px-6 py-3 text-sm font-medium hover:opacity-90 transition shadow-sm"
-            >
-              <span>Create workspace</span>
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-            <Link
-              to="/our-services"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--border-strong)] bg-[var(--bg-surface)] px-6 py-3 text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] transition"
-            >
-              <span>Explore services</span>
-              <ArrowUpRight className="h-4 w-4 text-[var(--text-muted)]" />
-            </Link>
-          </div>
 
           {/* ── INTERACTIVE SP VS CLIENT SWITCHER ── */}
           <div className="mt-16 max-w-4xl mx-auto">
