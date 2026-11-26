@@ -35,7 +35,7 @@ jobs:
     needs: images
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    environment: staging
+    environment: Auth-Service-Staging
     steps:
       - name: Trigger Northflank staging rollout
         env:
