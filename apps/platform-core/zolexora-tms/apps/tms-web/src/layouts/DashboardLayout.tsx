@@ -26,61 +26,60 @@ const navigation = [
   {
     section: 'Overview',
     items: [
-      { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+      { name: 'Dashboard', href: '/sp/dashboard', icon: LayoutDashboard },
     ],
   },
   {
     section: 'Operations',
     items: [
-      { name: 'Bookings', href: '/bookings', icon: CalendarCheck },
-      { name: 'Duties', href: '/duties', icon: ClipboardList },
-      { name: 'Dispatch Board', href: '/dispatch', icon: Radio },
+      { name: 'Bookings', href: '/sp/bookings', icon: CalendarCheck },
+      { name: 'Duties', href: '/sp/duties', icon: ClipboardList },
+      { name: 'Dispatch Board', href: '/sp/dispatch', icon: Radio },
     ],
   },
   {
     section: 'Compliance & Fleet',
     items: [
-      { name: 'Vehicles', href: '/compliance/vehicles', icon: Truck },
-      { name: 'Drivers', href: '/compliance/drivers', icon: Users },
-      { name: 'Clients', href: '/compliance/customers', icon: Building2 },
-      { name: 'Vendors', href: '/compliance/vendors', icon: Building2 },
+      { name: 'Vehicles', href: '/sp/compliance/vehicles', icon: Truck },
+      { name: 'Drivers', href: '/sp/compliance/drivers', icon: Users },
+      { name: 'Clients', href: '/sp/compliance/customers', icon: Building2 },
+      { name: 'Vendors', href: '/sp/compliance/vendors', icon: Building2 },
     ],
   },
   {
     section: 'Billing & Receivables',
     items: [
-      { name: 'Customer Rate Cards', href: '/rate-cards/customers', icon: FileText },
-      { name: 'Billing', href: '/billing', icon: FileText },
-      { name: 'Invoices', href: '/invoices', icon: Receipt },
-      { name: 'Payments', href: '/payments', icon: CreditCard },
-      { name: 'Receivables', href: '/receivables', icon: CreditCard },
+      { name: 'Customer Rate Cards', href: '/sp/rate-cards/customers', icon: FileText },
+      { name: 'Billing', href: '/sp/billing', icon: FileText },
+      { name: 'Invoices', href: '/sp/invoices', icon: Receipt },
+      { name: 'Payments', href: '/sp/payments', icon: CreditCard },
+      { name: 'Receivables', href: '/sp/receivables', icon: CreditCard },
     ],
   },
   {
     section: 'Vendor Payments',
     items: [
-      { name: 'Vendor Rate Cards', href: '/rate-cards/vendors', icon: FileText },
-      { name: 'Payables', href: '/payables', icon: Receipt },
-      { name: 'Vendor Settlements', href: '/vendor-settlements', icon: Receipt },
-      { name: 'Payment History', href: '/vendor-payments', icon: CreditCard },
+      { name: 'Vendor Rate Cards', href: '/sp/rate-cards/vendors', icon: FileText },
+      { name: 'Payables', href: '/sp/payables', icon: Receipt },
+      { name: 'Vendor Settlements', href: '/sp/vendor-settlements', icon: Receipt },
+      { name: 'Payment History', href: '/sp/vendor-payments', icon: CreditCard },
     ],
   },
   {
     section: 'Finances',
     items: [
-      { name: 'Expenses', href: '/expenses', icon: Receipt },
-      { name: 'Profit & Loss', href: '/reports/pnl', icon: FileText },
-      { name: 'Financial Periods', href: '/financial-periods', icon: FileText },
+      { name: 'Expenses', href: '/sp/expenses', icon: Receipt },
+      { name: 'Profit & Loss', href: '/sp/reports/pnl', icon: FileText },
+      { name: 'Financial Periods', href: '/sp/financial-periods', icon: FileText },
     ],
   },
   {
     section: 'Administration',
     items: [
-      { name: 'Workspace & RBAC', href: '/settings', icon: Settings },
-      { name: 'Roles & Permissions', href: '/settings/roles', icon: Shield },
-      { name: 'Members & Access', href: '/settings/members', icon: Users },
-
-      { name: 'Operating Units', href: '/settings/operating-units', icon: Building2 },
+      { name: 'Workspace & RBAC', href: '/sp/settings', icon: Settings },
+      { name: 'Roles & Permissions', href: '/sp/settings/roles', icon: Shield },
+      { name: 'Members & Access', href: '/sp/settings/members', icon: Users },
+      { name: 'Operating Units', href: '/sp/settings/operating-units', icon: Building2 },
     ],
   },
 ];

@@ -20,7 +20,7 @@ export function ClientRoute() {
   if (authMe && !authMe.organisation_id) return <Navigate to="/authentication" replace />;
   // Service providers who land on /client/* get redirected to their dashboard
   if (authMe?.workspace_type && authMe.workspace_type === 'SERVICE_PROVIDER') {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/sp/dashboard" replace />;
   }
 
   return <Outlet />;

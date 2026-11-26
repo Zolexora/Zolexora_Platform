@@ -135,13 +135,15 @@ export function AuthenticationForm() {
 
   // Staff land in their organisation's workspace; owners choose below.
   useEffect(() => {
-    if (!isLoading && user && authMe?.organisation_id && authMe.zolexora_org_id) navigate('/dashboard', { replace: true });
+    if (!isLoading && user && authMe?.organisation_id && authMe.zolexora_org_id) {
+      navigate(authMe.workspace_type === 'CLIENT' ? '/client/dashboard' : '/sp/dashboard', { replace: true });
+    }
   }, [user, authMe, isLoading, navigate]);
 
   const openOrganisation = async (orgId: string, wsType?: WorkspaceType) => {
     localStorage.setItem('zolexora_active_org_id', orgId);
     await queryClient.invalidateQueries();
-    navigate(wsType === 'CLIENT' ? '/client/dashboard' : '/dashboard', { replace: true });
+    navigate(wsType === 'CLIENT' ? '/client/dashboard' : '/sp/dashboard', { replace: true });
   };
 
   const run = async (action: () => Promise<void>) => {

@@ -80,37 +80,34 @@ export function App() {
             <Route path="/onboarding" element={<Navigate to="/authentication" replace />} />
             <Route path="/auth" element={<Navigate to="/authentication" replace />} />
 
-            {/* Protected Workspace Navigation */}
-            <Route element={<ProtectedRoute />}>
+            {/* Service Provider Workspace */}
+            <Route path="/sp" element={<ProtectedRoute />}>
               <Route element={<ApplicationRuntimeProvider><DashboardLayout /></ApplicationRuntimeProvider>}>
-                <Route path="/dashboard" element={<DashboardPage />} />
-                <Route path="/bookings" element={<BookingsPage />} />
-                <Route path="/duties" element={<DutiesPage />} />
-                <Route path="/dispatch" element={<DispatchPage />} />
-                <Route path="/settings/operating-units" element={<OperatingUnitsPage />} />
-                <Route path="/compliance/vehicles" element={<VehiclesPage />} />
-                <Route path="/compliance/drivers" element={<DriversPage />} />
-                <Route path="/compliance/customers" element={<CustomersPage />} />
-                <Route path="/compliance/vendors" element={<VendorsPage />} />
-                <Route path="/rate-cards/customers" element={<RateCardsPage type="customer" />} />
-                <Route path="/rate-cards/vendors" element={<RateCardsPage type="vendor" />} />
-                <Route path="/billing" element={<BillingPage />} />
-                <Route path="/invoices" element={<InvoicesPage />} />
-                <Route path="/payments" element={<PaymentsPage />} />
-                <Route path="/payables" element={<PayablesPage />} />
-                <Route path="/vendor-settlements" element={<VendorSettlementsPage />} />
-                <Route path="/vendor-payments" element={<VendorPaymentHistoryPage />} />
-                <Route path="/receivables" element={<ReceivablesAgeingPage />} />
-                <Route path="/financial-periods" element={<FinancialPeriodsPage />} />
-                <Route path="/expenses" element={<ExpensesPage />} />
-                <Route path="/reports/pnl" element={<PnLReportsPage />} />
-                <Route path="/compliance" element={<CompliancePage />} />
-                <Route path="/settings" element={<WorkspaceSettingsPage />} />
-                <Route path="/settings/roles" element={<RolesPage />} />
-                <Route path="/settings/members" element={<MembersPage />} />
-
-                
-                {/* Customer Specific Extensions */}
+                <Route path="dashboard" element={<DashboardPage />} />
+                <Route path="bookings" element={<BookingsPage />} />
+                <Route path="duties" element={<DutiesPage />} />
+                <Route path="dispatch" element={<DispatchPage />} />
+                <Route path="settings/operating-units" element={<OperatingUnitsPage />} />
+                <Route path="compliance/vehicles" element={<VehiclesPage />} />
+                <Route path="compliance/drivers" element={<DriversPage />} />
+                <Route path="compliance/customers" element={<CustomersPage />} />
+                <Route path="compliance/vendors" element={<VendorsPage />} />
+                <Route path="rate-cards/customers" element={<RateCardsPage type="customer" />} />
+                <Route path="rate-cards/vendors" element={<RateCardsPage type="vendor" />} />
+                <Route path="billing" element={<BillingPage />} />
+                <Route path="invoices" element={<InvoicesPage />} />
+                <Route path="payments" element={<PaymentsPage />} />
+                <Route path="payables" element={<PayablesPage />} />
+                <Route path="vendor-settlements" element={<VendorSettlementsPage />} />
+                <Route path="vendor-payments" element={<VendorPaymentHistoryPage />} />
+                <Route path="receivables" element={<ReceivablesAgeingPage />} />
+                <Route path="financial-periods" element={<FinancialPeriodsPage />} />
+                <Route path="expenses" element={<ExpensesPage />} />
+                <Route path="reports/pnl" element={<PnLReportsPage />} />
+                <Route path="compliance" element={<CompliancePage />} />
+                <Route path="settings" element={<WorkspaceSettingsPage />} />
+                <Route path="settings/roles" element={<RolesPage />} />
+                <Route path="settings/members" element={<MembersPage />} />
               </Route>
             </Route>
 
