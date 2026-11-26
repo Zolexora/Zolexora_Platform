@@ -52,23 +52,72 @@
   --color-slate-950: #080C14;
 }
 
+/* ── Semantic theme tokens ── */
 :root {
   color-scheme: dark;
+
+  /* Dark mode (default) */
+  --bg-page:        #080C14;
+  --bg-surface:     #0A0A0A;
+  --bg-elevated:    #111620;
+  --text-primary:   #F1F5F9;
+  --text-secondary: #8699B0;
+  --text-muted:     #4E6078;
+  --border-soft:    #222B3A;
+  --border-mid:     #38455A;
+  --accent:         #CBD5E1;    /* silver — SP */
+  --accent-fg:      #080C14;
+  --lime:           #A3E635;    /* lime accent */
+  --lime-dim:       #1a2e05;
+  --lime-border:    #4d7c0f;
+}
+
+/* Lime mode — applied via data-theme="lime" on <html> */
+[data-theme="lime"] {
+  color-scheme: light;
+
+  --bg-page:        #F7FEE7;
+  --bg-surface:     #ECFCCB;
+  --bg-elevated:    #FFFFFF;
+  --text-primary:   #1a2e05;
+  --text-secondary: #3f6212;
+  --text-muted:     #65a30d;
+  --border-soft:    #BEF264;
+  --border-mid:     #84CC16;
+  --accent:         #4D7C0F;
+  --accent-fg:      #F7FEE7;
+  --lime:           #65A30D;
+  --lime-dim:       #ECFCCB;
+  --lime-border:    #84CC16;
 }
 
 body {
   margin: 0;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  background-color: #080C14;
-  color: #CBD5E1;
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+  transition: background-color 0.2s, color 0.2s;
 }
 
-/* Scrollbar — premium monochrome */
+/* Scrollbar */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: #080C14; }
-::-webkit-scrollbar-thumb { background: #404040; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #CBD5E1; }
+::-webkit-scrollbar-track { background: var(--bg-page); }
+::-webkit-scrollbar-thumb { background: var(--border-mid); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 
 /* Selection */
-::selection { background: #0B1F3A; color: #CBD5E1; }
+::selection { background: var(--lime); color: var(--accent-fg); }
+
+/* Theme-aware utility shorthands used in landing page */
+.theme-bg-page     { background-color: var(--bg-page); }
+.theme-bg-surface  { background-color: var(--bg-surface); }
+.theme-bg-elevated { background-color: var(--bg-elevated); }
+.theme-text        { color: var(--text-primary); }
+.theme-text-sec    { color: var(--text-secondary); }
+.theme-text-muted  { color: var(--text-muted); }
+.theme-border      { border-color: var(--border-soft); }
+.theme-border-mid  { border-color: var(--border-mid); }
+.theme-accent      { background-color: var(--accent); color: var(--accent-fg); }
+.theme-lime        { color: var(--lime); }
+.theme-lime-bg     { background-color: var(--lime-dim); border-color: var(--lime-border); }
 
