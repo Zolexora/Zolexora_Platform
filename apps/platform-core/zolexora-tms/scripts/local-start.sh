@@ -113,10 +113,10 @@ echo "======================================"
 echo "Services are starting! (Press Ctrl+C to stop all)"
 
 if [[ "$SERVICES" == *"tms"* ]]; then
-    echo "- TMS Frontend: http://localhost:3000"
+    echo "- TMS Frontend: http://localhost:3031"
 fi
 if [[ "$SERVICES" == *"admin"* ]]; then
-    echo "- Admin Dashboard: http://localhost:3001"
+    echo "- Admin Dashboard: http://localhost:3032"
 fi
 if [[ "$SERVICES" == *"backend"* ]]; then
     echo "- Backend API: http://localhost:$TMS_BACKEND_PORT (/docs only when NODE_ENV=development)"

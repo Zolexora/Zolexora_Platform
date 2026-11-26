@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
 
-// Dev-only proxy target for /api, e.g. http://127.0.0.1:4030 (set via Infisical or shell)
+// Dev-only proxy target for /api, e.g. http://127.0.0.1:4031 (set via Infisical or shell)
 const apiProxyTarget = process.env.TMS_DEV_API_PROXY_TARGET
 
 export default defineConfig({
@@ -20,7 +20,7 @@ export default defineConfig({
     include: ['react', 'react-dom'],
   },
   server: {
-    port: 3001,
+    port: 3032,
     proxy: apiProxyTarget ? { '/api': { target: apiProxyTarget, changeOrigin: true } } : undefined,
   },
 })
