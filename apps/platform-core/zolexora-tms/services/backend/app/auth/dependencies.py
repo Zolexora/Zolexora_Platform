@@ -29,6 +29,7 @@ class AuthenticatedIdentity(BaseModel):
 
 class AuthenticatedUser(AuthenticatedIdentity):
     organisation_id: uuid.UUID
+    workspace_type: Optional[str] = None
     is_creator: bool = False
     is_commander: bool = False
     role_code: Optional[str] = None
@@ -102,7 +103,7 @@ async def ensure_profile(identity: AuthenticatedIdentity) -> None:
     _known_profiles.add(identity.id)
 
 
-_MEMBER_COLUMNS = "m.organisation_id, m.is_creator, m.is_commander"
+_MEMBER_COLUMNS = "m.organisation_id, m.is_creator, m.is_commander, o.workspace_type::text AS workspace_type"
 
 
 async def resolve_membership(
@@ -134,18 +135,21 @@ async def resolve_membership(
             )
             query, params = (
                 f"SELECT {_MEMBER_COLUMNS} FROM public.organisation_members m "
+                "JOIN public.organisations o ON o.id = m.organisation_id "
                 "WHERE m.user_id = :u AND m.organisation_id = :o AND m.status = 'ACTIVE'",
                 {"u": identity.id, "o": org},
             )
         elif requested_org_id:
             query, params = (
                 f"SELECT {_MEMBER_COLUMNS} FROM public.organisation_members m "
+                "JOIN public.organisations o ON o.id = m.organisation_id "
                 "WHERE m.user_id = :u AND m.organisation_id = :o AND m.status = 'ACTIVE'",
                 {"u": identity.id, "o": requested_org_id},
             )
         else:
             query, params = (
                 f"SELECT {_MEMBER_COLUMNS} FROM public.organisation_members m "
+                "JOIN public.organisations o ON o.id = m.organisation_id "
                 "WHERE m.user_id = :u AND m.status = 'ACTIVE' ORDER BY m.created_at ASC LIMIT 1",
                 {"u": identity.id},
             )
@@ -182,6 +186,7 @@ async def get_current_active_organisation(
     return AuthenticatedUser(
         **identity.model_dump(),
         organisation_id=row["organisation_id"],
+        workspace_type=row.get("workspace_type"),
         is_creator=row["is_creator"],
         is_commander=row["is_commander"],
     )

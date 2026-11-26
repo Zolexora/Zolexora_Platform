@@ -2,13 +2,17 @@ from datetime import datetime
 from typing import Optional
 import uuid
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-from app.modules.identity.organisations.models import OrganisationStatus, OrganisationType
+from app.modules.identity.organisations.models import OrganisationStatus, OrganisationType, WorkspaceType
 from app.modules.identity.organisations.membership_models import MemberStatus
 
 
 class OrganisationBase(BaseModel):
     name: str = Field(..., min_length=2, max_length=160, description="Legal business/organisation name")
     organisation_type: OrganisationType = Field(..., description="Legal classification of organisation")
+    workspace_type: WorkspaceType = Field(
+        default=WorkspaceType.SERVICE_PROVIDER,
+        description="Interface mode for this workspace: SERVICE_PROVIDER or CLIENT",
+    )
 
 
 class OrganisationCreate(OrganisationBase):

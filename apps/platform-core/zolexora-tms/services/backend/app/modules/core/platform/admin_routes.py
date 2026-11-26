@@ -51,6 +51,7 @@ class AdminOrganisationResponse(BaseModel):
     id: str
     name: str
     organisation_type: str
+    workspace_type: str = "SERVICE_PROVIDER"
     status: str
     created_at: datetime
     updated_at: datetime
@@ -159,6 +160,7 @@ async def list_admin_organisations(
                 id=str(org.id),
                 name=org.name,
                 organisation_type=org.organisation_type,
+                workspace_type=org.workspace_type.value if hasattr(org.workspace_type, "value") else str(org.workspace_type),
                 status=org.status.value if hasattr(org.status, "value") else str(org.status),
                 created_at=org.created_at,
                 updated_at=org.updated_at,

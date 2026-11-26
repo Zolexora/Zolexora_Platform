@@ -48,6 +48,7 @@ async def complete_onboarding(
         id=org_id,
         name=req.name.strip(),
         organisation_type=req.organisation_type.value,
+        workspace_type=req.workspace_type,
         status=OrganisationStatus.ACTIVE, # In a fully asynchronous flow this would be PROVISIONING
     )
     db.add(org)

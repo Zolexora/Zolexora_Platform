@@ -12,6 +12,11 @@ class OrganisationStatus(str, enum.Enum):
     ARCHIVED = "ARCHIVED"
 
 
+class WorkspaceType(str, enum.Enum):
+    SERVICE_PROVIDER = "SERVICE_PROVIDER"
+    CLIENT = "CLIENT"
+
+
 class OrganisationType(str, enum.Enum):
     SOLE_PROPRIETORSHIP = "Sole Proprietorship / Proprietor"
     PARTNERSHIP = "Partnership Firm"
@@ -58,6 +63,12 @@ class Organisation(Base, TimestampMixin):
     )
     name: Mapped[str] = mapped_column(String(160), nullable=False)
     organisation_type: Mapped[str] = mapped_column(String(120), nullable=False)
+    workspace_type: Mapped[WorkspaceType] = mapped_column(
+        Enum(WorkspaceType, name="workspace_type"),
+        default=WorkspaceType.SERVICE_PROVIDER,
+        server_default="SERVICE_PROVIDER",
+        nullable=False,
+    )
     status: Mapped[OrganisationStatus] = mapped_column(
         Enum(OrganisationStatus, name="organisation_status"),
         default=OrganisationStatus.ACTIVE,

@@ -24,6 +24,7 @@ class UserMeResponse(BaseModel):
     email: Optional[str]
     full_name: Optional[str]
     organisation_id: Optional[uuid.UUID]
+    workspace_type: Optional[str] = None
     zolexora_org_id: Optional[str] = None
     is_creator: bool
     is_commander: bool
@@ -49,6 +50,7 @@ async def get_current_user_profile(
         email=identity.email,
         full_name=identity.full_name,
         organisation_id=row["organisation_id"] if row else None,
+        workspace_type=row.get("workspace_type") if row else None,
         zolexora_org_id=identity.zolexora_org_id,
         is_creator=row["is_creator"] if row else False,
         is_commander=row["is_commander"] if row else False,
@@ -66,6 +68,7 @@ class UserOrganisationResponse(BaseModel):
     id: uuid.UUID
     name: str
     organisation_type: Optional[str] = None
+    workspace_type: str = "SERVICE_PROVIDER"
     is_creator: bool
     is_commander: bool
 
@@ -94,6 +97,7 @@ async def get_my_organisations(
             id=org.id,
             name=org.name,
             organisation_type=org.organisation_type,
+            workspace_type=org.workspace_type.value if hasattr(org.workspace_type, "value") else str(org.workspace_type),
             is_creator=member.is_creator,
             is_commander=member.is_commander,
         ) for org, member in rows

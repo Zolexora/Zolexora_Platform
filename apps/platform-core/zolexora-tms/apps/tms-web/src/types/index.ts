@@ -1,7 +1,10 @@
+export type WorkspaceType = 'SERVICE_PROVIDER' | 'CLIENT';
+
 export interface Organisation {
   id: string;
   name: string;
   organisation_type: string;
+  workspace_type: WorkspaceType;
   status: 'ACTIVE' | 'SUSPENDED' | 'ARCHIVED';
   created_at: string;
   updated_at: string;
@@ -17,6 +20,7 @@ export interface AuthMeResponse {
   is_commander: boolean;
   zolexora_org_id?: string | null;
   is_platform_admin?: boolean;
+  workspace_type?: WorkspaceType | null;
 }
 
 export interface OrganisationMember {

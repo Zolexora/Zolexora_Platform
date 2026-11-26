@@ -5,7 +5,8 @@ import { useAuth as useZolexoraAuth } from '@zolexora/auth-client/react';
 import { TurnstileWidget } from '@zolexora/auth-client/turnstile';
 import { isValidZolexoraOrgId, isPublicWebmailDomain } from '@zolexora/auth-client';
 import { usePublicSignIn } from '@zolexora/auth-client/public-sign-in';
-import { Building2, Users, ShieldAlert, Loader2, Plus, ChevronRight } from 'lucide-react';
+import { Building2, Users, ShieldAlert, Loader2, Plus, ChevronRight, Truck } from 'lucide-react';
+import type { WorkspaceType } from '../types';
 import { useAuth } from '../features/auth/useAuth';
 import { apiClient } from '../lib/api';
 import { AUTH_SERVICE_PUBLIC_URL, TURNSTILE_SITE_KEY } from '../lib/runtime';
@@ -124,9 +125,11 @@ export function AuthenticationForm() {
 
   const [creatingOrg, setCreatingOrg] = useState(false);
   const isOwner = Boolean(user && authMe && !authMe.zolexora_org_id);
+  const [workspaceType, setWorkspaceType] = useState<WorkspaceType>('SERVICE_PROVIDER');
+
   const myOrgs = useQuery({
     queryKey: ['my-organisations', authMe?.user_id],
-    queryFn: () => apiClient<{ id: string; name: string; organisation_type?: string; is_commander: boolean }[]>('/api/v1/auth/my-organisations'),
+    queryFn: () => apiClient<{ id: string; name: string; organisation_type?: string; workspace_type?: WorkspaceType; is_commander: boolean }[]>('/api/v1/auth/my-organisations'),
     enabled: isOwner,
   });
 
@@ -135,10 +138,10 @@ export function AuthenticationForm() {
     if (!isLoading && user && authMe?.organisation_id && authMe.zolexora_org_id) navigate('/dashboard', { replace: true });
   }, [user, authMe, isLoading, navigate]);
 
-  const openOrganisation = async (orgId: string) => {
+  const openOrganisation = async (orgId: string, wsType?: WorkspaceType) => {
     localStorage.setItem('zolexora_active_org_id', orgId);
     await queryClient.invalidateQueries();
-    navigate('/dashboard', { replace: true });
+    navigate(wsType === 'CLIENT' ? '/client/dashboard' : '/dashboard', { replace: true });
   };
 
   const run = async (action: () => Promise<void>) => {
@@ -190,7 +193,7 @@ export function AuthenticationForm() {
         <Card title="Choose an organisation" subtitle="Organisations connected to your Zolexora account">
           <div className="space-y-2">
             {orgs.map((o) => (
-              <button key={o.id} type="button" onClick={() => openOrganisation(o.id)}
+              <button key={o.id} type="button" onClick={() => openOrganisation(o.id, o.workspace_type)}
                 className="w-full flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3 text-left hover:border-cyan-500">
                 <span>
                   <span className="block text-sm font-semibold text-white">{o.name}</span>
@@ -214,13 +217,13 @@ export function AuthenticationForm() {
           onSubmit={(e) => {
             e.preventDefault();
             run(async () => {
-              const created = await apiClient<{ organisation: { id: string } }>('/api/v1/onboarding', {
+              const created = await apiClient<{ organisation: { id: string; workspace_type: WorkspaceType } }>('/api/v1/onboarding', {
                 method: 'POST',
-                body: JSON.stringify({ name: orgName.trim(), organisation_type: orgType }),
+                body: JSON.stringify({ name: orgName.trim(), organisation_type: orgType, workspace_type: workspaceType }),
               });
               setOrgName('');
               setCreatingOrg(false);
-              await openOrganisation(created.organisation.id);
+              await openOrganisation(created.organisation.id, created.organisation.workspace_type);
             });
           }}
         >
@@ -231,6 +234,29 @@ export function AuthenticationForm() {
               {ORGANISATION_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
             </select>
           </label>
+          <div>
+            <p className="mb-2 text-xs font-medium text-slate-300">Workspace type</p>
+            <div className="grid grid-cols-2 gap-3">
+              {(['SERVICE_PROVIDER', 'CLIENT'] as const).map((wt) => (
+                <button
+                  key={wt}
+                  type="button"
+                  onClick={() => setWorkspaceType(wt)}
+                  className={`flex flex-col items-center gap-1.5 rounded-xl border p-4 text-sm font-semibold transition ${
+                    workspaceType === wt
+                      ? 'border-cyan-500 bg-cyan-500/10 text-white'
+                      : 'border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-600'
+                  }`}
+                >
+                  {wt === 'SERVICE_PROVIDER' ? <Truck className="w-5 h-5" /> : <Building2 className="w-5 h-5" />}
+                  {wt === 'SERVICE_PROVIDER' ? 'Service Provider' : 'Client'}
+                  <span className="text-[10px] font-normal text-slate-500">
+                    {wt === 'SERVICE_PROVIDER' ? 'Manage fleet & dispatch' : 'Book & track transport'}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
           <ErrorBox message={error} />
           <button className={button} disabled={busy}>{busy ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create organisation'}</button>
           {orgs.length > 0
