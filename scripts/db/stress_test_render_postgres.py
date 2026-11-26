@@ -15,6 +15,7 @@ Stress-test harness for Render Managed PostgreSQL:
 import asyncio
 import json
 import math
+import os
 import ssl
 import sys
 import time
@@ -22,11 +23,20 @@ import urllib.request
 import uuid
 import asyncpg
 
-RENDER_API_KEY = "rnd_ZwgnGq5L80V9bX4sGw0B4iGwpeIE"
-POSTGRES_ID = "dpg-dbf512q9lscs738r1fj0-a"
-PROJECT_ID = "prj-dbf510o473hc73bshqvg"
-ENV_ID = "evm-dbf510o473hc73bshr00"
-DB_URL = "postgresql://appsuite_user:s1geAR0QbBd4MRW6cBxjucnrBEpP46tf@dpg-dbf512q9lscs738r1fj0-a.oregon-postgres.render.com:5432/appsuite_db"
+
+def _require_env(name: str) -> str:
+    """Return a required environment variable or fail fast."""
+    value = os.environ.get(name, "").strip()
+    if not value:
+        raise RuntimeError(f"Missing required environment variable: {name} (inject via Infisical)")
+    return value
+
+
+POSTGRES_ID = os.environ.get("RENDER_POSTGRES_ID", "dpg-dbf512q9lscs738r1fj0-a")
+PROJECT_ID = os.environ.get("RENDER_PROJECT_ID", "prj-dbf510o473hc73bshqvg")
+ENV_ID = os.environ.get("RENDER_ENV_ID", "evm-dbf510o473hc73bshr00")
+RENDER_API_KEY = ""
+DB_URL = ""
 
 def log(msg):
     print(msg, flush=True)
@@ -460,6 +470,10 @@ async def test_schema_constraints():
         await conn.close()
 
 async def main():
+    global RENDER_API_KEY, DB_URL
+    RENDER_API_KEY = _require_env("RENDER_API_KEY")
+    DB_URL = _require_env("DB_URL")
+
     log("==================================================")
     log("STARTING EMPIRICAL DATABASE STRESS TEST HARNESS")
     log("Target: Render Account 3 Managed PostgreSQL")
