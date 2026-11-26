@@ -32,7 +32,13 @@ import { MembersPage } from './features/organization/MembersPage';
 import { OperatingUnitsPage } from './features/operations/OperatingUnitsPage';
 import CompliancePage from './pages/compliance/CompliancePage';
 import { ApplicationRuntimeProvider } from './providers/ApplicationRuntimeProvider';
+import { PublicLayout } from './layouts/PublicLayout';
 import { LandingPage } from './pages/LandingPage';
+import { OurServicesPage } from './pages/OurServicesPage';
+import { SolutionsPage } from './pages/SolutionsPage';
+import { PricingPage } from './pages/PricingPage';
+import { AboutPage } from './pages/AboutPage';
+import { ContactPage } from './pages/ContactPage';
 import { ClientDashboardPage } from './features/client-dashboard/ClientDashboardPage';
 import { ClientBookingsPage } from './features/client-bookings/ClientBookingsPage';
 import { ClientDutiesPage } from './features/client-duties/ClientDutiesPage';
@@ -73,8 +79,19 @@ export function App() {
       <ZolexoraAuthProvider authUrl={authUrl} product="zolexora-tms">
           <BrowserRouter>
           <Routes>
-            {/* Public Landing & Authentication */}
-            <Route path="/" element={<LandingPage />} />
+            {/* Public Editorial Marketing Pages */}
+            <Route element={<PublicLayout />}>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/our-services" element={<OurServicesPage />} />
+              <Route path="/ourservisess" element={<Navigate to="/our-services" replace />} />
+              <Route path="/services" element={<Navigate to="/our-services" replace />} />
+              <Route path="/solutions" element={<SolutionsPage />} />
+              <Route path="/pricing" element={<PricingPage />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/contact" element={<ContactPage />} />
+            </Route>
+
+            {/* Authentication */}
             <Route path="/authentication" element={<AuthPageWrapper><AuthenticationForm /></AuthPageWrapper>} />
             <Route path="/login" element={<Navigate to="/authentication" replace />} />
             <Route path="/onboarding" element={<Navigate to="/authentication" replace />} />

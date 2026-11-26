@@ -52,43 +52,47 @@
   --color-slate-950: #080C14;
 }
 
-/* ── Semantic theme tokens ── */
+/* ── Semantic theme tokens (Dark Obsidian default + Crisp Light mode) ── */
 :root {
   color-scheme: dark;
 
-  /* Dark mode (default) */
-  --bg-page:        #080C14;
-  --bg-surface:     #0A0A0A;
-  --bg-elevated:    #111620;
-  --text-primary:   #F1F5F9;
-  --text-secondary: #8699B0;
-  --text-muted:     #4E6078;
-  --border-soft:    #222B3A;
-  --border-mid:     #38455A;
-  --accent:         #CBD5E1;    /* silver — SP */
-  --accent-fg:      #080C14;
-  --lime:           #A3E635;    /* lime accent */
-  --lime-dim:       #1a2e05;
-  --lime-border:    #4d7c0f;
+  --bg-page:        #05070B;
+  --bg-surface:     #0B0F17;
+  --bg-elevated:    #121824;
+  --bg-glass:       rgba(5, 7, 11, 0.78);
+  --text-primary:   #F8FAFC;
+  --text-secondary: #94A3B8;
+  --text-muted:     #64748B;
+  --border-subtle:  rgba(255, 255, 255, 0.08);
+  --border-strong:  rgba(255, 255, 255, 0.18);
+  --btn-primary-bg: #F8FAFC;
+  --btn-primary-fg: #05070B;
+  --accent:         #A3E635;
+  --accent-fg:      #05070B;
+  --accent-soft:    rgba(163, 230, 53, 0.10);
+  --accent-border:  rgba(163, 230, 53, 0.28);
+  --grid-line:      rgba(255, 255, 255, 0.03);
 }
 
-/* Lime mode — applied via data-theme="lime" on <html> */
-[data-theme="lime"] {
+[data-theme="light"] {
   color-scheme: light;
 
-  --bg-page:        #F7FEE7;
-  --bg-surface:     #ECFCCB;
-  --bg-elevated:    #FFFFFF;
-  --text-primary:   #1a2e05;
-  --text-secondary: #3f6212;
-  --text-muted:     #65a30d;
-  --border-soft:    #BEF264;
-  --border-mid:     #84CC16;
+  --bg-page:        #FFFFFF;
+  --bg-surface:     #F8FAFC;
+  --bg-elevated:    #F1F5F9;
+  --bg-glass:       rgba(255, 255, 255, 0.85);
+  --text-primary:   #090D16;
+  --text-secondary: #475569;
+  --text-muted:     #64748B;
+  --border-subtle:  rgba(15, 23, 42, 0.09);
+  --border-strong:  rgba(15, 23, 42, 0.18);
+  --btn-primary-bg: #090D16;
+  --btn-primary-fg: #FFFFFF;
   --accent:         #4D7C0F;
-  --accent-fg:      #F7FEE7;
-  --lime:           #65A30D;
-  --lime-dim:       #ECFCCB;
-  --lime-border:    #84CC16;
+  --accent-fg:      #FFFFFF;
+  --accent-soft:    rgba(101, 163, 13, 0.09);
+  --accent-border:  rgba(101, 163, 13, 0.28);
+  --grid-line:      rgba(15, 23, 42, 0.04);
 }
 
 body {
@@ -96,28 +100,15 @@ body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   background-color: var(--bg-page);
   color: var(--text-primary);
-  transition: background-color 0.2s, color 0.2s;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg-page); }
-::-webkit-scrollbar-thumb { background: var(--border-mid); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
 /* Selection */
-::selection { background: var(--lime); color: var(--accent-fg); }
-
-/* Theme-aware utility shorthands used in landing page */
-.theme-bg-page     { background-color: var(--bg-page); }
-.theme-bg-surface  { background-color: var(--bg-surface); }
-.theme-bg-elevated { background-color: var(--bg-elevated); }
-.theme-text        { color: var(--text-primary); }
-.theme-text-sec    { color: var(--text-secondary); }
-.theme-text-muted  { color: var(--text-muted); }
-.theme-border      { border-color: var(--border-soft); }
-.theme-border-mid  { border-color: var(--border-mid); }
-.theme-accent      { background-color: var(--accent); color: var(--accent-fg); }
-.theme-lime        { color: var(--lime); }
-.theme-lime-bg     { background-color: var(--lime-dim); border-color: var(--lime-border); }
+::selection { background: var(--accent); color: var(--accent-fg); }
 

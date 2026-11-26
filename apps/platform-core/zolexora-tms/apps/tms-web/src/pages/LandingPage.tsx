@@ -1,439 +1,403 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Truck,
+  Building2,
   ArrowRight,
-  CheckCircle2,
   ChevronDown,
-  Sparkles,
-  Menu,
-  X,
   ShieldCheck,
   Compass,
-  DollarSign,
+  Receipt,
   MapPin,
-  Sun,
-  Moon,
-  Building2,
-  CalendarCheck,
-  FileText,
-  Users,
+  Clock,
+  CheckCircle2,
+  ArrowUpRight,
 } from 'lucide-react';
+import { PricingGrid } from '../components/PricingGrid';
 
-type Theme = 'dark' | 'lime';
+type WorkspaceTab = 'sp' | 'client';
 
-function useTheme() {
-  const [theme, setTheme] = useState<Theme>(() => {
-    return (localStorage.getItem('tms-theme') as Theme) ?? 'dark';
-  });
+const PREVIEW_DATA: Record<
+  WorkspaceTab,
+  {
+    badge: string;
+    route: string;
+    headline: string;
+    metrics: { label: string; value: string }[];
+    rows: { id: string; primary: string; secondary: string; status: string }[];
+    footerLeft: string;
+    footerRight: string;
+  }
+> = {
+  sp: {
+    badge: 'Service Provider Workspace',
+    route: '/sp/dashboard',
+    headline: 'Live Dispatch & Fleet Ledger',
+    metrics: [
+      { label: 'Active Duties', value: '42' },
+      { label: 'Compliance Lock', value: '100% Verified' },
+      { label: 'Billed MTD', value: '₹48,25,000' },
+    ],
+    rows: [
+      { id: 'DT-9102', primary: 'MH-04-GP-8842 · Delhi Hub → Mumbai Depot', secondary: 'Driver: R. Sharma · 32T Multi-Axle', status: 'In Transit · 82 km/h' },
+      { id: 'DT-9103', primary: 'KA-01-AX-4029 · Bengaluru → Chennai Port', secondary: "Driver: A. D'Souza · 20ft Reefer", status: 'Loading at Bay 4' },
+      { id: 'DT-9104', primary: 'GJ-05-TR-1190 · Hazira → Pune Chakan', secondary: 'Driver: M. Patel · Flatbed Trailer', status: 'POD Uploaded · Ready to Bill' },
+    ],
+    footerLeft: 'Statutory Lockout Enforced: Licenses, PUC, Insurance',
+    footerRight: 'Auto-Settlements Synced',
+  },
+  client: {
+    badge: 'Client Portal Workspace',
+    route: '/client/dashboard',
+    headline: 'Transport Requests & Invoices',
+    metrics: [
+      { label: 'Open Requests', value: '14' },
+      { label: 'Trips In Transit', value: '9' },
+      { label: 'Pending Invoices', value: '₹6,40,000' },
+    ],
+    rows: [
+      { id: 'REQ-408', primary: 'Pune Plant → Bengaluru Warehouse', secondary: 'Assigned: KA-01-AX-4029 · ETA Today 18:40', status: 'Live Tracking' },
+      { id: 'REQ-409', primary: 'Chennai CFS → Hyderabad ICD', secondary: 'Container 40ft HC · Confirmed Dispatch', status: 'Dispatched' },
+      { id: 'INV-2091', primary: 'Monthly Freight Statement — October', secondary: 'GST Compliant · 18 Duties Included', status: 'Ready to Review' },
+    ],
+    footerLeft: 'Isolated Client View · Only your bookings & invoices',
+    footerRight: 'Instant GST PDF Export',
+  },
+};
 
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme === 'lime' ? 'lime' : '');
-    localStorage.setItem('tms-theme', theme);
-  }, [theme]);
-
-  const toggle = () => setTheme(t => t === 'dark' ? 'lime' : 'dark');
-  return { theme, toggle };
-}
-
-// ── Shared style helpers (theme-token-based) ────────────────────────────────
-const nav = 'sticky top-0 z-50 backdrop-blur-xl border-b transition-colors';
-const sectionMax = 'max-w-6xl mx-auto px-6 lg:px-10';
+const FAQS = [
+  {
+    q: 'How does Zolexora TMS separate Service Providers and Clients?',
+    a: 'Every organisation onboards as either a Service Provider (/sp/*) or a Client (/client/*). Both share the same reliable core data model while rendering clean, role-specific interfaces enforced by route guards and database tenant isolation.',
+  },
+  {
+    q: 'How does the Pre-Dispatch Compliance Lockout work?',
+    a: 'Before a duty is confirmed, the engine checks driver licenses, fitness certificates, PUC, permits, and insurance expiry dates. Expired statutory documents block dispatch automatically.',
+  },
+  {
+    q: 'Are yearly discounts applied to all plans including Enterprise?',
+    a: 'Yes. Choosing yearly billing saves 10% across Fleet Core (₹72,000/mo), Logistics Scale (₹1,35,000/mo), and Enterprise (₹2,25,000/mo instead of ₹2.5 L/mo).',
+  },
+  {
+    q: 'How fast can our fleet and staff sign in?',
+    a: 'Owners create an organisation in under three minutes, and staff members sign in immediately via their ZX-ORG workspace identifier and land directly inside their assigned portal.',
+  },
+];
 
 export function LandingPage() {
-  const { theme, toggle } = useTheme();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('annual');
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>('sp');
   const [openFaq, setOpenFaq] = useState<number | null>(0);
-
-  const dark = theme === 'dark';
-
-  // Computed class helpers
-  const page   = dark ? 'bg-[#080C14] text-slate-100' : 'bg-[#F7FEE7] text-[#1a2e05]';
-  const surface = dark ? 'bg-[#111620] border-[#222B3A]' : 'bg-white border-[#BEF264]';
-  const elevated = dark ? 'bg-[#0A0A0A] border-[#222B3A]' : 'bg-[#ECFCCB] border-[#BEF264]';
-  const textSec  = dark ? 'text-slate-400' : 'text-[#3f6212]';
-  const textMuted = dark ? 'text-slate-500' : 'text-[#65a30d]';
-  const borderSoft = dark ? 'border-[#222B3A]' : 'border-[#BEF264]';
-  const borderMid  = dark ? 'border-[#38455A]' : 'border-[#84CC16]';
-  const accent    = dark ? 'bg-slate-200 text-[#080C14] hover:bg-white' : 'bg-[#4D7C0F] text-[#F7FEE7] hover:bg-[#3f6212]';
-  const accentOut = dark ? 'border-[#38455A] text-slate-300 hover:border-slate-500 hover:text-white' : 'border-[#84CC16] text-[#3f6212] hover:border-[#65a30d]';
-  const limeAccent = dark ? 'text-[#A3E635]' : 'text-[#65A30D]';
-  const limeBg    = dark ? 'bg-[#1a2e05]/60 border-[#4d7c0f]/50' : 'bg-[#ECFCCB] border-[#84CC16]';
+  const preview = PREVIEW_DATA[activeTab];
 
   return (
-    <div className={`min-h-screen font-sans antialiased transition-colors duration-300 ${page}`}>
+    <div>
+      {/* ── EDITORIAL HERO ────────────────────────────────────────────── */}
+      <section className="relative overflow-hidden border-b border-[var(--border-subtle)]">
+        {/* Precision grid backdrop */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{
+            backgroundImage:
+              'linear-gradient(to right, var(--grid-line) 1px, transparent 1px), linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px)',
+            backgroundSize: '64px 64px',
+          }}
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-[720px] h-[280px] rounded-full blur-[120px] opacity-40"
+          style={{ background: 'var(--accent-soft)' }}
+        />
 
-      {/* ── NAVBAR ─────────────────────────────────────────────────────── */}
-      <header className={`${nav} ${dark ? 'bg-[#080C14]/80 border-[#222B3A]' : 'bg-[#F7FEE7]/90 border-[#BEF264]'}`}>
-        <div className={`${sectionMax} flex items-center justify-between h-18 py-4`}>
-          <Link to="/" className="flex items-center gap-3">
-            <div className={`flex h-9 w-9 items-center justify-center rounded-xl border ${dark ? 'bg-[#111620] border-[#38455A] text-slate-300' : 'bg-[#ECFCCB] border-[#84CC16] text-[#4D7C0F]'}`}>
-              <Truck className="h-4 w-4" />
-            </div>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-lg font-bold tracking-tight">Zolexora</span>
-              <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${dark ? 'bg-[#111620] border-[#38455A] text-slate-400' : 'bg-[#ECFCCB] border-[#84CC16] text-[#4D7C0F]'}`}>TMS</span>
-            </div>
-          </Link>
+        <div className="relative max-w-5xl mx-auto px-6 lg:px-8 pt-20 pb-24 md:pt-28 md:pb-32 text-center">
+          <div className="inline-flex items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3.5 py-1 text-xs font-medium text-[var(--text-secondary)] mb-8">
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
+            <span>Transport Operating System · v2.0 Dual Workspace</span>
+          </div>
 
-          <nav className={`hidden md:flex items-center gap-7 text-sm font-medium ${textSec}`}>
-            {['#overview','#features','#solutions','#pricing','#faq'].map((href, i) => (
-              <a key={href} href={href} className={`hover:${dark ? 'text-white' : 'text-[#1a2e05]'} transition`}>
-                {['Overview','Features','Solutions','Pricing','FAQ'][i]}
-              </a>
-            ))}
-          </nav>
+          <h1 className="text-4xl sm:text-6xl md:text-[68px] font-semibold tracking-[-0.035em] leading-[1.04] text-[var(--text-primary)] max-w-4xl mx-auto">
+            Precision software for modern freight &amp; fleet logistics.
+          </h1>
 
-          <div className="flex items-center gap-3">
-            {/* Theme toggle */}
-            <button
-              onClick={toggle}
-              title={dark ? 'Switch to Lime mode' : 'Switch to Dark mode'}
-              className={`rounded-xl border p-2 transition ${dark ? 'border-[#38455A] bg-[#111620] text-[#A3E635] hover:border-[#A3E635]' : 'border-[#84CC16] bg-[#ECFCCB] text-[#4D7C0F] hover:border-[#4D7C0F]'}`}
+          <p className="mt-6 text-base sm:text-lg text-[var(--text-secondary)] max-w-2xl mx-auto leading-relaxed font-normal">
+            Purpose-built interfaces for Service Providers managing fleets and Clients booking transport — unified by automated dispatch, compliance lockouts, and deterministic billing.
+          </p>
+
+          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link
+              to="/authentication"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--btn-primary-bg)] text-[var(--btn-primary-fg)] px-6 py-3 text-sm font-medium hover:opacity-90 transition shadow-sm"
             >
-              {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </button>
-
-            <Link to="/authentication" className={`hidden sm:inline-flex text-sm font-medium px-3 py-2 transition rounded-lg ${textSec} ${dark ? 'hover:text-white' : 'hover:text-[#1a2e05]'}`}>
-              Sign In
+              <span>Create workspace</span>
+              <ArrowRight className="h-4 w-4" />
             </Link>
-            <Link to="/authentication" className={`hidden sm:inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold transition shadow-sm ${accent}`}>
-              Get Started <ArrowRight className="h-3.5 w-3.5" />
+            <Link
+              to="/our-services"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--border-strong)] bg-[var(--bg-surface)] px-6 py-3 text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] transition"
+            >
+              <span>Explore services</span>
+              <ArrowUpRight className="h-4 w-4 text-[var(--text-muted)]" />
             </Link>
-
-            {/* Mobile menu */}
-            <button className={`md:hidden p-2 rounded-lg ${textSec}`} onClick={() => setMobileMenuOpen(o => !o)}>
-              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </button>
           </div>
-        </div>
 
-        {mobileMenuOpen && (
-          <div className={`md:hidden border-t px-6 py-5 space-y-4 ${dark ? 'border-[#222B3A] bg-[#080C14]' : 'border-[#BEF264] bg-[#F7FEE7]'}`}>
-            <nav className={`flex flex-col gap-3 text-sm font-medium ${textSec}`}>
-              {['#overview','#features','#solutions','#pricing','#faq'].map((href, i) => (
-                <a key={href} href={href} onClick={() => setMobileMenuOpen(false)}>
-                  {['Overview','Features','Solutions','Pricing','FAQ'][i]}
-                </a>
-              ))}
-            </nav>
-            <div className={`pt-4 border-t flex flex-col gap-2 ${borderSoft}`}>
-              <Link to="/authentication" onClick={() => setMobileMenuOpen(false)} className={`text-center py-2.5 rounded-xl border text-sm font-medium ${accentOut}`}>Sign In</Link>
-              <Link to="/authentication" onClick={() => setMobileMenuOpen(false)} className={`text-center py-2.5 rounded-xl text-sm font-semibold ${accent}`}>Get Started</Link>
-            </div>
-          </div>
-        )}
-      </header>
-
-      <main>
-        {/* ── HERO ───────────────────────────────────────────────────────── */}
-        <section id="overview" className="relative pt-20 pb-24 md:pt-32 md:pb-36 overflow-hidden">
-          {/* Ambient glow */}
-          <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[300px] blur-[160px] rounded-full pointer-events-none -z-10 ${dark ? 'bg-[#A3E635]/5' : 'bg-[#A3E635]/20'}`} />
-
-          <div className="max-w-5xl mx-auto px-6 text-center">
-            {/* Badge */}
-            <div className={`inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-semibold mb-8 backdrop-blur ${limeBg} ${limeAccent}`}>
-              <Sparkles className="h-3 w-3" />
-              Next-Gen Transport Management Platform
+          {/* ── INTERACTIVE SP VS CLIENT SWITCHER ── */}
+          <div className="mt-16 max-w-4xl mx-auto">
+            <div className="inline-flex items-center p-1 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] mb-5">
+              <button
+                type="button"
+                onClick={() => setActiveTab('sp')}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition ${
+                  activeTab === 'sp'
+                    ? 'bg-[var(--btn-primary-bg)] text-[var(--btn-primary-fg)] shadow-sm'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                }`}
+              >
+                <Truck className="h-3.5 w-3.5" />
+                <span>Service Provider</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('client')}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition ${
+                  activeTab === 'client'
+                    ? 'bg-[var(--btn-primary-bg)] text-[var(--btn-primary-fg)] shadow-sm'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                }`}
+              >
+                <Building2 className="h-3.5 w-3.5" />
+                <span>Client Portal</span>
+              </button>
             </div>
 
-            {/* Headline */}
-            <h1 className="text-4xl sm:text-6xl md:text-7xl font-black tracking-tight leading-[1.08] max-w-4xl mx-auto">
-              One platform.{' '}
-              <span className={`${limeAccent}`}>Two workspaces.</span>
-            </h1>
-            <p className={`mt-6 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed ${textSec}`}>
-              Whether you run a fleet or book transport — Zolexora TMS gives every side of the transaction a dedicated, purpose-built workspace.
-            </p>
-
-            {/* ── DUAL CTA CARDS ── */}
-            <div className="mt-14 grid grid-cols-1 md:grid-cols-2 gap-5 max-w-3xl mx-auto text-left">
-
-              {/* Service Provider Card */}
-              <div className={`relative rounded-2xl border-2 p-7 flex flex-col gap-5 transition group ${dark ? 'border-[#38455A] bg-[#0A0A0A] hover:border-slate-500' : 'border-[#84CC16] bg-white hover:border-[#4D7C0F]'}`}>
-                <div>
-                  <div className={`inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-bold mb-4 ${dark ? 'border-[#38455A] bg-[#111620] text-slate-300' : 'border-[#84CC16] bg-[#ECFCCB] text-[#4D7C0F]'}`}>
-                    <Truck className="h-3.5 w-3.5" />
-                    Service Provider
-                  </div>
-                  <h2 className="text-xl font-bold">Run your fleet operation</h2>
-                  <p className={`mt-2 text-sm leading-relaxed ${textSec}`}>
-                    Dispatch drivers, track duties in real-time, manage compliance documents, generate GST invoices and settle vendor payments.
-                  </p>
+            {/* Linear-style App Window */}
+            <div className="rounded-2xl border border-[var(--border-strong)] bg-[var(--bg-surface)] shadow-2xl overflow-hidden text-left">
+              {/* Window chrome */}
+              <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--border-subtle)] bg-[var(--bg-elevated)]">
+                <div className="flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full bg-[var(--border-strong)]" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-[var(--border-strong)]" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-[var(--border-strong)]" />
                 </div>
-                <ul className={`space-y-1.5 text-xs ${textSec}`}>
-                  {['Fleet & driver management','Duty dispatch & tracking','Dynamic rate cards + GST invoicing','Vendor payments & settlements','Compliance lockout'].map(f => (
-                    <li key={f} className="flex items-center gap-2">
-                      <CheckCircle2 className={`h-3.5 w-3.5 shrink-0 ${limeAccent}`} />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                <Link to="/authentication" className={`mt-auto inline-flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition ${accent}`}>
-                  Open as Service Provider <ArrowRight className="h-4 w-4" />
-                </Link>
+                <span className="font-mono text-[11px] text-[var(--text-muted)]">
+                  app.zolexora.com{preview.route}
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--accent-border)] bg-[var(--accent-soft)] px-2.5 py-0.5 text-[10px] font-medium text-[var(--accent)]">
+                  {preview.badge}
+                </span>
               </div>
 
-              {/* Client Card */}
-              <div className={`relative rounded-2xl border-2 p-7 flex flex-col gap-5 transition group ${dark ? 'border-[#4d7c0f]/60 bg-[#1a2e05]/30 hover:border-[#A3E635]/60' : 'border-[#A3E635] bg-[#F7FEE7] hover:border-[#65A30D]'}`}>
-                <div className={`absolute top-5 right-5 text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border ${limeBg} ${limeAccent}`}>
-                  New
-                </div>
-                <div>
-                  <div className={`inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-bold mb-4 ${limeBg} ${limeAccent}`}>
-                    <Building2 className="h-3.5 w-3.5" />
-                    Client
+              <div className="p-6 sm:p-8 space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-base font-semibold tracking-tight text-[var(--text-primary)]">
+                      {preview.headline}
+                    </h2>
+                    <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                      Real-time tenant state synchronized across operations and accounting.
+                    </p>
                   </div>
-                  <h2 className="text-xl font-bold">Book & track your transport</h2>
-                  <p className={`mt-2 text-sm leading-relaxed ${textSec}`}>
-                    Request trips, track vehicles in transit, review invoices, and manage your team — all from a clean client-only workspace.
-                  </p>
-                </div>
-                <ul className={`space-y-1.5 text-xs ${textSec}`}>
-                  {['Book transport requests','Live trip tracking','Invoice & payment history','Team & access management','No fleet admin complexity'].map(f => (
-                    <li key={f} className="flex items-center gap-2">
-                      <CheckCircle2 className={`h-3.5 w-3.5 shrink-0 ${limeAccent}`} />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                <Link to="/authentication" className={`mt-auto inline-flex items-center justify-center gap-2 rounded-xl border-2 py-3 text-sm font-bold transition ${dark ? 'border-[#A3E635]/60 text-[#A3E635] hover:bg-[#A3E635]/10' : 'border-[#65A30D] text-[#4D7C0F] hover:bg-[#ECFCCB]'}`}>
-                  Open as Client <ArrowRight className="h-4 w-4" />
-                </Link>
-              </div>
-            </div>
-
-            {/* Trust note */}
-            <p className={`mt-8 text-xs ${textMuted}`}>14-day free trial · No credit card · Instant setup · Your data stays yours</p>
-          </div>
-        </section>
-
-        {/* ── VERTICALS STRIP ────────────────────────────────────────────── */}
-        <section className={`py-10 border-y ${borderSoft} ${dark ? 'bg-[#0A0A0A]/60' : 'bg-[#ECFCCB]/60'}`}>
-          <div className={`${sectionMax}`}>
-            <p className={`text-center text-[11px] font-semibold uppercase tracking-widest mb-5 ${textMuted}`}>Built for high-reliability transport verticals</p>
-            <div className={`flex flex-wrap items-center justify-center gap-8 sm:gap-14 text-sm font-medium ${textSec}`}>
-              {['Commercial FTL','Part Truckload (LTL)','Cold Chain Logistics','Industrial Haulage','Intra-City Delivery'].map(v => (
-                <span key={v}>{v}</span>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ── FEATURES ───────────────────────────────────────────────────── */}
-        <section id="features" className="py-28">
-          <div className={`${sectionMax}`}>
-            <div className="text-center max-w-2xl mx-auto mb-16">
-              <span className={`text-[11px] font-bold uppercase tracking-widest ${limeAccent}`}>Platform Features</span>
-              <h2 className="mt-3 text-3xl font-black tracking-tight">Everything your operation needs</h2>
-              <p className={`mt-3 text-sm leading-relaxed ${textSec}`}>One unified platform for the SP and the Client — no data silos, no double-entry.</p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[
-                { icon: Compass, title: 'Intelligent Dispatch', body: 'Assign bookings in seconds. Auto-matches vehicle capacity, driver availability, and route constraints.' },
-                { icon: DollarSign, title: 'Dynamic Rate Cards', body: 'Tiered KM slabs, waiting fees, batta. Instant fully-compliant GST freight invoices.' },
-                { icon: ShieldCheck, title: 'Compliance Sentinel', body: 'Pre-dispatch lockout blocks expired licenses, PUC, fitness, and insurance automatically.' },
-                { icon: MapPin, title: 'Live Trip Tracking', body: 'Clients see duty status in real time. Transparent end-to-end trip visibility.' },
-                { icon: FileText, title: 'Automated Billing', body: 'From booking to invoice in one flow. Zero manual reconciliation across receivables and payables.' },
-                { icon: Users, title: 'Role-Based Access', body: 'Fine-grained RBAC for dispatchers, accountants, drivers, and branch managers.' },
-              ].map(({ icon: Icon, title, body }) => (
-                <div key={title} className={`rounded-2xl border p-7 transition hover:scale-[1.01] ${surface}`}>
-                  <div className={`h-10 w-10 rounded-xl border flex items-center justify-center mb-5 ${limeBg} ${limeAccent}`}>
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <h3 className="text-base font-bold">{title}</h3>
-                  <p className={`mt-2 text-sm leading-relaxed ${textSec}`}>{body}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ── HOW IT WORKS (SP + Client side-by-side) ────────────────────── */}
-        <section id="solutions" className={`py-24 border-t ${borderSoft} ${dark ? 'bg-[#0A0A0A]/30' : 'bg-[#ECFCCB]/40'}`}>
-          <div className={`${sectionMax}`}>
-            <div className="text-center max-w-2xl mx-auto mb-16">
-              <span className={`text-[11px] font-bold uppercase tracking-widest ${limeAccent}`}>How It Works</span>
-              <h2 className="mt-3 text-3xl font-black tracking-tight">Two sides of every trip</h2>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-              {/* SP Side */}
-              <div className={`rounded-2xl border p-7 space-y-5 ${surface}`}>
-                <div className={`inline-flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-xl border ${dark ? 'border-[#38455A] bg-[#111620] text-slate-300' : 'border-[#84CC16] bg-[#ECFCCB] text-[#4D7C0F]'}`}>
-                  <Truck className="h-3.5 w-3.5" />Service Provider
-                </div>
-                <div className="space-y-3">
-                  {[
-                    ['1', 'Create a booking', 'Set route, vehicle type, and rate card'],
-                    ['2', 'Dispatch the duty', 'System assigns driver, checks compliance'],
-                    ['3', 'Track in real time', 'Monitor duty status, location updates'],
-                    ['4', 'Auto-bill on completion', 'GST invoice generated and sent to client'],
-                  ].map(([n, t, d]) => (
-                    <div key={n} className={`flex gap-4 p-4 rounded-xl border ${elevated}`}>
-                      <span className={`text-lg font-black ${limeAccent}`}>{n}</span>
-                      <div>
-                        <p className="text-sm font-semibold">{t}</p>
-                        <p className={`text-xs mt-0.5 ${textMuted}`}>{d}</p>
+                  <div className="grid grid-cols-3 gap-4 sm:gap-6">
+                    {preview.metrics.map((m) => (
+                      <div key={m.label} className="text-left sm:text-right">
+                        <div className="text-[11px] text-[var(--text-muted)]">{m.label}</div>
+                        <div className="text-sm font-semibold tabular-nums text-[var(--text-primary)] mt-0.5">
+                          {m.value}
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Client Side */}
-              <div className={`rounded-2xl border-2 p-7 space-y-5 ${dark ? 'border-[#4d7c0f]/50 bg-[#1a2e05]/20' : 'border-[#A3E635] bg-[#F7FEE7]'}`}>
-                <div className={`inline-flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-xl border ${limeBg} ${limeAccent}`}>
-                  <Building2 className="h-3.5 w-3.5" />Client
-                </div>
-                <div className="space-y-3">
-                  {[
-                    ['1', 'Request transport', 'Submit booking with origin, destination, and load'],
-                    ['2', 'Get confirmation', 'Assigned driver and vehicle details shared instantly'],
-                    ['3', 'Track your trip', 'Live duty status visible in Client Portal'],
-                    ['4', 'Review & pay', 'Download invoice, approve payment in one click'],
-                  ].map(([n, t, d]) => (
-                    <div key={n} className={`flex gap-4 p-4 rounded-xl border ${elevated}`}>
-                      <span className={`text-lg font-black ${limeAccent}`}>{n}</span>
-                      <div>
-                        <p className="text-sm font-semibold">{t}</p>
-                        <p className={`text-xs mt-0.5 ${textMuted}`}>{d}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ── PRICING ────────────────────────────────────────────────────── */}
-        <section id="pricing" className="py-28">
-          <div className={`${sectionMax}`}>
-            <div className="text-center max-w-2xl mx-auto mb-14">
-              <span className={`text-[11px] font-bold uppercase tracking-widest ${limeAccent}`}>Pricing</span>
-              <h2 className="mt-3 text-3xl font-black tracking-tight">Simple pricing for growing fleets</h2>
-              <p className={`mt-3 text-sm ${textSec}`}>No per-duty commissions. Flat subscription, cancel anytime.</p>
-
-              <div className={`mt-8 inline-flex items-center p-1 rounded-xl border text-xs font-medium ${dark ? 'border-[#222B3A] bg-[#0A0A0A]' : 'border-[#BEF264] bg-[#ECFCCB]'}`}>
-                {(['monthly','annual'] as const).map(p => (
-                  <button key={p} onClick={() => setBillingPeriod(p)}
-                    className={`px-5 py-2 rounded-lg transition font-semibold capitalize ${billingPeriod === p ? (dark ? 'bg-[#A3E635] text-[#1a2e05]' : 'bg-[#4D7C0F] text-white') : textMuted}`}>
-                    {p === 'annual' ? 'Annual (Save 20%)' : 'Monthly'}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-7">
-              {[
-                { name: 'Starter', desc: 'Independent fleets & hauliers', price: billingPeriod === 'annual' ? '₹4,999' : '₹5,999', features: ['Up to 15 vehicles','Core duty dispatch','Driver KYC management','Standard GST invoices'], popular: false },
-                { name: 'Growth 3PL', desc: 'Expanding logistics operators', price: billingPeriod === 'annual' ? '₹14,999' : '₹18,499', features: ['Up to 75 vehicles','Dynamic rate cards','Compliance lockout','FASTag & settlements','Multi-branch units'], popular: true },
-                { name: 'Enterprise', desc: 'National freight networks', price: 'Custom', features: ['Unlimited vehicles','Private VPC / On-Prem','Custom ERP connectors','Dedicated SLA support'], popular: false },
-              ].map(plan => (
-                <div key={plan.name} className={`rounded-2xl border-2 p-8 flex flex-col ${plan.popular
-                  ? (dark ? 'border-[#A3E635] bg-[#1a2e05]/30 shadow-xl shadow-[#A3E635]/10' : 'border-[#4D7C0F] bg-[#ECFCCB] shadow-xl shadow-[#4D7C0F]/10')
-                  : `${borderMid} ${dark ? 'bg-[#0A0A0A]' : 'bg-white'}`}`}>
-                  {plan.popular && (
-                    <div className={`text-[10px] font-black uppercase tracking-widest mb-2 ${limeAccent}`}>Most Popular</div>
-                  )}
-                  <h3 className="text-base font-black">{plan.name}</h3>
-                  <p className={`text-xs mt-1 ${textMuted}`}>{plan.desc}</p>
-                  <div className="mt-6 flex items-baseline gap-1">
-                    <span className="text-3xl font-black font-mono">{plan.price}</span>
-                    {plan.price !== 'Custom' && <span className={`text-xs ${textMuted}`}>/mo</span>}
-                  </div>
-                  <ul className={`mt-6 space-y-2.5 text-xs flex-1 ${textSec}`}>
-                    {plan.features.map(f => (
-                      <li key={f} className="flex items-center gap-2">
-                        <CheckCircle2 className={`h-3.5 w-3.5 shrink-0 ${limeAccent}`} />
-                        {f}
-                      </li>
                     ))}
-                  </ul>
-                  <Link to="/authentication"
-                    className={`mt-8 block text-center py-3 rounded-xl text-sm font-bold transition ${plan.popular ? accent : `border ${accentOut}`}`}>
-                    {plan.price === 'Custom' ? 'Contact Sales' : `Choose ${plan.name.split(' ')[0]}`}
-                  </Link>
+                  </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        </section>
 
-        {/* ── FAQ ────────────────────────────────────────────────────────── */}
-        <section id="faq" className={`py-24 border-t ${borderSoft}`}>
-          <div className="max-w-3xl mx-auto px-6">
-            <div className="text-center mb-12">
-              <span className={`text-[11px] font-bold uppercase tracking-widest ${limeAccent}`}>FAQ</span>
-              <h2 className="mt-3 text-2xl font-black tracking-tight">Frequently Asked Questions</h2>
-            </div>
-            <div className="space-y-3">
-              {[
-                { q: 'How fast can we onboard our existing fleet and drivers?', a: 'Import via CSV in minutes or use the REST API. Document validity is verified immediately on upload.' },
-                { q: 'How does the Pre-Dispatch Compliance Lockout work?', a: 'The system validates licenses, PUC, road permits, and fitness certificates before every duty. Expired docs block assignment automatically.' },
-                { q: 'Can a Service Provider and their Client both use Zolexora TMS?', a: 'Yes — this is exactly the design. The SP runs operations in /sp/* and each Client gets a clean /client/* portal showing only their bookings, trips, and invoices.' },
-                { q: 'Is our data strictly isolated from other tenants?', a: 'Every query enforces composite tenant keys and JWT claims. Data between organisations is strictly compartmentalized at the database level.' },
-                { q: 'Can we create custom roles for dispatchers and billing managers?', a: 'Yes. Fine-grained RBAC lets you assign specific permissions without exposing full admin controls.' },
-              ].map((faq, idx) => (
-                <div key={idx} className={`rounded-xl border overflow-hidden ${surface}`}>
-                  <button type="button" onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
-                    className="w-full flex items-center justify-between p-5 text-left text-sm font-semibold">
-                    <span>{faq.q}</span>
-                    <ChevronDown className={`h-4 w-4 ${textMuted} transition-transform shrink-0 ml-3 ${openFaq === idx ? 'rotate-180' : ''}`} />
-                  </button>
-                  {openFaq === idx && (
-                    <div className={`px-5 pb-5 text-xs leading-relaxed border-t pt-3 ${borderSoft} ${textSec}`}>{faq.a}</div>
-                  )}
+                {/* Data rows */}
+                <div className="divide-y divide-[var(--border-subtle)] rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-page)]">
+                  {preview.rows.map((row) => (
+                    <div
+                      key={row.id}
+                      className="px-4 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+                    >
+                      <div className="flex items-start sm:items-center gap-3 min-w-0">
+                        <span className="font-mono text-[11px] font-medium px-2 py-0.5 rounded border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-[var(--text-secondary)] shrink-0">
+                          {row.id}
+                        </span>
+                        <div className="min-w-0">
+                          <div className="text-xs font-medium text-[var(--text-primary)] truncate">
+                            {row.primary}
+                          </div>
+                          <div className="text-[11px] text-[var(--text-muted)] truncate">
+                            {row.secondary}
+                          </div>
+                        </div>
+                      </div>
+                      <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[var(--text-secondary)] shrink-0">
+                        <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
+                        {row.status}
+                      </span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
-        </section>
 
-        {/* ── FINAL CTA ──────────────────────────────────────────────────── */}
-        <section className={`py-24 border-t ${borderSoft}`}>
-          <div className="max-w-4xl mx-auto px-6 text-center">
-            <div className={`inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-semibold mb-6 ${limeBg} ${limeAccent}`}>
-              <CalendarCheck className="h-3.5 w-3.5" />
-              14-day free trial — no credit card
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
-              Modernize your transport operations today.
-            </h2>
-            <p className={`mt-4 text-sm max-w-xl mx-auto ${textSec}`}>
-              Whether you're a fleet operator or a client booking transport — your purpose-built workspace is ready in under 3 minutes.
-            </p>
-            <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link to="/authentication" className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl px-8 py-3.5 text-sm font-bold transition shadow-lg ${accent}`}>
-                Start Free Trial <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link to="/authentication" className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border px-7 py-3.5 text-sm font-medium transition ${accentOut}`}>
-                Sign In
-              </Link>
+                <div className="flex flex-wrap items-center justify-between gap-3 text-[11px] text-[var(--text-muted)]">
+                  <span className="inline-flex items-center gap-1.5">
+                    <ShieldCheck className="h-3.5 w-3.5 text-[var(--accent)]" />
+                    {preview.footerLeft}
+                  </span>
+                  <span className="font-mono">{preview.footerRight}</span>
+                </div>
+              </div>
             </div>
           </div>
-        </section>
-      </main>
-
-      {/* ── FOOTER ─────────────────────────────────────────────────────── */}
-      <footer className={`border-t py-12 text-xs ${borderSoft} ${textMuted}`}>
-        <div className={`${sectionMax} flex flex-col sm:flex-row items-center justify-between gap-6`}>
-          <div className="flex items-center gap-2">
-            <Truck className={`h-4 w-4 ${limeAccent}`} />
-            <span className="font-bold text-sm">Zolexora TMS</span>
-            <span className={`${textMuted}`}>· Enterprise Transport Management</span>
-          </div>
-          <div className={`flex items-center gap-6 ${textSec}`}>
-            <Link to="/authentication" className="hover:underline">Sign In</Link>
-            <Link to="/authentication" className="hover:underline">Get Started</Link>
-          </div>
-          <div>© 2026 Zolexora Platform Inc.</div>
         </div>
-      </footer>
+      </section>
+
+      {/* ── CORE CAPABILITIES (EDITORIAL 3-COLUMN) ────────────────────── */}
+      <section className="py-24 border-b border-[var(--border-subtle)]">
+        <div className="max-w-6xl mx-auto px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-14">
+            <div className="max-w-xl">
+              <p className="text-xs font-medium uppercase tracking-widest text-[var(--accent)]">
+                Architecture
+              </p>
+              <h2 className="mt-2.5 text-3xl font-semibold tracking-tight text-[var(--text-primary)]">
+                Built for speed from dispatch to settlement.
+              </h2>
+            </div>
+            <Link
+              to="/our-services"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition"
+            >
+              View all platform services <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-px rounded-2xl overflow-hidden border border-[var(--border-subtle)] bg-[var(--border-subtle)]">
+            {[
+              {
+                icon: Compass,
+                title: 'Deterministic Dispatch',
+                body: 'Assign bookings to verified vehicles and drivers in seconds, backed by automated pre-dispatch statutory compliance lockouts.',
+              },
+              {
+                icon: Receipt,
+                title: 'Zero-Friction Billing',
+                body: 'Rate cards handle tiered km slabs, detention, driver batta, and FASTag tolls — generating audit-ready GST invoices automatically.',
+              },
+              {
+                icon: MapPin,
+                title: 'Dedicated Client Portals',
+                body: 'Clients onboard cleanly into /client/* to place transport requests, track active trips, and download invoices without clutter.',
+              },
+            ].map(({ icon: Icon, title, body }) => (
+              <div key={title} className="bg-[var(--bg-page)] p-8 sm:p-10 space-y-4">
+                <div className="h-9 w-9 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] flex items-center justify-center text-[var(--accent)]">
+                  <Icon className="h-4 w-4" />
+                </div>
+                <h3 className="text-base font-semibold tracking-tight text-[var(--text-primary)]">
+                  {title}
+                </h3>
+                <p className="text-sm leading-relaxed text-[var(--text-secondary)]">{body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── PRICING PREVIEW ────────────────────────────────────────────── */}
+      <section id="pricing" className="py-24 border-b border-[var(--border-subtle)]">
+        <div className="max-w-6xl mx-auto px-6 lg:px-8">
+          <div className="text-center max-w-2xl mx-auto mb-12">
+            <p className="text-xs font-medium uppercase tracking-widest text-[var(--accent)]">
+              Pricing
+            </p>
+            <h2 className="mt-2.5 text-3xl sm:text-4xl font-semibold tracking-tight text-[var(--text-primary)]">
+              Predictable enterprise licensing
+            </h2>
+            <p className="mt-3 text-sm text-[var(--text-secondary)]">
+              Flat monthly workspace plans with 10% savings on annual billing across every tier.
+            </p>
+          </div>
+
+          <PricingGrid />
+
+          <div className="mt-8 text-center">
+            <Link
+              to="/pricing"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition"
+            >
+              Compare full plan specifications <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── FAQ ────────────────────────────────────────────────────────── */}
+      <section className="py-24 border-b border-[var(--border-subtle)]">
+        <div className="max-w-3xl mx-auto px-6">
+          <div className="mb-12">
+            <p className="text-xs font-medium uppercase tracking-widest text-[var(--accent)]">FAQ</p>
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[var(--text-primary)]">
+              Common questions
+            </h2>
+          </div>
+
+          <div className="divide-y divide-[var(--border-subtle)] border-y border-[var(--border-subtle)]">
+            {FAQS.map((item, idx) => (
+              <div key={item.q}>
+                <button
+                  type="button"
+                  onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
+                  className="w-full py-5 flex items-center justify-between text-left text-sm font-medium text-[var(--text-primary)]"
+                >
+                  <span>{item.q}</span>
+                  <ChevronDown
+                    className={`h-4 w-4 text-[var(--text-muted)] shrink-0 ml-4 transition-transform ${
+                      openFaq === idx ? 'rotate-180 text-[var(--text-primary)]' : ''
+                    }`}
+                  />
+                </button>
+                {openFaq === idx && (
+                  <p className="pb-5 text-xs sm:text-sm leading-relaxed text-[var(--text-secondary)]">
+                    {item.a}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── FINAL CTA ──────────────────────────────────────────────────── */}
+      <section className="py-24">
+        <div className="max-w-4xl mx-auto px-6 text-center">
+          <div className="inline-flex items-center gap-4 text-xs text-[var(--text-secondary)] mb-6">
+            <span className="inline-flex items-center gap-1.5">
+              <Clock className="h-3.5 w-3.5 text-[var(--accent)]" /> 3-minute onboarding
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <CheckCircle2 className="h-3.5 w-3.5 text-[var(--accent)]" /> Strict tenant isolation
+            </span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-[var(--text-primary)]">
+            Ready to run logistics with zero friction?
+          </h2>
+          <p className="mt-3 text-sm text-[var(--text-secondary)] max-w-lg mx-auto">
+            Launch your Service Provider command center or Client booking portal today.
+          </p>
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link
+              to="/authentication"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--btn-primary-bg)] text-[var(--btn-primary-fg)] px-6 py-3 text-sm font-medium hover:opacity-90 transition"
+            >
+              Get started <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link
+              to="/contact"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--border-strong)] bg-[var(--bg-surface)] px-6 py-3 text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] transition"
+            >
+              Schedule a demo
+            </Link>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
