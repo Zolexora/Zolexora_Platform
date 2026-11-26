@@ -29,3 +29,23 @@ jobs:
             "file": "apps/auth-service/Dockerfile"
           }
         ]
+
+  deploy-staging:
+    name: Auto-deploy staging (Northflank)
+    needs: images
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Trigger Northflank staging rollout
+        env:
+          NF_TOKEN: ${{ secrets.NORTHFLANK_API_TOKEN }}
+        run: |
+          if [ -z "$NF_TOKEN" ]; then
+            echo "::warning::NORTHFLANK_API_TOKEN secret is not set; skipping staging rollout."
+            exit 0
+          fi
+          curl -fsSL -X POST \
+            -H "Authorization: Bearer $NF_TOKEN" \
+            -H "Content-Type: application/json" \
+            "https://api.northflank.com/v1/projects/zolexora-authservises/services/authservise/restart"
