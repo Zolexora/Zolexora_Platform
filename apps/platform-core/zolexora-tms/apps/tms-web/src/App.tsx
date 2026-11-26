@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ZolexoraAuthProvider } from '@zolexora/auth-client/react';
 import { AUTH_SERVICE_PUBLIC_URL, TURNSTILE_SITE_KEY } from './lib/runtime';
@@ -55,9 +56,18 @@ const queryClient = new QueryClient({
   },
 });
 
-function AuthPageWrapper({ children }: { children: React.ReactNode }) {
+function AuthPageWrapper({ children, showBack = false }: { children: React.ReactNode; showBack?: boolean }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-950 p-4">
+    <div className="relative flex min-h-screen items-center justify-center bg-slate-950 p-4">
+      {showBack && (
+        <Link
+          to="/"
+          className="absolute top-6 left-6 inline-flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-900/70 px-3.5 py-2 text-xs font-medium text-slate-300 hover:border-slate-700 hover:text-white transition"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          <span>Back</span>
+        </Link>
+      )}
       {children}
     </div>
   );
@@ -92,7 +102,7 @@ export function App() {
             </Route>
 
             {/* Authentication */}
-            <Route path="/authentication" element={<AuthPageWrapper><AuthenticationForm /></AuthPageWrapper>} />
+            <Route path="/authentication" element={<AuthPageWrapper showBack><AuthenticationForm /></AuthPageWrapper>} />
             <Route path="/login" element={<Navigate to="/authentication" replace />} />
             <Route path="/onboarding" element={<Navigate to="/authentication" replace />} />
             <Route path="/auth" element={<Navigate to="/authentication" replace />} />
