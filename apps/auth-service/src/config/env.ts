@@ -37,7 +37,7 @@ const productKeys = str.transform((v, ctx) => {
 });
 
 const envSchema = z.object({
-  NODE_ENV: z.enum(["development", "production", "test"]),
+  NODE_ENV: z.enum(["development", "staging", "production", "test"]),
   PORT: int,
   HOST: str,
   BASE_URL: z.string().url(),
