@@ -1,0 +1,20 @@
+{
+  "name": "@zolexora/orbit-api-contracts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@zolexora/tsconfig": "workspace:*",
+    "typescript": "~5.8.3",
+    "zod": "catalog:"
+  },
+  "dependencies": {
+    "zod": "catalog:"
+  }
+}

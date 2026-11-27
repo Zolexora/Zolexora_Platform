@@ -1,0 +1,39 @@
+{
+  "name": "@zolexora/orbit-business-manager",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 3083 --host 0.0.0.0",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview --port 3083",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "catalog:",
+    "@zolexora/auth-client": "workspace:*",
+    "@zolexora/orbit-api-contracts": "workspace:*",
+    "@zolexora/orbit-ui": "workspace:*",
+    "clsx": "catalog:",
+    "framer-motion": "catalog:",
+    "lucide-react": "catalog:",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-router-dom": "^7.6.3",
+    "sonner": "^2.0.8",
+    "tailwind-merge": "catalog:",
+    "zustand": "^5.0.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "catalog:",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
+    "@zolexora/eslint-config": "workspace:*",
+    "@zolexora/tsconfig": "workspace:*",
+    "tailwindcss": "catalog:",
+    "typescript": "~5.8.3",
+    "vite": "catalog:"
+  }
+}
