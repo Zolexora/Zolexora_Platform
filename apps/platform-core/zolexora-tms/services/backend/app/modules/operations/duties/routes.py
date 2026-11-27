@@ -9,6 +9,7 @@ from app.modules.operations.duties.schemas import (
     DutyCreate,
     DutyResponse,
     DutyStatus,
+    DutyStopUpdateRequest,
 )
 from app.modules.operations.duties import service
 
@@ -114,4 +115,14 @@ async def complete_duty(
     ctx: OrgContext = Depends(get_org_context),
 ):
     return await service.update_duty_milestone(ctx, duty_id, DutyStatus.DUTY_COMPLETED)
+
+
+@router.post("/{duty_id}/stops/{seq}/update", response_model=DutyResponse)
+async def update_duty_stop(
+    duty_id: uuid.UUID,
+    seq: int,
+    req: DutyStopUpdateRequest,
+    ctx: OrgContext = Depends(get_org_context),
+):
+    return await service.update_duty_stop(ctx, duty_id, seq, req)
 

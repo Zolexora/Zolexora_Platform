@@ -23,6 +23,21 @@ export type MobilePersona =
   | 'finance_manager'
   | 'client';
 
+export interface BookingStop {
+  seq: number;
+  stop_type: 'PICKUP' | 'DROP' | string;
+  address: string;
+  lat?: number | null;
+  lng?: number | null;
+  contact_name?: string | null;
+  contact_phone?: string | null;
+  status: 'PENDING' | 'ARRIVED' | 'DELIVERED' | string;
+  arrived_at?: string | null;
+  delivered_at?: string | null;
+  pod_url?: string | null;
+  notes?: string | null;
+}
+
 export interface BookingDetails {
   id: string;
   booking_number: string;
@@ -40,6 +55,7 @@ export interface BookingDetails {
   special_instructions?: string;
   eway_bill_number?: string | null;
   eway_bill_valid_until?: string | null;
+  stops?: BookingStop[];
 }
 
 export interface VehicleDetails {

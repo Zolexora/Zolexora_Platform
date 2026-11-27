@@ -211,6 +211,28 @@ export default function DutyDetailScreen() {
     onError: (err: Error) => Alert.alert('Unable to Report Exception', err.message),
   });
 
+  const fastagQuery = useQuery({
+    queryKey: ['fastag-reconciliation', trip?.id],
+    queryFn: () => dutiesService.getTripFastagReconciliation(trip!.id),
+    enabled: !!trip?.id,
+  });
+
+  const stopMutation = useMutation({
+    mutationFn: async ({ seq, status }: { seq: number; status: 'ARRIVED' | 'DELIVERED' }) => {
+      const coords = await getLocation();
+      return dutiesService.updateDutyStop(id!, seq, {
+        status,
+        latitude: coords?.latitude,
+        longitude: coords?.longitude,
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['duty', id] });
+      qc.invalidateQueries({ queryKey: ['trip-events', trip?.id] });
+    },
+    onError: (err: Error) => Alert.alert('Stop Update Failed', err.message),
+  });
+
   const handleReportException = () => {
     setExceptionModalVisible(true);
   };
@@ -468,6 +490,71 @@ export default function DutyDetailScreen() {
           </Card>
         )}
 
+        {/* LTL / Multi-Stop Manifest */}
+        {duty.booking?.stops && duty.booking.stops.length > 0 && (
+          <Card style={styles.section}>
+            <Text style={styles.sectionTitle}>📦  Multi-Stop Manifest ({duty.booking.stops.length} stops)</Text>
+            {[...duty.booking.stops]
+              .sort((a, b) => a.seq - b.seq)
+              .map((stop) => {
+                const isDone = stop.status === 'DELIVERED';
+                const isArrived = stop.status === 'ARRIVED';
+                return (
+                  <View key={stop.seq} style={styles.stopRow}>
+                    <View style={styles.stopHeader}>
+                      <Text style={styles.stopTitle}>
+                        #{stop.seq} · {stop.stop_type}
+                      </Text>
+                      <StatusBadge status={stop.status} />
+                    </View>
+                    <Text style={styles.stopAddress}>{stop.address}</Text>
+                    {(stop.contact_name || stop.contact_phone) && (
+                      <Text style={styles.stopContact}>
+                        {[stop.contact_name, stop.contact_phone].filter(Boolean).join(' · ')}
+                      </Text>
+                    )}
+                    <View style={styles.quickNavRow}>
+                      <TouchableOpacity
+                        style={styles.quickNavBtn}
+                        onPress={() => openDirections(stop.address, stop.lat ?? undefined, stop.lng ?? undefined)}
+                      >
+                        <Text style={styles.quickNavText}>🧭 Nav</Text>
+                      </TouchableOpacity>
+                      {stop.contact_phone && (
+                        <TouchableOpacity
+                          style={styles.quickNavBtn}
+                          onPress={() => dialPhone(stop.contact_phone!)}
+                        >
+                          <Text style={styles.quickNavText}>📞 Call</Text>
+                        </TouchableOpacity>
+                      )}
+                      {canExecuteDriverActions && isAssignedDriver && !isDone && (
+                        <>
+                          {!isArrived && (
+                            <TouchableOpacity
+                              style={styles.quickNavBtn}
+                              disabled={stopMutation.isPending}
+                              onPress={() => stopMutation.mutate({ seq: stop.seq, status: 'ARRIVED' })}
+                            >
+                              <Text style={styles.quickNavText}>📍 Arrived</Text>
+                            </TouchableOpacity>
+                          )}
+                          <TouchableOpacity
+                            style={[styles.quickNavBtn, { borderColor: theme.colors.success }]}
+                            disabled={stopMutation.isPending}
+                            onPress={() => stopMutation.mutate({ seq: stop.seq, status: 'DELIVERED' })}
+                          >
+                            <Text style={[styles.quickNavText, { color: theme.colors.success }]}>✓ Delivered</Text>
+                          </TouchableOpacity>
+                        </>
+                      )}
+                    </View>
+                  </View>
+                );
+              })}
+          </Card>
+        )}
+
         {/* Geofence Arrival Banner */}
         {geofencePrompt && (
           <Card style={[styles.section, styles.geofenceCard]}>
@@ -610,6 +697,22 @@ export default function DutyDetailScreen() {
             {trip.pod_attachment_url && (
               <View style={styles.podBadge}>
                 <Text style={styles.podBadgeText}>✅  POD Uploaded</Text>
+              </View>
+            )}
+            {fastagQuery.data && fastagQuery.data.transactions.length > 0 && (
+              <View style={styles.fastagBox}>
+                <View style={styles.stopHeader}>
+                  <Text style={styles.fastagTitle}>🛣️  FASTag Auto-Sync</Text>
+                  <Text style={styles.fastagTotal}>₹{fastagQuery.data.fastag_synced_toll}</Text>
+                </View>
+                <Text style={styles.fastagSub}>
+                  Manual toll: ₹{fastagQuery.data.driver_manual_toll} · Variance: ₹{fastagQuery.data.variance}
+                </Text>
+                {fastagQuery.data.duplicate_count > 0 && (
+                  <Text style={styles.fastagDup}>
+                    🚨 {fastagQuery.data.duplicate_count} possible duplicate plaza charge(s)
+                  </Text>
+                )}
               </View>
             )}
           </Card>
@@ -1047,4 +1150,27 @@ const styles = StyleSheet.create({
   },
   exceptionOptionText: { fontSize: 14, fontWeight: '700', color: theme.colors.textPrimary },
   exceptionOptionSosText: { color: theme.colors.danger },
+
+  stopRow: {
+    paddingVertical: theme.spacing.sm + 2,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.borderSubtle,
+  },
+  stopHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
+  stopTitle: { fontSize: 12, fontWeight: '800', color: theme.colors.primaryLight, textTransform: 'uppercase' },
+  stopAddress: { fontSize: 13, fontWeight: '600', color: theme.colors.textPrimary },
+  stopContact: { fontSize: 11, color: theme.colors.textMuted, marginTop: 2 },
+
+  fastagBox: {
+    marginTop: theme.spacing.md,
+    padding: theme.spacing.sm + 2,
+    borderRadius: theme.radius.sm,
+    backgroundColor: theme.colors.surfaceSubtle,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  fastagTitle: { fontSize: 12, fontWeight: '800', color: theme.colors.textPrimary },
+  fastagTotal: { fontSize: 13, fontWeight: '800', color: theme.colors.primaryLight },
+  fastagSub: { fontSize: 11, color: theme.colors.textSecondary },
+  fastagDup: { fontSize: 11, fontWeight: '700', color: theme.colors.danger, marginTop: 4 },
 });

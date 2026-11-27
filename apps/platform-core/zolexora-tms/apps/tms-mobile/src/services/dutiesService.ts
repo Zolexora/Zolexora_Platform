@@ -176,4 +176,34 @@ export const dutiesService = {
       body: JSON.stringify(payload),
     });
   },
+
+  updateDutyStop(
+    dutyId: string,
+    seq: number,
+    payload: { status: 'ARRIVED' | 'DELIVERED'; pod_url?: string; notes?: string; latitude?: number; longitude?: number },
+  ): Promise<Duty> {
+    return apiClient<Duty>(`/api/v1/duties/${dutyId}/stops/${seq}/update`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  getTripFastagReconciliation(tripId: string): Promise<{
+    trip_id: string;
+    trip_number: string;
+    driver_manual_toll: string | number;
+    fastag_synced_toll: string | number;
+    variance: string | number;
+    duplicate_count: number;
+    transactions: Array<{
+      id: string;
+      transaction_ref: string;
+      plaza_name: string;
+      amount: string | number;
+      transacted_at: string;
+      duplicate_flag: boolean;
+    }>;
+  }> {
+    return apiClient(`/api/v1/integrations/fastag/trips/${tripId}/reconciliation`);
+  },
 };

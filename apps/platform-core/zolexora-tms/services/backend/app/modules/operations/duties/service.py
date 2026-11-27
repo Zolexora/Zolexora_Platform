@@ -15,7 +15,7 @@ from app.modules.fleet.drivers.models import Driver
 from app.modules.fleet.vehicles.models import Vehicle
 from app.modules.operations.bookings.models import Booking
 from app.modules.operations.duties.models import Duty
-from app.modules.operations.trips.models import Trip
+from app.modules.operations.trips.models import Trip, TripEvent
 from app.modules.operations.duties.schemas import (
     DutyAssignRequest,
     DutyBookingSummary,
@@ -23,6 +23,7 @@ from app.modules.operations.duties.schemas import (
     DutyDriverSummary,
     DutyResponse,
     DutyStatus,
+    DutyStopUpdateRequest,
     DutyTripSummary,
     DutyVehicleSummary,
 )
@@ -176,6 +177,7 @@ async def enrich_duties(db: AsyncSession, duties: list[Duty]) -> list[DutyRespon
                 special_instructions=b.operational_instructions,
                 eway_bill_number=b.eway_bill_number,
                 eway_bill_valid_until=b.eway_bill_valid_until,
+                stops=b.stops if isinstance(b.stops, list) else [],
             )
 
         v = vehicles_map.get(d.vehicle_id) if d.vehicle_id else None
@@ -349,3 +351,66 @@ async def driver_reject_duty(ctx: OrgContext, duty_id: uuid.UUID, reason: Option
     duty.vehicle_id = None
     _audit(ctx, duty, "DUTY_REJECTED", previous, {"reason": reason, "driver_id": str(rejected_driver) if rejected_driver else None})
     return await _commit_and_broadcast(ctx, duty, "duty.rejected")
+
+
+async def update_duty_stop(
+    ctx: OrgContext,
+    duty_id: uuid.UUID,
+    seq: int,
+    req: DutyStopUpdateRequest,
+) -> DutyResponse:
+    duty = await _get(ctx, duty_id)
+    booking = (
+        await ctx.db.execute(
+            select(Booking).where(Booking.id == duty.booking_id, Booking.organisation_id == ctx.organisation_id)
+        )
+    ).scalars().first()
+    if not booking:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Booking not found")
+
+    stops = list(booking.stops) if isinstance(booking.stops, list) else []
+    target_idx = next((i for i, s in enumerate(stops) if int(s.get("seq", -1)) == seq), None)
+    if target_idx is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Stop seq {seq} not found on manifest")
+
+    now = datetime.datetime.now(datetime.timezone.utc)
+    updated_stop = dict(stops[target_idx])
+    updated_stop["status"] = req.status
+    if req.status == "ARRIVED":
+        updated_stop["arrived_at"] = now.isoformat()
+    elif req.status == "DELIVERED":
+        updated_stop["delivered_at"] = now.isoformat()
+    if req.pod_url:
+        updated_stop["pod_url"] = req.pod_url
+    if req.notes:
+        updated_stop["notes"] = req.notes
+
+    stops[target_idx] = updated_stop
+    booking.stops = stops
+
+    # Record a TripEvent if an active trip exists for this duty
+    trip = (await ctx.db.execute(select(Trip).where(Trip.duty_id == duty.id))).scalars().first()
+    if trip:
+        ctx.db.add(
+            TripEvent(
+                id=uuid.uuid4(),
+                trip_id=trip.id,
+                event_type=f"STOP_{req.status}",
+                timestamp=now,
+                latitude=req.latitude,
+                longitude=req.longitude,
+                notes=f"Stop #{seq} ({updated_stop.get('address', '')}): {req.notes or req.status}",
+            )
+        )
+
+    record_audit(
+        ctx.db, ctx.organisation_id, ctx.user_id, f"DUTY_STOP_{req.status}", "duty", duty.id,
+        {"seq": seq, "status": req.status},
+    )
+    await ctx.db.commit()
+    await ws_manager.broadcast_to_org(
+        ctx.organisation_id,
+        "duty.stop_updated",
+        {"duty_id": str(duty.id), "seq": seq, "status": req.status},
+    )
+    return (await enrich_duties(ctx.db, [duty]))[0]

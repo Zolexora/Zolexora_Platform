@@ -75,6 +75,15 @@ class DutyBookingSummary(BaseModel):
     special_instructions: Optional[str] = None
     eway_bill_number: Optional[str] = None
     eway_bill_valid_until: Optional[datetime.datetime] = None
+    stops: List[Dict[str, Any]] = Field(default_factory=list)
+
+
+class DutyStopUpdateRequest(BaseModel):
+    status: str = Field(..., pattern="^(ARRIVED|DELIVERED)$")
+    pod_url: Optional[str] = None
+    notes: Optional[str] = None
+    latitude: Optional[float] = Field(None, ge=-90.0, le=90.0)
+    longitude: Optional[float] = Field(None, ge=-180.0, le=180.0)
 
 
 class DutyVehicleSummary(BaseModel):

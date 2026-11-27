@@ -59,6 +59,7 @@ class Booking(Base):
     created_by_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid)
     eway_bill_number: Mapped[Optional[str]] = mapped_column(String(32))
     eway_bill_valid_until: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(True))
+    stops: Mapped[object] = mapped_column(JSONB, default=list, nullable=False)
 
 
 class BookingRequest(Base):

@@ -1,8 +1,24 @@
 import datetime
 import uuid
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, ConfigDict, Field
 from app.modules.operations.bookings.enums import BookingStatus, BookingServiceType, BookingType
+
+
+class BookingStop(BaseModel):
+    seq: int = Field(..., ge=1)
+    stop_type: str = Field(default="DROP", description="PICKUP | DROP")
+    address: str = Field(..., min_length=3)
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    contact_name: Optional[str] = None
+    contact_phone: Optional[str] = None
+    status: str = Field(default="PENDING", description="PENDING | ARRIVED | DELIVERED")
+    arrived_at: Optional[datetime.datetime] = None
+    delivered_at: Optional[datetime.datetime] = None
+    pod_url: Optional[str] = None
+    notes: Optional[str] = None
+
 
 class BookingBase(BaseModel):
     customer_id: uuid.UUID
@@ -25,6 +41,7 @@ class BookingBase(BaseModel):
     operational_instructions: Optional[str] = None
     eway_bill_number: Optional[str] = Field(None, max_length=32)
     eway_bill_valid_until: Optional[datetime.datetime] = None
+    stops: List[BookingStop] = Field(default_factory=list)
     source: str = Field(default="MANUAL")
 
 class BookingCreate(BookingBase):
@@ -42,6 +59,7 @@ class BookingUpdate(BaseModel):
     operational_instructions: Optional[str] = None
     eway_bill_number: Optional[str] = Field(None, max_length=32)
     eway_bill_valid_until: Optional[datetime.datetime] = None
+    stops: Optional[List[BookingStop]] = None
     status: Optional[BookingStatus] = None
 
 class BookingResponse(BookingBase):

@@ -138,6 +138,7 @@ from app.modules.finance.payables.routes import router as payables_router
 from app.modules.finance.expenses.routes import router as expenses_router
 from app.modules.finance.pl.routes import router as pl_router
 from app.modules.core.devices.routes import router as devices_router
+from app.modules.integrations.fastag.routes import router as fastag_router
 
 app.include_router(health_router)
 app.include_router(health_router, prefix="/api")
@@ -166,6 +167,7 @@ app.include_router(compliance_router)
 for finance_router in (invoices_router, adjustments_router, payments_router, payables_router, expenses_router, pl_router):
     app.include_router(finance_router, prefix="/api/v1")
 app.include_router(devices_router)
+app.include_router(fastag_router)
 
 @app.get("/", include_in_schema=False)
 async def root():

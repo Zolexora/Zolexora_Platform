@@ -21,7 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from app.auth.dependencies import get_current_active_organisation, CurrentUserContext
-from app.db.session import get_db
+from app.db.session import get_db, rls_bypass, set_tenant_context
 from app.modules.operations.trips.models import Trip, TripStatus
 
 share_router = APIRouter(tags=["Tracking"])
@@ -95,9 +95,10 @@ async def public_tracking(
     token: str,
     db: AsyncSession = Depends(get_db),
 ) -> PublicTrackingResponse:
-    stmt = select(Trip).where(Trip.share_token == token)
-    res = await db.execute(stmt)
-    trip = res.scalars().first()
+    async with rls_bypass(db):
+        stmt = select(Trip).where(Trip.share_token == token)
+        res = await db.execute(stmt)
+        trip = res.scalars().first()
 
     now = datetime.datetime.now(datetime.timezone.utc)
     if not trip or not trip.share_token_expires_at or trip.share_token_expires_at < now:
@@ -105,6 +106,8 @@ async def public_tracking(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Tracking link not found or expired",
         )
+
+    await set_tenant_context(db, trip.organisation_id)
 
     # Pull latest GPS event from trip_events (most recent location_update)
     from app.modules.operations.trips.models import TripEvent  # local import avoids circular

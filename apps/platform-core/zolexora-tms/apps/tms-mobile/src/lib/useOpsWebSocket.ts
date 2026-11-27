@@ -133,6 +133,15 @@ export function useOpsWebSocket(orgId: string | null | undefined) {
             : `⚠️ e-Way Bill expiring in ${Math.max(1, Math.ceil(d?.hours_left ?? 1))}h (${d?.booking_number ?? 'Booking'})`,
         );
       }
+      if (ev === 'fastag.toll_synced') {
+        qc.invalidateQueries({ queryKey: ['fastag-reconciliation'] });
+        const d = msg.data as { plaza_name?: string; amount?: number; duplicate_flag?: boolean } | undefined;
+        emitToast(
+          d?.duplicate_flag
+            ? `🚨 Duplicate FASTag Charge at ${d.plaza_name ?? 'Plaza'} (₹${d.amount ?? 0})`
+            : `🛣️ FASTag Toll ₹${d?.amount ?? 0} at ${d?.plaza_name ?? 'Plaza'}`,
+        );
+      }
     };
 
     ws.onerror = () => {
