@@ -11,6 +11,7 @@ export function LoginPage() {
   const [turnstileToken, setTurnstileToken] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [logoFailed, setLogoFailed] = useState(false);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -30,7 +31,13 @@ export function LoginPage() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="mb-8 flex flex-col items-center gap-3">
-          <img src="/logo.png" alt="Zolexora TMS" className="h-14 w-14 rounded-2xl object-contain" />
+          {logoFailed ? (
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-silver-800 bg-navy-900/60 text-silver-200" aria-hidden="true">
+              <ShieldCheck className="h-7 w-7" />
+            </div>
+          ) : (
+            <img src="/logo.png" alt="Zolexora TMS" onError={() => setLogoFailed(true)} className="h-14 w-14 rounded-2xl object-contain" />
+          )}
           <div className="text-center">
             <h1 className="text-xl font-bold tracking-tight text-white">Zolexora TMS</h1>
             <p className="text-xs font-semibold uppercase tracking-widest text-silver-600 mt-0.5">Platform Admin</p>

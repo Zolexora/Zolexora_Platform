@@ -1,4 +1,4 @@
-import { LogOut, Building2, Users, ShieldAlert, Menu } from 'lucide-react';
+import { LogOut, Building2, Users, ShieldAlert, ShieldCheck, Menu } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { useAdminAuth } from '../features/auth/useAdminAuth';
 
@@ -16,17 +16,24 @@ const NAV = [
 export function AdminLayout({ children, activeTab, onTabChange }: AdminLayoutProps) {
   const { user, signOut } = useAdminAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [logoFailed, setLogoFailed] = useState(false);
 
   return (
     <div className="flex min-h-screen bg-brand-black">
       {/* Sidebar */}
       <aside className={`fixed inset-y-0 left-0 z-40 flex w-60 flex-col border-r border-silver-900/60 bg-brand-near transition-transform duration-200 lg:static lg:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         {/* Brand */}
-        <div className="flex h-16 items-center gap-3 border-b border-silver-900/60 px-5">
-          <img src="/logo.png" alt="Zolexora" className="h-9 w-9 rounded-xl object-contain" />
-          <div>
-            <div className="text-sm font-bold text-white">Zolexora TMS</div>
-            <div className="text-[10px] font-semibold uppercase tracking-widest text-silver-600">Admin Panel</div>
+        <div className="flex min-h-16 items-center gap-3 border-b border-silver-900/60 px-5 py-3">
+          {logoFailed ? (
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-silver-800 bg-navy-900/60 text-silver-300" aria-hidden="true">
+              <ShieldCheck className="h-5 w-5" />
+            </div>
+          ) : (
+            <img src="/logo.png" alt="Zolexora TMS" onError={() => setLogoFailed(true)} className="h-9 w-9 shrink-0 rounded-xl object-contain" />
+          )}
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-sm font-bold text-white">Zolexora TMS</div>
+            <div className="truncate text-[10px] font-semibold uppercase tracking-widest text-silver-600">Admin Panel</div>
           </div>
         </div>
 

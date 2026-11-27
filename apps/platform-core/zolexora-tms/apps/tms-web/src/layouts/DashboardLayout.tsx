@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../features/auth/useAuth';
 import { useApplicationRuntime } from '../providers/ApplicationRuntimeProvider';
+import { SidebarBrand } from '../components/SidebarBrand';
 
 
 
@@ -117,13 +118,11 @@ export function DashboardLayout() {
       {/* Sidebar */}
       <aside className="fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-slate-800/80 bg-slate-900/90 backdrop-blur-xl">
         {/* Brand Header */}
-        <div className="flex h-16 items-center gap-3 border-b border-slate-800/80 px-6">
-          <img src="/logo.png" alt="Zolexora TMS" className="h-10 w-10 rounded-xl object-contain" />
-          <div className="flex flex-col">
-            <span className="font-bold tracking-tight text-white text-base">{runtime.branding.application_name}</span>
-            <span className="text-[10px] font-medium uppercase tracking-widest text-silver-500">Transport Hub</span>
-          </div>
-        </div>
+        <SidebarBrand
+          applicationName={runtime.branding.application_name}
+          logoUrl={runtime.branding.logo_url}
+          subtitle="Transport Hub"
+        />
 
         {/* Organisation Context Card */}
         <div className="p-4 border-b border-slate-800/60">
