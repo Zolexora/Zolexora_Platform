@@ -117,3 +117,117 @@ async def cancel_booking(ctx: OrgContext, booking_id: uuid.UUID, reason: Optiona
         {"booking_id": str(booking.id), "booking_number": booking.booking_number},
     )
     return BookingResponse.model_validate(booking)
+
+
+def _validate_eway_bill_format(eway_bill_number: str) -> str:
+    cleaned = eway_bill_number.strip().replace("-", "").replace(" ", "")
+    if not cleaned.isdigit() or len(cleaned) != 12:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="EWAY_BILL_INVALID: GST e-Way Bill number must be a valid 12-digit NIC number.",
+        )
+    return cleaned
+
+
+async def _notify_eway_bill_alert(ctx: OrgContext, booking: Booking, hours_left: float) -> None:
+    payload = {
+        "booking_id": str(booking.id),
+        "booking_number": booking.booking_number,
+        "eway_bill_number": booking.eway_bill_number,
+        "hours_left": round(hours_left, 1),
+        "expired": hours_left <= 0,
+    }
+    await ws_manager.broadcast_to_org(ctx.organisation_id, "eway_bill.expiring", payload)
+    try:
+        from app.core.push import send_eway_bill_alert_push
+        from app.modules.core.devices.models import DeviceToken
+        from app.modules.identity.organisations.membership_models import MemberStatus, OrganisationMember
+
+        tokens = (
+            await ctx.db.execute(
+                select(DeviceToken.token)
+                .join(OrganisationMember, OrganisationMember.user_id == DeviceToken.user_id)
+                .where(
+                    OrganisationMember.organisation_id == ctx.organisation_id,
+                    OrganisationMember.status == MemberStatus.ACTIVE,
+                )
+                .distinct()
+            )
+        ).scalars().all()
+        for tok in tokens:
+            await send_eway_bill_alert_push(
+                token=tok,
+                booking_number=booking.booking_number,
+                eway_bill_number=booking.eway_bill_number or "",
+                hours_left=hours_left,
+            )
+    except Exception:
+        pass
+
+
+async def update_eway_bill(
+    ctx: OrgContext,
+    booking_id: uuid.UUID,
+    eway_bill_number: str,
+    valid_until: datetime.datetime,
+) -> BookingResponse:
+    booking = await _get(ctx, booking_id)
+    cleaned = _validate_eway_bill_format(eway_bill_number)
+    booking.eway_bill_number = cleaned
+    booking.eway_bill_valid_until = valid_until
+    record_audit(
+        ctx.db, ctx.organisation_id, ctx.user_id,
+        "BOOKING_EWAY_BILL_UPDATED", "booking", booking.id,
+        {"eway_bill_number": cleaned, "valid_until": valid_until.isoformat()},
+    )
+    await ctx.db.commit()
+    await ctx.db.refresh(booking)
+
+    now = datetime.datetime.now(datetime.timezone.utc)
+    vu = valid_until if valid_until.tzinfo else valid_until.replace(tzinfo=datetime.timezone.utc)
+    hours_left = (vu - now).total_seconds() / 3600.0
+    if hours_left < 8.0:
+        await _notify_eway_bill_alert(ctx, booking, hours_left)
+
+    return BookingResponse.model_validate(booking)
+
+
+async def check_expiring_eway_bills(ctx: OrgContext, warn_hours: int = 24) -> dict:
+    now = datetime.datetime.now(datetime.timezone.utc)
+    cutoff = now + datetime.timedelta(hours=warn_hours)
+    stmt = select(Booking).where(
+        Booking.organisation_id == ctx.organisation_id,
+        Booking.eway_bill_number.isnot(None),
+        Booking.eway_bill_valid_until.isnot(None),
+        Booking.eway_bill_valid_until <= cutoff,
+        Booking.status.notin_([BookingStatus.COMPLETED, BookingStatus.CANCELLED]),
+    )
+    rows = (await ctx.db.execute(stmt)).scalars().all()
+    expiring_soon = 0
+    expired = 0
+    alerts: list[dict] = []
+    for b in rows:
+        vu = b.eway_bill_valid_until
+        if vu is None:
+            continue
+        if vu.tzinfo is None:
+            vu = vu.replace(tzinfo=datetime.timezone.utc)
+        hours_left = (vu - now).total_seconds() / 3600.0
+        if hours_left <= 0:
+            expired += 1
+        else:
+            expiring_soon += 1
+        alerts.append({
+            "booking_id": str(b.id),
+            "booking_number": b.booking_number,
+            "eway_bill_number": b.eway_bill_number,
+            "hours_left": round(hours_left, 1),
+        })
+        await _notify_eway_bill_alert(ctx, b, hours_left)
+
+    return {
+        "checked_count": len(rows),
+        "expiring_soon_count": expiring_soon,
+        "expired_count": expired,
+        "alerts": alerts,
+    }

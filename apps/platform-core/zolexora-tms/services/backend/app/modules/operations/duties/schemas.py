@@ -64,11 +64,17 @@ class DutyBookingSummary(BaseModel):
     customer_name: Optional[str] = None
     customer_phone: Optional[str] = None
     pickup_address: str
+    pickup_lat: Optional[float] = None
+    pickup_lng: Optional[float] = None
     drop_address: str
+    drop_lat: Optional[float] = None
+    drop_lng: Optional[float] = None
     pickup_datetime: datetime.datetime
     cargo_description: Optional[str] = None
     cargo_weight_kg: Optional[float] = None
     special_instructions: Optional[str] = None
+    eway_bill_number: Optional[str] = None
+    eway_bill_valid_until: Optional[datetime.datetime] = None
 
 
 class DutyVehicleSummary(BaseModel):

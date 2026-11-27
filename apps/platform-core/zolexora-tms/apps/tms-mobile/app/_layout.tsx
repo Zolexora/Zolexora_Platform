@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '../src/context/AuthContext';
+import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { OpsToastBanner } from '../src/components/OpsToastBanner';
 import { OpsWebSocketGate } from '../src/components/OpsWebSocketGate';
 import { theme } from '../src/lib/theme';
@@ -20,7 +21,8 @@ const queryClient = new QueryClient({
 
 export default function RootLayout() {
   return (
-    <SafeAreaProvider>
+    <ErrorBoundary fallbackLabel="Zolexora TMS hit an unexpected error">
+      <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <OpsWebSocketGate />
@@ -74,5 +76,6 @@ export default function RootLayout() {
         </AuthProvider>
       </QueryClientProvider>
     </SafeAreaProvider>
+    </ErrorBoundary>
   );
 }

@@ -1,26 +1,12 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { theme } from '../lib/theme';
-
-type ExpiryColor = 'success' | 'warning' | 'danger' | 'muted';
+import { getExpiryInfo, type ExpiryColor } from '../lib/compliance';
 
 interface ComplianceBadgeProps {
   label: string;
   expiry?: string | null;   // ISO date string e.g. "2026-03-15"
   daysWarn?: number;        // days before expiry to show warning (default 30)
-}
-
-function getExpiryInfo(expiry?: string | null, daysWarn = 30): { color: ExpiryColor; text: string } {
-  if (!expiry) return { color: 'muted', text: 'Not Set' };
-  const exp = new Date(expiry);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const daysLeft = Math.floor((exp.getTime() - today.getTime()) / 86_400_000);
-
-  if (daysLeft < 0) return { color: 'danger', text: `Expired` };
-  if (daysLeft <= 7) return { color: 'danger', text: `${daysLeft}d left` };
-  if (daysLeft <= daysWarn) return { color: 'warning', text: `${daysLeft}d left` };
-  return { color: 'success', text: exp.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' }) };
 }
 
 const COLOR_MAP: Record<ExpiryColor, { bg: string; text: string; border: string }> = {

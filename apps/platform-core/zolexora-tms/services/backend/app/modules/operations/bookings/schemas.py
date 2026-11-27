@@ -23,6 +23,8 @@ class BookingBase(BaseModel):
     driver_requirements: Dict[str, Any] = Field(default_factory=dict)
     commercial_terms: Dict[str, Any] = Field(default_factory=dict)
     operational_instructions: Optional[str] = None
+    eway_bill_number: Optional[str] = Field(None, max_length=32)
+    eway_bill_valid_until: Optional[datetime.datetime] = None
     source: str = Field(default="MANUAL")
 
 class BookingCreate(BookingBase):
@@ -38,6 +40,8 @@ class BookingUpdate(BaseModel):
     vehicle_requirements: Optional[Dict[str, Any]] = None
     driver_requirements: Optional[Dict[str, Any]] = None
     operational_instructions: Optional[str] = None
+    eway_bill_number: Optional[str] = Field(None, max_length=32)
+    eway_bill_valid_until: Optional[datetime.datetime] = None
     status: Optional[BookingStatus] = None
 
 class BookingResponse(BookingBase):
@@ -51,3 +55,15 @@ class BookingResponse(BookingBase):
     created_by_user_id: Optional[uuid.UUID] = None
     created_at: datetime.datetime
     updated_at: datetime.datetime
+
+
+class EwayBillUpdateRequest(BaseModel):
+    eway_bill_number: str = Field(..., min_length=12, max_length=32, description="12-digit GST NIC e-Way Bill number")
+    eway_bill_valid_until: datetime.datetime
+
+
+class EwayBillCheckResponse(BaseModel):
+    checked_count: int
+    expiring_soon_count: int
+    expired_count: int
+    alerts: list[Dict[str, Any]] = Field(default_factory=list)

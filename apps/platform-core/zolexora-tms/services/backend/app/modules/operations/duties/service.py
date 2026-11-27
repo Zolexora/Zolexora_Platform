@@ -165,11 +165,17 @@ async def enrich_duties(db: AsyncSession, duties: list[Duty]) -> list[DutyRespon
                 customer_name=c.name if c else None,
                 customer_phone=c.phone if c else None,
                 pickup_address=b.pickup_address,
+                pickup_lat=b.pickup_lat,
+                pickup_lng=b.pickup_lng,
                 drop_address=b.drop_address,
+                drop_lat=b.drop_lat,
+                drop_lng=b.drop_lng,
                 pickup_datetime=b.pickup_datetime,
                 cargo_description=cargo.get("material") or cargo.get("description"),
                 cargo_weight_kg=weight_kg,
                 special_instructions=b.operational_instructions,
+                eway_bill_number=b.eway_bill_number,
+                eway_bill_valid_until=b.eway_bill_valid_until,
             )
 
         v = vehicles_map.get(d.vehicle_id) if d.vehicle_id else None
@@ -221,6 +227,9 @@ async def list_duties(
     vendor_id: Optional[uuid.UUID] = None,
     skip: int = 0,
     limit: int = 50,
+    search: Optional[str] = None,
+    date_from: Optional[datetime.datetime] = None,
+    date_to: Optional[datetime.datetime] = None,
 ) -> list[DutyResponse]:
     stmt = select(Duty).where(Duty.organisation_id == ctx.organisation_id)
     if status_filter:
@@ -233,6 +242,36 @@ async def list_duties(
         vendor_vehicles = select(Vehicle.id).where(Vehicle.organisation_id == ctx.organisation_id, Vehicle.vendor_id == vendor_id)
         vendor_drivers = select(Driver.id).where(Driver.organisation_id == ctx.organisation_id, Driver.vendor_id == vendor_id)
         stmt = stmt.where(or_(Duty.vehicle_id.in_(vendor_vehicles), Duty.driver_id.in_(vendor_drivers)))
+    if date_from:
+        stmt = stmt.where(Duty.scheduled_start_time >= date_from)
+    if date_to:
+        stmt = stmt.where(Duty.scheduled_start_time <= date_to)
+    if search and search.strip():
+        q = f"%{search.strip()}%"
+        matching_bookings = select(Booking.id).where(
+            Booking.organisation_id == ctx.organisation_id,
+            or_(
+                Booking.booking_number.ilike(q),
+                Booking.pickup_address.ilike(q),
+                Booking.drop_address.ilike(q),
+            ),
+        )
+        matching_vehicles = select(Vehicle.id).where(
+            Vehicle.organisation_id == ctx.organisation_id,
+            Vehicle.registration_number.ilike(q),
+        )
+        matching_drivers = select(Driver.id).where(
+            Driver.organisation_id == ctx.organisation_id,
+            Driver.full_name.ilike(q),
+        )
+        stmt = stmt.where(
+            or_(
+                Duty.duty_number.ilike(q),
+                Duty.booking_id.in_(matching_bookings),
+                Duty.vehicle_id.in_(matching_vehicles),
+                Duty.driver_id.in_(matching_drivers),
+            )
+        )
     stmt = stmt.order_by(Duty.created_at.desc()).limit(limit).offset(skip)
     res = await ctx.db.execute(stmt)
     return await enrich_duties(ctx.db, list(res.scalars().all()))

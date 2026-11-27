@@ -25,6 +25,15 @@ const FILTER_OPTIONS: Array<{ label: string; value: DutyStatus | 'ALL' }> = [
   { label: 'Completed', value: DutyStatus.DUTY_COMPLETED },
 ];
 
+type DateRangeKey = 'ALL' | 'TODAY' | 'NEXT_7D' | 'PAST_7D';
+
+const DATE_OPTIONS: Array<{ label: string; value: DateRangeKey }> = [
+  { label: 'Any Date', value: 'ALL' },
+  { label: 'Today', value: 'TODAY' },
+  { label: 'Next 7d', value: 'NEXT_7D' },
+  { label: 'Past 7d', value: 'PAST_7D' },
+];
+
 function DutyCard({ duty, onPress }: { duty: Duty; onPress: () => void }) {
   const scheduledDate = new Date(duty.scheduled_start_time);
   const timeStr = scheduledDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
@@ -80,6 +89,7 @@ export default function DutiesScreen() {
   const router = useRouter();
   const { driver, vendor, activeOrg, activeMode } = useAuth();
   const [activeFilter, setActiveFilter] = useState<DutyStatus | 'ALL'>('ALL');
+  const [dateRange, setDateRange] = useState<DateRangeKey>('ALL');
   const [searchText, setSearchText] = useState('');
   const isDriverScoped = activeMode === 'driver';
   const isVendorScoped = activeMode === 'vendor' || activeMode === 'driver_vendor';
@@ -107,18 +117,32 @@ export default function DutiesScreen() {
 
   const filtered = useMemo(() => {
     let list = activeFilter === 'ALL' ? duties : duties.filter((d) => d.status === activeFilter);
+    if (dateRange !== 'ALL') {
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+      const endOfToday = new Date(startOfToday.getTime() + 86_400_000);
+      list = list.filter((d) => {
+        const ts = new Date(d.scheduled_start_time).getTime();
+        if (dateRange === 'TODAY') return ts >= startOfToday.getTime() && ts < endOfToday.getTime();
+        if (dateRange === 'NEXT_7D') return ts >= startOfToday.getTime() && ts <= startOfToday.getTime() + 7 * 86_400_000;
+        if (dateRange === 'PAST_7D') return ts >= startOfToday.getTime() - 7 * 86_400_000 && ts < endOfToday.getTime();
+        return true;
+      });
+    }
     if (searchText.trim()) {
       const q = searchText.trim().toLowerCase();
       list = list.filter((d) =>
         d.duty_number?.toLowerCase().includes(q) ||
         d.vehicle?.registration_number?.toLowerCase().includes(q) ||
+        d.driver?.full_name?.toLowerCase().includes(q) ||
+        d.booking?.customer_name?.toLowerCase().includes(q) ||
         d.booking?.pickup_address?.toLowerCase().includes(q) ||
         d.booking?.drop_address?.toLowerCase().includes(q) ||
         d.booking?.cargo_description?.toLowerCase().includes(q)
       );
     }
     return list;
-  }, [duties, activeFilter, searchText]);
+  }, [duties, activeFilter, dateRange, searchText]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -149,6 +173,21 @@ export default function DutiesScreen() {
             onPress={() => setActiveFilter(opt.value)}
           >
             <Text style={[styles.filterText, activeFilter === opt.value && styles.filterTextActive]}>
+              {opt.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {/* Date Range Pills */}
+      <View style={styles.filterRow}>
+        {DATE_OPTIONS.map((opt) => (
+          <TouchableOpacity
+            key={opt.value}
+            style={[styles.filterPill, dateRange === opt.value && styles.filterPillActive]}
+            onPress={() => setDateRange(opt.value)}
+          >
+            <Text style={[styles.filterText, dateRange === opt.value && styles.filterTextActive]}>
               {opt.label}
             </Text>
           </TouchableOpacity>

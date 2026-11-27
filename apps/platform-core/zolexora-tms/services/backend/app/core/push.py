@@ -91,3 +91,23 @@ async def send_trip_exception_push(
         body=notes or f"Driver reported {label}. Tap to inspect duty.",
         data={"screen": "duty", "duty_id": duty_id, "event_type": event_type},
     )
+
+
+async def send_eway_bill_alert_push(
+    *,
+    token: str,
+    booking_number: str,
+    eway_bill_number: str,
+    hours_left: float,
+) -> None:
+    is_expired = hours_left <= 0
+    await send_expo_push(
+        token=token,
+        title=f"🚨 e-Way Bill Expired — {booking_number}" if is_expired else f"⚠️ e-Way Bill Expiring — {booking_number}",
+        body=(
+            f"e-Way Bill {eway_bill_number} has expired. Extend immediately to avoid transit seizure."
+            if is_expired
+            else f"e-Way Bill {eway_bill_number} expires in {max(1, int(hours_left))}h."
+        ),
+        data={"screen": "duties", "booking_number": booking_number},
+    )

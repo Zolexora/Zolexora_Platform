@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { Alert, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { Alert, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../src/context/AuthContext';
 import { apiClient } from '../../src/lib/api';
+import { getVehicleComplianceIssues } from '../../src/lib/compliance';
 import { PERSONA_META } from '../../src/lib/personas';
 import { dutiesService } from '../../src/services/dutiesService';
 import { theme } from '../../src/lib/theme';
@@ -68,6 +69,7 @@ export default function WorkspaceScreen() {
   const { activeMode, vendor, driver, activeOrg } = useAuth();
   const meta = PERSONA_META[activeMode];
   const [selectedLane, setSelectedLane] = useState<string>('ALL');
+  const [dispatchSearch, setDispatchSearch] = useState('');
 
   const isVendorView = activeMode === 'vendor' || activeMode === 'driver_vendor';
   const isDispatchView = activeMode === 'supervisor' || activeMode === 'owner_ops';
@@ -194,10 +196,23 @@ export default function WorkspaceScreen() {
       )
     : (payablesQuery.data ?? []);
 
-  const dispatchItems =
-    selectedLane === 'ALL'
-      ? Object.values(dispatchQuery.data?.lanes ?? {}).flat()
-      : (dispatchQuery.data?.lanes?.[selectedLane] ?? []);
+  const dispatchItems = useMemo(() => {
+    const base =
+      selectedLane === 'ALL'
+        ? Object.values(dispatchQuery.data?.lanes ?? {}).flat()
+        : (dispatchQuery.data?.lanes?.[selectedLane] ?? []);
+    const q = dispatchSearch.trim().toLowerCase();
+    if (!q) return base;
+    return base.filter(
+      (d) =>
+        d.duty_number.toLowerCase().includes(q) ||
+        (d.vehicle?.registration_number || '').toLowerCase().includes(q) ||
+        (d.driver?.full_name || '').toLowerCase().includes(q) ||
+        (d.booking?.customer_name || '').toLowerCase().includes(q) ||
+        (d.booking?.pickup_address || '').toLowerCase().includes(q) ||
+        (d.booking?.drop_address || '').toLowerCase().includes(q),
+    );
+  }, [dispatchQuery.data, selectedLane, dispatchSearch]);
 
   const refreshing =
     vehiclesQuery.isFetching ||
@@ -252,6 +267,14 @@ export default function WorkspaceScreen() {
         {isDispatchView && (
           <Card style={styles.section}>
             <Text style={styles.sectionTitle}>Dispatch Board ({dispatchQuery.data?.total_active ?? 0} active)</Text>
+            <TextInput
+              style={styles.dispatchSearchInput}
+              placeholder="Search duty #, vehicle, driver, client..."
+              placeholderTextColor={theme.colors.textMuted}
+              value={dispatchSearch}
+              onChangeText={setDispatchSearch}
+              clearButtonMode="while-editing"
+            />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.laneRow}>
               <TouchableOpacity
                 style={[styles.laneChip, selectedLane === 'ALL' && styles.laneChipActive]}
@@ -386,7 +409,9 @@ export default function WorkspaceScreen() {
             {myVehicles.length === 0 ? (
               <Text style={styles.emptyText}>No vehicles linked yet.</Text>
             ) : (
-              myVehicles.slice(0, 10).map((v) => (
+              myVehicles.slice(0, 10).map((v) => {
+                const issues = getVehicleComplianceIssues(v);
+                return (
                 <TouchableOpacity
                   key={v.id}
                   style={styles.rowBetween}
@@ -397,11 +422,17 @@ export default function WorkspaceScreen() {
                     <Text style={styles.itemSub}>
                       {[v.make, v.model, v.vehicle_type].filter(Boolean).join(' · ') || 'Vehicle'}
                     </Text>
+                    {issues.expired.length > 0 ? (
+                      <Text style={styles.compDangerText}>🔴 Expired: {issues.expired.join(', ')}</Text>
+                    ) : issues.expiringSoon.length > 0 ? (
+                      <Text style={styles.compWarnText}>🟡 Expiring: {issues.expiringSoon.join(', ')}</Text>
+                    ) : null}
                   </View>
                   <StatusBadge status={v.status || 'ACTIVE'} />
                   <Text style={styles.chevron}>›</Text>
                 </TouchableOpacity>
-              ))
+                );
+              })
             )}
           </Card>
         )}
@@ -644,4 +675,17 @@ const styles = StyleSheet.create({
   chevron: { fontSize: 18, color: theme.colors.textMuted, marginLeft: 4 },
   amountText: { fontSize: 14, fontWeight: '800', color: theme.colors.textPrimary },
   emptyText: { fontSize: 13, color: theme.colors.textMuted },
+  dispatchSearchInput: {
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.surfaceSubtle,
+    color: theme.colors.textPrimary,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: 8,
+    fontSize: 13,
+    marginBottom: theme.spacing.sm,
+  },
+  compDangerText: { fontSize: 11, fontWeight: '700', color: theme.colors.danger, marginTop: 2 },
+  compWarnText: { fontSize: 11, fontWeight: '700', color: theme.colors.warning, marginTop: 2 },
 });

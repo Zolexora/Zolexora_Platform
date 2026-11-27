@@ -57,6 +57,8 @@ class Booking(Base):
     rate_card_version_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid)
     operational_instructions: Mapped[Optional[str]] = mapped_column(Text)
     created_by_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid)
+    eway_bill_number: Mapped[Optional[str]] = mapped_column(String(32))
+    eway_bill_valid_until: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(True))
 
 
 class BookingRequest(Base):

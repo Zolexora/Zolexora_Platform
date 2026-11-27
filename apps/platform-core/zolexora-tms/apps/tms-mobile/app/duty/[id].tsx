@@ -402,6 +402,25 @@ export default function DutyDetailScreen() {
               </View>
             )}
 
+            {/* e-Way Bill status */}
+            {duty.booking.eway_bill_number && (() => {
+              const exp = duty.booking.eway_bill_valid_until ? new Date(duty.booking.eway_bill_valid_until) : null;
+              const hoursLeft = exp ? (exp.getTime() - Date.now()) / 3_600_000 : null;
+              const isExpired = hoursLeft !== null && hoursLeft < 0;
+              const isExpiring = hoursLeft !== null && hoursLeft >= 0 && hoursLeft < 8;
+              return (
+                <View style={[styles.ewayRow, isExpired ? styles.ewayDanger : isExpiring ? styles.ewayWarn : styles.ewayOk]}>
+                  <Text style={styles.ewayLabel}>📄 e-Way Bill</Text>
+                  <Text style={styles.ewayNum}>{duty.booking.eway_bill_number}</Text>
+                  {exp && (
+                    <Text style={styles.ewayExpiry}>
+                      {isExpired ? `❌ Expired` : isExpiring ? `⚠️ ${Math.ceil(hoursLeft ?? 0)}h left` : `✅ Valid`}
+                    </Text>
+                  )}
+                </View>
+              );
+            })()}
+
             <View style={styles.quickNavRow}>
               <TouchableOpacity
                 style={styles.quickNavBtn}
@@ -910,6 +929,24 @@ const styles = StyleSheet.create({
   specialInstructions: { marginTop: theme.spacing.md, backgroundColor: theme.colors.warningMuted, borderRadius: theme.radius.sm, padding: theme.spacing.md, borderLeftWidth: 3, borderLeftColor: theme.colors.warning },
   specialInstructionsLabel: { fontSize: 12, fontWeight: '700', color: theme.colors.warning, marginBottom: 4 },
   specialInstructionsText: { fontSize: 13, color: theme.colors.textPrimary },
+
+  ewayRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: theme.spacing.md,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    borderRadius: theme.radius.sm,
+    borderWidth: 1,
+    gap: 8,
+  },
+  ewayOk: { backgroundColor: theme.colors.successMuted, borderColor: theme.colors.success },
+  ewayWarn: { backgroundColor: theme.colors.warningMuted, borderColor: theme.colors.warning },
+  ewayDanger: { backgroundColor: theme.colors.dangerMuted, borderColor: theme.colors.danger },
+  ewayLabel: { fontSize: 12, fontWeight: '700', color: theme.colors.textSecondary },
+  ewayNum: { fontSize: 13, fontWeight: '800', color: theme.colors.textPrimary, flex: 1 },
+  ewayExpiry: { fontSize: 12, fontWeight: '700', color: theme.colors.textPrimary },
 
   notes: { fontSize: 14, color: theme.colors.textSecondary, lineHeight: 20 },
 

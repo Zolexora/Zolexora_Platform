@@ -38,6 +38,8 @@ export interface BookingDetails {
   cargo_description?: string;
   cargo_weight_kg?: number;
   special_instructions?: string;
+  eway_bill_number?: string | null;
+  eway_bill_valid_until?: string | null;
 }
 
 export interface VehicleDetails {

@@ -13,6 +13,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiClient } from '../../../src/lib/api';
+import { getVehicleComplianceIssues } from '../../../src/lib/compliance';
 import { dutiesService } from '../../../src/services/dutiesService';
 import { theme } from '../../../src/lib/theme';
 import { Card } from '../../../src/components/Card';
@@ -96,6 +97,21 @@ export default function AssignDutyScreen() {
       Alert.alert('Selection Required', 'Select both a driver and a vehicle first.');
       return;
     }
+    const chosenVehicle = vehicles.find((v) => v.id === effectiveVehicleId);
+    if (chosenVehicle) {
+      const issues = getVehicleComplianceIssues(chosenVehicle);
+      if (issues.expired.length > 0) {
+        Alert.alert(
+          '⚠️ Expired Compliance Document',
+          `${chosenVehicle.registration_number} has expired: ${issues.expired.join(', ')}.\n\nProceed anyway?`,
+          [
+            { text: 'Pick Another', style: 'cancel' },
+            { text: 'Proceed Anyway', style: 'destructive', onPress: () => assignMutation.mutate(alsoDispatch) },
+          ],
+        );
+        return;
+      }
+    }
     assignMutation.mutate(alsoDispatch);
   };
 
@@ -166,6 +182,7 @@ export default function AssignDutyScreen() {
           ) : (
             filteredVehicles.slice(0, 25).map((v) => {
               const selected = effectiveVehicleId === v.id;
+              const issues = getVehicleComplianceIssues(v);
               return (
                 <TouchableOpacity
                   key={v.id}
@@ -177,6 +194,15 @@ export default function AssignDutyScreen() {
                     <Text style={styles.pickSub}>
                       {[v.make, v.model, v.vehicle_type, v.status].filter(Boolean).join(' · ')}
                     </Text>
+                    {issues.expired.length > 0 ? (
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: theme.colors.danger, marginTop: 2 }}>
+                        🔴 Expired: {issues.expired.join(', ')}
+                      </Text>
+                    ) : issues.expiringSoon.length > 0 ? (
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: theme.colors.warning, marginTop: 2 }}>
+                        🟡 Expiring soon: {issues.expiringSoon.join(', ')}
+                      </Text>
+                    ) : null}
                   </View>
                   <Text style={styles.checkMark}>{selected ? '●' : '○'}</Text>
                 </TouchableOpacity>

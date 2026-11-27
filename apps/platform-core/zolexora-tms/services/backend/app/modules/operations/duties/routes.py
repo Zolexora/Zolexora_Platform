@@ -1,3 +1,4 @@
+import datetime
 import uuid
 from typing import Optional
 from fastapi import APIRouter, Body, Depends, Query, status
@@ -28,11 +29,17 @@ async def list_duties(
     driver_id: Optional[uuid.UUID] = None,
     vehicle_id: Optional[uuid.UUID] = None,
     vendor_id: Optional[uuid.UUID] = None,
+    search: Optional[str] = Query(None, max_length=120),
+    date_from: Optional[datetime.datetime] = None,
+    date_to: Optional[datetime.datetime] = None,
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     ctx: OrgContext = Depends(get_org_context),
 ):
-    return await service.list_duties(ctx, status, driver_id, vehicle_id, vendor_id, skip, limit)
+    return await service.list_duties(
+        ctx, status, driver_id, vehicle_id, vendor_id, skip, limit,
+        search=search, date_from=date_from, date_to=date_to,
+    )
 
 
 @router.get("/{duty_id}", response_model=DutyResponse)

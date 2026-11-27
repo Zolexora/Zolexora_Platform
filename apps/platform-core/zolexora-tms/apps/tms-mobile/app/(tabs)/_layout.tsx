@@ -3,6 +3,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../../src/context/AuthContext';
 import { PERSONA_META } from '../../src/lib/personas';
 import { theme } from '../../src/lib/theme';
+import { OfflineBanner } from '../../src/components/OfflineBanner';
 
 function TabIcon({ focused, icon, label }: { focused: boolean; icon: string; label: string }) {
   return (
@@ -29,7 +30,9 @@ export default function TabsLayout() {
   const meta = PERSONA_META[activeMode];
 
   return (
-    <Tabs
+    <>
+      <OfflineBanner />
+      <Tabs
       screenOptions={{
         headerStyle: { backgroundColor: theme.colors.surface },
         headerTintColor: theme.colors.textPrimary,
@@ -70,7 +73,8 @@ export default function TabsLayout() {
           tabBarIcon: ({ focused }) => <TabIcon focused={focused} icon="👤" label="Account" />,
         }}
       />
-    </Tabs>
+      </Tabs>
+    </>
   );
 }
 

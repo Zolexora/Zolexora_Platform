@@ -1,8 +1,9 @@
-import React from 'react';
-import { View, Text, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState } from 'react';
+import { View, Text, ScrollView, StyleSheet, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as ImagePicker from 'expo-image-picker';
 import { apiClient } from '../../src/lib/api';
 import { dutiesService } from '../../src/services/dutiesService';
 import { theme } from '../../src/lib/theme';
@@ -10,6 +11,20 @@ import { Card } from '../../src/components/Card';
 import { StatusBadge } from '../../src/components/StatusBadge';
 import { ComplianceBadge } from '../../src/components/ComplianceBadge';
 import type { VehicleDetails, Duty } from '../../src/types/tms';
+
+interface ComplianceRequirement {
+  id: string;
+  code: string;
+  name: string;
+}
+
+interface ComplianceRecord {
+  id: string;
+  requirement_id: string;
+  status: string;
+  document_number?: string | null;
+  expiry_date?: string | null;
+}
 
 function InfoRow({ label, value }: { label: string; value?: string | null }) {
   if (!value) return null;
@@ -23,7 +38,8 @@ function InfoRow({ label, value }: { label: string; value?: string | null }) {
 
 export default function VehicleDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const router = useRouter();
+  const qc = useQueryClient();
+  const [uploadingReqId, setUploadingReqId] = useState<string | null>(null);
 
   const { data: vehicle, isLoading, error } = useQuery<VehicleDetails>({
     queryKey: ['vehicle', id],
@@ -33,10 +49,65 @@ export default function VehicleDetailScreen() {
 
   const { data: duties } = useQuery<Duty[]>({
     queryKey: ['vehicle-duties', id],
-    queryFn: () => dutiesService.getDuties({ }),
+    queryFn: () => dutiesService.getDuties({}),
     enabled: !!id,
     select: (all) => all.filter((d) => (d as Duty & { vehicle_id?: string }).vehicle_id === id).slice(0, 10),
   });
+
+  const { data: requirements = [] } = useQuery<ComplianceRequirement[]>({
+    queryKey: ['compliance-requirements', 'VEHICLE'],
+    queryFn: () => apiClient<ComplianceRequirement[]>('/api/v1/compliance/requirements?entity_type=VEHICLE'),
+    enabled: !!id,
+  });
+
+  const { data: records = [] } = useQuery<ComplianceRecord[]>({
+    queryKey: ['compliance-records', 'VEHICLE', id],
+    queryFn: () => apiClient<ComplianceRecord[]>(`/api/v1/compliance/records?entity_type=VEHICLE&entity_id=${id}`),
+    enabled: !!id,
+  });
+
+  const uploadMutation = useMutation({
+    mutationFn: async ({ reqId, uri }: { reqId: string; uri: string }) => {
+      setUploadingReqId(reqId);
+      const fd = new FormData();
+      const filename = uri.split('/').pop() ?? 'compliance.jpg';
+      fd.append('file', { uri, name: filename, type: 'image/jpeg' } as unknown as Blob);
+      fd.append('requirement_id', reqId);
+      fd.append('entity_type', 'VEHICLE');
+      fd.append('entity_id', id!);
+      return apiClient('/api/v1/compliance/records/upload', { method: 'POST', body: fd });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['compliance-records', 'VEHICLE', id] });
+      Alert.alert('Document Uploaded', 'Submitted for verification.');
+    },
+    onError: (err: Error) => Alert.alert('Upload Failed', err.message),
+    onSettled: () => setUploadingReqId(null),
+  });
+
+  const pickAndUpload = (reqId: string) => {
+    Alert.alert('Upload Compliance Document', 'Choose source', [
+      {
+        text: 'Camera',
+        onPress: async () => {
+          const perm = await ImagePicker.requestCameraPermissionsAsync();
+          if (!perm.granted) { Alert.alert('Permission Needed', 'Camera access required.'); return; }
+          const res = await ImagePicker.launchCameraAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8 });
+          if (!res.canceled) uploadMutation.mutate({ reqId, uri: res.assets[0].uri });
+        },
+      },
+      {
+        text: 'Gallery',
+        onPress: async () => {
+          const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (!perm.granted) { Alert.alert('Permission Needed', 'Photo library access required.'); return; }
+          const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8 });
+          if (!res.canceled) uploadMutation.mutate({ reqId, uri: res.assets[0].uri });
+        },
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
 
   if (isLoading) {
     return (
@@ -95,6 +166,32 @@ export default function VehicleDetailScreen() {
           <ComplianceBadge label="Fitness" expiry={vehicle.fitness_expiry} />
         </Card>
 
+        {/* Compliance Record Uploads */}
+        {requirements.length > 0 && (
+          <Card style={styles.section}>
+            <Text style={styles.sectionTitle}>📤 Document Renewals & Records</Text>
+            {requirements.map((req) => {
+              const rec = records.find((r) => r.requirement_id === req.id);
+              const busy = uploadingReqId === req.id;
+              return (
+                <View key={req.id} style={styles.compRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.compName}>{req.name}</Text>
+                    <Text style={styles.compStatus}>{rec ? `Status: ${rec.status}` : 'Not uploaded'}</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.uploadBtn}
+                    disabled={busy}
+                    onPress={() => pickAndUpload(req.id)}
+                  >
+                    <Text style={styles.uploadBtnText}>{busy ? 'Uploading...' : rec ? 'Renew' : 'Upload'}</Text>
+                  </TouchableOpacity>
+                </View>
+              );
+            })}
+          </Card>
+        )}
+
         {/* Recent Duties */}
         {duties && duties.length > 0 && (
           <Card style={styles.section}>
@@ -137,6 +234,12 @@ const styles = StyleSheet.create({
   infoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
   infoLabel: { fontSize: 13, color: theme.colors.textMuted },
   infoValue: { fontSize: 13, fontWeight: '600', color: theme.colors.textPrimary, maxWidth: '55%', textAlign: 'right' },
+
+  compRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+  compName: { fontSize: 13, fontWeight: '700', color: theme.colors.textPrimary },
+  compStatus: { fontSize: 11, color: theme.colors.textMuted, marginTop: 2 },
+  uploadBtn: { backgroundColor: theme.colors.primaryMuted, paddingHorizontal: 12, paddingVertical: 6, borderRadius: theme.radius.sm },
+  uploadBtnText: { fontSize: 12, fontWeight: '700', color: theme.colors.primaryLight },
 
   dutyRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
   dutyNumber: { fontSize: 14, fontWeight: '700', color: theme.colors.textPrimary },

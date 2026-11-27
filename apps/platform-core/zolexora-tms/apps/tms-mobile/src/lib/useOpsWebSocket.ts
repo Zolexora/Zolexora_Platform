@@ -123,6 +123,16 @@ export function useOpsWebSocket(orgId: string | null | undefined) {
       if (ev.startsWith('booking.')) {
         qc.invalidateQueries({ queryKey: ['bookings'] });
       }
+      if (ev === 'eway_bill.expiring') {
+        qc.invalidateQueries({ queryKey: ['duties'] });
+        qc.invalidateQueries({ queryKey: ['bookings'] });
+        const d = msg.data as { booking_number?: string; expired?: boolean; hours_left?: number } | undefined;
+        emitToast(
+          d?.expired
+            ? `🚨 e-Way Bill EXPIRED (${d.booking_number ?? 'Booking'})`
+            : `⚠️ e-Way Bill expiring in ${Math.max(1, Math.ceil(d?.hours_left ?? 1))}h (${d?.booking_number ?? 'Booking'})`,
+        );
+      }
     };
 
     ws.onerror = () => {

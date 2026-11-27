@@ -36,11 +36,21 @@ export interface TripEventRecord {
 
 /** Duties + trip operations. Errors propagate: the app never fakes success. */
 export const dutiesService = {
-  getDuties(params?: { status?: DutyStatus; driver_id?: string; vendor_id?: string }): Promise<Duty[]> {
+  getDuties(params?: {
+    status?: DutyStatus;
+    driver_id?: string;
+    vendor_id?: string;
+    search?: string;
+    date_from?: string;
+    date_to?: string;
+  }): Promise<Duty[]> {
     const query = new URLSearchParams();
     if (params?.status) query.set('status', params.status);
     if (params?.driver_id) query.set('driver_id', params.driver_id);
     if (params?.vendor_id) query.set('vendor_id', params.vendor_id);
+    if (params?.search) query.set('search', params.search);
+    if (params?.date_from) query.set('date_from', params.date_from);
+    if (params?.date_to) query.set('date_to', params.date_to);
     const qs = query.toString();
     return apiClient<Duty[]>(`/api/v1/duties${qs ? `?${qs}` : ''}`);
   },
@@ -155,5 +165,15 @@ export const dutiesService = {
       `/api/v1/trips/${tripId}/share-link`,
       { method: 'POST' },
     );
+  },
+
+  updateEwayBill(
+    bookingId: string,
+    payload: { eway_bill_number: string; eway_bill_valid_until: string },
+  ): Promise<unknown> {
+    return apiClient(`/api/v1/bookings/${bookingId}/eway-bill`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
   },
 };

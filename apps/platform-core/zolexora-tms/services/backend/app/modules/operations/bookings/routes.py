@@ -3,9 +3,14 @@ from typing import Optional
 from fastapi import APIRouter, Body, Depends, Query, status
 
 from app.auth.dependencies import OrgContext, get_org_context
-from app.modules.operations.bookings.schemas import BookingCreate, BookingResponse
+from app.modules.operations.bookings.schemas import (
+    BookingCreate,
+    BookingResponse,
+    BookingStatus,
+    EwayBillCheckResponse,
+    EwayBillUpdateRequest,
+)
 from app.modules.operations.bookings import service
-from app.modules.operations.bookings.schemas import BookingStatus
 
 router = APIRouter(prefix="/api/v1/bookings", tags=["Bookings"])
 
@@ -35,6 +40,23 @@ async def get_booking(
     ctx: OrgContext = Depends(get_org_context),
 ):
     return await service.get_booking(ctx, booking_id)
+
+
+@router.post("/eway-bill/check-expiring", response_model=EwayBillCheckResponse)
+async def check_expiring_eway_bills(
+    warn_hours: int = Query(24, ge=1, le=72),
+    ctx: OrgContext = Depends(get_org_context),
+):
+    return await service.check_expiring_eway_bills(ctx, warn_hours=warn_hours)
+
+
+@router.post("/{booking_id}/eway-bill", response_model=BookingResponse)
+async def update_eway_bill(
+    booking_id: uuid.UUID,
+    req: EwayBillUpdateRequest,
+    ctx: OrgContext = Depends(get_org_context),
+):
+    return await service.update_eway_bill(ctx, booking_id, req.eway_bill_number, req.eway_bill_valid_until)
 
 
 @router.post("/{booking_id}/cancel", response_model=BookingResponse)
