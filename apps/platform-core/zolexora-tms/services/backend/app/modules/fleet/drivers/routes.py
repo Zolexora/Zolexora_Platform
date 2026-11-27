@@ -13,6 +13,40 @@ from app.modules.fleet.drivers import service
 router = APIRouter(prefix="/api/v1/drivers", tags=["Drivers"])
 
 
+async def find_driver_for_caller(
+    db: AsyncSession,
+    org_id: uuid.UUID,
+    email: Optional[str],
+    phone_number: Optional[str],
+) -> Optional[Driver]:
+    """Resolves the Driver record linked to a signed-in caller's email or verified phone."""
+    if email:
+        driver = (
+            await db.execute(
+                select(Driver)
+                .where(
+                    Driver.organisation_id == org_id,
+                    func.lower(Driver.email) == email.lower(),
+                )
+                .limit(1)
+            )
+        ).scalar_one_or_none()
+        if driver:
+            return driver
+    if phone_number:
+        return (
+            await db.execute(
+                select(Driver)
+                .where(
+                    Driver.organisation_id == org_id,
+                    Driver.phone == phone_number,
+                )
+                .limit(1)
+            )
+        ).scalar_one_or_none()
+    return None
+
+
 @router.post("", response_model=DriverResponse, status_code=status.HTTP_201_CREATED)
 async def create_driver(
     req: DriverCreate,
@@ -53,17 +87,12 @@ async def get_my_driver(
     ctx: CurrentUserContext = Depends(get_current_active_organisation),
     db: AsyncSession = Depends(get_db),
 ):
-    """The driver record of the signed-in employee (matched on their auth-service email)."""
-    if not ctx.email:
-        raise HTTPException(status_code=404, detail="Your account has no email to match a driver record")
-    driver = (await db.execute(
-        select(Driver).where(
-            Driver.organisation_id == ctx.organisation_id,
-            func.lower(Driver.email) == ctx.email.lower(),
-        ).limit(1)
-    )).scalar_one_or_none()
+    """The driver record of the signed-in employee (matched on email or verified phone)."""
+    if not ctx.email and not ctx.phone_number:
+        raise HTTPException(status_code=404, detail="Your account has no email or phone to match a driver record")
+    driver = await find_driver_for_caller(db, ctx.organisation_id, ctx.email, ctx.phone_number)
     if not driver:
-        raise HTTPException(status_code=404, detail="No driver record in this organisation uses your email")
+        raise HTTPException(status_code=404, detail="No driver record in this organisation matches your account")
     return driver
 
 

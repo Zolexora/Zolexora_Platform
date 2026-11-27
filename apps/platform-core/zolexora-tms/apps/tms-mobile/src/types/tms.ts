@@ -11,6 +11,18 @@ export enum DutyStatus {
   CANCELLED = 'CANCELLED',
 }
 
+export type WorkspaceType = 'SERVICE_PROVIDER' | 'CLIENT';
+
+export type MobilePersona =
+  | 'driver'
+  | 'vendor'
+  | 'driver_vendor'
+  | 'supervisor'
+  | 'owner_ops'
+  | 'fleet_manager'
+  | 'finance_manager'
+  | 'client';
+
 export interface BookingDetails {
   id: string;
   booking_number: string;
@@ -31,10 +43,19 @@ export interface BookingDetails {
 export interface VehicleDetails {
   id: string;
   registration_number: string;
+  vehicle_type?: string;
+  ownership_type?: string;
+  vendor_id?: string | null;
   make?: string;
   model?: string;
   fuel_type?: string;
   odometer_km?: number;
+  status?: string;
+  year?: number;
+  payload_tons?: number;
+  insurance_expiry?: string | null;
+  permit_expiry?: string | null;
+  fitness_expiry?: string | null;
 }
 
 export interface Duty {
@@ -74,14 +95,104 @@ export interface ExpenseRecord {
 
 export interface DriverProfile {
   id: string;
+  full_name?: string;
   name: string;
   phone: string;
   email: string;
+  vendor_id?: string | null;
+  driver_type?: string;
+  status?: string;
   license_number: string;
+  license_type?: string;
   license_expiry: string | null;
+}
+
+export interface VendorProfile {
+  id: string;
+  organisation_id: string;
+  name: string;
+  vendor_type: string;
+  contact_person?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  gstin?: string | null;
+  pan?: string | null;
+  bank_account_name?: string | null;
+  bank_account_number?: string | null;
+  bank_ifsc?: string | null;
+  bank_name?: string | null;
+  status: string;
 }
 
 export interface TenantContext {
   organisation_id: string;
   organisation_name: string;
+}
+
+export interface UserMe {
+  id: string;
+  user_id: string;
+  email: string | null;
+  full_name: string | null;
+  zolexora_id?: string | null;
+  phone_number?: string | null;
+  member_kind?: string | null;
+  organisation_id: string | null;
+  workspace_type?: WorkspaceType | null;
+  zolexora_org_id?: string | null;
+  org_name?: string | null;
+  business_kind?: string | null;
+  is_creator: boolean;
+  is_commander: boolean;
+  is_platform_admin: boolean;
+  is_business_session: boolean;
+  mfa_setup_required: boolean;
+  role_code?: string | null;
+}
+
+export interface OrganisationSummary {
+  id: string;
+  name: string;
+  organisation_type: string;
+  workspace_type: WorkspaceType;
+  status: string;
+  zolexora_org_id?: string | null;
+}
+
+export interface EffectivePermissions {
+  user_id: string;
+  organisation_id: string;
+  is_commander: boolean;
+  role_name?: string | null;
+  permissions: string[];
+}
+
+export interface MobileBootstrapResponse {
+  me: UserMe;
+  organisation?: OrganisationSummary | null;
+  effective_permissions?: EffectivePermissions | null;
+  runtime?: Record<string, unknown> | null;
+  driver?: (Omit<DriverProfile, 'name' | 'email'> & { full_name: string; email?: string | null }) | null;
+  vendor?: VendorProfile | null;
+}
+
+export interface BusinessOption {
+  zolexora_org_id: string;
+  name: string;
+  status?: string;
+  role?: string | null;
+  role_name?: string | null;
+}
+
+export interface BusinessSession {
+  access_token: string;
+  refresh_token: string;
+  expires_at: number;
+  session_id: string;
+  org: {
+    zolexora_org_id: string;
+    name: string;
+    role: string | null;
+  };
 }

@@ -14,6 +14,10 @@ from app.auth.dependencies import (
 from app.db.session import get_db, rls_bypass, set_tenant_context
 from app.modules.core.customization.schemas import RuntimeConfiguration
 from app.modules.core.customization.service import ApplicationRuntimeService
+from app.modules.crm.vendors.routes import find_vendor_for_caller
+from app.modules.crm.vendors.schemas import VendorResponse
+from app.modules.fleet.drivers.routes import find_driver_for_caller
+from app.modules.fleet.drivers.schemas import DriverResponse
 from app.modules.identity.organisations.models import Organisation
 from app.modules.identity.organisations.membership_models import OrganisationMember, MemberStatus
 from app.modules.identity.organisations.schemas import OrganisationResponse
@@ -54,6 +58,11 @@ class AuthBootstrapResponse(BaseModel):
     organisation: Optional[OrganisationResponse] = None
     effective_permissions: Optional[EffectivePermissionsResponse] = None
     runtime: Optional[RuntimeConfiguration] = None
+
+
+class MobileBootstrapResponse(AuthBootstrapResponse):
+    driver: Optional[DriverResponse] = None
+    vendor: Optional[VendorResponse] = None
 
 
 def _build_user_me(identity: AuthenticatedIdentity, row: Optional[dict]) -> UserMeResponse:
@@ -192,6 +201,29 @@ async def get_auth_bootstrap(
         organisation=organisation,
         effective_permissions=effective_permissions,
         runtime=runtime,
+    )
+
+
+@router.get("/mobile-bootstrap", response_model=MobileBootstrapResponse)
+async def get_mobile_auth_bootstrap(
+    request: Request,
+    identity: AuthenticatedIdentity = Depends(get_current_identity),
+    db: AsyncSession = Depends(get_db),
+):
+    """Single-round-trip mobile bootstrap: org/permissions/runtime + optional linked Driver/Vendor profiles."""
+    base = await get_auth_bootstrap(request=request, identity=identity, db=db)
+    org_id = base.me.organisation_id
+    if not org_id or (not identity.email and not identity.phone_number):
+        return MobileBootstrapResponse(**base.model_dump())
+
+    await set_tenant_context(db, org_id)
+    driver_obj = await find_driver_for_caller(db, org_id, identity.email, identity.phone_number)
+    vendor_obj = await find_vendor_for_caller(db, org_id, identity.email, identity.phone_number)
+
+    return MobileBootstrapResponse(
+        **base.model_dump(),
+        driver=DriverResponse.model_validate(driver_obj) if driver_obj else None,
+        vendor=VendorResponse.model_validate(vendor_obj) if vendor_obj else None,
     )
 
 

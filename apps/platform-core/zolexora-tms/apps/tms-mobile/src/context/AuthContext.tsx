@@ -1,65 +1,122 @@
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { DriverProfile, TenantContext } from '../types/tms';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import {
+  BusinessOption,
+  BusinessSession,
+  DriverProfile,
+  MobileBootstrapResponse,
+  MobilePersona,
+  OrganisationSummary,
+  TenantContext,
+  UserMe,
+  VendorProfile,
+} from '../types/tms';
 import { storage } from '../lib/storage';
-import { config } from '../lib/config';
+import { authApi, EmployeeLoginResult } from '../lib/authApi';
 import { apiClient, setUnauthorizedHandler } from '../lib/api';
+import { resolvePersonas } from '../lib/personas';
 
-interface EmployeeLogin {
-  orgId: string; // ZX-ORG-XXXX-XXXX-XXXX
-  userIdOrEmail: string;
-  password: string;
-  turnstileToken: string;
+interface Track2LoginParams {
+  orgId?: string;
+  identifier?: string;
+  password?: string;
+  loginTicket?: string;
+  turnstileToken?: string;
 }
 
 interface AuthContextType {
   user: DriverProfile | null;
+  driver: DriverProfile | null;
+  vendor: VendorProfile | null;
+  me: UserMe | null;
+  organisation: OrganisationSummary | null;
   activeOrg: TenantContext | null;
+  session: BusinessSession | null;
+  bootstrap: MobileBootstrapResponse | null;
+  permissions: string[];
+  persona: MobilePersona;
+  availableModes: MobilePersona[];
+  activeMode: MobilePersona;
+  setActiveMode: (mode: MobilePersona) => void;
+  businesses: BusinessOption[];
+  hasPersonalSession: boolean;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
-  login: (params: EmployeeLogin) => Promise<void>;
+  loginTrack1: (params: { identifier: string; password: string; turnstileToken: string }) => Promise<BusinessOption[]>;
+  selectTrack1Business: (orgId: string, mfaCode?: string) => Promise<void>;
+  loginTrack2: (params: Track2LoginParams) => Promise<EmployeeLoginResult>;
+  completeTrack2Mfa: (mfaTicket: string, code: string) => Promise<void>;
+  switchBusiness: (orgId: string, mfaCode?: string) => Promise<void>;
+  refreshContext: () => Promise<void>;
   logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-/** Drivers sign in with their organisation's Zolexora auth-service employee login (Track 2). */
+function toDriverProfile(raw: MobileBootstrapResponse['driver']): DriverProfile | null {
+  if (!raw) return null;
+  return {
+    id: raw.id,
+    full_name: raw.full_name,
+    name: raw.full_name,
+    phone: raw.phone,
+    email: raw.email ?? '',
+    vendor_id: raw.vendor_id,
+    driver_type: raw.driver_type,
+    status: raw.status,
+    license_number: raw.license_number,
+    license_type: raw.license_type,
+    license_expiry: raw.license_expiry,
+  };
+}
+
+/** Unified role-adaptive auth context for Track 1 (Owner/Client) & Track 2 (Driver/Vendor/Staff). */
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<DriverProfile | null>(null);
-  const [activeOrg, setActiveOrg] = useState<TenantContext | null>(null);
-  const [uid, setUid] = useState<string | null>(null);
+  const [bootstrap, setBootstrap] = useState<MobileBootstrapResponse | null>(null);
+  const [session, setSession] = useState<BusinessSession | null>(null);
+  const [businesses, setBusinesses] = useState<BusinessOption[]>([]);
+  const [hasPersonalSession, setHasPersonalSession] = useState(false);
+  const [activeModeState, setActiveModeState] = useState<MobilePersona | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const clear = useCallback(async () => {
     await storage.clearSession();
-    setUser(null);
-    setActiveOrg(null);
-    setUid(null);
+    setBootstrap(null);
+    setSession(null);
+    setBusinesses([]);
+    setHasPersonalSession(false);
+    setActiveModeState(null);
   }, []);
 
-  /** Loads the TMS workspace and the driver record for the stored session. */
   const loadContext = useCallback(async () => {
-    const me = await apiClient<{ user_id: string; organisation_id: string | null }>('/api/v1/auth/me');
-    if (!me.organisation_id) {
-      throw new Error('Your organisation is not linked to a TMS workspace. Contact your fleet manager.');
-    }
-    const [org, driver] = await Promise.all([
-      apiClient<{ id: string; name: string }>('/api/v1/organisations/me'),
-      apiClient<{ id: string; full_name: string; phone: string; email: string | null; license_number: string; license_expiry: string | null }>(
-        '/api/v1/drivers/me'
-      ),
+    const [boot, storedSession, personalToken, savedMode] = await Promise.all([
+      apiClient<MobileBootstrapResponse>('/api/v1/auth/mobile-bootstrap'),
+      storage.getBusinessSession(),
+      storage.getPersonalToken(),
+      storage.getActiveMode(),
     ]);
-    setUid(me.user_id);
-    setActiveOrg({ organisation_id: org.id, organisation_name: org.name });
-    setUser({
-      id: driver.id,
-      name: driver.full_name,
-      phone: driver.phone,
-      email: driver.email ?? '',
-      license_number: driver.license_number,
-      license_expiry: driver.license_expiry,
-    });
+
+    if (!boot.me.organisation_id || !boot.organisation) {
+      throw new Error('No active TMS workspace is linked to this account yet. Complete onboarding on web or contact your admin.');
+    }
+
+    setBootstrap(boot);
+    setSession(storedSession);
+    setHasPersonalSession(!!personalToken);
+
+    const resolved = resolvePersonas(boot);
+    if (savedMode && resolved.available.includes(savedMode)) {
+      setActiveModeState(savedMode);
+    } else {
+      setActiveModeState(resolved.primary);
+    }
+
+    if (personalToken) {
+      authApi.listBusinesses(personalToken).then(setBusinesses).catch(() => {});
+    } else {
+      setBusinesses([]);
+    }
   }, []);
 
   useEffect(() => {
@@ -68,7 +125,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
     (async () => {
       try {
-        if (await storage.getToken()) await loadContext();
+        const token = await storage.getToken();
+        if (token) await loadContext();
       } catch (e: any) {
         setError(e?.message ?? null);
         await clear();
@@ -79,27 +137,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => setUnauthorizedHandler(null);
   }, [clear, loadContext]);
 
-  const login = async ({ orgId, userIdOrEmail, password, turnstileToken }: EmployeeLogin) => {
+  const setActiveMode = useCallback((mode: MobilePersona) => {
+    setActiveModeState(mode);
+    storage.setActiveMode(mode).catch(() => {});
+  }, []);
+
+  const loginTrack1 = async ({ identifier, password, turnstileToken }: { identifier: string; password: string; turnstileToken: string }) => {
     setError(null);
     setIsLoading(true);
     try {
-      const res = await fetch(`${config.authServiceUrl()}/api/v1/auth/employee/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          product: 'zolexora-tms',
-          org_id: orgId.trim().toUpperCase(),
-          user_id_or_email: userIdOrEmail.trim(),
-          password,
-          turnstile_token: turnstileToken,
-        }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.success || !data.customToken) {
-        throw new Error(data.message || data.error?.message || 'Sign-in failed');
-      }
-      await storage.setToken(data.customToken);
-      await loadContext();
+      const loginRes = await authApi.track1Login({ identifier, password, turnstileToken });
+      const orgs = await authApi.listBusinesses(loginRes.customToken);
+      setHasPersonalSession(true);
+      setBusinesses(orgs);
+      return orgs;
     } catch (e: any) {
       await clear();
       setError(e?.message ?? 'Sign-in failed');
@@ -109,22 +160,111 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const logout = async () => {
-    const token = await storage.getToken();
-    if (token && uid) {
-      // Revoke at the auth service; sign out locally even if it is unreachable
-      await fetch(`${config.authServiceUrl()}/api/v1/auth/tokens/revoke`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ uid, reason: 'user_logout', revocation_type: 'user_all_tokens' }),
-      }).catch(() => {});
+  const selectTrack1Business = async (orgId: string, mfaCode?: string) => {
+    setError(null);
+    setIsLoading(true);
+    try {
+      const personalToken = await storage.getPersonalToken();
+      if (!personalToken) throw new Error('Personal session expired. Please sign in again.');
+      await authApi.openBusinessSession(personalToken, { orgId, mfaCode });
+      await loadContext();
+    } catch (e: any) {
+      setError(e?.message ?? 'Unable to open workspace');
+      throw e;
+    } finally {
+      setIsLoading(false);
     }
-    await clear();
   };
+
+  const loginTrack2 = async (params: Track2LoginParams): Promise<EmployeeLoginResult> => {
+    setError(null);
+    setIsLoading(true);
+    try {
+      const res = await authApi.track2Login(params);
+      if (res.status === 'signed_in') {
+        await loadContext();
+      }
+      return res;
+    } catch (e: any) {
+      setError(e?.message ?? 'Sign-in failed');
+      throw e;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const completeTrack2Mfa = async (mfaTicket: string, code: string) => {
+    setError(null);
+    setIsLoading(true);
+    try {
+      await authApi.verifyTrack2Mfa(mfaTicket, code);
+      await loadContext();
+    } catch (e: any) {
+      setError(e?.message ?? 'Verification failed');
+      throw e;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const switchBusiness = async (orgId: string, mfaCode?: string) => {
+    await selectTrack1Business(orgId, mfaCode);
+  };
+
+  const refreshContext = async () => {
+    await loadContext();
+  };
+
+  const logout = async () => {
+    await authApi.logout();
+    setBootstrap(null);
+    setSession(null);
+    setBusinesses([]);
+    setHasPersonalSession(false);
+    setActiveModeState(null);
+  };
+
+  const driver = useMemo(() => toDriverProfile(bootstrap?.driver), [bootstrap]);
+  const vendor = bootstrap?.vendor ?? null;
+  const me = bootstrap?.me ?? null;
+  const organisation = bootstrap?.organisation ?? null;
+  const activeOrg = useMemo<TenantContext | null>(
+    () => (organisation ? { organisation_id: organisation.id, organisation_name: organisation.name } : null),
+    [organisation],
+  );
+  const permissions = bootstrap?.effective_permissions?.permissions ?? [];
+  const { primary: persona, available: availableModes } = useMemo(() => resolvePersonas(bootstrap), [bootstrap]);
+  const activeMode = activeModeState && availableModes.includes(activeModeState) ? activeModeState : persona;
 
   return (
     <AuthContext.Provider
-      value={{ user, activeOrg, isAuthenticated: !!user, isLoading, error, login, logout }}
+      value={{
+        user: driver,
+        driver,
+        vendor,
+        me,
+        organisation,
+        activeOrg,
+        session,
+        bootstrap,
+        permissions,
+        persona,
+        availableModes,
+        activeMode,
+        setActiveMode,
+        businesses,
+        hasPersonalSession,
+        isAuthenticated: !!bootstrap?.me?.organisation_id,
+        isLoading,
+        error,
+        loginTrack1,
+        selectTrack1Business,
+        loginTrack2,
+        completeTrack2Mfa,
+        switchBusiness,
+        refreshContext,
+        logout,
+      }}
     >
       {children}
     </AuthContext.Provider>

@@ -8,15 +8,17 @@ from app.db.base import Base, TimestampMixin
 class VendorStatus(str, enum.Enum):
     ACTIVE = "ACTIVE"
     INACTIVE = "INACTIVE"
-    ONBOARDING = "ONBOARDING"
-    SUSPENDED = "SUSPENDED"
+
 
 class VendorType(str, enum.Enum):
-    TRANSPORTER = "TRANSPORTER"
+    FLEET_SUPPLIER = "FLEET_SUPPLIER"
+    WORKSHOP = "WORKSHOP"
+    FUEL_PARTNER = "FUEL_PARTNER"
     BROKER = "BROKER"
-    FUEL_STATION = "FUEL_STATION"
-    MAINTENANCE = "MAINTENANCE"
+    DCO = "DCO"
+    EMI_DRIVER = "EMI_DRIVER"
     OTHER = "OTHER"
+
 
 class Vendor(Base, TimestampMixin):
     __tablename__ = "vendors"
@@ -31,5 +33,9 @@ class Vendor(Base, TimestampMixin):
     address: Mapped[str | None] = mapped_column(String, nullable=True)
     gstin: Mapped[str | None] = mapped_column(String(15), nullable=True)
     pan: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    bank_account_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    bank_account_number: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    bank_ifsc: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    bank_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     status: Mapped[VendorStatus] = mapped_column(Enum(VendorStatus, name="vendor_status", create_type=False), default=VendorStatus.ACTIVE, nullable=False)
     notes: Mapped[str | None] = mapped_column(String, nullable=True)

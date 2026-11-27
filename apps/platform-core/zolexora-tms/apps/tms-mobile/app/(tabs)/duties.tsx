@@ -77,13 +77,14 @@ function DutyCard({ duty, onPress }: { duty: Duty; onPress: () => void }) {
 
 export default function DutiesScreen() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, activeOrg, activeMode } = useAuth();
   const [activeFilter, setActiveFilter] = useState<DutyStatus | 'ALL'>('ALL');
+  const isDriverScoped = activeMode === 'driver' || activeMode === 'driver_vendor';
 
   const { data: duties = [], refetch, isLoading } = useQuery({
-    queryKey: ['duties', user?.id],
-    queryFn: () => dutiesService.getDuties({ driver_id: user?.id }),
-    enabled: !!user?.id,
+    queryKey: ['duties', activeOrg?.organisation_id, activeMode, user?.id],
+    queryFn: () => dutiesService.getDuties(isDriverScoped && user?.id ? { driver_id: user.id } : undefined),
+    enabled: !!activeOrg?.organisation_id && (!isDriverScoped || !!user?.id),
     refetchInterval: 30_000,
   });
 

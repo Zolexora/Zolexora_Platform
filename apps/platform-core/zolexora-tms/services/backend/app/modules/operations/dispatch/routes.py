@@ -10,7 +10,7 @@ from app.auth.dependencies import CurrentUserContext, get_current_active_organis
 from app.core.websocket import ws_manager
 from app.db.session import AsyncSessionLocal, get_db
 from app.modules.operations.duties.models import Duty, DutyStatus
-from app.modules.operations.duties.schemas import DutyResponse
+from app.modules.operations.duties.service import enrich_duties
 
 logger = logging.getLogger("zolexora.dispatch")
 router = APIRouter(tags=["Dispatch"])
@@ -36,7 +36,7 @@ async def get_dispatch_board(
         .limit(200)
     )
     res = await db.execute(stmt)
-    all_duties = [DutyResponse.model_validate(d) for d in res.scalars().all()]
+    all_duties = await enrich_duties(db, list(res.scalars().all()))
 
     board = {
         "ALLOCATED": [],

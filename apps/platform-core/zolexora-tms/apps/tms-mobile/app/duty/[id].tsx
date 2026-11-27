@@ -11,7 +11,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { dutiesService } from '../../src/services/dutiesService';
+import { dutiesService, TripRecord } from '../../src/services/dutiesService';
 import { theme } from '../../src/lib/theme';
 import { Card } from '../../src/components/Card';
 import { Button } from '../../src/components/Button';
@@ -62,6 +62,9 @@ export default function DutyDetailScreen() {
     queryFn: () => dutiesService.getDutyById(id!),
     enabled: !!id,
   });
+
+  // Trip from enriched duty.trip (may be null if no trip yet)
+  const trip = (duty as (typeof duty & { trip?: TripRecord | null }) | undefined)?.trip ?? null;
 
   const acceptMutation = useMutation({
     mutationFn: () => dutiesService.acceptDuty(id!),
@@ -303,6 +306,43 @@ export default function DutyDetailScreen() {
             <Text style={styles.notes}>{duty.notes}</Text>
           </Card>
         )}
+
+        {/* Trip Summary Card */}
+        {trip && (
+          <Card style={styles.section}>
+            <Text style={styles.sectionTitle}>🗺️  Trip — {trip.trip_number}</Text>
+            <View style={styles.tripRow}>
+              <View style={styles.tripStat}>
+                <Text style={styles.tripStatVal}>{trip.start_odometer ?? '—'}</Text>
+                <Text style={styles.tripStatLbl}>Start km</Text>
+              </View>
+              <View style={styles.tripStatDivider} />
+              <View style={styles.tripStat}>
+                <Text style={styles.tripStatVal}>{trip.end_odometer ?? '—'}</Text>
+                <Text style={styles.tripStatLbl}>End km</Text>
+              </View>
+              <View style={styles.tripStatDivider} />
+              <View style={styles.tripStat}>
+                <Text style={styles.tripStatVal}>
+                  {trip.total_distance_km != null ? `${trip.total_distance_km}` : '—'}
+                </Text>
+                <Text style={styles.tripStatLbl}>Distance</Text>
+              </View>
+            </View>
+            {(trip.toll_amount > 0 || trip.fuel_amount > 0 || trip.parking_amount > 0) && (
+              <View style={styles.expenseRow}>
+                {trip.toll_amount > 0 && <Text style={styles.expenseChip}>🛣️ ₹{trip.toll_amount} toll</Text>}
+                {trip.fuel_amount > 0 && <Text style={styles.expenseChip}>⛽ ₹{trip.fuel_amount} fuel</Text>}
+                {trip.parking_amount > 0 && <Text style={styles.expenseChip}>🅿️ ₹{trip.parking_amount} park</Text>}
+              </View>
+            )}
+            {trip.pod_attachment_url && (
+              <View style={styles.podBadge}>
+                <Text style={styles.podBadgeText}>✅  POD Uploaded</Text>
+              </View>
+            )}
+          </Card>
+        )}
       </ScrollView>
 
       {/* Action Footer */}
@@ -327,8 +367,46 @@ export default function DutyDetailScreen() {
           </View>
         )}
 
+        {/* Start Trip — shown when IN_TRANSIT and no trip yet */}
+        {duty.status === DutyStatus.IN_TRANSIT && !trip && (
+          <View style={styles.footerCol}>
+            <Button
+              title="🚀  Start Trip"
+              variant="primary"
+              size="lg"
+              onPress={() => router.push(`/duty/start-trip/${id}`)}
+            />
+            <Button
+              title="💸  Log Expense"
+              variant="outline"
+              size="sm"
+              onPress={() => router.push({ pathname: '/expense/log', params: { duty_id: id } })}
+              style={{ marginTop: 8 }}
+            />
+          </View>
+        )}
+
+        {/* Complete Trip — shown when trip exists and in progress */}
+        {trip && trip.status === 'IN_PROGRESS' && (
+          <View style={styles.footerCol}>
+            <Button
+              title="🏁  Complete Trip"
+              variant="success"
+              size="lg"
+              onPress={() => router.push({ pathname: `/duty/complete-trip/${trip.id}`, params: { duty_id: id } })}
+            />
+            <Button
+              title="💸  Log Expense"
+              variant="outline"
+              size="sm"
+              onPress={() => router.push({ pathname: '/expense/log', params: { duty_id: id } })}
+              style={{ marginTop: 8 }}
+            />
+          </View>
+        )}
+
         {/* Milestone actions for active duties */}
-        {nextAction && (
+        {nextAction && !trip && duty.status !== DutyStatus.IN_TRANSIT && (
           <Button
             title={nextAction.label}
             variant={nextAction.variant}
@@ -386,8 +464,20 @@ const styles = StyleSheet.create({
 
   notes: { fontSize: 14, color: theme.colors.textSecondary, lineHeight: 20 },
 
+  // Trip card
+  tripRow: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: theme.spacing.md },
+  tripStat: { alignItems: 'center', flex: 1 },
+  tripStatVal: { fontSize: 18, fontWeight: '800', color: theme.colors.textPrimary },
+  tripStatLbl: { fontSize: 11, color: theme.colors.textMuted, marginTop: 2 },
+  tripStatDivider: { width: 1, backgroundColor: theme.colors.border },
+  expenseRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  expenseChip: { fontSize: 12, color: theme.colors.textSecondary, backgroundColor: theme.colors.surfaceSubtle, borderRadius: 12, paddingHorizontal: 8, paddingVertical: 3 },
+  podBadge: { marginTop: 10, backgroundColor: theme.colors.successMuted, borderRadius: 8, padding: 6, alignSelf: 'flex-start' },
+  podBadgeText: { fontSize: 12, fontWeight: '700', color: theme.colors.success },
+
   footer: { padding: theme.spacing.lg, backgroundColor: theme.colors.surface, borderTopWidth: 1, borderTopColor: theme.colors.border },
   footerRow: { flexDirection: 'row', gap: theme.spacing.sm },
+  footerCol: { gap: 0 },
   footerBtn: { flex: 1 },
   completedBanner: { backgroundColor: theme.colors.successMuted, borderRadius: theme.radius.md, padding: theme.spacing.md, alignItems: 'center' },
   completedText: { fontSize: 15, fontWeight: '700', color: theme.colors.success },

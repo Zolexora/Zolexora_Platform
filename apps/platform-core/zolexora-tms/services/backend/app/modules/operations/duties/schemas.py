@@ -1,7 +1,7 @@
 import datetime
 import uuid
 import enum
-from typing import Optional
+from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 class DutyStatus(str, enum.Enum):
@@ -58,6 +58,51 @@ class DutyAssignmentResponse(BaseModel):
     rejected_at: Optional[datetime.datetime] = None
     rejection_reason: Optional[str] = None
 
+class DutyBookingSummary(BaseModel):
+    id: uuid.UUID
+    booking_number: str
+    customer_name: Optional[str] = None
+    customer_phone: Optional[str] = None
+    pickup_address: str
+    drop_address: str
+    pickup_datetime: datetime.datetime
+    cargo_description: Optional[str] = None
+    cargo_weight_kg: Optional[float] = None
+    special_instructions: Optional[str] = None
+
+
+class DutyVehicleSummary(BaseModel):
+    id: uuid.UUID
+    registration_number: str
+    make: Optional[str] = None
+    model: Optional[str] = None
+    fuel_type: Optional[str] = None
+    odometer_km: Optional[float] = None
+    vendor_id: Optional[uuid.UUID] = None
+
+
+class DutyDriverSummary(BaseModel):
+    id: uuid.UUID
+    full_name: str
+    phone: str
+    vendor_id: Optional[uuid.UUID] = None
+
+
+class DutyTripSummary(BaseModel):
+    id: uuid.UUID
+    trip_number: str
+    status: str
+    start_odometer: float
+    end_odometer: Optional[float] = None
+    toll_amount: float = 0.0
+    fuel_amount: float = 0.0
+    parking_amount: float = 0.0
+    waiting_minutes: int = 0
+    pod_attachment_url: Optional[str] = None
+    pod_notes: Optional[str] = None
+    operational_receipts: List[Dict[str, Any]] = Field(default_factory=list)
+
+
 class DutyResponse(DutyBase):
     model_config = ConfigDict(from_attributes=True)
 
@@ -71,6 +116,10 @@ class DutyResponse(DutyBase):
     start_km: Optional[float] = None
     end_km: Optional[float] = None
     status: DutyStatus
+    booking: Optional[DutyBookingSummary] = None
+    vehicle: Optional[DutyVehicleSummary] = None
+    driver: Optional[DutyDriverSummary] = None
+    trip: Optional[DutyTripSummary] = None
     created_at: datetime.datetime
     updated_at: datetime.datetime
 

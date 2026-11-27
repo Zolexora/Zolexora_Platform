@@ -3400,6 +3400,9 @@ importers:
       expo-haptics:
         specifier: ~15.0.8
         version: 15.0.8(03cd8dd57bc6d56ae269aebd617816b4)
+      expo-image-picker:
+        specifier: ^58.0.10
+        version: 58.0.10(03cd8dd57bc6d56ae269aebd617816b4)
       expo-linking:
         specifier: ~8.0.10
         version: 8.0.12(68033404c955b7d4cb67d3244074f9e6)
@@ -13046,6 +13049,11 @@ packages:
     peerDependencies:
       expo: '*'
 
+  expo-image-loader@58.0.3:
+    resolution: {integrity: sha512-zlHudxC8OObyqCHmvdxJqURI7886KJ0cUJyn7R/a8FOD9fP837xKDN+u4SIt7XsSSVPNXzMd4Y7mN0pmup8NGA==}
+    peerDependencies:
+      expo: '*'
+
   expo-image-loader@6.0.0:
     resolution: {integrity: sha512-nKs/xnOGw6ACb4g26xceBD57FKLFkSwEUTDXEDF3Gtcu3MqF3ZIYd3YM+sSb1/z9AKV1dYT7rMSGVNgsveXLIQ==}
     peerDependencies:
@@ -13053,6 +13061,11 @@ packages:
 
   expo-image-picker@17.0.11:
     resolution: {integrity: sha512-/apkoyukDvsCHHb9fzP+F34A1uQqSzUtYH/2P/xJACNEwq+mwEXjXvVU8bzlJq6ih0Qo1+tpVivIa7B9kYSwOQ==}
+    peerDependencies:
+      expo: '*'
+
+  expo-image-picker@58.0.10:
+    resolution: {integrity: sha512-yqQC9UYMWSUxk6U0jaS1vE1w+b9Ru0FJmQ3KjUf9Q9oVg5xBxmg8+Ts+usazMAuPoskNIXJ++VZ+uK6br9yUGQ==}
     peerDependencies:
       expo: '*'
 
@@ -32611,6 +32624,24 @@ snapshots:
       - react-native-screens
       - react-native-webview
 
+  expo-image-loader@58.0.3(03cd8dd57bc6d56ae269aebd617816b4):
+    dependencies:
+      expo: 54.0.37(986090f79d59315f3f12c5ed83aaf91f)
+    transitivePeerDependencies:
+      - '@babel/core'
+      - '@expo/metro-runtime'
+      - '@types/react'
+      - '@types/react-dom'
+      - expo-constants
+      - expo-linking
+      - expo-router
+      - react-native
+      - react-native-gesture-handler
+      - react-native-reanimated
+      - react-native-safe-area-context
+      - react-native-screens
+      - react-native-webview
+
   expo-image-loader@6.0.0(03cd8dd57bc6d56ae269aebd617816b4):
     dependencies:
       expo: 54.0.37(986090f79d59315f3f12c5ed83aaf91f)
@@ -32673,6 +32704,25 @@ snapshots:
       - '@babel/core'
       - '@expo/metro-runtime'
       - '@types/react'
+      - expo-constants
+      - expo-linking
+      - expo-router
+      - react-native
+      - react-native-gesture-handler
+      - react-native-reanimated
+      - react-native-safe-area-context
+      - react-native-screens
+      - react-native-webview
+
+  expo-image-picker@58.0.10(03cd8dd57bc6d56ae269aebd617816b4):
+    dependencies:
+      expo: 54.0.37(986090f79d59315f3f12c5ed83aaf91f)
+      expo-image-loader: 58.0.3(03cd8dd57bc6d56ae269aebd617816b4)
+    transitivePeerDependencies:
+      - '@babel/core'
+      - '@expo/metro-runtime'
+      - '@types/react'
+      - '@types/react-dom'
       - expo-constants
       - expo-linking
       - expo-router

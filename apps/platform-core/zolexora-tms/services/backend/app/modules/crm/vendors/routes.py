@@ -1,15 +1,50 @@
 import uuid
 from typing import Optional
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import get_current_active_organisation, CurrentUserContext
 from app.db.session import get_db
-from app.modules.crm.vendors.models import VendorStatus, VendorType
+from app.modules.crm.vendors.models import Vendor, VendorStatus, VendorType
 from app.modules.crm.vendors.schemas import VendorCreate, VendorResponse, VendorUpdate
 from app.modules.crm.vendors import service
 
 router = APIRouter(prefix="/api/v1/vendors", tags=["Vendors"])
+
+
+async def find_vendor_for_caller(
+    db: AsyncSession,
+    org_id: uuid.UUID,
+    email: Optional[str],
+    phone_number: Optional[str],
+) -> Optional[Vendor]:
+    """Resolves the Vendor record linked to a signed-in caller's email or verified phone."""
+    if email:
+        vendor = (
+            await db.execute(
+                select(Vendor)
+                .where(
+                    Vendor.organisation_id == org_id,
+                    func.lower(Vendor.email) == email.lower(),
+                )
+                .limit(1)
+            )
+        ).scalar_one_or_none()
+        if vendor:
+            return vendor
+    if phone_number:
+        return (
+            await db.execute(
+                select(Vendor)
+                .where(
+                    Vendor.organisation_id == org_id,
+                    Vendor.phone == phone_number,
+                )
+                .limit(1)
+            )
+        ).scalar_one_or_none()
+    return None
 
 
 @router.post("", response_model=VendorResponse, status_code=status.HTTP_201_CREATED)
@@ -45,6 +80,20 @@ async def list_vendors(
         skip=skip,
         limit=limit,
     )
+
+
+@router.get("/me", response_model=VendorResponse)
+async def get_my_vendor(
+    ctx: CurrentUserContext = Depends(get_current_active_organisation),
+    db: AsyncSession = Depends(get_db),
+):
+    """The vendor record linked to the signed-in caller (matched on email or phone)."""
+    if not ctx.email and not ctx.phone_number:
+        raise HTTPException(status_code=404, detail="Your account has no email or phone to match a vendor record")
+    vendor = await find_vendor_for_caller(db, ctx.organisation_id, ctx.email, ctx.phone_number)
+    if not vendor:
+        raise HTTPException(status_code=404, detail="No vendor record in this organisation matches your account")
+    return vendor
 
 
 @router.get("/{vendor_id}", response_model=VendorResponse)

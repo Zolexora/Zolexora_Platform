@@ -8,6 +8,9 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "expo-image-picker": [
+        "./node_modules/expo-image-picker/build/ImagePicker.d.ts"
       ]
     }
   },

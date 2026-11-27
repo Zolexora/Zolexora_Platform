@@ -1,28 +1,33 @@
 import { Redirect, Tabs } from 'expo-router';
-import { ActivityIndicator } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../../src/context/AuthContext';
-import { View, Text, StyleSheet } from 'react-native';
+import { PERSONA_META } from '../../src/lib/personas';
 import { theme } from '../../src/lib/theme';
 
 function TabIcon({ focused, icon, label }: { focused: boolean; icon: string; label: string }) {
   return (
     <View style={[styles.tabItem, focused && styles.tabItemActive]}>
       <Text style={[styles.tabIcon, focused && styles.tabIconActive]}>{icon}</Text>
-      <Text style={[styles.tabLabel, focused && styles.tabLabelActive]}>{label}</Text>
+      <Text style={[styles.tabLabel, focused && styles.tabLabelActive]} numberOfLines={1}>
+        {label}
+      </Text>
     </View>
   );
 }
 
 export default function TabsLayout() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, activeMode } = useAuth();
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', backgroundColor: theme.colors.background }}>
+      <View style={styles.loading}>
         <ActivityIndicator color={theme.colors.primaryLight} />
       </View>
     );
   }
   if (!isAuthenticated) return <Redirect href="/(auth)/login" />;
+
+  const meta = PERSONA_META[activeMode];
+
   return (
     <Tabs
       screenOptions={{
@@ -36,28 +41,33 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Dashboard',
-          tabBarIcon: ({ focused }) => (
-            <TabIcon focused={focused} icon="⚡" label="Dashboard" />
-          ),
+          title: meta.title,
+          tabBarIcon: ({ focused }) => <TabIcon focused={focused} icon="⚡" label="Home" />,
         }}
       />
       <Tabs.Screen
         name="duties"
         options={{
-          title: 'My Duties',
+          href: meta.showDutiesTab ? '/duties' : null,
+          title: activeMode === 'driver' || activeMode === 'driver_vendor' ? 'My Duties' : 'Duties',
+          tabBarIcon: ({ focused }) => <TabIcon focused={focused} icon="🚚" label="Duties" />,
+        }}
+      />
+      <Tabs.Screen
+        name="workspace"
+        options={{
+          href: meta.showWorkspaceTab ? '/workspace' : null,
+          title: meta.workspaceTabTitle,
           tabBarIcon: ({ focused }) => (
-            <TabIcon focused={focused} icon="🚚" label="Duties" />
+            <TabIcon focused={focused} icon={meta.workspaceTabIcon} label={meta.workspaceTabTitle} />
           ),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
-          tabBarIcon: ({ focused }) => (
-            <TabIcon focused={focused} icon="👤" label="Profile" />
-          ),
+          title: 'Account',
+          tabBarIcon: ({ focused }) => <TabIcon focused={focused} icon="👤" label="Account" />,
         }}
       />
     </Tabs>
@@ -65,6 +75,11 @@ export default function TabsLayout() {
 }
 
 const styles = StyleSheet.create({
+  loading: {
+    flex: 1,
+    justifyContent: 'center',
+    backgroundColor: theme.colors.background,
+  },
   tabBar: {
     backgroundColor: theme.colors.surface,
     borderTopColor: theme.colors.border,
@@ -75,7 +90,7 @@ const styles = StyleSheet.create({
   tabItem: {
     alignItems: 'center',
     paddingTop: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     borderRadius: theme.radius.sm,
     minWidth: 64,
   },
@@ -83,8 +98,8 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.primaryMuted,
   },
   tabIcon: {
-    fontSize: 20,
-    opacity: 0.5,
+    fontSize: 19,
+    opacity: 0.55,
   },
   tabIconActive: {
     opacity: 1,

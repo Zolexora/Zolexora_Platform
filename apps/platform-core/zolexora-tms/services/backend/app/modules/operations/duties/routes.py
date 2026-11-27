@@ -27,11 +27,12 @@ async def list_duties(
     status: Optional[DutyStatus] = None,
     driver_id: Optional[uuid.UUID] = None,
     vehicle_id: Optional[uuid.UUID] = None,
+    vendor_id: Optional[uuid.UUID] = None,
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     ctx: OrgContext = Depends(get_org_context),
 ):
-    return await service.list_duties(ctx, status, driver_id, vehicle_id, skip, limit)
+    return await service.list_duties(ctx, status, driver_id, vehicle_id, vendor_id, skip, limit)
 
 
 @router.get("/{duty_id}", response_model=DutyResponse)

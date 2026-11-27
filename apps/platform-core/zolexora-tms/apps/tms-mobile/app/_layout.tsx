@@ -39,10 +39,23 @@ export default function RootLayout() {
             <Stack.Screen name="(auth)" options={{ headerShown: false }} />
             <Stack.Screen
               name="duty/[id]"
-              options={{
-                title: 'Duty Details',
-                headerBackTitle: 'Back',
-              }}
+              options={{ title: 'Duty Details', headerBackTitle: 'Back' }}
+            />
+            <Stack.Screen
+              name="duty/start-trip/[id]"
+              options={{ title: 'Start Trip', headerBackTitle: 'Back' }}
+            />
+            <Stack.Screen
+              name="duty/complete-trip/[trip_id]"
+              options={{ title: 'Complete Trip', headerBackTitle: 'Back' }}
+            />
+            <Stack.Screen
+              name="expense/log"
+              options={{ title: 'Log Expense', headerBackTitle: 'Back', presentation: 'modal' }}
+            />
+            <Stack.Screen
+              name="vehicle/[id]"
+              options={{ title: 'Vehicle Details', headerBackTitle: 'Back' }}
             />
           </Stack>
         </AuthProvider>

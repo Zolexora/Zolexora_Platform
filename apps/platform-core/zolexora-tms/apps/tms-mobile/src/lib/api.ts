@@ -1,4 +1,5 @@
 import { config } from './config';
+import { authApi } from './authApi';
 import { storage } from './storage';
 
 export class ApiError extends Error {
@@ -13,19 +14,36 @@ export function setUnauthorizedHandler(handler: (() => void) | null) {
   onUnauthorized = handler;
 }
 
-/** Calls the TMS backend with the Zolexora session token. */
-export async function apiClient<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const token = await storage.getToken();
+async function send(path: string, options: RequestInit, token: string | null): Promise<Response> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),
   };
   if (token) headers.Authorization = `Bearer ${token}`;
+  const session = await storage.getBusinessSession();
+  if (session?.org?.zolexora_org_id && !headers['X-Organization-Id']) {
+    headers['X-Organization-Id'] = session.org.zolexora_org_id;
+  }
+  return fetch(`${config.apiBaseUrl()}${path}`, { ...options, headers });
+}
 
+/** Calls the TMS backend with a fresh ES256 business session token (retrying once on 401 via refresh). */
+export async function apiClient<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-  const response = await fetch(`${config.apiBaseUrl()}${path}`, { ...options, headers });
+  let token = await authApi.getValidAccessToken();
+  let response = await send(path, options, token);
 
-  if (response.status === 401) onUnauthorized?.();
+  if (response.status === 401) {
+    const refreshed = await authApi.refreshSession().catch(() => null);
+    if (refreshed?.access_token) {
+      response = await send(path, options, refreshed.access_token);
+    }
+  }
+
+  if (response.status === 401) {
+    onUnauthorized?.();
+  }
+
   if (!response.ok) {
     let detail = `Request failed with status ${response.status}`;
     try {

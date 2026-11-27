@@ -74,11 +74,113 @@ async def create_duty(ctx: OrgContext, req: DutyCreate) -> DutyResponse:
     return await _commit_and_broadcast(ctx, duty, "duty.created")
 
 
+async def enrich_duties(db: AsyncSession, duties: list[Duty]) -> list[DutyResponse]:
+    """Batch-hydrates booking/client, vehicle, driver, and trip summaries without N+1 queries."""
+    if not duties:
+        return []
+
+    booking_ids = {d.booking_id for d in duties if d.booking_id}
+    vehicle_ids = {d.vehicle_id for d in duties if d.vehicle_id}
+    driver_ids = {d.driver_id for d in duties if d.driver_id}
+    duty_ids = [d.id for d in duties]
+
+    bookings_map: dict[uuid.UUID, Booking] = {}
+    clients_map: dict[uuid.UUID, Client] = {}
+    vehicles_map: dict[uuid.UUID, Vehicle] = {}
+    drivers_map: dict[uuid.UUID, Driver] = {}
+    trips_map: dict[uuid.UUID, Trip] = {}
+
+    if booking_ids:
+        b_rows = (await db.execute(select(Booking).where(Booking.id.in_(booking_ids)))).scalars().all()
+        bookings_map = {b.id: b for b in b_rows}
+        client_ids = {b.customer_id for b in b_rows if b.customer_id}
+        if client_ids:
+            c_rows = (await db.execute(select(Client).where(Client.id.in_(client_ids)))).scalars().all()
+            clients_map = {c.id: c for c in c_rows}
+
+    if vehicle_ids:
+        v_rows = (await db.execute(select(Vehicle).where(Vehicle.id.in_(vehicle_ids)))).scalars().all()
+        vehicles_map = {v.id: v for v in v_rows}
+
+    if driver_ids:
+        d_rows = (await db.execute(select(Driver).where(Driver.id.in_(driver_ids)))).scalars().all()
+        drivers_map = {dr.id: dr for dr in d_rows}
+
+    t_rows = (await db.execute(select(Trip).where(Trip.duty_id.in_(duty_ids)))).scalars().all()
+    trips_map = {t.duty_id: t for t in t_rows}
+
+    enriched: list[DutyResponse] = []
+    for d in duties:
+        base = DutyResponse.model_validate(d)
+        b = bookings_map.get(d.booking_id)
+        if b:
+            c = clients_map.get(b.customer_id)
+            cargo = b.cargo_info if isinstance(b.cargo_info, dict) else {}
+            raw_weight = cargo.get("weight_kg")
+            try:
+                weight_kg = float(raw_weight) if raw_weight not in (None, "") else None
+            except (TypeError, ValueError):
+                weight_kg = None
+            base.booking = DutyBookingSummary(
+                id=b.id,
+                booking_number=b.booking_number,
+                customer_name=c.name if c else None,
+                customer_phone=c.phone if c else None,
+                pickup_address=b.pickup_address,
+                drop_address=b.drop_address,
+                pickup_datetime=b.pickup_datetime,
+                cargo_description=cargo.get("material") or cargo.get("description"),
+                cargo_weight_kg=weight_kg,
+                special_instructions=b.operational_instructions,
+            )
+
+        v = vehicles_map.get(d.vehicle_id) if d.vehicle_id else None
+        if v:
+            base.vehicle = DutyVehicleSummary(
+                id=v.id,
+                registration_number=v.registration_number,
+                make=v.make,
+                model=v.model,
+                fuel_type=v.fuel_type.value if hasattr(v.fuel_type, "value") else str(v.fuel_type),
+                odometer_km=float(v.odometer_km) if v.odometer_km is not None else None,
+                vendor_id=v.vendor_id,
+            )
+
+        dr = drivers_map.get(d.driver_id) if d.driver_id else None
+        if dr:
+            base.driver = DutyDriverSummary(
+                id=dr.id,
+                full_name=dr.full_name,
+                phone=dr.phone,
+                vendor_id=dr.vendor_id,
+            )
+
+        tr = trips_map.get(d.id)
+        if tr:
+            base.trip = DutyTripSummary(
+                id=tr.id,
+                trip_number=tr.trip_number,
+                status=tr.status.value if hasattr(tr.status, "value") else str(tr.status),
+                start_odometer=float(tr.start_odometer),
+                end_odometer=float(tr.end_odometer) if tr.end_odometer is not None else None,
+                toll_amount=float(tr.toll_amount),
+                fuel_amount=float(tr.fuel_amount),
+                parking_amount=float(tr.parking_amount),
+                waiting_minutes=tr.waiting_minutes,
+                pod_attachment_url=tr.pod_attachment_url,
+                pod_notes=tr.pod_notes,
+                operational_receipts=list(tr.operational_receipts or []),
+            )
+        enriched.append(base)
+    return enriched
+
+
 async def list_duties(
     ctx: OrgContext,
     status_filter: Optional[DutyStatus] = None,
     driver_id: Optional[uuid.UUID] = None,
     vehicle_id: Optional[uuid.UUID] = None,
+    vendor_id: Optional[uuid.UUID] = None,
     skip: int = 0,
     limit: int = 50,
 ) -> list[DutyResponse]:
@@ -89,13 +191,18 @@ async def list_duties(
         stmt = stmt.where(Duty.driver_id == driver_id)
     if vehicle_id:
         stmt = stmt.where(Duty.vehicle_id == vehicle_id)
+    if vendor_id:
+        vendor_vehicles = select(Vehicle.id).where(Vehicle.organisation_id == ctx.organisation_id, Vehicle.vendor_id == vendor_id)
+        vendor_drivers = select(Driver.id).where(Driver.organisation_id == ctx.organisation_id, Driver.vendor_id == vendor_id)
+        stmt = stmt.where(or_(Duty.vehicle_id.in_(vendor_vehicles), Duty.driver_id.in_(vendor_drivers)))
     stmt = stmt.order_by(Duty.created_at.desc()).limit(limit).offset(skip)
     res = await ctx.db.execute(stmt)
-    return [DutyResponse.model_validate(d) for d in res.scalars().all()]
+    return await enrich_duties(ctx.db, list(res.scalars().all()))
 
 
 async def get_duty(ctx: OrgContext, duty_id: uuid.UUID) -> DutyResponse:
-    return DutyResponse.model_validate(await _get(ctx, duty_id))
+    duty = await _get(ctx, duty_id)
+    return (await enrich_duties(ctx.db, [duty]))[0]
 
 
 async def assign_duty(ctx: OrgContext, duty_id: uuid.UUID, req: DutyAssignRequest) -> DutyResponse:

@@ -14,10 +14,22 @@ packages:
   - 'apps/*'
   - 'apps/*/*'
 allowBuilds:
+  '@firebase/util': set this to true or false
   '@nestjs/core': true
+  '@parcel/watcher': set this to true or false
+  '@prisma/client': set this to true or false
+  '@prisma/engines': set this to true or false
+  '@scarf/scarf': set this to true or false
+  '@swc/core': set this to true or false
   better-sqlite3: true
+  core-js: set this to true or false
+  core-js-pure: set this to true or false
   esbuild: true
+  msgpackr-extract: set this to true or false
   node-gyp: true
+  prisma: set this to true or false
+  protobufjs: set this to true or false
+  sharp: set this to true or false
   unrs-resolver: true
   workerd: true
 
