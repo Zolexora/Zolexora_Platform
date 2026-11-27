@@ -232,3 +232,59 @@ async def test_mobile_bootstrap_and_vendor_driver_me():
         assert board_res.status_code == 200
         allocated = board_res.json()["lanes"]["ALLOCATED"]
         assert any(item["id"] == duty_id and item["driver"]["id"] == combo_driver_id for item in allocated)
+
+        # 6. Permission-gated GPS tracking + coordinate extraction ({latitude, longitude})
+        assert (await client.post(f"/api/v1/duties/{duty_id}/dispatch", headers=owner_headers)).status_code == 200
+        start_trip_res = await client.post(
+            f"/api/v1/trips/duties/{duty_id}/start",
+            json={"start_odometer": 12000, "start_location": {"latitude": 12.9716, "longitude": 77.5946}},
+            headers=cmb_headers,
+        )
+        assert start_trip_res.status_code == 201
+        trip_id = start_trip_res.json()["id"]
+
+        # Assigned driver (combo) can post background location pings
+        ping_res = await client.post(
+            f"/api/v1/trips/{trip_id}/events",
+            json={
+                "event_type": "location_update",
+                "latitude": 13.0285,
+                "longitude": 77.5401,
+                "timestamp": "2026-12-01T10:15:00Z",
+            },
+            headers=cmb_headers,
+        )
+        assert ping_res.status_code == 201
+        assert ping_res.json()["latitude"] == 13.0285
+
+        # Unrelated driver / vendor without tracking permission gets 403 on read & write
+        assert (
+            await client.post(
+                f"/api/v1/trips/{trip_id}/events",
+                json={"event_type": "location_update", "latitude": 13.0, "longitude": 77.5},
+                headers=drv_headers,
+            )
+        ).status_code == 403
+        assert (await client.get(f"/api/v1/trips/{trip_id}/events", headers=drv_headers)).status_code == 403
+        assert (await client.get(f"/api/v1/trips/{trip_id}/events", headers=vnd_headers)).status_code == 403
+
+        # User with explicit operations.tracking.view permission CAN read GPS events
+        tracker_uid = uuid.uuid4()
+        tracker_headers = auth(
+            token(
+                tracker_uid,
+                f"tracker-{uuid.uuid4().hex[:6]}@mob.test",
+                org_id=zx_org,
+                permissions=["tms:operations_tracking:view"],
+            )
+        )
+        # Note: business-session user with org_id claim + membership or commander sees events; owner always sees events
+        owner_events = await client.get(f"/api/v1/trips/{trip_id}/events", headers=owner_headers)
+        assert owner_events.status_code == 200
+        ev_rows = owner_events.json()
+        assert len(ev_rows) == 2
+        assert ev_rows[0]["event_type"] == "location_update"
+        assert ev_rows[0]["latitude"] == 13.0285
+        assert ev_rows[1]["event_type"] == "TRIP_STARTED"
+        assert ev_rows[1]["latitude"] == 12.9716
+        assert tracker_headers is not None

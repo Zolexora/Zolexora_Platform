@@ -18,7 +18,7 @@ export default function StartTripScreen() {
   const qc = useQueryClient();
 
   const [odometer, setOdometer] = useState('');
-  const { getLocation, currentLocation } = useDriverLocation(null);
+  const { getLocation, startTracking, currentLocation } = useDriverLocation(null);
 
   const { mutate, isPending } = useMutation({
     mutationFn: async () => {
@@ -28,7 +28,10 @@ export default function StartTripScreen() {
         start_location: coords ? (coords as unknown as Record<string, unknown>) : undefined,
       });
     },
-    onSuccess: () => {
+    onSuccess: async (createdTrip) => {
+      if (createdTrip?.id) {
+        await startTracking(createdTrip.id).catch(() => {});
+      }
       qc.invalidateQueries({ queryKey: ['duty', dutyId] });
       qc.invalidateQueries({ queryKey: ['duties'] });
       router.back();

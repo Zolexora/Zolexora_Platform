@@ -24,8 +24,11 @@ module.exports = ({ config }) => {
       ...config.ios,
       infoPlist: {
         ...config.ios?.infoPlist,
+        UIBackgroundModes: ['location'],
         NSLocationWhenInUseUsageDescription:
           'Zolexora TMS uses your location to stamp trip start/end coordinates and share live transit updates.',
+        NSLocationAlwaysAndWhenInUseUsageDescription:
+          'Zolexora TMS continues sharing trip GPS updates in the background while your duty is in transit, even during turn-by-turn navigation.',
         NSCameraUsageDescription:
           'Zolexora TMS uses the camera to capture Proof of Delivery (POD) and expense receipts.',
         NSPhotoLibraryUsageDescription:

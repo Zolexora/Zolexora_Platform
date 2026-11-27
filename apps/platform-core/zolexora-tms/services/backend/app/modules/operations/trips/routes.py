@@ -96,10 +96,28 @@ async def add_trip_event(
 ):
     """Records a trip event (location ping, milestone) for an in-progress trip."""
     return await service.add_trip_event(
-        org_id=ctx.organisation_id,
+        ctx=ctx,
         trip_id=trip_id,
         req=req,
         db=db,
+    )
+
+
+@router.get("/{trip_id}/events", response_model=list[TripEventResponse])
+async def list_trip_events(
+    trip_id: uuid.UUID,
+    event_type: Optional[str] = None,
+    limit: int = 50,
+    ctx: CurrentUserContext = Depends(get_current_active_organisation),
+    db: AsyncSession = Depends(get_db),
+):
+    """Returns GPS/milestone events for a trip (requires tracking permission or trip ownership)."""
+    return await service.list_trip_events(
+        ctx=ctx,
+        trip_id=trip_id,
+        db=db,
+        event_type=event_type,
+        limit=min(max(limit, 1), 500),
     )
 
 

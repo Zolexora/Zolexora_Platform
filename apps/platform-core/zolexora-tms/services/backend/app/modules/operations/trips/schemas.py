@@ -25,9 +25,10 @@ class TripCompleteRequest(BaseModel):
 
 class TripMilestoneRequest(BaseModel):
     event_type: str = Field(..., min_length=2, max_length=64)
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
+    latitude: Optional[float] = Field(None, ge=-90.0, le=90.0)
+    longitude: Optional[float] = Field(None, ge=-180.0, le=180.0)
     notes: Optional[str] = None
+    timestamp: Optional[datetime.datetime] = None
 
 
 class TripReceiptAddRequest(BaseModel):

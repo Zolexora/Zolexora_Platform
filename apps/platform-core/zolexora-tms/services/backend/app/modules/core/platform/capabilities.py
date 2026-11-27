@@ -65,6 +65,13 @@ TMS_CAPABILITY_REGISTRY = AppDef(
                         ActionDef(code="view", name="View Duties"),
                         ActionDef(code="edit", name="Update Duty Status"),
                     ]
+                ),
+                PageDef(
+                    code="tracking",
+                    name="Live GPS Tracking",
+                    actions=[
+                        ActionDef(code="view", name="View Live Vehicle Tracking"),
+                    ]
                 )
             ]
         ),

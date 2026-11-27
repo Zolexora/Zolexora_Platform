@@ -16,7 +16,7 @@ export interface TripRecord {
   fuel_amount: number;
   parking_amount: number;
   waiting_minutes: number;
-  status: 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  status: 'NOT_STARTED' | 'IN_TRANSIT' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
   pod_attachment_url?: string | null;
   pod_notes?: string | null;
   pod_uploaded_at?: string | null;
@@ -131,11 +131,22 @@ export const dutiesService = {
 
   postTripEvent(
     tripId: string,
-    payload: { event_type: string; latitude?: number; longitude?: number; notes?: string },
+    payload: { event_type: string; latitude?: number; longitude?: number; notes?: string; timestamp?: string },
   ): Promise<TripEventRecord> {
     return apiClient<TripEventRecord>(`/api/v1/trips/${tripId}/events`, {
       method: 'POST',
       body: JSON.stringify(payload),
     });
+  },
+
+  getTripEvents(
+    tripId: string,
+    params?: { event_type?: string; limit?: number },
+  ): Promise<TripEventRecord[]> {
+    const query = new URLSearchParams();
+    if (params?.event_type) query.set('event_type', params.event_type);
+    if (params?.limit) query.set('limit', String(params.limit));
+    const qs = query.toString();
+    return apiClient<TripEventRecord[]>(`/api/v1/trips/${tripId}/events${qs ? `?${qs}` : ''}`);
   },
 };

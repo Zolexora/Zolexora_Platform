@@ -55,7 +55,7 @@ export default function CompleteTripScreen() {
   const [podNotes, setPodNotes] = useState('');
   const [notes, setNotes] = useState('');
 
-  const { getLocation, currentLocation } = useDriverLocation(tripId);
+  const { getLocation, stopTracking, currentLocation } = useDriverLocation(tripId);
 
   const { mutate, isPending } = useMutation({
     mutationFn: async () => {
@@ -86,7 +86,8 @@ export default function CompleteTripScreen() {
         end_location: coords ? (coords as unknown as Record<string, unknown>) : undefined,
       });
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      await stopTracking().catch(() => {});
       qc.invalidateQueries({ queryKey: ['duty', dutyId] });
       qc.invalidateQueries({ queryKey: ['duties'] });
       router.back();

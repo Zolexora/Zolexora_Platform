@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -7,12 +7,14 @@ import {
   Alert,
   ActivityIndicator,
   TouchableOpacity,
+  Linking,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { dutiesService, TripRecord } from '../../src/services/dutiesService';
 import { useAuth } from '../../src/context/AuthContext';
+import { useDriverLocation } from '../../src/lib/useDriverLocation';
 import { theme } from '../../src/lib/theme';
 import { Card } from '../../src/components/Card';
 import { Button } from '../../src/components/Button';
@@ -55,7 +57,7 @@ export default function DutyDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const qc = useQueryClient();
-  const { activeMode } = useAuth();
+  const { activeMode, me, permissions, driver, vendor } = useAuth();
   const [actionLoading, setActionLoading] = useState(false);
 
   const canExecuteDriverActions = activeMode === 'driver' || activeMode === 'driver_vendor';
@@ -69,6 +71,58 @@ export default function DutyDetailScreen() {
 
   // Trip from enriched duty.trip (may be null if no trip yet)
   const trip = (duty as (typeof duty & { trip?: TripRecord | null }) | undefined)?.trip ?? null;
+  const isTripActive = !!trip && (trip.status === 'IN_TRANSIT' || trip.status === 'IN_PROGRESS');
+  const isAssignedDriver = !!driver?.id && duty?.driver_id === driver.id;
+
+  const canViewLiveTracking = useMemo(() => {
+    if (!duty || !trip) return false;
+    if (me?.is_commander) return true;
+    const permSet = new Set(permissions);
+    if (
+      permSet.has('operations.tracking.view') ||
+      permSet.has('tms:operations_tracking:view') ||
+      permSet.has('operations.dispatch.view') ||
+      permSet.has('tms:operations_dispatch:view')
+    ) {
+      return true;
+    }
+    if (activeMode === 'client') return true;
+    if (driver?.id && duty.driver_id === driver.id) return true;
+    if (vendor?.id && (duty.vehicle?.vendor_id === vendor.id || duty.driver?.vendor_id === vendor.id)) {
+      return true;
+    }
+    return false;
+  }, [activeMode, driver?.id, duty, me?.is_commander, permissions, trip, vendor?.id]);
+
+  const { startTracking, stopTracking, isBackgroundActive } = useDriverLocation(trip?.id);
+
+  // Ensure background tracking stays active while driver's trip is IN_TRANSIT, and stops once finished
+  useEffect(() => {
+    if (!canExecuteDriverActions || !isAssignedDriver) return;
+    if (isTripActive && duty?.status === DutyStatus.IN_TRANSIT && trip?.id) {
+      startTracking(trip.id).catch(() => {});
+    } else if (
+      duty?.status === DutyStatus.ARRIVED_DROP ||
+      duty?.status === DutyStatus.DUTY_COMPLETED ||
+      trip?.status === 'COMPLETED' ||
+      trip?.status === 'CANCELLED'
+    ) {
+      stopTracking().catch(() => {});
+    }
+  }, [canExecuteDriverActions, duty?.status, isAssignedDriver, isTripActive, startTracking, stopTracking, trip?.id, trip?.status]);
+
+  const tripEventsQuery = useQuery({
+    queryKey: ['trip-events', trip?.id],
+    queryFn: () => dutiesService.getTripEvents(trip!.id, { limit: 25 }),
+    enabled: !!trip?.id && canViewLiveTracking,
+    refetchInterval: isTripActive ? 30_000 : false,
+  });
+
+  const gpsEvents = useMemo(
+    () => (tripEventsQuery.data ?? []).filter((ev) => ev.latitude != null && ev.longitude != null),
+    [tripEventsQuery.data],
+  );
+  const latestGps = gpsEvents[0] ?? null;
 
   const dispatchMutation = useMutation({
     mutationFn: () => dutiesService.dispatchDuty(id!),
@@ -366,6 +420,54 @@ export default function DutyDetailScreen() {
             )}
           </Card>
         )}
+
+        {/* Permission-Gated Live GPS Tracking Card */}
+        {trip && canViewLiveTracking && (
+          <Card style={styles.section}>
+            <View style={styles.gpsHeader}>
+              <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>📍  Live GPS Tracking</Text>
+              {canExecuteDriverActions && isAssignedDriver && isTripActive && (
+                <TouchableOpacity
+                  style={[styles.gpsPill, isBackgroundActive ? styles.gpsPillActive : styles.gpsPillWarn]}
+                  onPress={() => startTracking(trip.id)}
+                >
+                  <Text style={styles.gpsPillText}>
+                    {isBackgroundActive ? '● Background GPS On' : 'Enable Background GPS'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            {latestGps ? (
+              <View style={styles.gpsBody}>
+                <Text style={styles.gpsCoords}>
+                  {latestGps.latitude!.toFixed(5)}, {latestGps.longitude!.toFixed(5)}
+                </Text>
+                <Text style={styles.gpsMeta}>
+                  Last ping: {new Date(latestGps.timestamp).toLocaleString('en-IN', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })} · {gpsEvents.length} recorded {gpsEvents.length === 1 ? 'point' : 'points'}
+                </Text>
+                <TouchableOpacity
+                  style={styles.mapsBtn}
+                  onPress={() =>
+                    Linking.openURL(
+                      `https://www.google.com/maps/search/?api=1&query=${latestGps.latitude},${latestGps.longitude}`,
+                    )
+                  }
+                >
+                  <Text style={styles.mapsBtnText}>🗺️  Open Live Location in Maps</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <Text style={styles.gpsMeta}>
+                {tripEventsQuery.isLoading ? 'Loading GPS pings...' : 'No GPS pings recorded yet for this trip.'}
+              </Text>
+            )}
+          </Card>
+        )}
       </ScrollView>
 
       {/* Action Footer */}
@@ -447,8 +549,8 @@ export default function DutyDetailScreen() {
               </View>
             )}
 
-            {/* Complete Trip — shown when trip exists and in progress */}
-            {trip && trip.status === 'IN_PROGRESS' && (
+            {/* Complete Trip — shown when trip exists and in transit */}
+            {isTripActive && (
               <View style={styles.footerCol}>
                 <Button
                   title="🏁  Complete Trip"
@@ -542,6 +644,24 @@ const styles = StyleSheet.create({
   expenseChip: { fontSize: 12, color: theme.colors.textSecondary, backgroundColor: theme.colors.surfaceSubtle, borderRadius: 12, paddingHorizontal: 8, paddingVertical: 3 },
   podBadge: { marginTop: 10, backgroundColor: theme.colors.successMuted, borderRadius: 8, padding: 6, alignSelf: 'flex-start' },
   podBadgeText: { fontSize: 12, fontWeight: '700', color: theme.colors.success },
+
+  gpsHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: theme.spacing.sm, gap: 8 },
+  gpsBody: { gap: 6 },
+  gpsCoords: { fontSize: 16, fontWeight: '800', color: theme.colors.textPrimary },
+  gpsMeta: { fontSize: 12, color: theme.colors.textSecondary },
+  gpsPill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: theme.radius.full },
+  gpsPillActive: { backgroundColor: theme.colors.successMuted },
+  gpsPillWarn: { backgroundColor: theme.colors.warningMuted },
+  gpsPillText: { fontSize: 11, fontWeight: '700', color: theme.colors.textPrimary },
+  mapsBtn: {
+    marginTop: 6,
+    backgroundColor: theme.colors.primaryMuted,
+    borderRadius: theme.radius.sm,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+  },
+  mapsBtnText: { fontSize: 13, fontWeight: '700', color: theme.colors.primaryLight },
 
   footer: { padding: theme.spacing.lg, backgroundColor: theme.colors.surface, borderTopWidth: 1, borderTopColor: theme.colors.border },
   footerRow: { flexDirection: 'row', gap: theme.spacing.sm },

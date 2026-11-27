@@ -1,20 +1,21 @@
 /**
- * useDriverLocation – GPS utilities for the driver persona.
+ * useDriverLocation – foreground + background GPS tracking hook for drivers.
  *
- * Usage:
- *   const { getLocation, startTracking, stopTracking, currentLocation } = useDriverLocation(tripId);
- *
- * - getLocation()     → one-shot: returns { latitude, longitude } or null
- * - startTracking()   → posts a TripEvent every EMIT_INTERVAL_MS while IN_TRANSIT
- * - stopTracking()    → stops the interval
- * - currentLocation  → last known coords (null until first fix)
+ * Uses Option B (expo-task-manager + Location.startLocationUpdatesAsync) when
+ * background permission is granted, and falls back to foreground polling while
+ * the screen is active if the user selected "While Using App".
  */
 
-import { useState, useRef, useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import * as Location from 'expo-location';
-import { apiClient } from './api';
+import {
+  isBackgroundTrackingActive,
+  recordForegroundLocationPing,
+  startBackgroundTripTracking,
+  stopBackgroundTripTracking,
+} from './backgroundLocationTask';
 
-const EMIT_INTERVAL_MS = 30_000; // post location every 30 s while tracking
+const FG_EMIT_INTERVAL_MS = 30_000;
 
 export interface Coords {
   latitude: number;
@@ -23,9 +24,20 @@ export interface Coords {
 
 export function useDriverLocation(tripId: string | null | undefined) {
   const [currentLocation, setCurrentLocation] = useState<Coords | null>(null);
+  const [isBackgroundActive, setIsBackgroundActive] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  /** Request foreground permission and return current coords (or null). */
+  useEffect(() => {
+    isBackgroundTrackingActive().then(setIsBackgroundActive).catch(() => {});
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, []);
+
+  /** Request foreground permission and capture a one-shot GPS fix. */
   const getLocation = useCallback(async (): Promise<Coords | null> => {
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') return null;
@@ -41,44 +53,42 @@ export function useDriverLocation(tripId: string | null | undefined) {
     }
   }, []);
 
-  /** Post a location ping to the backend as a TripEvent. */
-  const postLocationEvent = useCallback(async (coords: Coords) => {
-    if (!tripId) return;
-    await apiClient(`/api/v1/trips/${tripId}/events`, {
-      method: 'POST',
-      body: JSON.stringify({
-        event_type: 'location_update',
-        latitude: coords.latitude,
-        longitude: coords.longitude,
-      }),
-    }).catch(() => {
-      // Best-effort; swallow network errors during tracking
-    });
-  }, [tripId]);
-
   /**
-   * Start streaming location to the backend every EMIT_INTERVAL_MS.
-   * Call after trip start is confirmed.
+   * Starts background GPS updates (or foreground fallback) for the given trip.
    */
-  const startTracking = useCallback(async () => {
-    if (intervalRef.current) return; // already tracking
-    const coords = await getLocation();
-    if (coords) {
-      postLocationEvent(coords);
-      setCurrentLocation(coords);
-    }
-    intervalRef.current = setInterval(async () => {
-      const c = await getLocation();
-      if (c) postLocationEvent(c);
-    }, EMIT_INTERVAL_MS);
-  }, [getLocation, postLocationEvent]);
+  const startTracking = useCallback(
+    async (overrideTripId?: string): Promise<boolean> => {
+      const targetTripId = overrideTripId ?? tripId;
+      if (!targetTripId) return false;
 
-  const stopTracking = useCallback(() => {
+      const bgStarted = await startBackgroundTripTracking(targetTripId);
+      setIsBackgroundActive(bgStarted);
+
+      const coords = await getLocation();
+      if (coords) {
+        await recordForegroundLocationPing(targetTripId, coords.latitude, coords.longitude);
+      }
+
+      // If background permission was denied, maintain a foreground interval while mounted
+      if (!bgStarted && !intervalRef.current) {
+        intervalRef.current = setInterval(async () => {
+          const c = await getLocation();
+          if (c) await recordForegroundLocationPing(targetTripId, c.latitude, c.longitude);
+        }, FG_EMIT_INTERVAL_MS);
+      }
+      return true;
+    },
+    [getLocation, tripId],
+  );
+
+  const stopTracking = useCallback(async () => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
+    await stopBackgroundTripTracking();
+    setIsBackgroundActive(false);
   }, []);
 
-  return { getLocation, startTracking, stopTracking, currentLocation };
+  return { getLocation, startTracking, stopTracking, currentLocation, isBackgroundActive };
 }

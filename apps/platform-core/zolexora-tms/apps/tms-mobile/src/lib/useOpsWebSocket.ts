@@ -109,6 +109,7 @@ export function useOpsWebSocket(orgId: string | null | undefined) {
       if (ev.startsWith('trip.')) {
         qc.invalidateQueries({ queryKey: ['duties'] });
         qc.invalidateQueries({ queryKey: ['trip'] });
+        qc.invalidateQueries({ queryKey: ['trip-events'] });
       }
       if (ev.startsWith('booking.')) {
         qc.invalidateQueries({ queryKey: ['bookings'] });
