@@ -45,7 +45,33 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Strict CORS Middleware
+# Register correlation/error middleware inside CORSMiddleware (Starlette applies add_middleware LIFO)
+# so even unhandled 500 JSON responses pass back through CORSMiddleware with CORS headers.
+@app.middleware("http")
+async def correlation_id_middleware(request: Request, call_next):
+    request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
+    request.state.request_id = request_id
+    start_time = time.time()
+    try:
+        response = await call_next(request)
+    except Exception as exc:
+        logger.error(f"Unhandled exception [req_id={request_id}]: {exc}", exc_info=True)
+        response = JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={
+                "error": {
+                    "code": "INTERNAL_SERVER_ERROR",
+                    "message": "An unexpected error occurred. Please try again later.",
+                    "details": {"request_id": request_id} if settings.IS_DEV_OR_TEST else {},
+                }
+            },
+        )
+    process_time = (time.time() - start_time) * 1000
+    response.headers["X-Request-ID"] = request_id
+    response.headers["X-Response-Time"] = f"{process_time:.2f}ms"
+    return response
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
@@ -53,17 +79,6 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
-
-@app.middleware("http")
-async def correlation_id_middleware(request: Request, call_next):
-    request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
-    request.state.request_id = request_id
-    start_time = time.time()
-    response = await call_next(request)
-    process_time = (time.time() - start_time) * 1000
-    response.headers["X-Request-ID"] = request_id
-    response.headers["X-Response-Time"] = f"{process_time:.2f}ms"
-    return response
 
 @app.exception_handler(StorageError)
 async def storage_exception_handler(request: Request, exc: StorageError):

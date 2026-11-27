@@ -45,12 +45,16 @@ def do_run_migrations(connection: Connection) -> None:
 
 async def run_async_migrations() -> None:
     configuration = config.get_section(config.config_ini_section, {})
-    configuration["sqlalchemy.url"] = settings.ASYNC_DATABASE_URL
+    url = settings.ASYNC_DATABASE_URL
+    configuration["sqlalchemy.url"] = url
+    connect_args = {"statement_cache_size": 0}
+    if "localhost" not in url and "127.0.0.1" not in url:
+        connect_args["ssl"] = "require"
 
     connectable = async_engine_from_config(
         configuration,
         prefix="sqlalchemy.",
-        poolclass=pool.NullPool, connect_args={"statement_cache_size": 0},
+        poolclass=pool.NullPool, connect_args=connect_args,
     )
 
     async with connectable.connect() as connection:
