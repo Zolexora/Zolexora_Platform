@@ -5,7 +5,7 @@ import { useAuth as useZolexoraAuth } from '@zolexora/auth-client/react';
 import { TurnstileWidget } from '@zolexora/auth-client/turnstile';
 import { isValidZolexoraOrgId, isPublicWebmailDomain } from '@zolexora/auth-client';
 import { usePublicSignIn } from '@zolexora/auth-client/public-sign-in';
-import { Building2, Users, ShieldAlert, Loader2, Plus, ChevronRight, Truck } from 'lucide-react';
+import { Building2, Users, ShieldAlert, Loader2, Plus, ChevronRight, Truck, Eye, EyeOff } from 'lucide-react';
 import type { WorkspaceType } from '../types';
 import { useAuth } from '../features/auth/useAuth';
 import { apiClient } from '../lib/api';
@@ -45,11 +45,39 @@ async function authPost(path: string, body: Record<string, unknown>) {
   return data;
 }
 
-function Field({ label, ...props }: { label: string } & React.InputHTMLAttributes<HTMLInputElement>) {
+function Field({ label, type, className, ...props }: { label: string } & React.InputHTMLAttributes<HTMLInputElement>) {
+  const [showPassword, setShowPassword] = useState(false);
+  const isPassword = type === 'password';
+  const inputEl = (
+    <input
+      type={isPassword && showPassword ? 'text' : type}
+      className={`${className ?? input}${isPassword ? ' pr-10' : ''} ${isPassword ? '' : 'mt-1.5'}`.trim()}
+      required
+      {...props}
+    />
+  );
+
   return (
     <label className="block text-xs font-medium text-slate-300">
       {label}
-      <input className={`${input} mt-1.5`} required {...props} />
+      {isPassword ? (
+        <div className="relative mt-1.5 flex items-center">
+          {inputEl}
+          <button
+            type="button"
+            aria-label={showPassword ? 'Hide password' : 'Show password'}
+            onClick={(e) => {
+              e.preventDefault();
+              setShowPassword((prev) => !prev);
+            }}
+            className="absolute right-3 text-slate-400 hover:text-slate-200"
+          >
+            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        </div>
+      ) : (
+        inputEl
+      )}
     </label>
   );
 }
