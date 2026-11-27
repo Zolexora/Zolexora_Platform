@@ -1,16 +1,12 @@
 /**
- * usePushNotifications – registers the device Expo push token with the backend.
- *
- * Call once after the user authenticates. On iOS, requests permission first.
- * On Android 13+ (SDK 33), also requests permission.
- * Token is upserted via POST /api/v1/devices/register-push-token.
- *
- * Returns the token string (or null if permission denied / simulator).
+ * usePushNotifications – registers the device Expo push token with the backend
+ * and deep-links notification taps straight to the relevant Duty screen.
  */
 
 import { useEffect, useRef } from 'react';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+import { useRouter } from 'expo-router';
 import { apiClient } from './api';
 
 /** Configure foreground notification presentation (show banner + sound). */
@@ -26,6 +22,7 @@ Notifications.setNotificationHandler({
 
 export function usePushNotifications(isAuthenticated: boolean) {
   const registered = useRef(false);
+  const router = useRouter();
 
   useEffect(() => {
     if (!isAuthenticated || registered.current) return;
@@ -46,13 +43,34 @@ export function usePushNotifications(isAuthenticated: boolean) {
       }
     })();
 
-    // Reset on logout so the next session re-registers
-    return () => { registered.current = false; };
+    return () => {
+      registered.current = false;
+    };
   }, [isAuthenticated]);
+
+  // Deep-link when the user taps a push notification (warm or cold start)
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const handleResponse = (response: Notifications.NotificationResponse | null) => {
+      const data = response?.notification?.request?.content?.data as
+        | { screen?: string; duty_id?: string }
+        | undefined;
+      if (data?.screen === 'duty' && data?.duty_id) {
+        router.push(`/duty/${data.duty_id}`);
+      }
+    };
+
+    Notifications.getLastNotificationResponseAsync()
+      .then((res) => handleResponse(res))
+      .catch(() => {});
+
+    const sub = Notifications.addNotificationResponseReceivedListener(handleResponse);
+    return () => sub.remove();
+  }, [isAuthenticated, router]);
 }
 
 async function registerForPushNotificationsAsync(): Promise<string | null> {
-  // Expo Go / simulators don't support push tokens — return null gracefully
   if (!Notifications.getExpoPushTokenAsync) return null;
 
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
@@ -69,7 +87,6 @@ async function registerForPushNotificationsAsync(): Promise<string | null> {
     const tokenData = await Notifications.getExpoPushTokenAsync();
     return tokenData.data;
   } catch {
-    // Will fail on simulators / Expo Go without projectId — that's fine
     return null;
   }
 }

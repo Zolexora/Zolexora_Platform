@@ -110,6 +110,15 @@ export function useOpsWebSocket(orgId: string | null | undefined) {
         qc.invalidateQueries({ queryKey: ['duties'] });
         qc.invalidateQueries({ queryKey: ['trip'] });
         qc.invalidateQueries({ queryKey: ['trip-events'] });
+        if (ev === 'trip.exception') {
+          const d = msg.data as { event_type?: string; trip_number?: string } | undefined;
+          const isSos = d?.event_type === 'SOS_EMERGENCY';
+          emitToast(
+            isSos
+              ? `🆘 SOS ALERT on ${d?.trip_number ?? 'active trip'}`
+              : `⚠️ Exception reported on ${d?.trip_number ?? 'active trip'}`,
+          );
+        }
       }
       if (ev.startsWith('booking.')) {
         qc.invalidateQueries({ queryKey: ['bookings'] });

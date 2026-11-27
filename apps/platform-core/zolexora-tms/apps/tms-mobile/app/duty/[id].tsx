@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Linking,
+  Modal,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -43,6 +44,43 @@ function getNextAction(status: DutyStatus): {
   }
 }
 
+function openDirections(address: string, lat?: number | null, lng?: number | null) {
+  const dest =
+    lat != null && lng != null ? `${lat},${lng}` : encodeURIComponent(address);
+  Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${dest}`).catch(() => {});
+}
+
+function dialPhone(phone?: string | null) {
+  if (!phone) return;
+  Linking.openURL(`tel:${phone.replace(/\s+/g, '')}`).catch(() => {});
+}
+
+function openWhatsApp(phone?: string | null, text?: string) {
+  if (!phone) return;
+  const digits = phone.replace(/[^\d]/g, '');
+  const query = text ? `?text=${encodeURIComponent(text)}` : '';
+  Linking.openURL(`https://wa.me/${digits}${query}`).catch(() => {});
+}
+
+function distanceMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const R = 6_371_000;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+const EXCEPTION_OPTIONS: Array<{ label: string; code: string }> = [
+  { label: '🚦  Traffic / Route Delay', code: 'DELAY_TRAFFIC' },
+  { label: '🔧  Vehicle Breakdown', code: 'BREAKDOWN' },
+  { label: '⏳  Loading / Unloading Wait', code: 'LOADING_WAIT' },
+  { label: '🚧  Toll / Checkpost Hold', code: 'CHECKPOINT_HOLD' },
+  { label: '🆘  Emergency SOS Alert', code: 'SOS_EMERGENCY' },
+];
+
 function InfoBlock({ label, value, full = false }: { label: string; value?: string | null; full?: boolean }) {
   if (!value) return null;
   return (
@@ -59,6 +97,7 @@ export default function DutyDetailScreen() {
   const qc = useQueryClient();
   const { activeMode, me, permissions, driver, vendor } = useAuth();
   const [actionLoading, setActionLoading] = useState(false);
+  const [exceptionModalVisible, setExceptionModalVisible] = useState(false);
 
   const canExecuteDriverActions = activeMode === 'driver' || activeMode === 'driver_vendor';
   const canDispatch = activeMode === 'supervisor' || activeMode === 'owner_ops';
@@ -94,7 +133,15 @@ export default function DutyDetailScreen() {
     return false;
   }, [activeMode, driver?.id, duty, me?.is_commander, permissions, trip, vendor?.id]);
 
-  const { startTracking, stopTracking, isBackgroundActive } = useDriverLocation(trip?.id);
+  const { getLocation, startTracking, stopTracking, currentLocation, isBackgroundActive } = useDriverLocation(trip?.id);
+
+  // Check geofence proximity once for DISPATCHED / IN_TRANSIT driver duties
+  useEffect(() => {
+    if (!canExecuteDriverActions || !isAssignedDriver) return;
+    if (duty?.status === DutyStatus.DISPATCHED || duty?.status === DutyStatus.IN_TRANSIT) {
+      getLocation().catch(() => {});
+    }
+  }, [canExecuteDriverActions, duty?.status, getLocation, isAssignedDriver]);
 
   // Ensure background tracking stays active while driver's trip is IN_TRANSIT, and stops once finished
   useEffect(() => {
@@ -122,7 +169,50 @@ export default function DutyDetailScreen() {
     () => (tripEventsQuery.data ?? []).filter((ev) => ev.latitude != null && ev.longitude != null),
     [tripEventsQuery.data],
   );
+  const timelineEvents = useMemo(
+    () => (tripEventsQuery.data ?? []).filter((ev) => ev.event_type !== 'location_update'),
+    [tripEventsQuery.data],
+  );
   const latestGps = gpsEvents[0] ?? null;
+
+  const geofencePrompt = useMemo<{ label: string; milestone: MilestoneAction; distM: number } | null>(() => {
+    if (!canExecuteDriverActions || !isAssignedDriver || !currentLocation || !duty?.booking) return null;
+    if (duty.status === DutyStatus.DISPATCHED && duty.booking.pickup_lat != null && duty.booking.pickup_lng != null) {
+      const distM = distanceMeters(currentLocation.latitude, currentLocation.longitude, duty.booking.pickup_lat, duty.booking.pickup_lng);
+      if (distM <= 350) return { label: 'You are within 350m of Pickup', milestone: 'arrived-pickup', distM };
+    }
+    if (duty.status === DutyStatus.IN_TRANSIT && !trip && duty.booking.drop_lat != null && duty.booking.drop_lng != null) {
+      const distM = distanceMeters(currentLocation.latitude, currentLocation.longitude, duty.booking.drop_lat, duty.booking.drop_lng);
+      if (distM <= 350) return { label: 'You are within 350m of Drop', milestone: 'arrived-drop', distM };
+    }
+    return null;
+  }, [canExecuteDriverActions, currentLocation, duty, isAssignedDriver, trip]);
+
+  const exceptionMutation = useMutation({
+    mutationFn: async ({ code, label }: { code: string; label: string }) => {
+      if (!trip?.id) throw new Error('Trip must be started before reporting an event.');
+      const coords = await getLocation();
+      return dutiesService.postTripEvent(trip.id, {
+        event_type: code,
+        latitude: coords?.latitude,
+        longitude: coords?.longitude,
+        notes: label.replace(/^[^\w]+/, '').trim(),
+      });
+    },
+    onSuccess: (_res, vars) => {
+      setExceptionModalVisible(false);
+      qc.invalidateQueries({ queryKey: ['trip-events', trip?.id] });
+      Alert.alert(
+        vars.code === 'SOS_EMERGENCY' ? '🆘 SOS Sent' : '⚠️ Update Logged',
+        'Operations team has been notified with your GPS coordinates.',
+      );
+    },
+    onError: (err: Error) => Alert.alert('Unable to Report Exception', err.message),
+  });
+
+  const handleReportException = () => {
+    setExceptionModalVisible(true);
+  };
 
   const dispatchMutation = useMutation({
     mutationFn: () => dutiesService.dispatchDuty(id!),
@@ -310,6 +400,72 @@ export default function DutyDetailScreen() {
                 </Text>
               </View>
             )}
+
+            <View style={styles.quickNavRow}>
+              <TouchableOpacity
+                style={styles.quickNavBtn}
+                onPress={() =>
+                  openDirections(
+                    duty.booking!.pickup_address,
+                    duty.booking!.pickup_lat,
+                    duty.booking!.pickup_lng,
+                  )
+                }
+              >
+                <Text style={styles.quickNavText}>🧭 Nav Pickup</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.quickNavBtn}
+                onPress={() =>
+                  openDirections(
+                    duty.booking!.drop_address,
+                    duty.booking!.drop_lat,
+                    duty.booking!.drop_lng,
+                  )
+                }
+              >
+                <Text style={styles.quickNavText}>🧭 Nav Drop</Text>
+              </TouchableOpacity>
+              {duty.booking.customer_phone && (
+                <>
+                  <TouchableOpacity
+                    style={styles.quickNavBtn}
+                    onPress={() => dialPhone(duty.booking!.customer_phone)}
+                  >
+                    <Text style={styles.quickNavText}>📞 Call</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.quickNavBtn}
+                    onPress={() =>
+                      openWhatsApp(duty.booking!.customer_phone, `Update on ${duty.duty_number}`)
+                    }
+                  >
+                    <Text style={styles.quickNavText}>💬 WA</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          </Card>
+        )}
+
+        {/* Geofence Arrival Banner */}
+        {geofencePrompt && (
+          <Card style={[styles.section, styles.geofenceCard]}>
+            <Text style={styles.geofenceTitle}>
+              📍 {geofencePrompt.label} ({Math.round(geofencePrompt.distM)}m away)
+            </Text>
+            <Button
+              title={
+                geofencePrompt.milestone === 'arrived-pickup'
+                  ? 'Confirm Arrived at Pickup'
+                  : 'Confirm Arrived at Drop'
+              }
+              variant="success"
+              size="sm"
+              onPress={() => milestoneMutation.mutate(geofencePrompt.milestone)}
+              loading={milestoneMutation.isPending}
+              style={{ marginTop: 8 }}
+            />
           </Card>
         )}
 
@@ -335,6 +491,24 @@ export default function DutyDetailScreen() {
             <Text style={styles.sectionTitle}>🧑‍✈️  Assigned Driver</Text>
             <InfoBlock label="Driver Name" value={duty.driver.full_name} />
             <InfoBlock label="Contact" value={duty.driver.phone} />
+            {duty.driver.phone && !isAssignedDriver && (
+              <View style={styles.quickNavRow}>
+                <TouchableOpacity
+                  style={styles.quickNavBtn}
+                  onPress={() => dialPhone(duty.driver!.phone)}
+                >
+                  <Text style={styles.quickNavText}>📞 Call Driver</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.quickNavBtn}
+                  onPress={() =>
+                    openWhatsApp(duty.driver!.phone, `Regarding duty ${duty.duty_number}`)
+                  }
+                >
+                  <Text style={styles.quickNavText}>💬 WhatsApp Driver</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </Card>
         )}
 
@@ -468,6 +642,37 @@ export default function DutyDetailScreen() {
             )}
           </Card>
         )}
+
+        {/* Milestones & Exceptions Timeline */}
+        {trip && canViewLiveTracking && timelineEvents.length > 0 && (
+          <Card style={styles.section}>
+            <Text style={styles.sectionTitle}>🕒  Trip Events & Exceptions</Text>
+            {timelineEvents.slice(0, 8).map((ev) => (
+              <View key={ev.id} style={styles.timelineRow}>
+                <View
+                  style={[
+                    styles.timelineDot,
+                    ev.event_type === 'SOS_EMERGENCY'
+                      ? styles.timelineDotSos
+                      : ev.event_type.includes('DELAY') || ev.event_type === 'BREAKDOWN'
+                        ? styles.timelineDotWarn
+                        : styles.timelineDotOk,
+                  ]}
+                />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.timelineTitle}>{ev.event_type.replace(/_/g, ' ')}</Text>
+                  {ev.notes && <Text style={styles.timelineNotes}>{ev.notes}</Text>}
+                </View>
+                <Text style={styles.timelineTime}>
+                  {new Date(ev.timestamp).toLocaleTimeString('en-IN', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </Text>
+              </View>
+            ))}
+          </Card>
+        )}
       </ScrollView>
 
       {/* Action Footer */}
@@ -558,18 +763,28 @@ export default function DutyDetailScreen() {
                   size="lg"
                   onPress={() => router.push({ pathname: `/duty/complete-trip/${trip.id}`, params: { duty_id: id } })}
                 />
-                <Button
-                  title="💸  Log Expense"
-                  variant="outline"
-                  size="sm"
-                  onPress={() =>
-                    router.push({
-                      pathname: '/expense/log',
-                      params: { duty_id: id, trip_id: trip.id, vehicle_id: duty.vehicle_id, driver_id: duty.driver_id },
-                    })
-                  }
-                  style={{ marginTop: 8 }}
-                />
+                <View style={[styles.footerRow, { marginTop: 8 }]}>
+                  <Button
+                    title="💸  Log Expense"
+                    variant="outline"
+                    size="sm"
+                    onPress={() =>
+                      router.push({
+                        pathname: '/expense/log',
+                        params: { duty_id: id, trip_id: trip.id, vehicle_id: duty.vehicle_id, driver_id: duty.driver_id },
+                      })
+                    }
+                    style={styles.footerBtn}
+                  />
+                  <Button
+                    title="⚠️  Delay / SOS"
+                    variant="danger"
+                    size="sm"
+                    onPress={handleReportException}
+                    loading={exceptionMutation.isPending}
+                    style={styles.footerBtn}
+                  />
+                </View>
               </View>
             )}
 
@@ -592,6 +807,49 @@ export default function DutyDetailScreen() {
           </View>
         )}
       </View>
+
+      {/* Delay / Exception / SOS Modal (cross-platform Android + iOS) */}
+      <Modal
+        visible={exceptionModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setExceptionModalVisible(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Report Trip Exception</Text>
+            <Text style={styles.modalSub}>
+              Sends an immediate operational alert with your current GPS coordinates.
+            </Text>
+            {EXCEPTION_OPTIONS.map((opt) => (
+              <TouchableOpacity
+                key={opt.code}
+                style={[
+                  styles.exceptionOption,
+                  opt.code === 'SOS_EMERGENCY' && styles.exceptionOptionSos,
+                ]}
+                disabled={exceptionMutation.isPending}
+                onPress={() => exceptionMutation.mutate({ code: opt.code, label: opt.label })}
+              >
+                <Text
+                  style={[
+                    styles.exceptionOptionText,
+                    opt.code === 'SOS_EMERGENCY' && styles.exceptionOptionSosText,
+                  ]}
+                >
+                  {opt.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+            <Button
+              title="Cancel"
+              variant="outline"
+              onPress={() => setExceptionModalVisible(false)}
+              style={{ marginTop: 8 }}
+            />
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -663,10 +921,72 @@ const styles = StyleSheet.create({
   },
   mapsBtnText: { fontSize: 13, fontWeight: '700', color: theme.colors.primaryLight },
 
+  quickNavRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: theme.spacing.md },
+  quickNavBtn: {
+    flex: 1,
+    minWidth: 72,
+    backgroundColor: theme.colors.surfaceSubtle,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.sm,
+    paddingVertical: 8,
+    alignItems: 'center',
+  },
+  quickNavText: { fontSize: 12, fontWeight: '700', color: theme.colors.textPrimary },
+
+  geofenceCard: { borderColor: theme.colors.success, borderWidth: 1, backgroundColor: theme.colors.successMuted },
+  geofenceTitle: { fontSize: 13, fontWeight: '800', color: theme.colors.success },
+
+  timelineRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.borderSubtle,
+  },
+  timelineDot: { width: 8, height: 8, borderRadius: 4, marginTop: 5 },
+  timelineDotOk: { backgroundColor: theme.colors.primaryLight },
+  timelineDotWarn: { backgroundColor: theme.colors.warning },
+  timelineDotSos: { backgroundColor: theme.colors.danger },
+  timelineTitle: { fontSize: 13, fontWeight: '700', color: theme.colors.textPrimary },
+  timelineNotes: { fontSize: 12, color: theme.colors.textSecondary, marginTop: 2 },
+  timelineTime: { fontSize: 11, color: theme.colors.textMuted },
+
   footer: { padding: theme.spacing.lg, backgroundColor: theme.colors.surface, borderTopWidth: 1, borderTopColor: theme.colors.border },
   footerRow: { flexDirection: 'row', gap: theme.spacing.sm },
   footerCol: { gap: 0 },
   footerBtn: { flex: 1 },
   completedBanner: { backgroundColor: theme.colors.successMuted, borderRadius: theme.radius.md, padding: theme.spacing.md, alignItems: 'center' },
   completedText: { fontSize: 15, fontWeight: '700', color: theme.colors.success },
+
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'flex-end',
+  },
+  modalCard: {
+    backgroundColor: theme.colors.surface,
+    borderTopLeftRadius: theme.radius.xl,
+    borderTopRightRadius: theme.radius.xl,
+    padding: theme.spacing.lg,
+    paddingBottom: 28,
+    gap: 10,
+  },
+  modalTitle: { fontSize: 18, fontWeight: '800', color: theme.colors.textPrimary },
+  modalSub: { fontSize: 13, color: theme.colors.textSecondary, marginBottom: 4 },
+  exceptionOption: {
+    backgroundColor: theme.colors.surfaceSubtle,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.md,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+  },
+  exceptionOptionSos: {
+    backgroundColor: theme.colors.dangerMuted,
+    borderColor: theme.colors.danger,
+  },
+  exceptionOptionText: { fontSize: 14, fontWeight: '700', color: theme.colors.textPrimary },
+  exceptionOptionSosText: { color: theme.colors.danger },
 });

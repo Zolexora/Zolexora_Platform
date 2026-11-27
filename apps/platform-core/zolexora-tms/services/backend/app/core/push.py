@@ -73,3 +73,21 @@ async def send_duty_dispatched_push(*, driver_token: str, duty_number: str, duty
         body=f"{duty_number} has been dispatched. Time to move!",
         data={"screen": "duty", "duty_id": duty_id},
     )
+
+
+async def send_trip_exception_push(
+    *,
+    token: str,
+    trip_number: str,
+    event_type: str,
+    duty_id: str,
+    notes: Optional[str] = None,
+) -> None:
+    is_sos = event_type == "SOS_EMERGENCY"
+    label = event_type.replace("_", " ").title()
+    await send_expo_push(
+        token=token,
+        title=f"🆘 EMERGENCY SOS — {trip_number}" if is_sos else f"⚠️ Trip Exception — {trip_number}",
+        body=notes or f"Driver reported {label}. Tap to inspect duty.",
+        data={"screen": "duty", "duty_id": duty_id, "event_type": event_type},
+    )

@@ -389,7 +389,61 @@ async def add_trip_event(
             },
         )
 
+    if req.event_type in {
+        "DELAY_TRAFFIC",
+        "BREAKDOWN",
+        "LOADING_WAIT",
+        "CHECKPOINT_HOLD",
+        "SOS_EMERGENCY",
+        "INSPECTION_ISSUE",
+    }:
+        await ws_manager.broadcast_to_org(
+            ctx.organisation_id,
+            "trip.exception",
+            {
+                "trip_id": str(trip.id),
+                "trip_number": trip.trip_number,
+                "duty_id": str(trip.duty_id),
+                "event_type": event.event_type,
+                "notes": event.notes,
+                "timestamp": event.timestamp.isoformat(),
+            },
+        )
+        await _notify_ops_trip_exception(ctx, trip, event, db)
+
     return TripEventResponse.model_validate(event)
+
+
+async def _notify_ops_trip_exception(
+    ctx: CurrentUserContext, trip: Trip, event: TripEvent, db: AsyncSession
+) -> None:
+    """Best-effort push alert to active org commanders/ops members on driver delay or SOS."""
+    try:
+        from app.core.push import send_trip_exception_push
+        from app.modules.core.devices.models import DeviceToken
+        from app.modules.identity.organisations.membership_models import MemberStatus, OrganisationMember
+
+        token_stmt = (
+            select(DeviceToken.token)
+            .join(OrganisationMember, OrganisationMember.user_id == DeviceToken.user_id)
+            .where(
+                OrganisationMember.organisation_id == ctx.organisation_id,
+                OrganisationMember.status == MemberStatus.ACTIVE,
+                DeviceToken.user_id != ctx.user_id,
+            )
+            .distinct()
+        )
+        tokens = (await db.execute(token_stmt)).scalars().all()
+        for tok in tokens:
+            await send_trip_exception_push(
+                token=tok,
+                trip_number=trip.trip_number,
+                event_type=event.event_type,
+                duty_id=str(trip.duty_id),
+                notes=event.notes,
+            )
+    except Exception:
+        pass
 
 
 async def list_trip_events(
