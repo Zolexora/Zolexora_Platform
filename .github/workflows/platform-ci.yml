@@ -19,7 +19,21 @@ jobs:
       - name: Compose files are valid
         run: |
           for f in apps/*/compose.yaml apps/platform-core/*/compose.yaml apps/platform-apps/*/compose.yaml; do
-            echo "::group::$f"; docker compose -f "$f" config -q; echo "::endgroup::"
+            echo "::group::$f"
+            # Supply non-secret values only for Compose's required-variable checks.
+            while IFS= read -r variable; do
+              case "$variable" in
+                PORT|*_PORT) value=1 ;;
+                *) value=ci-validation-placeholder ;;
+              esac
+              export "$variable=$value"
+            done < <(
+              grep -oE '\$\{[A-Za-z_][A-Za-z0-9_]*:\?' "$f" |
+                sed -E 's/^\$\{//; s/:\?$//' |
+                sort -u
+            )
+            docker compose -f "$f" config -q
+            echo "::endgroup::"
           done
       - name: Compose only pulls CI-built GHCR images (no local builds)
         run: |
