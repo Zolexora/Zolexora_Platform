@@ -1,0 +1,99 @@
+name: Zolexora TMS — EAS Mobile Build
+
+on:
+  push:
+    tags:
+      - 'tms-mobile-v*'
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Target platform'
+        required: true
+        default: 'android'
+        type: choice
+        options:
+          - android
+          - ios
+          - all
+      profile:
+        description: 'EAS build profile'
+        required: true
+        default: 'preview'
+        type: choice
+        options:
+          - preview
+          - production
+          - development
+      environment:
+        description: 'Infisical environment slug'
+        required: true
+        default: 'prod'
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+
+env:
+  WORKING_DIR: apps/platform-core/zolexora-tms/apps/tms-mobile
+
+jobs:
+  typecheck:
+    name: Typecheck Mobile App
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node
+      - name: Run TypeScript check
+        run: pnpm --filter @zolexora/tms-mobile run typecheck
+
+  eas-build:
+    name: EAS Build (${{ inputs.platform || 'android' }} / ${{ inputs.profile || 'production' }})
+    needs: typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      - uses: ./.github/actions/setup-node
+
+      # Infisical is the only secret source — injects EXPO_PUBLIC_API_BASE_URL,
+      # AUTH_SERVICE_PUBLIC_URL, TURNSTILE_SITE_KEY (and optional EAS_PROJECT_ID).
+      - uses: ./.github/actions/infisical
+        with:
+          client-id: ${{ secrets.INFISICAL_CLIENT_ID }}
+          client-secret: ${{ secrets.INFISICAL_CLIENT_SECRET }}
+          project-id: c4ac7d07-f26f-4fb8-bd04-6d3e037079f9
+          path: /Zolexora_TMS
+          environment: ${{ inputs.environment || 'prod' }}
+
+      - name: Verify required Infisical keys
+        run: |
+          missing=0
+          for key in EXPO_PUBLIC_API_BASE_URL AUTH_SERVICE_PUBLIC_URL TURNSTILE_SITE_KEY; do
+            [ -n "${!key:-}" ] || { echo "::error title=Missing Infisical key::$key (/Zolexora_TMS)"; missing=1; }
+          done
+          exit "$missing"
+
+      - name: Setup Expo + EAS CLI
+        uses: expo/expo-github-action@v8
+        with:
+          expo-version: latest
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Trigger EAS Build
+        working-directory: ${{ env.WORKING_DIR }}
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          PLATFORM="${{ inputs.platform || 'android' }}"
+          PROFILE="${{ inputs.profile || (startsWith(github.ref, 'refs/tags/') && 'production' || 'preview') }}"
+          eas build \
+            --platform "$PLATFORM" \
+            --profile "$PROFILE" \
+            --non-interactive \
+            --wait
