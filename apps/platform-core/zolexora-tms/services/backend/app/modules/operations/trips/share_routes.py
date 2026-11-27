@@ -34,14 +34,29 @@ class ShareLinkResponse(BaseModel):
     expires_at: datetime.datetime
 
 
+class PublicTrackingStop(BaseModel):
+    seq: int
+    stop_type: str
+    address: str
+    status: str
+
+
 class PublicTrackingResponse(BaseModel):
     trip_number: str
     status: str
+    booking_type: Optional[str] = None
+    vehicle_registration: Optional[str] = None
+    driver_name: Optional[str] = None
     pickup_address: Optional[str] = None
+    pickup_lat: Optional[float] = None
+    pickup_lng: Optional[float] = None
     drop_address: Optional[str] = None
+    drop_lat: Optional[float] = None
+    drop_lng: Optional[float] = None
     latest_latitude: Optional[float] = None
     latest_longitude: Optional[float] = None
     latest_location_at: Optional[datetime.datetime] = None
+    stops: list[PublicTrackingStop] = []
     expires_at: datetime.datetime
 
 
@@ -120,25 +135,50 @@ async def public_tracking(
     evt_res = await db.execute(evt_stmt)
     latest_evt = evt_res.scalars().first()
 
-    # Pull address from booking via duty relationship
-    from app.modules.operations.duties.models import Duty  # local import
-    from app.modules.operations.bookings.models import Booking  # local import
-    duty_stmt = select(Duty).where(Duty.id == trip.duty_id)
-    duty_res = await db.execute(duty_stmt)
-    duty = duty_res.scalars().first()
+    # Pull address, vehicle, and sanitized driver first name
+    from app.modules.operations.duties.models import Duty
+    from app.modules.operations.bookings.models import Booking
+    from app.modules.fleet.vehicles.models import Vehicle
+    from app.modules.fleet.drivers.models import Driver
+
+    duty = (await db.execute(select(Duty).where(Duty.id == trip.duty_id))).scalars().first()
     booking: Optional[Booking] = None
     if duty and duty.booking_id:
-        bk_stmt = select(Booking).where(Booking.id == duty.booking_id)
-        bk_res = await db.execute(bk_stmt)
-        booking = bk_res.scalars().first()
+        booking = (await db.execute(select(Booking).where(Booking.id == duty.booking_id))).scalars().first()
+
+    vehicle = (await db.execute(select(Vehicle).where(Vehicle.id == trip.vehicle_id))).scalars().first()
+    driver = (await db.execute(select(Driver).where(Driver.id == trip.driver_id))).scalars().first()
+
+    raw_stops = booking.stops if (booking and isinstance(booking.stops, list)) else []
+    sanitized_stops = [
+        PublicTrackingStop(
+            seq=int(s.get("seq", idx + 1)),
+            stop_type=str(s.get("stop_type", "PICKUP")),
+            address=str(s.get("address", "")),
+            status=str(s.get("status", "PENDING")),
+        )
+        for idx, s in enumerate(raw_stops)
+    ]
 
     return PublicTrackingResponse(
         trip_number=trip.trip_number,
         status=trip.status.value if hasattr(trip.status, 'value') else str(trip.status),
+        booking_type=(
+            booking.booking_type.value
+            if booking and hasattr(booking.booking_type, 'value')
+            else (str(booking.booking_type) if booking else None)
+        ),
+        vehicle_registration=vehicle.registration_number if vehicle else None,
+        driver_name=driver.full_name.split()[0] if (driver and driver.full_name) else None,
         pickup_address=booking.pickup_address if booking else None,
+        pickup_lat=booking.pickup_lat if booking else None,
+        pickup_lng=booking.pickup_lng if booking else None,
         drop_address=booking.drop_address if booking else None,
+        drop_lat=booking.drop_lat if booking else None,
+        drop_lng=booking.drop_lng if booking else None,
         latest_latitude=latest_evt.latitude if latest_evt else None,
         latest_longitude=latest_evt.longitude if latest_evt else None,
         latest_location_at=latest_evt.timestamp if latest_evt else None,
+        stops=sanitized_stops,
         expires_at=trip.share_token_expires_at,
     )

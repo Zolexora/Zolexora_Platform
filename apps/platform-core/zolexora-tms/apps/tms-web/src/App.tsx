@@ -48,6 +48,7 @@ import { ClientPaymentsPage } from './features/client-payments/ClientPaymentsPag
 import { ClientSettingsPage } from './features/client-settings/ClientSettingsPage';
 import { UserProfilePage } from './features/profile/UserProfilePage';
 import { AcceptInvitePage } from './pages/AcceptInvitePage';
+import { PublicTrackingPage } from './pages/PublicTrackingPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -107,6 +108,7 @@ export function App() {
             <Route path="/authentication" element={<AuthPageWrapper showBack><AuthenticationForm /></AuthPageWrapper>} />
             <Route path="/invite" element={<AcceptInvitePage />} />
             <Route path="/invites/accept" element={<AcceptInvitePage />} />
+            <Route path="/t/:token" element={<PublicTrackingPage />} />
             <Route path="/login" element={<Navigate to="/authentication" replace />} />
             <Route path="/onboarding" element={<Navigate to="/authentication" replace />} />
             <Route path="/auth" element={<Navigate to="/authentication" replace />} />
