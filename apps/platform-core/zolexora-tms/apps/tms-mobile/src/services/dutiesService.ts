@@ -50,6 +50,17 @@ export const dutiesService = {
     });
   },
 
+  assignDuty(dutyId: string, payload: { driver_id: string; vehicle_id: string }): Promise<Duty> {
+    return apiClient<Duty>(`/api/v1/duties/${dutyId}/assign`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  dispatchDuty(dutyId: string): Promise<Duty> {
+    return apiClient<Duty>(`/api/v1/duties/${dutyId}/dispatch`, { method: 'POST' });
+  },
+
   advanceMilestone(
     dutyId: string,
     milestone: 'arrived-pickup' | 'in-transit' | 'arrived-drop' | 'complete',
@@ -94,8 +105,6 @@ export const dutiesService = {
     return apiClient<{ pod_attachment_url: string }>(`/api/v1/trips/${tripId}/pod`, {
       method: 'POST',
       body: formData,
-      // Let browser set multipart boundary — omit Content-Type header
-      headers: {},
     });
   },
 

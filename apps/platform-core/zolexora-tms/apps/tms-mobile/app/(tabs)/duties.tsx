@@ -77,14 +77,29 @@ function DutyCard({ duty, onPress }: { duty: Duty; onPress: () => void }) {
 
 export default function DutiesScreen() {
   const router = useRouter();
-  const { user, activeOrg, activeMode } = useAuth();
+  const { driver, vendor, activeOrg, activeMode } = useAuth();
   const [activeFilter, setActiveFilter] = useState<DutyStatus | 'ALL'>('ALL');
-  const isDriverScoped = activeMode === 'driver' || activeMode === 'driver_vendor';
+  const isDriverScoped = activeMode === 'driver';
+  const isVendorScoped = activeMode === 'vendor' || activeMode === 'driver_vendor';
+
+  const queryParams =
+    isVendorScoped && vendor?.id
+      ? { vendor_id: vendor.id }
+      : isDriverScoped && driver?.id
+        ? { driver_id: driver.id }
+        : isVendorScoped && driver?.id
+          ? { driver_id: driver.id }
+          : undefined;
+
+  const canFetch =
+    !!activeOrg?.organisation_id &&
+    (!isDriverScoped || !!driver?.id) &&
+    (!isVendorScoped || !!(vendor?.id || driver?.id));
 
   const { data: duties = [], refetch, isLoading } = useQuery({
-    queryKey: ['duties', activeOrg?.organisation_id, activeMode, user?.id],
-    queryFn: () => dutiesService.getDuties(isDriverScoped && user?.id ? { driver_id: user.id } : undefined),
-    enabled: !!activeOrg?.organisation_id && (!isDriverScoped || !!user?.id),
+    queryKey: ['duties', activeOrg?.organisation_id, activeMode, driver?.id, vendor?.id],
+    queryFn: () => dutiesService.getDuties(queryParams),
+    enabled: canFetch,
     refetchInterval: 30_000,
   });
 

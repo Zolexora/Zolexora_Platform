@@ -2,20 +2,27 @@ import datetime
 import uuid
 from typing import Optional
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import OrgContext
 from app.core.audit import record_audit
 from app.core.websocket import ws_manager
+from app.modules.crm.clients.models import Client
 from app.modules.fleet.drivers.models import Driver
 from app.modules.fleet.vehicles.models import Vehicle
 from app.modules.operations.bookings.models import Booking
 from app.modules.operations.duties.models import Duty
+from app.modules.operations.trips.models import Trip
 from app.modules.operations.duties.schemas import (
     DutyAssignRequest,
+    DutyBookingSummary,
     DutyCreate,
+    DutyDriverSummary,
     DutyResponse,
     DutyStatus,
+    DutyTripSummary,
+    DutyVehicleSummary,
 )
 
 

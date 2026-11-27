@@ -1,15 +1,31 @@
 import uuid
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.db.session import get_db
 from app.auth.dependencies import get_current_user, get_current_active_organisation, AuthenticatedUser
+from app.core.storage import upload_document_to_r2
 from app.modules.finance.expenses.schemas import ExpenseCreateRequest, ExpenseResponse
 from app.modules.finance.expenses.models import Expense, ExpenseCategory
 
 router = APIRouter(prefix="/expenses", tags=["Expenses"])
+
+
+@router.post("/receipts/upload")
+async def upload_expense_receipt(
+    file: UploadFile = File(...),
+    current_org_user: AuthenticatedUser = Depends(get_current_active_organisation),
+):
+    content = await file.read()
+    url = await upload_document_to_r2(
+        file_bytes=content,
+        file_name=file.filename or "receipt.jpg",
+        content_type=file.content_type or "image/jpeg",
+        folder=f"tenants/{current_org_user.organisation_id}/expenses/receipts",
+    )
+    return {"url": url}
 
 @router.post("", response_model=ExpenseResponse, status_code=status.HTTP_201_CREATED)
 async def create_expense(

@@ -12,6 +12,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { dutiesService, TripRecord } from '../../src/services/dutiesService';
+import { useAuth } from '../../src/context/AuthContext';
 import { theme } from '../../src/lib/theme';
 import { Card } from '../../src/components/Card';
 import { Button } from '../../src/components/Button';
@@ -28,7 +29,6 @@ function getNextAction(status: DutyStatus): {
 } | null {
   switch (status) {
     case DutyStatus.DISPATCHED:
-    case DutyStatus.ACCEPTED:
       return { label: '📍  Arrived at Pickup', milestone: 'arrived-pickup', variant: 'primary' };
     case DutyStatus.ARRIVED_PICKUP:
       return { label: '🚚  Start Transit', milestone: 'in-transit', variant: 'primary' };
@@ -55,7 +55,11 @@ export default function DutyDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const qc = useQueryClient();
+  const { activeMode } = useAuth();
   const [actionLoading, setActionLoading] = useState(false);
+
+  const canExecuteDriverActions = activeMode === 'driver' || activeMode === 'driver_vendor';
+  const canDispatch = activeMode === 'supervisor' || activeMode === 'owner_ops';
 
   const { data: duty, isLoading, error } = useQuery({
     queryKey: ['duty', id],
@@ -65,6 +69,16 @@ export default function DutyDetailScreen() {
 
   // Trip from enriched duty.trip (may be null if no trip yet)
   const trip = (duty as (typeof duty & { trip?: TripRecord | null }) | undefined)?.trip ?? null;
+
+  const dispatchMutation = useMutation({
+    mutationFn: () => dutiesService.dispatchDuty(id!),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['duties'] });
+      qc.invalidateQueries({ queryKey: ['duty', id] });
+      qc.invalidateQueries({ queryKey: ['mobile-dispatch-board'] });
+    },
+    onError: (err: Error) => Alert.alert('Dispatch Failed', err.message),
+  });
 
   const acceptMutation = useMutation({
     mutationFn: () => dutiesService.acceptDuty(id!),
@@ -261,6 +275,15 @@ export default function DutyDetailScreen() {
           </Card>
         )}
 
+        {/* Driver */}
+        {duty.driver && (
+          <Card style={styles.section}>
+            <Text style={styles.sectionTitle}>🧑‍✈️  Assigned Driver</Text>
+            <InfoBlock label="Driver Name" value={duty.driver.full_name} />
+            <InfoBlock label="Contact" value={duty.driver.phone} />
+          </Card>
+        )}
+
         {/* Scheduled Times */}
         <Card style={styles.section}>
           <Text style={styles.sectionTitle}>🕐  Schedule</Text>
@@ -347,73 +370,118 @@ export default function DutyDetailScreen() {
 
       {/* Action Footer */}
       <View style={styles.footer}>
-        {/* Accept / Reject pending duties */}
-        {duty.status === DutyStatus.DRIVER_ACCEPTANCE_PENDING && (
-          <View style={styles.footerRow}>
-            <Button
-              title="Reject"
-              variant="danger"
-              onPress={handleReject}
-              loading={actionLoading && rejectMutation.isPending}
-              style={styles.footerBtn}
-            />
-            <Button
-              title="Accept Duty"
-              variant="success"
-              onPress={handleAccept}
-              loading={actionLoading && acceptMutation.isPending}
-              style={styles.footerBtn}
-            />
-          </View>
-        )}
+        {/* Supervisor / Ops Assignment & Dispatch Controls */}
+        {canDispatch &&
+          (duty.status === DutyStatus.UNASSIGNED ||
+            duty.status === DutyStatus.ASSIGNED ||
+            duty.status === DutyStatus.DRIVER_ACCEPTANCE_PENDING ||
+            duty.status === DutyStatus.ACCEPTED) && (
+            <View style={[styles.footerRow, { marginBottom: canExecuteDriverActions ? 8 : 0 }]}>
+              <Button
+                title={duty.driver_id ? 'Reassign' : 'Assign Driver & Vehicle'}
+                variant="outline"
+                onPress={() => router.push(`/dispatch/assign/${id}`)}
+                style={styles.footerBtn}
+              />
+              {(duty.status === DutyStatus.ASSIGNED || duty.status === DutyStatus.ACCEPTED) && (
+                <Button
+                  title="🚀  Dispatch"
+                  variant="primary"
+                  onPress={() => dispatchMutation.mutate()}
+                  loading={dispatchMutation.isPending}
+                  style={styles.footerBtn}
+                />
+              )}
+            </View>
+          )}
 
-        {/* Start Trip — shown when IN_TRANSIT and no trip yet */}
-        {duty.status === DutyStatus.IN_TRANSIT && !trip && (
-          <View style={styles.footerCol}>
-            <Button
-              title="🚀  Start Trip"
-              variant="primary"
-              size="lg"
-              onPress={() => router.push(`/duty/start-trip/${id}`)}
-            />
-            <Button
-              title="💸  Log Expense"
-              variant="outline"
-              size="sm"
-              onPress={() => router.push({ pathname: '/expense/log', params: { duty_id: id } })}
-              style={{ marginTop: 8 }}
-            />
-          </View>
-        )}
+        {/* Driver execution controls */}
+        {canExecuteDriverActions && (
+          <>
+            {(duty.status === DutyStatus.DRIVER_ACCEPTANCE_PENDING || duty.status === DutyStatus.ASSIGNED) && (
+              <View style={styles.footerRow}>
+                <Button
+                  title="Reject"
+                  variant="danger"
+                  onPress={handleReject}
+                  loading={actionLoading && rejectMutation.isPending}
+                  style={styles.footerBtn}
+                />
+                <Button
+                  title="Accept Duty"
+                  variant="success"
+                  onPress={handleAccept}
+                  loading={actionLoading && acceptMutation.isPending}
+                  style={styles.footerBtn}
+                />
+              </View>
+            )}
 
-        {/* Complete Trip — shown when trip exists and in progress */}
-        {trip && trip.status === 'IN_PROGRESS' && (
-          <View style={styles.footerCol}>
-            <Button
-              title="🏁  Complete Trip"
-              variant="success"
-              size="lg"
-              onPress={() => router.push({ pathname: `/duty/complete-trip/${trip.id}`, params: { duty_id: id } })}
-            />
-            <Button
-              title="💸  Log Expense"
-              variant="outline"
-              size="sm"
-              onPress={() => router.push({ pathname: '/expense/log', params: { duty_id: id } })}
-              style={{ marginTop: 8 }}
-            />
-          </View>
-        )}
+            {duty.status === DutyStatus.ACCEPTED && !canDispatch && (
+              <View style={styles.completedBanner}>
+                <Text style={styles.completedText}>✓ Accepted — Waiting for dispatch release</Text>
+              </View>
+            )}
 
-        {/* Milestone actions for active duties */}
-        {nextAction && !trip && duty.status !== DutyStatus.IN_TRANSIT && (
-          <Button
-            title={nextAction.label}
-            variant={nextAction.variant}
-            size="lg"
-            onPress={() => handleMilestone(nextAction.milestone, nextAction.label)}
-            loading={actionLoading && milestoneMutation.isPending}
-          />
+            {/* Start Trip — shown when IN_TRANSIT and no trip yet */}
+            {duty.status === DutyStatus.IN_TRANSIT && !trip && (
+              <View style={styles.footerCol}>
+                <Button
+                  title="🚀  Start Trip"
+                  variant="primary"
+                  size="lg"
+                  onPress={() => router.push(`/duty/start-trip/${id}`)}
+                />
+                <Button
+                  title="💸  Log Expense"
+                  variant="outline"
+                  size="sm"
+                  onPress={() =>
+                    router.push({
+                      pathname: '/expense/log',
+                      params: { duty_id: id, vehicle_id: duty.vehicle_id, driver_id: duty.driver_id },
+                    })
+                  }
+                  style={{ marginTop: 8 }}
+                />
+              </View>
+            )}
+
+            {/* Complete Trip — shown when trip exists and in progress */}
+            {trip && trip.status === 'IN_PROGRESS' && (
+              <View style={styles.footerCol}>
+                <Button
+                  title="🏁  Complete Trip"
+                  variant="success"
+                  size="lg"
+                  onPress={() => router.push({ pathname: `/duty/complete-trip/${trip.id}`, params: { duty_id: id } })}
+                />
+                <Button
+                  title="💸  Log Expense"
+                  variant="outline"
+                  size="sm"
+                  onPress={() =>
+                    router.push({
+                      pathname: '/expense/log',
+                      params: { duty_id: id, trip_id: trip.id, vehicle_id: duty.vehicle_id, driver_id: duty.driver_id },
+                    })
+                  }
+                  style={{ marginTop: 8 }}
+                />
+              </View>
+            )}
+
+            {/* Milestone actions for active duties */}
+            {nextAction && !trip && duty.status !== DutyStatus.IN_TRANSIT && (
+              <Button
+                title={nextAction.label}
+                variant={nextAction.variant}
+                size="lg"
+                onPress={() => handleMilestone(nextAction.milestone, nextAction.label)}
+                loading={actionLoading && milestoneMutation.isPending}
+              />
+            )}
+          </>
         )}
 
         {duty.status === DutyStatus.DUTY_COMPLETED && (

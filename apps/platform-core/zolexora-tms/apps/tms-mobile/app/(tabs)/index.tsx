@@ -33,12 +33,27 @@ export default function DashboardScreen() {
   } = useAuth();
 
   const meta = PERSONA_META[activeMode];
-  const isDriverScoped = activeMode === 'driver' || activeMode === 'driver_vendor';
+  const isDriverScoped = activeMode === 'driver';
+  const isVendorScoped = activeMode === 'vendor' || activeMode === 'driver_vendor';
+
+  const dutyParams =
+    isVendorScoped && vendor?.id
+      ? { vendor_id: vendor.id }
+      : isDriverScoped && driver?.id
+        ? { driver_id: driver.id }
+        : isVendorScoped && driver?.id
+          ? { driver_id: driver.id }
+          : undefined;
+
+  const canFetchDuties =
+    !!activeOrg?.organisation_id &&
+    (!isDriverScoped || !!driver?.id) &&
+    (!isVendorScoped || !!(vendor?.id || driver?.id));
 
   const { data: duties = [], refetch, isLoading } = useQuery({
-    queryKey: ['duties', activeOrg?.organisation_id, activeMode, driver?.id],
-    queryFn: () => dutiesService.getDuties(isDriverScoped && driver?.id ? { driver_id: driver.id } : undefined),
-    enabled: !!activeOrg?.organisation_id && (!isDriverScoped || !!driver?.id),
+    queryKey: ['duties', activeOrg?.organisation_id, activeMode, driver?.id, vendor?.id],
+    queryFn: () => dutiesService.getDuties(dutyParams),
+    enabled: canFetchDuties,
     refetchInterval: 30_000,
   });
 
@@ -217,8 +232,14 @@ export default function DashboardScreen() {
             ...(meta.showWorkspaceTab
               ? [{ label: meta.workspaceTabTitle, icon: meta.workspaceTabIcon, route: '/workspace' }]
               : []),
+            ...(activeMode === 'driver' || activeMode === 'driver_vendor'
+              ? [{ label: 'Log Expense', icon: '💸', route: '/expense/log' }]
+              : []),
+            ...(activeMode === 'client' || activeMode === 'owner_ops'
+              ? [{ label: 'New Booking', icon: '📦', route: '/booking/new' }]
+              : []),
             { label: 'Account & Role', icon: '👤', route: '/profile' },
-            ...(user ? [{ label: 'Driver License', icon: '🪪', route: '/profile' }] : []),
+            ...(driver ? [{ label: 'Driver License', icon: '🪪', route: '/profile' }] : []),
           ].map((action) => (
             <TouchableOpacity
               key={action.label}

@@ -57,6 +57,14 @@ export default function RootLayout() {
               name="vehicle/[id]"
               options={{ title: 'Vehicle Details', headerBackTitle: 'Back' }}
             />
+            <Stack.Screen
+              name="dispatch/assign/[duty_id]"
+              options={{ title: 'Assign Duty', headerBackTitle: 'Back' }}
+            />
+            <Stack.Screen
+              name="booking/new"
+              options={{ title: 'New Booking Request', headerBackTitle: 'Back' }}
+            />
           </Stack>
         </AuthProvider>
       </QueryClientProvider>

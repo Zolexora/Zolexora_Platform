@@ -145,3 +145,90 @@ async def test_mobile_bootstrap_and_vendor_driver_me():
         assert ph_boot.json()["driver"]["phone"] == phone_only
         assert ph_boot.json()["vendor"] is None
         assert (await client.get("/api/v1/drivers/me", headers=ph_headers)).json()["phone"] == phone_only
+
+        # 5. Duty enrichment + vendor_id scoping + dispatch board lanes
+        client_res = await client.post(
+            "/api/v1/crm/clients",
+            json={"name": "Acme Logistics Client", "phone": "+919900001111"},
+            headers=owner_headers,
+        )
+        assert client_res.status_code == 201
+        customer_id = client_res.json()["id"]
+
+        veh_res = await client.post(
+            "/api/v1/vehicles",
+            json={
+                "registration_number": f"KA01MB{uuid.uuid4().int % 9000 + 1000}",
+                "vendor_id": combo_vendor_id,
+                "ownership_type": "ATTACHED",
+                "make": "Tata",
+                "model": "Prima",
+            },
+            headers=owner_headers,
+        )
+        assert veh_res.status_code == 201
+        vehicle_id = veh_res.json()["id"]
+
+        combo_driver_id = cd_res.json()["id"]
+        booking_res = await client.post(
+            "/api/v1/bookings",
+            json={
+                "customer_id": customer_id,
+                "pickup_address": "Peenya Industrial Area, Bengaluru",
+                "drop_address": "Bhiwandi Logistics Park, Mumbai",
+                "pickup_datetime": "2026-12-01T10:00:00Z",
+                "cargo_info": {"material": "Auto Parts", "weight_kg": 4500},
+                "operational_instructions": "Gate 3 loading dock",
+            },
+            headers=owner_headers,
+        )
+        assert booking_res.status_code == 201
+        booking_id = booking_res.json()["id"]
+
+        duty_res = await client.post(
+            "/api/v1/duties",
+            json={
+                "booking_id": booking_id,
+                "scheduled_start_time": "2026-12-01T10:00:00Z",
+                "scheduled_end_time": "2026-12-02T10:00:00Z",
+            },
+            headers=owner_headers,
+        )
+        assert duty_res.status_code == 201
+        duty_id = duty_res.json()["id"]
+
+        assign_res = await client.post(
+            f"/api/v1/duties/{duty_id}/assign",
+            json={"driver_id": combo_driver_id, "vehicle_id": vehicle_id},
+            headers=owner_headers,
+        )
+        assert assign_res.status_code == 200
+
+        # Enriched vendor-scoped duties list
+        vendor_duties = await client.get(
+            f"/api/v1/duties?vendor_id={combo_vendor_id}",
+            headers=cmb_headers,
+        )
+        assert vendor_duties.status_code == 200
+        rows = vendor_duties.json()
+        assert len(rows) == 1
+        assert rows[0]["booking"]["customer_name"] == "Acme Logistics Client"
+        assert rows[0]["booking"]["cargo_description"] == "Auto Parts"
+        assert rows[0]["booking"]["cargo_weight_kg"] == 4500.0
+        assert rows[0]["vehicle"]["vendor_id"] == combo_vendor_id
+        assert rows[0]["driver"]["full_name"] == "Combo Operator"
+
+        # Non-matching vendor sees 0 duties
+        pure_vendor_id = v_res.json()["id"]
+        other_duties = await client.get(
+            f"/api/v1/duties?vendor_id={pure_vendor_id}",
+            headers=vnd_headers,
+        )
+        assert other_duties.status_code == 200
+        assert other_duties.json() == []
+
+        # Enriched dispatch board
+        board_res = await client.get("/api/v1/dispatch/board", headers=owner_headers)
+        assert board_res.status_code == 200
+        allocated = board_res.json()["lanes"]["ALLOCATED"]
+        assert any(item["id"] == duty_id and item["driver"]["id"] == combo_driver_id for item in allocated)

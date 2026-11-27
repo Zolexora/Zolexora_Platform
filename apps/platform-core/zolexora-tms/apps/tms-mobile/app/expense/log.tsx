@@ -12,7 +12,7 @@ import { theme } from '../../src/lib/theme';
 import { Card } from '../../src/components/Card';
 import { Button } from '../../src/components/Button';
 
-type ExpenseCategory = 'FUEL' | 'TOLL' | 'PARKING' | 'MAINTENANCE' | 'DRIVER_ALLOWANCE' | 'OTHER';
+type ExpenseCategory = 'FUEL' | 'TOLL' | 'PARKING' | 'MAINTENANCE' | 'DRIVER_ALLOWANCE' | 'FOOD' | 'MISCELLANEOUS';
 
 const CATEGORIES: { key: ExpenseCategory; label: string; icon: string }[] = [
   { key: 'FUEL', label: 'Fuel', icon: '⛽' },
@@ -20,11 +20,17 @@ const CATEGORIES: { key: ExpenseCategory; label: string; icon: string }[] = [
   { key: 'PARKING', label: 'Parking', icon: '🅿️' },
   { key: 'MAINTENANCE', label: 'Maintenance', icon: '🔧' },
   { key: 'DRIVER_ALLOWANCE', label: 'Allowance', icon: '💰' },
-  { key: 'OTHER', label: 'Other', icon: '📋' },
+  { key: 'FOOD', label: 'Food', icon: '🍱' },
+  { key: 'MISCELLANEOUS', label: 'Other', icon: '📋' },
 ];
 
 export default function LogExpenseScreen() {
-  const { duty_id: dutyId } = useLocalSearchParams<{ duty_id?: string }>();
+  const { duty_id: dutyId, trip_id: tripId, vehicle_id: vehicleId, driver_id: driverId } = useLocalSearchParams<{
+    duty_id?: string;
+    trip_id?: string;
+    vehicle_id?: string;
+    driver_id?: string;
+  }>();
   const router = useRouter();
   const qc = useQueryClient();
 
@@ -35,7 +41,7 @@ export default function LogExpenseScreen() {
 
   const { mutate, isPending } = useMutation({
     mutationFn: async () => {
-      let receiptUrl: string | undefined;
+      let attachmentUrl: string | undefined;
 
       if (receiptUri) {
         const formData = new FormData();
@@ -44,9 +50,8 @@ export default function LogExpenseScreen() {
         const res = await apiClient<{ url: string }>('/api/v1/expenses/receipts/upload', {
           method: 'POST',
           body: formData,
-          headers: {},
         });
-        receiptUrl = res.url;
+        attachmentUrl = res.url;
       }
 
       return apiClient('/api/v1/expenses', {
@@ -54,8 +59,11 @@ export default function LogExpenseScreen() {
         body: JSON.stringify({
           category,
           amount: parseFloat(amount),
-          duty_id: dutyId,
-          receipt_url: receiptUrl,
+          duty_id: dutyId || undefined,
+          trip_id: tripId || undefined,
+          vehicle_id: vehicleId || undefined,
+          driver_id: driverId || undefined,
+          attachment_url: attachmentUrl,
           notes: notes || undefined,
         }),
       });

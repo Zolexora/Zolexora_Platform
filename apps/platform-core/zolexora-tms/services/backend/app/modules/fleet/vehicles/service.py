@@ -75,11 +75,10 @@ async def create_vehicle(
         id=uuid.uuid4(),
         organisation_id=org_id,
         actor_user_id=actor_id,
-        entity_name="vehicles",
+        entity_type="vehicles",
         entity_id=vehicle.id,
         action="CREATE",
-        old_data=None,
-        new_data={"registration_number": reg_clean, "status": "AVAILABLE"},
+        metadata_={"registration_number": reg_clean, "status": "AVAILABLE"},
     )
     db.add(audit)
 
@@ -171,11 +170,10 @@ async def bulk_create_vehicles(
             id=uuid.uuid4(),
             organisation_id=org_id,
             actor_user_id=actor_id,
-            entity_name="vehicles",
+            entity_type="vehicles",
             entity_id=None,
             action="BULK_CREATE",
-            old_data=None,
-            new_data={"count": succeeded},
+            metadata_={"count": succeeded},
         )
         db.add(audit)
         await db.commit()
@@ -286,11 +284,10 @@ async def update_vehicle(
         id=uuid.uuid4(),
         organisation_id=org_id,
         actor_user_id=actor_id,
-        entity_name="vehicles",
+        entity_type="vehicles",
         entity_id=vehicle_id,
         action="UPDATE",
-        old_data=None,
-        new_data=update_data,
+        metadata_={k: str(v) if v is not None else None for k, v in update_data.items()},
     )
     db.add(audit)
 
@@ -324,11 +321,10 @@ async def delete_vehicle(
         id=uuid.uuid4(),
         organisation_id=org_id,
         actor_user_id=actor_id,
-        entity_name="vehicles",
+        entity_type="vehicles",
         entity_id=vehicle_id,
         action="DELETE",
-        old_data=None,
-        new_data={"status": "DECOMMISSIONED"},
+        metadata_={"status": "DECOMMISSIONED"},
     )
     db.add(audit)
     await db.commit()

@@ -84,7 +84,15 @@ export default function VehicleDetailScreen() {
         {/* Capacity & Docs */}
         <Card style={styles.section}>
           <Text style={styles.sectionTitle}>Capacity & Documents</Text>
-          <InfoRow label="Payload (tons)" value={vehicle.payload_tons?.toString()} />
+          <InfoRow label="Payload (kg)" value={vehicle.payload_capacity_kg?.toString()} />
+          <InfoRow label="RC Expiry" value={vehicle.rc_expiry
+            ? new Date(vehicle.rc_expiry).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })
+            : null}
+          />
+          <InfoRow label="PUC Expiry" value={vehicle.puc_expiry
+            ? new Date(vehicle.puc_expiry).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })
+            : null}
+          />
           <InfoRow label="Insurance Expiry" value={vehicle.insurance_expiry
             ? new Date(vehicle.insurance_expiry).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })
             : null}

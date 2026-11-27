@@ -52,10 +52,35 @@ export interface VehicleDetails {
   odometer_km?: number;
   status?: string;
   year?: number;
-  payload_tons?: number;
+  payload_capacity_kg?: number;
+  rc_expiry?: string | null;
+  puc_expiry?: string | null;
   insurance_expiry?: string | null;
   permit_expiry?: string | null;
   fitness_expiry?: string | null;
+}
+
+export interface DutyDriverSummary {
+  id: string;
+  full_name: string;
+  phone: string;
+  vendor_id?: string | null;
+}
+
+export interface DutyTripSummary {
+  id: string;
+  trip_number: string;
+  status: string;
+  start_odometer: number;
+  end_odometer?: number | null;
+  total_distance_km?: number | null;
+  toll_amount: number;
+  fuel_amount: number;
+  parking_amount: number;
+  waiting_minutes: number;
+  pod_attachment_url?: string | null;
+  pod_notes?: string | null;
+  operational_receipts?: Array<Record<string, unknown>>;
 }
 
 export interface Duty {
@@ -75,6 +100,8 @@ export interface Duty {
   notes?: string;
   booking?: BookingDetails;
   vehicle?: VehicleDetails;
+  driver?: DutyDriverSummary;
+  trip?: DutyTripSummary | null;
   created_at: string;
   updated_at: string;
 }
