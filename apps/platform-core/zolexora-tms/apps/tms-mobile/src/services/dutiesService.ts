@@ -182,6 +182,7 @@ export const dutiesService = {
     seq: number,
     payload: {
       status: 'ARRIVED' | 'BOARDED' | 'DROPPED' | 'NO_SHOW' | 'DELIVERED';
+      pin?: string;
       pod_url?: string;
       notes?: string;
       latitude?: number;
@@ -191,6 +192,23 @@ export const dutiesService = {
     return apiClient<Duty>(`/api/v1/duties/${dutyId}/stops/${seq}/update`, {
       method: 'POST',
       body: JSON.stringify(payload),
+    });
+  },
+
+  verifyEscort(dutyId: string, escortGuardName: string): Promise<Duty> {
+    return apiClient<Duty>(`/api/v1/duties/${dutyId}/escort-check`, {
+      method: 'POST',
+      body: JSON.stringify({ escort_guard_name: escortGuardName }),
+    });
+  },
+
+  confirmSafeDrop(
+    dutyId: string,
+    payload?: { pin?: string; notes?: string; latitude?: number; longitude?: number },
+  ): Promise<Duty> {
+    return apiClient<Duty>(`/api/v1/duties/${dutyId}/safe-drop`, {
+      method: 'POST',
+      body: JSON.stringify(payload ?? {}),
     });
   },
 
@@ -211,5 +229,23 @@ export const dutiesService = {
     }>;
   }> {
     return apiClient(`/api/v1/integrations/fastag/trips/${tripId}/reconciliation`);
+  },
+
+  listRosters(): Promise<Array<{
+    id: string;
+    route_code: string;
+    route_name: string;
+    shift_label: string;
+    shift_time: string;
+    escort_required: boolean;
+  }>> {
+    return apiClient('/api/v1/rosters');
+  },
+
+  generateRosterDuties(rosterId: string, daysAhead = 7): Promise<{ created_count: number; skipped_count: number }> {
+    return apiClient(`/api/v1/rosters/${rosterId}/generate-duties`, {
+      method: 'POST',
+      body: JSON.stringify({ days_ahead: daysAhead }),
+    });
   },
 };

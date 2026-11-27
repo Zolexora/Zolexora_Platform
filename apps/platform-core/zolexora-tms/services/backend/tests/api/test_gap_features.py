@@ -210,3 +210,92 @@ async def test_gap_features_end_to_end():
         assert recon.status_code == 200, recon.text
         assert float(recon.json()["fastag_synced_toll"]) == 490.0
         assert recon.json()["duplicate_count"] == 1
+
+        # 8. Night-shift escort verification, PIN verification & safe-drop enforcement + Shift Roster generation
+        night_booking = await client.post(
+            "/api/v1/bookings",
+            json={
+                "customer_id": client_id,
+                "booking_type": "ETS",
+                "service_type": "PASSENGER",
+                "pickup_address": "Tech Park Night Gate",
+                "drop_address": "Indiranagar Home Drop",
+                "pickup_datetime": now.isoformat(),
+                "escort_required": True,
+                "boarding_pin": "4321",
+                "stops": [{"seq": 1, "stop_type": "PICKUP", "address": "Gate 2", "status": "PENDING"}],
+            },
+            headers=headers,
+        )
+        assert night_booking.status_code == 201, night_booking.text
+        nb_id = night_booking.json()["id"]
+
+        nd_res = await client.post(
+            "/api/v1/duties",
+            json={
+                "booking_id": nb_id,
+                "scheduled_start_time": now.isoformat(),
+                "scheduled_end_time": (now + datetime.timedelta(hours=2)).isoformat(),
+                "driver_id": driver_id,
+                "vehicle_id": vehicle_id,
+            },
+            headers=headers,
+        )
+        assert nd_res.status_code == 201, nd_res.text
+        nd_id = nd_res.json()["id"]
+
+        # Wrong PIN rejected on BOARDED
+        bad_pin = await client.post(
+            f"/api/v1/duties/{nd_id}/stops/1/update",
+            json={"status": "BOARDED", "pin": "0000"},
+            headers=headers,
+        )
+        assert bad_pin.status_code == 400
+        # Correct PIN accepted
+        good_pin = await client.post(
+            f"/api/v1/duties/{nd_id}/stops/1/update",
+            json={"status": "BOARDED", "pin": "4321"},
+            headers=headers,
+        )
+        assert good_pin.status_code == 200
+
+        # Escort guard check + walk through milestones -> DUTY_COMPLETED blocked until safe-drop confirmed
+        assert (await client.post(f"/api/v1/duties/{nd_id}/escort-check", json={"escort_guard_name": "Guard Vikram"}, headers=headers)).status_code == 200
+        assert (await client.post(f"/api/v1/duties/{nd_id}/dispatch", headers=headers)).status_code == 200
+        assert (await client.post(f"/api/v1/duties/{nd_id}/arrived-pickup", headers=headers)).status_code == 200
+        assert (await client.post(f"/api/v1/duties/{nd_id}/in-transit", headers=headers)).status_code == 200
+        assert (await client.post(f"/api/v1/duties/{nd_id}/arrived-drop", headers=headers)).status_code == 200
+
+        blocked_complete = await client.post(f"/api/v1/duties/{nd_id}/complete", headers=headers)
+        assert blocked_complete.status_code == 400
+        assert "NIGHT_SHIFT_SAFE_DROP_REQUIRED" in blocked_complete.text
+
+        assert (await client.post(f"/api/v1/duties/{nd_id}/safe-drop", json={"pin": "4321"}, headers=headers)).status_code == 200
+        assert (await client.post(f"/api/v1/duties/{nd_id}/complete", headers=headers)).status_code == 200
+
+        # Create Fixed/ETS shift roster and idempotently generate duties
+        roster_res = await client.post(
+            "/api/v1/rosters",
+            json={
+                "customer_id": client_id,
+                "route_code": f"R-{uuid.uuid4().hex[:6].upper()}",
+                "route_name": "Whitefield Night Drop",
+                "booking_type": "ETS",
+                "shift_label": "Night 22:00",
+                "shift_time": "22:00",
+                "weekdays": [0, 1, 2, 3, 4, 5, 6],
+                "pickup_address": "ITPL Main Gate",
+                "drop_address": "Koramangala",
+                "default_driver_id": driver_id,
+                "default_vehicle_id": vehicle_id,
+            },
+            headers=headers,
+        )
+        assert roster_res.status_code == 201, roster_res.text
+        assert roster_res.json()["escort_required"] is True
+        rid = roster_res.json()["id"]
+
+        gen1 = await client.post(f"/api/v1/rosters/{rid}/generate-duties", json={"days_ahead": 3}, headers=headers)
+        assert gen1.status_code == 200 and gen1.json()["created_count"] == 3
+        gen2 = await client.post(f"/api/v1/rosters/{rid}/generate-duties", json={"days_ahead": 3}, headers=headers)
+        assert gen2.status_code == 200 and gen2.json()["created_count"] == 0 and gen2.json()["skipped_count"] == 3

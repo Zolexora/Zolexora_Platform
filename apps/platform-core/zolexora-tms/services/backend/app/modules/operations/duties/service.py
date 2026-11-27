@@ -26,6 +26,8 @@ from app.modules.operations.duties.schemas import (
     DutyStopUpdateRequest,
     DutyTripSummary,
     DutyVehicleSummary,
+    EscortVerifyRequest,
+    SafeDropConfirmRequest,
 )
 
 
@@ -190,6 +192,10 @@ async def enrich_duties(db: AsyncSession, duties: list[Duty]) -> list[DutyRespon
                 eway_bill_number=b.eway_bill_number,
                 eway_bill_valid_until=b.eway_bill_valid_until,
                 stops=b.stops if isinstance(b.stops, list) else [],
+                boarding_pin=b.boarding_pin,
+                escort_required=bool(b.escort_required),
+                escort_guard_name=b.escort_guard_name,
+                safe_drop_confirmed_at=b.safe_drop_confirmed_at,
             )
 
         v = vehicles_map.get(d.vehicle_id) if d.vehicle_id else None
@@ -327,6 +333,16 @@ async def _update_duty_status(ctx: OrgContext, duty_id: uuid.UUID, target: DutyS
     elif target == DutyStatus.IN_TRANSIT and not duty.actual_start_time:
         duty.actual_start_time = now
     elif target == DutyStatus.DUTY_COMPLETED:
+        booking = (
+            await ctx.db.execute(
+                select(Booking).where(Booking.id == duty.booking_id, Booking.organisation_id == ctx.organisation_id)
+            )
+        ).scalars().first()
+        if booking and booking.escort_required and not booking.safe_drop_confirmed_at:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="NIGHT_SHIFT_SAFE_DROP_REQUIRED: Confirm safe drop before completing an escorted night-shift duty.",
+            )
         duty.actual_end_time = now
     _audit(ctx, duty, f"DUTY_{target.value}", previous)
     return await _commit_and_broadcast(ctx, duty, f"duty.{target.value.lower()}")
@@ -387,6 +403,13 @@ async def update_duty_stop(
 
     now = datetime.datetime.now(datetime.timezone.utc)
     updated_stop = dict(stops[target_idx])
+    if req.status == "BOARDED":
+        expected_pin = updated_stop.get("boarding_pin") or booking.boarding_pin
+        if expected_pin and req.pin and str(req.pin).strip() != str(expected_pin).strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="BOARDING_PIN_INVALID: Entered passenger boarding PIN does not match.",
+            )
     updated_stop["status"] = req.status
     if req.status == "ARRIVED":
         updated_stop["arrived_at"] = now.isoformat()
@@ -428,5 +451,77 @@ async def update_duty_stop(
         ctx.organisation_id,
         "duty.stop_updated",
         {"duty_id": str(duty.id), "seq": seq, "status": req.status},
+    )
+    return (await enrich_duties(ctx.db, [duty]))[0]
+
+
+async def verify_escort(ctx: OrgContext, duty_id: uuid.UUID, req: EscortVerifyRequest) -> DutyResponse:
+    duty = await _get(ctx, duty_id)
+    booking = (
+        await ctx.db.execute(
+            select(Booking).where(Booking.id == duty.booking_id, Booking.organisation_id == ctx.organisation_id)
+        )
+    ).scalars().first()
+    if not booking:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Booking not found")
+
+    booking.escort_guard_name = req.escort_guard_name.strip()
+    now = datetime.datetime.now(datetime.timezone.utc)
+    trip = (await ctx.db.execute(select(Trip).where(Trip.duty_id == duty.id))).scalars().first()
+    if trip:
+        ctx.db.add(
+            TripEvent(
+                id=uuid.uuid4(),
+                trip_id=trip.id,
+                event_type="ESCORT_VERIFIED",
+                timestamp=now,
+                notes=f"Escort guard checked in: {booking.escort_guard_name}",
+            )
+        )
+    record_audit(
+        ctx.db, ctx.organisation_id, ctx.user_id, "DUTY_ESCORT_VERIFIED", "duty", duty.id,
+        {"escort_guard_name": booking.escort_guard_name},
+    )
+    await ctx.db.commit()
+    return (await enrich_duties(ctx.db, [duty]))[0]
+
+
+async def confirm_safe_drop(ctx: OrgContext, duty_id: uuid.UUID, req: SafeDropConfirmRequest) -> DutyResponse:
+    duty = await _get(ctx, duty_id)
+    booking = (
+        await ctx.db.execute(
+            select(Booking).where(Booking.id == duty.booking_id, Booking.organisation_id == ctx.organisation_id)
+        )
+    ).scalars().first()
+    if not booking:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Booking not found")
+
+    if booking.boarding_pin and req.pin and str(req.pin).strip() != str(booking.boarding_pin).strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="BOARDING_PIN_INVALID: Entered confirmation PIN does not match.",
+        )
+
+    now = datetime.datetime.now(datetime.timezone.utc)
+    booking.safe_drop_confirmed_at = now
+    trip = (await ctx.db.execute(select(Trip).where(Trip.duty_id == duty.id))).scalars().first()
+    if trip:
+        ctx.db.add(
+            TripEvent(
+                id=uuid.uuid4(),
+                trip_id=trip.id,
+                event_type="SAFE_DROP_CONFIRMED",
+                timestamp=now,
+                latitude=req.latitude,
+                longitude=req.longitude,
+                notes=req.notes or "Night-shift passenger safe reach confirmed",
+            )
+        )
+    record_audit(ctx.db, ctx.organisation_id, ctx.user_id, "DUTY_SAFE_DROP_CONFIRMED", "duty", duty.id)
+    await ctx.db.commit()
+    await ws_manager.broadcast_to_org(
+        ctx.organisation_id,
+        "duty.safe_drop_confirmed",
+        {"duty_id": str(duty.id), "confirmed_at": now.isoformat()},
     )
     return (await enrich_duties(ctx.db, [duty]))[0]

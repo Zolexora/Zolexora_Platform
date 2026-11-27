@@ -10,6 +10,8 @@ from app.modules.operations.duties.schemas import (
     DutyResponse,
     DutyStatus,
     DutyStopUpdateRequest,
+    EscortVerifyRequest,
+    SafeDropConfirmRequest,
 )
 from app.modules.operations.duties import service
 
@@ -125,4 +127,22 @@ async def update_duty_stop(
     ctx: OrgContext = Depends(get_org_context),
 ):
     return await service.update_duty_stop(ctx, duty_id, seq, req)
+
+
+@router.post("/{duty_id}/escort-check", response_model=DutyResponse)
+async def verify_escort(
+    duty_id: uuid.UUID,
+    req: EscortVerifyRequest,
+    ctx: OrgContext = Depends(get_org_context),
+):
+    return await service.verify_escort(ctx, duty_id, req)
+
+
+@router.post("/{duty_id}/safe-drop", response_model=DutyResponse)
+async def confirm_safe_drop(
+    duty_id: uuid.UUID,
+    req: SafeDropConfirmRequest = SafeDropConfirmRequest(),
+    ctx: OrgContext = Depends(get_org_context),
+):
+    return await service.confirm_safe_drop(ctx, duty_id, req)
 

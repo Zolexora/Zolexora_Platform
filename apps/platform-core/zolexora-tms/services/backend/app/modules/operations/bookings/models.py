@@ -4,7 +4,7 @@ import datetime
 import decimal
 import uuid
 
-from sqlalchemy import DateTime, Double, Enum, ForeignKeyConstraint, Index, Numeric, PrimaryKeyConstraint, String, Text, UniqueConstraint, Uuid
+from sqlalchemy import Boolean, DateTime, Double, Enum, ForeignKeyConstraint, Index, Numeric, PrimaryKeyConstraint, String, Text, UniqueConstraint, Uuid
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -60,6 +60,10 @@ class Booking(Base):
     eway_bill_number: Mapped[Optional[str]] = mapped_column(String(32))
     eway_bill_valid_until: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(True))
     stops: Mapped[object] = mapped_column(JSONB, default=list, nullable=False)
+    boarding_pin: Mapped[Optional[str]] = mapped_column(String(8))
+    escort_required: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    escort_guard_name: Mapped[Optional[str]] = mapped_column(String(128))
+    safe_drop_confirmed_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(True))
 
 
 class BookingRequest(Base):

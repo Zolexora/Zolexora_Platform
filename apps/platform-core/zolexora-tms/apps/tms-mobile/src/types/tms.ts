@@ -32,6 +32,7 @@ export interface BookingStop {
   contact_name?: string | null;
   contact_phone?: string | null;
   employee_id?: string | null;
+  boarding_pin?: string | null;
   status: 'PENDING' | 'ARRIVED' | 'BOARDED' | 'DROPPED' | 'NO_SHOW' | 'DELIVERED' | string;
   arrived_at?: string | null;
   boarded_at?: string | null;
@@ -65,6 +66,10 @@ export interface BookingDetails {
   eway_bill_number?: string | null;
   eway_bill_valid_until?: string | null;
   stops?: BookingStop[];
+  boarding_pin?: string | null;
+  escort_required?: boolean;
+  escort_guard_name?: string | null;
+  safe_drop_confirmed_at?: string | null;
 }
 
 export interface VehicleDetails {

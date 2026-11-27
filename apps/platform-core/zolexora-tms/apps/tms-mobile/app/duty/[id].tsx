@@ -10,6 +10,7 @@ import {
   Linking,
   Modal,
   Share,
+  TextInput,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -99,6 +100,9 @@ export default function DutyDetailScreen() {
   const { activeMode, me, permissions, driver, vendor } = useAuth();
   const [actionLoading, setActionLoading] = useState(false);
   const [exceptionModalVisible, setExceptionModalVisible] = useState(false);
+  const [guardName, setGuardName] = useState('');
+  const [pinPrompt, setPinPrompt] = useState<{ seq?: number; mode: 'BOARD' | 'SAFE_DROP' } | null>(null);
+  const [pinValue, setPinValue] = useState('');
 
   const canExecuteDriverActions = activeMode === 'driver' || activeMode === 'driver_vendor';
   const canDispatch = activeMode === 'supervisor' || activeMode === 'owner_ops';
@@ -221,22 +225,54 @@ export default function DutyDetailScreen() {
     mutationFn: async ({
       seq,
       status,
+      pin,
     }: {
       seq: number;
       status: 'ARRIVED' | 'BOARDED' | 'DROPPED' | 'NO_SHOW' | 'DELIVERED';
+      pin?: string;
     }) => {
       const coords = await getLocation();
       return dutiesService.updateDutyStop(id!, seq, {
         status,
+        pin,
         latitude: coords?.latitude,
         longitude: coords?.longitude,
       });
     },
     onSuccess: () => {
+      setPinPrompt(null);
+      setPinValue('');
       qc.invalidateQueries({ queryKey: ['duty', id] });
       qc.invalidateQueries({ queryKey: ['trip-events', trip?.id] });
     },
     onError: (err: Error) => Alert.alert('Stop Update Failed', err.message),
+  });
+
+  const escortMutation = useMutation({
+    mutationFn: (name: string) => dutiesService.verifyEscort(id!, name),
+    onSuccess: () => {
+      setGuardName('');
+      qc.invalidateQueries({ queryKey: ['duty', id] });
+    },
+    onError: (err: Error) => Alert.alert('Escort Check Failed', err.message),
+  });
+
+  const safeDropMutation = useMutation({
+    mutationFn: async (pin?: string) => {
+      const coords = await getLocation();
+      return dutiesService.confirmSafeDrop(id!, {
+        pin,
+        latitude: coords?.latitude,
+        longitude: coords?.longitude,
+      });
+    },
+    onSuccess: () => {
+      setPinPrompt(null);
+      setPinValue('');
+      qc.invalidateQueries({ queryKey: ['duty', id] });
+      Alert.alert('✅ Safe Drop Confirmed', 'Night-shift employee safe drop has been logged.');
+    },
+    onError: (err: Error) => Alert.alert('Safe Drop Failed', err.message),
   });
 
   const handleReportException = () => {
@@ -509,6 +545,61 @@ export default function DutyDetailScreen() {
           </Card>
         )}
 
+        {/* Night-Shift Escort & Safe Drop Compliance Card */}
+        {duty.booking?.escort_required && (
+          <Card style={[styles.section, styles.escortCard]}>
+            <Text style={styles.sectionTitle}>🛡️  Night-Shift Escort & Safe Drop</Text>
+            {duty.booking.escort_guard_name ? (
+              <Text style={styles.escortOkText}>
+                ✅ Escort Guard Checked In: {duty.booking.escort_guard_name}
+              </Text>
+            ) : (
+              <View style={styles.escortFormRow}>
+                <TextInput
+                  style={styles.escortInput}
+                  placeholder="Enter Escort Guard Name / ID"
+                  placeholderTextColor={theme.colors.textMuted}
+                  value={guardName}
+                  onChangeText={setGuardName}
+                />
+                <TouchableOpacity
+                  style={styles.escortBtn}
+                  disabled={!guardName.trim() || escortMutation.isPending}
+                  onPress={() => escortMutation.mutate(guardName.trim())}
+                >
+                  <Text style={styles.escortBtnText}>Verify</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {duty.booking.safe_drop_confirmed_at ? (
+              <Text style={[styles.escortOkText, { marginTop: 8 }]}>
+                🏠 Safe Drop Confirmed at{' '}
+                {new Date(duty.booking.safe_drop_confirmed_at).toLocaleTimeString('en-IN', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </Text>
+            ) : canExecuteDriverActions && isAssignedDriver && (
+              <Button
+                title="🛡️  Confirm Night-Shift Safe Drop"
+                variant="success"
+                size="sm"
+                onPress={() => {
+                  if (duty.booking?.boarding_pin) {
+                    setPinValue('');
+                    setPinPrompt({ mode: 'SAFE_DROP' });
+                  } else {
+                    safeDropMutation.mutate(undefined);
+                  }
+                }}
+                loading={safeDropMutation.isPending}
+                style={{ marginTop: 10 }}
+              />
+            )}
+          </Card>
+        )}
+
         {/* ETS / Multi-Stop Passenger Roster */}
         {duty.booking?.stops && duty.booking.stops.length > 0 && (
           <Card style={styles.section}>
@@ -568,7 +659,14 @@ export default function DutyDetailScreen() {
                           <TouchableOpacity
                             style={[styles.quickNavBtn, { borderColor: theme.colors.success }]}
                             disabled={stopMutation.isPending}
-                            onPress={() => stopMutation.mutate({ seq: stop.seq, status: completeStatus })}
+                            onPress={() => {
+                              if (completeStatus === 'BOARDED' && (stop.boarding_pin || duty.booking?.boarding_pin)) {
+                                setPinValue('');
+                                setPinPrompt({ seq: stop.seq, mode: 'BOARD' });
+                              } else {
+                                stopMutation.mutate({ seq: stop.seq, status: completeStatus });
+                              }
+                            }}
                           >
                             <Text style={[styles.quickNavText, { color: theme.colors.success }]}>{completeLabel}</Text>
                           </TouchableOpacity>
@@ -1026,6 +1124,57 @@ export default function DutyDetailScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Passenger Boarding / Safe-Drop PIN Verification Modal */}
+      <Modal
+        visible={!!pinPrompt}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPinPrompt(null)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>
+              {pinPrompt?.mode === 'SAFE_DROP' ? 'Confirm Safe Drop PIN' : 'Enter Passenger Boarding PIN'}
+            </Text>
+            <Text style={styles.modalSub}>
+              Ask the employee/passenger for their 4-digit trip verification PIN.
+            </Text>
+            <TextInput
+              style={styles.pinInput}
+              keyboardType="number-pad"
+              placeholder="4-digit PIN"
+              placeholderTextColor={theme.colors.textMuted}
+              value={pinValue}
+              onChangeText={(t) => setPinValue(t.replace(/\D/g, '').slice(0, 8))}
+              maxLength={8}
+              autoFocus
+            />
+            <View style={styles.footerRow}>
+              <Button
+                title="Cancel"
+                variant="outline"
+                onPress={() => setPinPrompt(null)}
+                style={{ flex: 1 }}
+              />
+              <Button
+                title="Verify & Confirm"
+                variant="success"
+                loading={stopMutation.isPending || safeDropMutation.isPending}
+                onPress={() => {
+                  if (!pinPrompt) return;
+                  if (pinPrompt.mode === 'SAFE_DROP') {
+                    safeDropMutation.mutate(pinValue.trim());
+                  } else if (pinPrompt.seq != null) {
+                    stopMutation.mutate({ seq: pinPrompt.seq, status: 'BOARDED', pin: pinValue.trim() });
+                  }
+                }}
+                style={{ flex: 1.4 }}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1206,4 +1355,38 @@ const styles = StyleSheet.create({
   fastagTotal: { fontSize: 13, fontWeight: '800', color: theme.colors.primaryLight },
   fastagSub: { fontSize: 11, color: theme.colors.textSecondary },
   fastagDup: { fontSize: 11, fontWeight: '700', color: theme.colors.danger, marginTop: 4 },
+
+  escortCard: { borderColor: theme.colors.warning, borderWidth: 1 },
+  escortOkText: { fontSize: 13, fontWeight: '700', color: theme.colors.success },
+  escortFormRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  escortInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.sm,
+    backgroundColor: theme.colors.surfaceSubtle,
+    color: theme.colors.textPrimary,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    fontSize: 13,
+  },
+  escortBtn: {
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: theme.radius.sm,
+  },
+  escortBtnText: { color: '#fff', fontWeight: '700', fontSize: 12 },
+  pinInput: {
+    borderWidth: 1.5,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.md,
+    padding: theme.spacing.md,
+    fontSize: 24,
+    fontWeight: '800',
+    color: theme.colors.textPrimary,
+    textAlign: 'center',
+    letterSpacing: 6,
+    marginBottom: 8,
+  },
 });

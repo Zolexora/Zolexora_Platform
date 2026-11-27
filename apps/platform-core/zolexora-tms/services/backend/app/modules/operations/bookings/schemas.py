@@ -14,6 +14,7 @@ class BookingStop(BaseModel):
     contact_name: Optional[str] = None
     contact_phone: Optional[str] = None
     employee_id: Optional[str] = None
+    boarding_pin: Optional[str] = Field(None, max_length=8)
     status: str = Field(default="PENDING", description="PENDING | ARRIVED | BOARDED | DROPPED | NO_SHOW | DELIVERED")
     arrived_at: Optional[datetime.datetime] = None
     boarded_at: Optional[datetime.datetime] = None
@@ -45,6 +46,9 @@ class BookingBase(BaseModel):
     eway_bill_number: Optional[str] = Field(None, max_length=32)
     eway_bill_valid_until: Optional[datetime.datetime] = None
     stops: List[BookingStop] = Field(default_factory=list)
+    boarding_pin: Optional[str] = Field(None, max_length=8)
+    escort_required: Optional[bool] = None
+    escort_guard_name: Optional[str] = Field(None, max_length=128)
     source: str = Field(default="MANUAL")
 
 class BookingCreate(BookingBase):
@@ -73,6 +77,7 @@ class BookingResponse(BookingBase):
     organisation_id: uuid.UUID
     status: BookingStatus
     metadata_: Dict[str, Any] = Field(default_factory=dict, alias="metadata_")
+    safe_drop_confirmed_at: Optional[datetime.datetime] = None
     created_by_user_id: Optional[uuid.UUID] = None
     created_at: datetime.datetime
     updated_at: datetime.datetime

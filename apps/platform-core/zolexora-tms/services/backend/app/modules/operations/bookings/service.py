@@ -1,4 +1,5 @@
 import datetime
+import secrets
 import uuid
 from typing import Optional
 from fastapi import HTTPException, status
@@ -51,6 +52,13 @@ async def create_booking(ctx: OrgContext, req: BookingCreate) -> BookingResponse
             d_lat, d_lng = d_geo.latitude, d_geo.longitude
 
     data = req.model_dump()
+    if not data.get("boarding_pin") and req.service_type.value == "PASSENGER":
+        data["boarding_pin"] = str(secrets.randbelow(9000) + 1000)
+    if data.get("escort_required") is None:
+        # Night-shift IST (20:00 to 06:00) defaults to escort_required for PASSENGER trips
+        ist = datetime.timezone(datetime.timedelta(hours=5, minutes=30))
+        local_dt = (req.pickup_datetime if req.pickup_datetime.tzinfo else req.pickup_datetime.replace(tzinfo=datetime.timezone.utc)).astimezone(ist)
+        data["escort_required"] = req.service_type.value == "PASSENGER" and (local_dt.hour >= 20 or local_dt.hour < 6)
     data.update(
         pickup_address=req.pickup_address.strip(),
         drop_address=req.drop_address.strip(),

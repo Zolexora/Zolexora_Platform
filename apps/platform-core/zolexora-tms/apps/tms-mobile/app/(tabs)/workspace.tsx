@@ -97,6 +97,22 @@ export default function WorkspaceScreen() {
     enabled: isDispatchView,
   });
 
+  const rostersQuery = useQuery({
+    queryKey: ['mobile-rosters', activeOrg?.organisation_id],
+    queryFn: () => dutiesService.listRosters(),
+    enabled: isDispatchView,
+  });
+
+  const generateRosterMutation = useMutation({
+    mutationFn: (rosterId: string) => dutiesService.generateRosterDuties(rosterId, 7),
+    onSuccess: (res) => {
+      qc.invalidateQueries({ queryKey: ['mobile-dispatch-board'] });
+      qc.invalidateQueries({ queryKey: ['duties'] });
+      Alert.alert('Roster Generated', `Created ${res.created_count} duties (${res.skipped_count} already existed).`);
+    },
+    onError: (err: Error) => Alert.alert('Generate Failed', err.message),
+  });
+
   const clientDutiesQuery = useQuery({
     queryKey: ['mobile-client-duties', activeOrg?.organisation_id],
     queryFn: () => dutiesService.getDuties(),
@@ -346,6 +362,32 @@ export default function WorkspaceScreen() {
                 </View>
               ))
             )}
+          </Card>
+        )}
+
+        {/* ETS / Fixed Shift Rosters */}
+        {isDispatchView && (rostersQuery.data?.length ?? 0) > 0 && (
+          <Card style={styles.section}>
+            <Text style={styles.sectionTitle}>🗓️ ETS / Fixed Shift Rosters ({rostersQuery.data?.length ?? 0})</Text>
+            {(rostersQuery.data ?? []).slice(0, 6).map((r) => (
+              <View key={r.id} style={styles.rowBetween}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.itemTitle}>
+                    {r.route_code} · {r.route_name}
+                  </Text>
+                  <Text style={styles.itemSub}>
+                    {r.shift_label} ({r.shift_time}){r.escort_required ? ' · 🛡️ Escort' : ''}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={[styles.smallBtn, styles.smallBtnPrimary]}
+                  disabled={generateRosterMutation.isPending}
+                  onPress={() => generateRosterMutation.mutate(r.id)}
+                >
+                  <Text style={styles.smallBtnPrimaryText}>+7 Days</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
           </Card>
         )}
 

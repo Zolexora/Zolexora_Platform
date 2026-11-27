@@ -82,11 +82,27 @@ class DutyBookingSummary(BaseModel):
     eway_bill_number: Optional[str] = None
     eway_bill_valid_until: Optional[datetime.datetime] = None
     stops: List[Dict[str, Any]] = Field(default_factory=list)
+    boarding_pin: Optional[str] = None
+    escort_required: bool = False
+    escort_guard_name: Optional[str] = None
+    safe_drop_confirmed_at: Optional[datetime.datetime] = None
 
 
 class DutyStopUpdateRequest(BaseModel):
     status: str = Field(..., pattern="^(ARRIVED|BOARDED|DROPPED|NO_SHOW|DELIVERED)$")
+    pin: Optional[str] = Field(None, max_length=8)
     pod_url: Optional[str] = None
+    notes: Optional[str] = None
+    latitude: Optional[float] = Field(None, ge=-90.0, le=90.0)
+    longitude: Optional[float] = Field(None, ge=-180.0, le=180.0)
+
+
+class EscortVerifyRequest(BaseModel):
+    escort_guard_name: str = Field(..., min_length=2, max_length=128)
+
+
+class SafeDropConfirmRequest(BaseModel):
+    pin: Optional[str] = Field(None, max_length=8)
     notes: Optional[str] = None
     latitude: Optional[float] = Field(None, ge=-90.0, le=90.0)
     longitude: Optional[float] = Field(None, ge=-180.0, le=180.0)

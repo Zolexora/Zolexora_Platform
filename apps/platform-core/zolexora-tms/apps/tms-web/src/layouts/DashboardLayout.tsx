@@ -4,6 +4,7 @@ import {
   Truck,
   LayoutDashboard,
   CalendarCheck,
+  CalendarClock,
   ClipboardList,
   Radio,
   Users,
@@ -35,6 +36,7 @@ const navigation = [
     section: 'Operations',
     items: [
       { name: 'Bookings', href: '/sp/bookings', icon: CalendarCheck },
+      { name: 'Shift Rosters', href: '/sp/rosters', icon: CalendarClock },
       { name: 'Duties', href: '/sp/duties', icon: ClipboardList },
       { name: 'Dispatch Board', href: '/sp/dispatch', icon: Radio },
     ],

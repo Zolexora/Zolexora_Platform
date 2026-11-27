@@ -14,7 +14,9 @@ import {
   Search,
   Clock,
   Inbox,
+  Share2,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { apiClient, getApiBaseUrl } from '../../lib/api';
 import { getSessionToken } from '../../lib/session';
 import type {
@@ -109,6 +111,7 @@ export function DispatchPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStage, setSelectedStage] = useState<DutyLifecycleStatus | 'ALL'>('ALL');
   const [hideEmptyColumns, setHideEmptyColumns] = useState(false);
+  const [liveAlert, setLiveAlert] = useState<string | null>(null);
   const [startTripModalDuty, setStartTripModalDuty] = useState<DispatchBoardItem | null>(null);
   const [completeTripModalDuty, setCompleteTripModalDuty] = useState<DispatchBoardItem | null>(null);
   const [formError, setFormError] = useState('');
@@ -163,9 +166,24 @@ export function DispatchPage() {
         ws.onmessage = (event) => {
           if (event.data === 'pong') return;
           try {
-            if (JSON.parse(event.data)?.type === 'auth_ok') {
+            const msg = JSON.parse(event.data);
+            if (msg?.type === 'auth_ok') {
               setWsConnected(true);
               return;
+            }
+            if (msg?.event === 'trip.exception') {
+              const isSos = msg?.data?.event_type === 'SOS_EMERGENCY';
+              const text = isSos
+                ? `🆘 EMERGENCY SOS on ${msg?.data?.trip_number || 'active trip'}`
+                : `⚠️ Trip exception (${msg?.data?.event_type}) on ${msg?.data?.trip_number || 'trip'}`;
+              setLiveAlert(text);
+              toast.error(text);
+            } else if (msg?.event === 'fastag.toll_synced' && msg?.data?.duplicate_flag) {
+              const text = `🚨 Duplicate FASTag toll detected at ${msg?.data?.plaza_name}`;
+              setLiveAlert(text);
+              toast.error(text);
+            } else if (msg?.event === 'duty.safe_drop_confirmed') {
+              toast.success('🏠 Night-shift safe drop confirmed');
             }
           } catch {
             // non-JSON event: treat as an ops update
@@ -359,6 +377,19 @@ export function DispatchPage() {
           </div>
         </div>
       </div>
+
+      {/* Live Exception / SOS Banner */}
+      {liveAlert && (
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-rose-500/40 bg-rose-500/15 px-4 py-3 text-xs font-semibold text-rose-200">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 text-rose-400 shrink-0" />
+            <span>{liveAlert}</span>
+          </div>
+          <button type="button" onClick={() => setLiveAlert(null)} className="text-rose-300 hover:text-white">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       {/* Pipeline Summary & Controls Toolbar */}
       <div className="rounded-2xl border border-slate-800/90 bg-slate-900/50 p-3 space-y-3">
@@ -599,17 +630,44 @@ export function DispatchPage() {
                             </button>
                           )}
 
-                          {duty.status === 'IN_TRANSIT' && (
-                            <button
-                              type="button"
-                              onClick={() => arriveDropMutation.mutate(duty.id)}
-                              disabled={arriveDropMutation.isPending}
-                              className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 py-2 text-xs font-semibold text-emerald-200 hover:bg-emerald-500 hover:text-slate-950 transition"
-                            >
-                              <Navigation className="h-3.5 w-3.5" />
-                              Arrived Destination
-                            </button>
-                          )}
+                          {duty.status === 'IN_TRANSIT' && (() => {
+                            const matchingTrip = trips?.find((t) => t.duty_id === duty.id);
+                            return (
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => arriveDropMutation.mutate(duty.id)}
+                                  disabled={arriveDropMutation.isPending}
+                                  className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 py-2 text-xs font-semibold text-emerald-200 hover:bg-emerald-500 hover:text-slate-950 transition"
+                                >
+                                  <Navigation className="h-3.5 w-3.5" />
+                                  Arrived Drop
+                                </button>
+                                {matchingTrip && (
+                                  <button
+                                    type="button"
+                                    title="Copy Public Live Tracking Link"
+                                    onClick={async () => {
+                                      try {
+                                        const res = await apiClient<{ share_token: string }>(
+                                          `/api/v1/trips/${matchingTrip.id}/share-link`,
+                                          { method: 'POST' },
+                                        );
+                                        const url = `${window.location.origin}/t/${res.share_token}`;
+                                        await navigator.clipboard?.writeText(url);
+                                        toast.success('Live tracking link copied to clipboard');
+                                      } catch (e: unknown) {
+                                        toast.error(e instanceof Error ? e.message : 'Failed to create share link');
+                                      }
+                                    }}
+                                    className="inline-flex items-center justify-center rounded-lg border border-indigo-500/30 bg-indigo-500/15 px-2.5 py-2 text-indigo-200 hover:bg-indigo-500 hover:text-white transition"
+                                  >
+                                    <Share2 className="h-3.5 w-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                            );
+                          })()}
 
                           {duty.status === 'ARRIVED_DROP' && (
                             <button
