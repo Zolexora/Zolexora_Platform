@@ -57,10 +57,39 @@ function saveSession(session: StoredSession | null): void {
   } catch {}
 }
 
+function isTokenExpired(jwtToken: string): boolean {
+  try {
+    const parts = jwtToken.split(".");
+    if (parts.length !== 3) return false;
+    const base64 = parts[1]!.replace(/-/g, "+").replace(/_/g, "/");
+    const payload = JSON.parse(
+      typeof atob !== "undefined"
+        ? atob(base64)
+        : Buffer.from(base64, "base64").toString("utf-8")
+    );
+    const now = Math.floor(Date.now() / 1000);
+    return Boolean(payload.exp && now >= payload.exp);
+  } catch {
+    return false;
+  }
+}
+
+function loadValidStoredSession(): StoredSession | null {
+  const stored = loadSession();
+  if (!stored || !stored.token) return null;
+  if (isTokenExpired(stored.token)) {
+    saveSession(null);
+    return null;
+  }
+  return stored;
+}
+
 export interface ZolexoraAuthProviderProps {
   children: ReactNode;
   authUrl?: string;
   product?: string;
+  /** Hydrate immediately from a non-expired stored session and revalidate in the background. */
+  optimisticHydration?: boolean;
   initialSession?: {
     token?: string | null;
     user?: ZolexoraUser | null;
@@ -78,67 +107,60 @@ export function ZolexoraAuthProvider({
   children,
   authUrl,
   product = "zolexora-platform",
+  optimisticHydration = false,
   initialSession,
   firebaseAuth,
   onAuthStateChange,
 }: ZolexoraAuthProviderProps) {
   const baseUrl = useMemo(() => resolveAuthUrl(authUrl), [authUrl]);
 
+  const [bootSession] = useState<StoredSession | null>(() =>
+    optimisticHydration && !initialSession?.user ? loadValidStoredSession() : null
+  );
+
   const [user, setUser] = useState<ZolexoraUser | null>(
-    () => initialSession?.user ?? null
+    () => initialSession?.user ?? bootSession?.user ?? null
   );
   const [org, setOrg] = useState<ZolexoraOrganization | null>(
-    () => initialSession?.org ?? null
+    () => initialSession?.org ?? bootSession?.org ?? null
   );
   const [role, setRole] = useState<string | null>(
-    () => initialSession?.role ?? null
+    () => initialSession?.role ?? bootSession?.role ?? null
   );
   const [token, setToken] = useState<string | null>(
-    () => initialSession?.token ?? null
+    () => initialSession?.token ?? bootSession?.token ?? null
   );
   const [firebaseUser, setFirebaseUser] = useState<any | null>(null);
-  const [loading, setLoading] = useState<boolean>(() => !initialSession?.user);
+  const [loading, setLoading] = useState<boolean>(
+    () => !initialSession?.user && !bootSession?.user
+  );
   const [error, setError] = useState<Error | null>(null);
 
   // Mount session hydration in browser
   useEffect(() => {
     let isMounted = true;
+    const controller = new AbortController();
 
     async function hydrate() {
-      const stored = loadSession();
-      if (!stored || !stored.token) {
-        if (isMounted) setLoading(false);
+      const stored = loadValidStoredSession();
+      if (!stored) {
+        if (isMounted) {
+          if (bootSession) {
+            setUser(null);
+            setOrg(null);
+            setRole(null);
+            setToken(null);
+          }
+          setLoading(false);
+        }
         return;
       }
 
-      // Check client-side token validity
-      try {
-        const parts = stored.token.split(".");
-        if (parts.length === 3) {
-          const payload = JSON.parse(
-            typeof atob !== "undefined"
-              ? atob(parts[1]!)
-              : Buffer.from(parts[1]!, "base64").toString("utf-8")
-          );
-          const now = Math.floor(Date.now() / 1000);
-          if (payload.exp && now >= payload.exp) {
-            saveSession(null);
-            if (isMounted) {
-              setUser(null);
-              setOrg(null);
-              setRole(null);
-              setToken(null);
-              setLoading(false);
-            }
-            return;
-          }
-        }
-      } catch {}
-
-      // Optional live session introspection with auth-service
+      // Live session introspection with auth-service (non-blocking when optimisticHydration is enabled)
       try {
         const res = await fetch(`${baseUrl}/api/v1/auth/me`, {
           headers: { [HEADER_AUTHORIZATION]: `Bearer ${stored.token}` },
+          signal: controller.signal,
         });
 
         if (res.ok) {
@@ -159,7 +181,8 @@ export function ZolexoraAuthProvider({
             onAuthStateChange?.(null, null);
           }
         }
-      } catch {
+      } catch (err: any) {
+        if (err?.name === "AbortError") return;
         // Network offline or auth-service unreachable: retain cached session gracefully
         if (isMounted) {
           setUser(stored.user);
@@ -200,12 +223,13 @@ export function ZolexoraAuthProvider({
 
     return () => {
       isMounted = false;
+      controller.abort();
       if (typeof window !== "undefined") {
         window.removeEventListener(SESSION_EXPIRED_EVENT, handleExpired);
       }
       if (unsubscribeFirebase) unsubscribeFirebase();
     };
-  }, [baseUrl, firebaseAuth, onAuthStateChange]);
+  }, [baseUrl, firebaseAuth, onAuthStateChange, bootSession]);
 
   // Track 1 Login
   /** Stores a Track 1 session returned by the auth service (password login or Firebase sign-in). */

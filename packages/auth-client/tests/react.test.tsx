@@ -334,4 +334,35 @@ describe("Milestone 5: React Hooks & Provider (react.test.tsx)", () => {
     expect(result.current.org).toBeNull();
     expect(result.current.role).toBeNull();
   });
+
+  it("optimisticHydration exposes valid stored session immediately and clears on 401", async () => {
+    window.localStorage.setItem(
+      "zolexora_session",
+      JSON.stringify({
+        token: "stored.jwt.token",
+        user: { uid: "u_opt", zolexora_id: "ZX-1234-5678-9012", email: "opt@b.com" },
+        savedAt: Date.now(),
+      })
+    );
+    globalThis.fetch = vi.fn(async () => {
+      await new Promise((r) => setTimeout(r, 30));
+      return new Response(JSON.stringify({ message: "Revoked" }), { status: 401 });
+    }) as any;
+
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <ZolexoraAuthProvider optimisticHydration>{children}</ZolexoraAuthProvider>
+    );
+
+    const { result } = renderHook(() => useAuth(), { wrapper });
+    expect(result.current.loading).toBe(false);
+    expect(result.current.isAuthenticated).toBe(true);
+    expect(result.current.user?.uid).toBe("u_opt");
+
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+
+    expect(result.current.isAuthenticated).toBe(false);
+    expect(result.current.user).toBeNull();
+  });
 });

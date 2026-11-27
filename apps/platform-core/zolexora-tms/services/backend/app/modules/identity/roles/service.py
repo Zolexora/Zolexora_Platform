@@ -16,7 +16,7 @@ from typing import Optional
 from fastapi import HTTPException, status
 from sqlalchemy import select, func, delete, tuple_
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import joinedload, selectinload
 
 from app.modules.core.platform.capabilities import TMS_CAPABILITY_REGISTRY
 from app.modules.core.audit.models import AuditLog
@@ -546,8 +546,8 @@ async def resolve_effective_permissions(
             RoleAssignment.member_id == member_id,
             RoleAssignment.is_active == True,
         )
-        .options(selectinload(RoleAssignment.role_version).selectinload(OrganisationRoleVersion.permissions))
-        .options(selectinload(RoleAssignment.role))
+        .options(joinedload(RoleAssignment.role_version).selectinload(OrganisationRoleVersion.permissions))
+        .options(joinedload(RoleAssignment.role))
     )
     assignment = (await db.execute(assign_stmt)).scalar_one_or_none()
 

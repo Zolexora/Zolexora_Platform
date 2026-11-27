@@ -50,7 +50,7 @@ export function App() {
   }
   return (
     <QueryClientProvider client={queryClient}>
-      <ZolexoraAuthProvider authUrl={authUrl} product="zolexora-tms-admin">
+      <ZolexoraAuthProvider authUrl={authUrl} product="zolexora-tms-admin" optimisticHydration>
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<AdminPortal />} />

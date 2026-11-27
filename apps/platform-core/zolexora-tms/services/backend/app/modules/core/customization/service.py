@@ -80,15 +80,25 @@ def _build_runtime_modules(
 
 class ApplicationRuntimeService:
     @staticmethod
-    async def get_runtime_configuration(db: AsyncSession, organisation_id: UUID) -> RuntimeConfiguration:
+    def get_cached_runtime(organisation_id: UUID) -> Optional[RuntimeConfiguration]:
+        if settings.ENVIRONMENT == "test":
+            return None
         now = time.monotonic()
-        if settings.ENVIRONMENT != "test":
-            cached = _runtime_cache.get(organisation_id)
-            if cached:
-                if cached[0] > now:
-                    _runtime_cache.move_to_end(organisation_id)
-                    return cached[1]
-                _runtime_cache.pop(organisation_id, None)
+        cached = _runtime_cache.get(organisation_id)
+        if not cached:
+            return None
+        if cached[0] > now:
+            _runtime_cache.move_to_end(organisation_id)
+            return cached[1]
+        _runtime_cache.pop(organisation_id, None)
+        return None
+
+    @staticmethod
+    async def get_runtime_configuration(db: AsyncSession, organisation_id: UUID) -> RuntimeConfiguration:
+        cached = ApplicationRuntimeService.get_cached_runtime(organisation_id)
+        if cached is not None:
+            return cached
+        now = time.monotonic()
 
         # 1. Fetch Application Base
         result = await db.execute(

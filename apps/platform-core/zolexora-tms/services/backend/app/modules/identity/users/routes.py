@@ -94,10 +94,25 @@ async def get_auth_bootstrap(
         return AuthBootstrapResponse(me=me)
 
     org_id = row["organisation_id"]
-    await set_tenant_context(db, org_id)
+    if "org_name" in row:
+        organisation = OrganisationResponse(
+            id=org_id,
+            name=row["org_name"],
+            organisation_type=row["org_type"],
+            workspace_type=row["workspace_type"],
+            status=row["org_status"],
+            created_at=row["org_created_at"],
+            updated_at=row["org_updated_at"],
+        )
+    else:
+        await set_tenant_context(db, org_id)
+        org_obj = (await db.execute(select(Organisation).where(Organisation.id == org_id))).scalars().first()
+        organisation = OrganisationResponse.model_validate(org_obj) if org_obj else None
 
-    org_obj = (await db.execute(select(Organisation).where(Organisation.id == org_id))).scalars().first()
-    organisation = OrganisationResponse.model_validate(org_obj) if org_obj else None
+    runtime: Optional[RuntimeConfiguration] = ApplicationRuntimeService.get_cached_runtime(org_id)
+    needs_tenant_ctx = "org_name" in row and (not row["is_commander"] or runtime is None)
+    if needs_tenant_ctx:
+        await set_tenant_context(db, org_id)
 
     effective_permissions = await resolve_effective_permissions(
         org_id,
@@ -107,12 +122,12 @@ async def get_auth_bootstrap(
         is_commander=row["is_commander"],
     )
 
-    runtime: Optional[RuntimeConfiguration] = None
-    try:
-        runtime = await ApplicationRuntimeService.get_runtime_configuration(db, org_id)
-    except HTTPException as exc:
-        if exc.status_code != 404:
-            raise
+    if runtime is None:
+        try:
+            runtime = await ApplicationRuntimeService.get_runtime_configuration(db, org_id)
+        except HTTPException as exc:
+            if exc.status_code != 404:
+                raise
 
     return AuthBootstrapResponse(
         me=me,

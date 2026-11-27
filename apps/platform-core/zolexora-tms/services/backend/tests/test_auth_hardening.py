@@ -228,3 +228,49 @@ async def test_bootstrap_endpoint_returns_single_payload(monkeypatch):
         assert body["runtime"] is None
     finally:
         app.dependency_overrides.clear()
+
+
+async def test_resolve_membership_employee_uses_single_query_when_active(monkeypatch):
+    from contextlib import asynccontextmanager
+
+    @asynccontextmanager
+    async def fake_rls_bypass(db):
+        yield
+
+    monkeypatch.setattr(dependencies, "rls_bypass", fake_rls_bypass)
+
+    org_id = uuid.uuid4()
+    member_id = uuid.uuid4()
+    uid = uuid.uuid4()
+
+    class _MappingResult:
+        def __init__(self, row):
+            self._row = row
+
+        def mappings(self):
+            return self
+
+        def first(self):
+            return self._row
+
+    expected = {
+        "member_id": member_id,
+        "organisation_id": org_id,
+        "is_creator": False,
+        "is_commander": False,
+        "workspace_type": "SERVICE_PROVIDER",
+        "org_name": "Alpha Fleet",
+        "org_type": "Startup",
+        "org_status": "ACTIVE",
+        "org_created_at": "2026-01-01T00:00:00Z",
+        "org_updated_at": "2026-01-01T00:00:00Z",
+    }
+    db = AsyncMock()
+    db.execute = AsyncMock(return_value=_MappingResult(expected))
+
+    identity = dependencies.AuthenticatedIdentity(
+        id=uid, email="emp@fleet.test", zolexora_org_id="ZX-ORG-1111-2222-3333"
+    )
+    row = await dependencies.resolve_membership(db, identity, None)
+    assert row == expected
+    assert db.execute.await_count == 1

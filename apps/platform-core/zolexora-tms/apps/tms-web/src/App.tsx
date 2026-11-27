@@ -86,7 +86,7 @@ export function App() {
   }
   return (
     <QueryClientProvider client={queryClient}>
-      <ZolexoraAuthProvider authUrl={authUrl} product="zolexora-tms">
+      <ZolexoraAuthProvider authUrl={authUrl} product="zolexora-tms" optimisticHydration>
           <BrowserRouter>
           <Routes>
             {/* Public Editorial Marketing Pages */}

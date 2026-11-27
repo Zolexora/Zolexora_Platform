@@ -116,7 +116,12 @@ async def ensure_profile(identity: AuthenticatedIdentity) -> None:
     _known_profiles[identity.id] = None
 
 
-_MEMBER_COLUMNS = "m.id AS member_id, m.organisation_id, m.is_creator, m.is_commander, o.workspace_type::text AS workspace_type"
+_MEMBER_COLUMNS = (
+    "m.id AS member_id, m.organisation_id, m.is_creator, m.is_commander, "
+    "o.workspace_type::text AS workspace_type, "
+    "o.name AS org_name, o.organisation_type AS org_type, "
+    "o.status::text AS org_status, o.created_at AS org_created_at, o.updated_at AS org_updated_at"
+)
 
 
 async def resolve_membership(
@@ -131,6 +136,18 @@ async def resolve_membership(
     """
     async with rls_bypass(db):
         if identity.zolexora_org_id:
+            row = (await db.execute(
+                text(
+                    f"SELECT {_MEMBER_COLUMNS} FROM public.organisation_members m "
+                    "JOIN public.organisations o ON o.id = m.organisation_id "
+                    "WHERE m.user_id = :u AND o.zolexora_org_id = :z "
+                    "AND o.status = 'ACTIVE' AND m.status = 'ACTIVE' LIMIT 1"
+                ),
+                {"u": identity.id, "z": identity.zolexora_org_id},
+            )).mappings().first()
+            if row:
+                return dict(row)
+            # First employee login: auto-provision membership once when the org is linked.
             org = (await db.execute(
                 text("SELECT id FROM public.organisations WHERE zolexora_org_id = :z AND status = 'ACTIVE'"),
                 {"z": identity.zolexora_org_id},
