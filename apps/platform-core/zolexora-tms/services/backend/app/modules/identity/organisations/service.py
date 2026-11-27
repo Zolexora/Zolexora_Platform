@@ -38,8 +38,21 @@ async def complete_onboarding(
     db: AsyncSession,
     ip_address: str | None = None,
     user_agent: str | None = None,
+    zolexora_org_id: str | None = None,
 ) -> OnboardingResponse:
     # A public (Track 1) user may own several organisations: every call creates a new one.
+    # For centralised ADR 0004/0005 business sessions, one TMS workspace links 1:1 to a ZX-ORG id.
+    target_zx_org = zolexora_org_id or req.zolexora_org_id
+    if target_zx_org:
+        existing = (
+            await db.execute(select(Organisation).where(Organisation.zolexora_org_id == target_zx_org))
+        ).scalars().first()
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="This Zolexora business already has a TMS workspace.",
+            )
+
     org_id = uuid.uuid4()
     await set_tenant_context(db, org_id)  # every row below belongs to the new tenant
     
@@ -50,6 +63,7 @@ async def complete_onboarding(
         organisation_type=req.organisation_type.value,
         workspace_type=req.workspace_type,
         status=OrganisationStatus.ACTIVE, # In a fully asynchronous flow this would be PROVISIONING
+        zolexora_org_id=target_zx_org,
     )
     db.add(org)
     await db.flush()

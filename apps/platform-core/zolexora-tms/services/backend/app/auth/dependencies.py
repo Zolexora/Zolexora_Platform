@@ -1,18 +1,19 @@
 from collections import OrderedDict
 import logging
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Optional, Set
+from typing import Any, Callable, Dict, List, Optional, Set
 import uuid
 from fastapi import Depends, HTTPException, Security, status, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import joinedload, selectinload
 
 from app.core.tenant import TenantContext
 from app.core.config import settings
 from app.modules.core.platform.models import ProviderType
+from app.auth.catalog import expand_auth_permissions, to_auth_permission
 from app.auth.zolexora import AuthServiceError, InvalidToken, introspect
 from app.db.session import AsyncSessionLocal, get_db, rls_bypass, set_tenant_context
 
@@ -25,8 +26,18 @@ class AuthenticatedIdentity(BaseModel):
     id: uuid.UUID
     email: Optional[str] = None
     full_name: Optional[str] = None
-    # ZX-ORG id for employee-track (org) logins; None for public users
+    zolexora_id: Optional[str] = None
+    phone_number: Optional[str] = None
+    member_kind: Optional[str] = None
+    # ZX-ORG id for business-session / employee logins; None for Track 1 personal tokens
     zolexora_org_id: Optional[str] = None
+    org_name: Optional[str] = None
+    business_kind: Optional[str] = None
+    auth_role: Optional[str] = None
+    auth_permissions: List[str] = Field(default_factory=list)
+    mfa_setup_required: bool = False
+    verification: Dict[str, Any] = Field(default_factory=dict)
+    is_business_session: bool = False
     is_platform_admin: bool = False
 
 _PERMISSION_ALIASES = {"users.manage": "identity.users.manage"}
@@ -51,7 +62,10 @@ class AuthenticatedUser(AuthenticatedIdentity):
         if permission in self.permissions:
             return True
         alias = _PERMISSION_ALIASES.get(permission)
-        return bool(alias and alias in self.permissions)
+        if alias and alias in self.permissions:
+            return True
+        auth_perm = to_auth_permission(permission)
+        return auth_perm in self.permissions
 
 CurrentUserContext = AuthenticatedUser
 
@@ -76,8 +90,18 @@ async def identity_from_token(token: str) -> AuthenticatedIdentity:
     return AuthenticatedIdentity(
         id=user_id,
         email=user.get("email"),
-        full_name=user.get("name") or user.get("full_name"),
+        full_name=user.get("display_name") or user.get("name") or user.get("full_name"),
+        zolexora_id=user.get("zolexora_id"),
+        phone_number=user.get("phone_number"),
+        member_kind=user.get("kind"),
         zolexora_org_id=user.get("org_id") or None,
+        org_name=user.get("org_name"),
+        business_kind=user.get("business_kind"),
+        auth_role=user.get("role"),
+        auth_permissions=list(user.get("permissions") or []),
+        mfa_setup_required=bool(user.get("mfa_setup_required")),
+        verification=user.get("verification") or {},
+        is_business_session=bool(user.get("is_business_session")),
         is_platform_admin=user.get("is_platform_admin") is True,
     )
 
@@ -118,7 +142,7 @@ async def ensure_profile(identity: AuthenticatedIdentity) -> None:
 
 _MEMBER_COLUMNS = (
     "m.id AS member_id, m.organisation_id, m.is_creator, m.is_commander, "
-    "o.workspace_type::text AS workspace_type, "
+    "o.workspace_type::text AS workspace_type, o.zolexora_org_id AS zolexora_org_id, "
     "o.name AS org_name, o.organisation_type AS org_type, "
     "o.status::text AS org_status, o.created_at AS org_created_at, o.updated_at AS org_updated_at"
 )
@@ -213,13 +237,23 @@ async def get_current_active_organisation(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=detail)
 
     await set_tenant_context(db, row["organisation_id"])
+    is_commander = bool(row["is_commander"]) or (
+        identity.is_business_session and identity.auth_role == "owner"
+    )
+    permissions = (
+        set(expand_auth_permissions(identity.auth_permissions))
+        if identity.is_business_session
+        else set()
+    )
     return AuthenticatedUser(
         **identity.model_dump(),
         organisation_id=row["organisation_id"],
         member_id=row.get("member_id"),
         workspace_type=row.get("workspace_type"),
         is_creator=row["is_creator"],
-        is_commander=row["is_commander"],
+        is_commander=is_commander,
+        role_code=identity.auth_role if identity.is_business_session else None,
+        permissions=permissions,
     )
 
 @dataclass
@@ -260,8 +294,8 @@ async def _resolve_member_permissions(
             RoleAssignment.is_active == True,
         )
         .options(
-            selectinload(RoleAssignment.role_version).selectinload(OrganisationRoleVersion.permissions),
-            selectinload(RoleAssignment.role),
+            joinedload(RoleAssignment.role_version).selectinload(OrganisationRoleVersion.permissions),
+            joinedload(RoleAssignment.role),
         )
     )
     assignment = (await db.execute(assign_stmt)).scalar_one_or_none()
@@ -290,7 +324,7 @@ def require_permission(permission: str) -> Callable:
         user: AuthenticatedUser = Depends(get_current_active_organisation),
         db: AsyncSession = Depends(get_db),
     ) -> AuthenticatedUser:
-        if not user.is_commander and not user.permissions and user.member_id:
+        if not user.is_business_session and not user.is_commander and not user.permissions and user.member_id:
             role_name, caps = await _resolve_member_permissions(db, user.organisation_id, user.member_id)
             user.role_code = role_name
             user.permissions = caps

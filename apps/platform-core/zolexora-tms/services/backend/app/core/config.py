@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     # Zolexora auth service: verifies every bearer token (/api/v1/auth/me). Platform admins
     # are the auth service's is_platform_admin users; there is no local allowlist.
     AUTH_SERVICE_URL: Optional[str] = Field(default=None, validation_alias="AUTH_SERVICE_URL")
+    TMS_PRODUCT_KEY: Optional[str] = Field(default=None, validation_alias="TMS_PRODUCT_KEY")
     # Set to 1 by compose so a localhost AUTH_SERVICE_URL is reached via host.docker.internal
     TMS_IN_DOCKER: bool = Field(default=False, validation_alias="TMS_IN_DOCKER")
 

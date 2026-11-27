@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   RefreshCw,
@@ -11,6 +11,9 @@ import {
   X,
   AlertCircle,
   FileCheck2,
+  Search,
+  Clock,
+  Inbox,
 } from 'lucide-react';
 import { apiClient, getApiBaseUrl } from '../../lib/api';
 import { getSessionToken } from '../../lib/session';
@@ -22,18 +25,90 @@ import type {
   TripCompleteRequest,
 } from '../../types';
 
-const STATUS_COLUMNS: { key: DutyLifecycleStatus; label: string; color: string }[] = [
-  { key: 'ALLOCATED', label: 'Allocated', color: 'border-silver-700/30 bg-silver-900/20 text-silver-500' },
-  { key: 'DISPATCHED', label: 'Dispatched', color: 'border-navy-700/30 bg-navy-800/20 text-silver-400' },
-  { key: 'ARRIVED_PICKUP', label: 'At Pickup', color: 'border-navy-600/40 bg-navy-800/40 text-navy-300' },
-  { key: 'IN_TRANSIT', label: 'In Transit', color: 'border-navy-600/30 bg-navy-600/5 text-silver-400' },
-  { key: 'ARRIVED_DROP', label: 'At Destination', color: 'border-blue-500/30 bg-blue-500/5 text-blue-400' },
-  { key: 'DUTY_COMPLETED', label: 'Completed', color: 'border-silver-700/40 bg-silver-900/40 text-silver-300' },
+interface StageColumnConfig {
+  key: DutyLifecycleStatus;
+  label: string;
+  dotClass: string;
+  barClass: string;
+  badgeClass: string;
+  headerBgClass: string;
+}
+
+const STATUS_COLUMNS: StageColumnConfig[] = [
+  {
+    key: 'ALLOCATED',
+    label: 'Allocated',
+    dotClass: 'bg-amber-400',
+    barClass: 'bg-amber-400/80',
+    badgeClass: 'border-amber-500/30 bg-amber-500/10 text-amber-300',
+    headerBgClass: 'bg-amber-500/[0.04]',
+  },
+  {
+    key: 'DISPATCHED',
+    label: 'Dispatched',
+    dotClass: 'bg-cyan-400',
+    barClass: 'bg-cyan-400/80',
+    badgeClass: 'border-cyan-500/30 bg-cyan-500/10 text-cyan-300',
+    headerBgClass: 'bg-cyan-500/[0.04]',
+  },
+  {
+    key: 'ARRIVED_PICKUP',
+    label: 'At Pickup',
+    dotClass: 'bg-indigo-400',
+    barClass: 'bg-indigo-400/80',
+    badgeClass: 'border-indigo-500/30 bg-indigo-500/10 text-indigo-300',
+    headerBgClass: 'bg-indigo-500/[0.04]',
+  },
+  {
+    key: 'IN_TRANSIT',
+    label: 'In Transit',
+    dotClass: 'bg-emerald-400',
+    barClass: 'bg-emerald-400/80',
+    badgeClass: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300',
+    headerBgClass: 'bg-emerald-500/[0.04]',
+  },
+  {
+    key: 'ARRIVED_DROP',
+    label: 'At Destination',
+    dotClass: 'bg-blue-400',
+    barClass: 'bg-blue-400/80',
+    badgeClass: 'border-blue-500/30 bg-blue-500/10 text-blue-300',
+    headerBgClass: 'bg-blue-500/[0.04]',
+  },
+  {
+    key: 'DUTY_COMPLETED',
+    label: 'Completed',
+    dotClass: 'bg-teal-400',
+    barClass: 'bg-teal-400/80',
+    badgeClass: 'border-teal-500/30 bg-teal-500/10 text-teal-300',
+    headerBgClass: 'bg-teal-500/[0.04]',
+  },
 ];
+
+function formatShortSchedule(iso?: string): string {
+  if (!iso) return 'Schedule TBD';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return 'Schedule TBD';
+  return d.toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+interface DispatchBoardResponse {
+  organisation_id: string;
+  total_active: number;
+  lanes: Partial<Record<DutyLifecycleStatus, DispatchBoardItem[]>>;
+}
 
 export function DispatchPage() {
   const queryClient = useQueryClient();
   const [wsConnected, setWsConnected] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedStage, setSelectedStage] = useState<DutyLifecycleStatus | 'ALL'>('ALL');
+  const [hideEmptyColumns, setHideEmptyColumns] = useState(false);
   const [startTripModalDuty, setStartTripModalDuty] = useState<DispatchBoardItem | null>(null);
   const [completeTripModalDuty, setCompleteTripModalDuty] = useState<DispatchBoardItem | null>(null);
   const [formError, setFormError] = useState('');
@@ -51,10 +126,10 @@ export function DispatchPage() {
     notes: '',
   });
 
-  // Query dispatch board items
-  const { data: boardItems, refetch } = useQuery({
+  // Query dispatch board items (backend returns `{ organisation_id, total_active, lanes }`)
+  const { data: boardData, refetch, isFetching } = useQuery({
     queryKey: ['dispatch-board'],
-    queryFn: () => apiClient<DispatchBoardItem[]>('/api/v1/dispatch/board'),
+    queryFn: () => apiClient<DispatchBoardResponse | DispatchBoardItem[]>('/api/v1/dispatch/board'),
     refetchInterval: 15000, // Background fallback polling
   });
 
@@ -220,34 +295,64 @@ export function DispatchPage() {
     });
   };
 
+  const columnItemsMap = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    const result = {} as Record<DutyLifecycleStatus, DispatchBoardItem[]>;
+    for (const col of STATUS_COLUMNS) {
+      const raw = Array.isArray(boardData)
+        ? boardData.filter((item) => item.status === col.key)
+        : boardData?.lanes?.[col.key] ?? [];
+      result[col.key] = query
+        ? raw.filter((d) =>
+            [d.duty_number, d.booking_number, d.customer_name, d.driver_name, d.vehicle_registration, d.pickup_address, d.drop_address, d.notes]
+              .some((v) => v?.toLowerCase().includes(query))
+          )
+        : raw;
+    }
+    return result;
+  }, [boardData, searchQuery]);
+
+  const totalDutiesCount = useMemo(
+    () => STATUS_COLUMNS.reduce((acc, col) => acc + columnItemsMap[col.key].length, 0),
+    [columnItemsMap]
+  );
+
+  const visibleColumns = STATUS_COLUMNS.filter((col) => {
+    if (selectedStage !== 'ALL' && col.key !== selectedStage) return false;
+    if (hideEmptyColumns && columnItemsMap[col.key].length === 0) return false;
+    return true;
+  });
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Live Dispatch Tower</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-white">Live Dispatch Tower</h1>
           <p className="text-sm text-slate-400">
             Real-time stage orchestration, driver telemetry, and trip milestone control.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           <button
+            type="button"
             onClick={() => refetch()}
-            className="rounded-xl border border-slate-800 bg-slate-900/60 p-2 text-slate-400 hover:text-white transition"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-800 bg-slate-900/70 px-3 py-2 text-xs font-medium text-slate-300 hover:border-slate-700 hover:text-white transition"
             title="Refresh Board"
           >
-            <RefreshCw className="h-4 w-4" />
+            <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin text-cyan-400' : ''}`} />
+            Refresh
           </button>
           <div
-            className={`flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold ${
+            className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold ${
               wsConnected
-                ? 'border-silver-700/40 bg-silver-900/60 text-silver-300'
-                : 'border-silver-700/30 bg-silver-900/30 text-silver-500'
+                ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+                : 'border-slate-700/70 bg-slate-900/60 text-slate-400'
             }`}
           >
             <span
               className={`h-2 w-2 rounded-full ${
-                wsConnected ? 'bg-silver-300 animate-ping' : 'bg-[#404040]'
+                wsConnected ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'
               }`}
             />
             {wsConnected ? 'WebSocket Live' : 'REST Polling (15s)'}
@@ -255,143 +360,296 @@ export function DispatchPage() {
         </div>
       </div>
 
-      {/* Kanban Stages Board */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        {STATUS_COLUMNS.map((col) => {
-          const itemsInCol = boardItems?.filter((item) => item.status === col.key) || [];
-          return (
-            <div
-              key={col.key}
-              className="flex flex-col rounded-2xl border border-slate-800 bg-slate-900/30 p-3.5 min-h-[500px]"
-            >
-              <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
-                <span className={`text-xs font-bold uppercase tracking-wider ${col.color.split(' ')[2]}`}>
-                  {col.label}
-                </span>
-                <span className="rounded-full bg-slate-800 px-2 py-0.5 text-xs font-mono font-semibold text-slate-300">
-                  {itemsInCol.length}
-                </span>
-              </div>
+      {/* Pipeline Summary & Controls Toolbar */}
+      <div className="rounded-2xl border border-slate-800/90 bg-slate-900/50 p-3 space-y-3">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+          {/* Search */}
+          <div className="relative flex-1 max-w-sm">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Filter by duty #, driver, vehicle, route..."
+              className="w-full rounded-xl border border-slate-800 bg-slate-950/80 py-2 pl-9 pr-8 text-xs text-white placeholder-slate-500 focus:border-cyan-500/50 focus:outline-none"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
+                aria-label="Clear filter"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
 
-              <div className="space-y-3 flex-1 overflow-y-auto">
-                {itemsInCol.length === 0 ? (
-                  <div className="flex h-32 items-center justify-center text-center text-xs text-slate-600">
-                    Empty
+          <button
+            type="button"
+            onClick={() => setHideEmptyColumns((v) => !v)}
+            className={`self-start lg:self-auto rounded-xl border px-3 py-2 text-xs font-medium transition ${
+              hideEmptyColumns
+                ? 'border-cyan-500/40 bg-cyan-500/10 text-cyan-300'
+                : 'border-slate-800 bg-slate-950/60 text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            {hideEmptyColumns ? 'Showing Active Stages Only' : 'Hide Empty Stages'}
+          </button>
+        </div>
+
+        {/* Stage Pills */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-0.5">
+          <button
+            type="button"
+            onClick={() => setSelectedStage('ALL')}
+            className={`inline-flex shrink-0 items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
+              selectedStage === 'ALL'
+                ? 'border-slate-600 bg-slate-800 text-white'
+                : 'border-slate-800/80 bg-slate-950/50 text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <span>All Stages</span>
+            <span className="rounded-md bg-slate-900 px-1.5 py-0.5 font-mono text-[11px] text-slate-300">
+              {totalDutiesCount}
+            </span>
+          </button>
+
+          {STATUS_COLUMNS.map((col) => {
+            const count = columnItemsMap[col.key].length;
+            const active = selectedStage === col.key;
+            return (
+              <button
+                key={col.key}
+                type="button"
+                onClick={() => setSelectedStage(active ? 'ALL' : col.key)}
+                className={`inline-flex shrink-0 items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
+                  active
+                    ? col.badgeClass
+                    : 'border-slate-800/80 bg-slate-950/50 text-slate-400 hover:border-slate-700 hover:text-slate-200'
+                }`}
+              >
+                <span className={`h-2 w-2 rounded-full ${col.dotClass}`} />
+                <span>{col.label}</span>
+                <span className="rounded-md bg-slate-900/90 px-1.5 py-0.5 font-mono text-[11px] text-slate-300">
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Kanban Stages Horizontal Track */}
+      {visibleColumns.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-800 bg-slate-900/30 py-16 text-center">
+          <Inbox className="h-9 w-9 text-slate-600 mb-3" />
+          <p className="text-sm font-semibold text-slate-300">No active duties match your filter</p>
+          <p className="mt-1 text-xs text-slate-500">
+            Try clearing the search query or showing empty stages.
+          </p>
+        </div>
+      ) : (
+        <div
+          className={
+            selectedStage !== 'ALL'
+              ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'
+              : 'flex gap-4 overflow-x-auto pb-4 items-start'
+          }
+        >
+          {visibleColumns.map((col) => {
+            const itemsInCol = columnItemsMap[col.key];
+            return (
+              <section
+                key={col.key}
+                className={`flex flex-col overflow-hidden rounded-2xl border border-slate-800/90 bg-slate-900/45 shadow-lg ${
+                  selectedStage !== 'ALL'
+                    ? 'col-span-full'
+                    : 'w-[292px] min-w-[292px] 2xl:flex-1 2xl:min-w-[260px] shrink-0 max-h-[calc(100vh-300px)] min-h-[340px]'
+                }`}
+              >
+                {/* Accent Strip */}
+                <div className={`h-1 w-full ${col.barClass}`} />
+
+                {/* Column Header */}
+                <div className={`flex items-center justify-between gap-2 px-4 py-3 border-b border-slate-800/80 ${col.headerBgClass}`}>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${col.dotClass}`} />
+                    <h2 className="truncate text-xs font-bold uppercase tracking-wider text-slate-100">
+                      {col.label}
+                    </h2>
                   </div>
-                ) : (
-                  itemsInCol.map((duty) => (
-                    <div
-                      key={duty.id}
-                      className="rounded-xl border border-slate-800 bg-slate-900/90 p-3.5 shadow-md hover:border-slate-700 transition space-y-2.5"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-mono text-xs font-bold text-white">{duty.duty_number}</span>
-                        <span className="text-[10px] font-mono text-slate-400">{duty.booking_number}</span>
-                      </div>
+                  <span className={`shrink-0 rounded-full border px-2.5 py-0.5 font-mono text-xs font-bold ${col.badgeClass}`}>
+                    {itemsInCol.length}
+                  </span>
+                </div>
 
-                      {duty.customer_name && (
-                        <div className="text-xs font-medium text-slate-300 truncate">
-                          {duty.customer_name}
+                {/* Column Cards */}
+                <div
+                  className={
+                    selectedStage !== 'ALL'
+                      ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 p-3.5'
+                      : 'flex-1 overflow-y-auto p-3 space-y-3'
+                  }
+                >
+                  {itemsInCol.length === 0 ? (
+                    <div className="col-span-full flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-800/80 bg-slate-950/30 py-10 px-4 text-center">
+                      <span className="text-xs font-medium text-slate-500">No duties in {col.label}</span>
+                    </div>
+                  ) : (
+                    itemsInCol.map((duty) => (
+                      <article
+                        key={duty.id}
+                        className="rounded-xl border border-slate-800/90 bg-slate-950/80 p-3.5 shadow-sm hover:border-slate-600/80 transition space-y-3"
+                      >
+                        {/* Top Row: Duty # & Schedule */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <span className="block truncate font-mono text-xs font-bold text-white">
+                              {duty.duty_number}
+                            </span>
+                            {duty.booking_number && (
+                              <span className="text-[11px] font-mono text-slate-400">
+                                {duty.booking_number}
+                              </span>
+                            )}
+                          </div>
+                          <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-slate-800 bg-slate-900 px-2 py-0.5 text-[10px] font-medium text-slate-300">
+                            <Clock className="h-3 w-3 text-slate-400" />
+                            {formatShortSchedule(duty.scheduled_start_time)}
+                          </span>
                         </div>
-                      )}
 
-                      <div className="space-y-1 text-xs text-slate-400">
-                        <div className="flex items-center gap-1.5 text-slate-300 truncate">
-                          <User className="h-3 w-3 text-silver-400 flex-shrink-0" />
-                          <span className="truncate">{duty.driver_name || 'Driver unassigned'}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-slate-300 truncate">
-                          <Truck className="h-3 w-3 text-silver-300 flex-shrink-0" />
-                          <span className="truncate">{duty.vehicle_registration || 'Vehicle unassigned'}</span>
-                        </div>
-                      </div>
-
-                      <div className="rounded-lg bg-slate-950/60 p-2 text-[11px] text-slate-400 space-y-1">
-                        <div className="flex items-start gap-1 text-slate-300 truncate">
-                          <MapPin className="h-3 w-3 text-silver-500 flex-shrink-0 mt-0.5" />
-                          <span className="truncate">{duty.pickup_address}</span>
-                        </div>
-                        <div className="flex items-start gap-1 text-slate-400 truncate">
-                          <Navigation className="h-3 w-3 text-blue-400 flex-shrink-0 mt-0.5" />
-                          <span className="truncate">{duty.drop_address}</span>
-                        </div>
-                      </div>
-
-                      {/* Milestone Advance Controls */}
-                      <div className="pt-2 border-t border-slate-800/80">
-                        {duty.status === 'DISPATCHED' && (
-                          <button
-                            onClick={() => arrivePickupMutation.mutate(duty.id)}
-                            disabled={arrivePickupMutation.isPending}
-                            className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-navy-700/40 border border-navy-600/40 py-1.5 text-xs font-semibold text-navy-200 hover:bg-navy-500 hover:text-white transition"
-                          >
-                            <MapPin className="h-3.5 w-3.5" />
-                            Arrived Pickup
-                          </button>
-                        )}
-
-                        {duty.status === 'ARRIVED_PICKUP' && (
-                          <button
-                            onClick={() => {
-                              setStartTripModalDuty(duty);
-                              setStartOdo('50000.00');
-                              setFormError('');
-                            }}
-                            className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-navy-600/20 border border-navy-600/30 py-1.5 text-xs font-semibold text-silver-300 hover:bg-navy-600 hover:text-white transition"
-                          >
-                            <Gauge className="h-3.5 w-3.5" />
-                            Start Trip
-                          </button>
-                        )}
-
-                        {duty.status === 'IN_TRANSIT' && (
-                          <button
-                            onClick={() => arriveDropMutation.mutate(duty.id)}
-                            disabled={arriveDropMutation.isPending}
-                            className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-blue-600/20 border border-blue-500/30 py-1.5 text-xs font-semibold text-blue-300 hover:bg-blue-600 hover:text-white transition"
-                          >
-                            <Navigation className="h-3.5 w-3.5" />
-                            Arrived Destination
-                          </button>
-                        )}
-
-                        {duty.status === 'ARRIVED_DROP' && (
-                          <button
-                            onClick={() => {
-                              const matchingTrip = trips?.find((t) => t.duty_id === duty.id);
-                              setCompleteTripModalDuty(duty);
-                              setCompleteForm({
-                                end_odometer: matchingTrip ? (parseFloat(matchingTrip.start_odometer) + 50).toFixed(2) : '50050.00',
-                                toll_amount: '0.00',
-                                fuel_amount: '0.00',
-                                parking_amount: '0.00',
-                                waiting_minutes: 0,
-                                notes: '',
-                              });
-                              setFormError('');
-                            }}
-                            className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-silver-800/40 border border-silver-700/40 py-1.5 text-xs font-semibold text-silver-200 hover:bg-navy-600 hover:text-white transition"
-                          >
-                            <FileCheck2 className="h-3.5 w-3.5" />
-                            Complete Trip & Duty
-                          </button>
-                        )}
-
-                        {duty.status === 'DUTY_COMPLETED' && (
-                          <div className="flex items-center justify-center gap-1 text-[11px] font-semibold text-silver-300 py-1">
-                            <CheckCircle2 className="h-3.5 w-3.5" />
-                            Billing Ready Record
+                        {duty.customer_name && (
+                          <div className="truncate text-xs font-semibold text-slate-200">
+                            {duty.customer_name}
                           </div>
                         )}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+
+                        {/* Driver & Vehicle */}
+                        <div className="grid grid-cols-1 gap-1.5 text-xs">
+                          <div className="flex items-center gap-2 rounded-lg bg-slate-900/70 px-2.5 py-1.5">
+                            <User className={`h-3.5 w-3.5 shrink-0 ${duty.driver_name || duty.driver_id ? 'text-cyan-400' : 'text-slate-500'}`} />
+                            <span className="truncate text-slate-300">
+                              {duty.driver_name || (duty.driver_id ? `Driver ${duty.driver_id.slice(0, 6)}` : 'Driver unassigned')}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 rounded-lg bg-slate-900/70 px-2.5 py-1.5">
+                            <Truck className={`h-3.5 w-3.5 shrink-0 ${duty.vehicle_registration || duty.vehicle_id ? 'text-amber-400' : 'text-slate-500'}`} />
+                            <span className="truncate text-slate-300">
+                              {duty.vehicle_registration || (duty.vehicle_id ? `Vehicle ${duty.vehicle_id.slice(0, 6)}` : 'Vehicle unassigned')}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Route or Notes */}
+                        {(duty.pickup_address || duty.drop_address) ? (
+                          <div className="rounded-lg border border-slate-800/70 bg-slate-900/40 p-2.5 text-[11px] space-y-1.5">
+                            {duty.pickup_address && (
+                              <div className="flex items-start gap-1.5 text-slate-300">
+                                <MapPin className="h-3.5 w-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                                <span className="line-clamp-1">{duty.pickup_address}</span>
+                              </div>
+                            )}
+                            {duty.drop_address && (
+                              <div className="flex items-start gap-1.5 text-slate-400">
+                                <Navigation className="h-3.5 w-3.5 text-blue-400 shrink-0 mt-0.5" />
+                                <span className="line-clamp-1">{duty.drop_address}</span>
+                              </div>
+                            )}
+                          </div>
+                        ) : duty.notes ? (
+                          <p className="rounded-lg border border-slate-800/70 bg-slate-900/40 px-2.5 py-2 text-[11px] text-slate-400 line-clamp-2">
+                            {duty.notes}
+                          </p>
+                        ) : null}
+
+                        {/* Milestone Advance Controls */}
+                        <div className="pt-2 border-t border-slate-800/80">
+                          {col.key === 'ALLOCATED' && (
+                            <div className="flex items-center justify-center rounded-lg border border-amber-500/20 bg-amber-500/5 py-1.5 text-[11px] font-medium text-amber-300">
+                              Ready for Dispatch ({duty.status})
+                            </div>
+                          )}
+
+                          {duty.status === 'DISPATCHED' && (
+                            <button
+                              type="button"
+                              onClick={() => arrivePickupMutation.mutate(duty.id)}
+                              disabled={arrivePickupMutation.isPending}
+                              className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-cyan-500/15 border border-cyan-500/30 py-2 text-xs font-semibold text-cyan-200 hover:bg-cyan-500 hover:text-slate-950 transition"
+                            >
+                              <MapPin className="h-3.5 w-3.5" />
+                              Arrived Pickup
+                            </button>
+                          )}
+
+                          {duty.status === 'ARRIVED_PICKUP' && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setStartTripModalDuty(duty);
+                                setStartOdo('50000.00');
+                                setFormError('');
+                              }}
+                              className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-indigo-500/15 border border-indigo-500/30 py-2 text-xs font-semibold text-indigo-200 hover:bg-indigo-500 hover:text-white transition"
+                            >
+                              <Gauge className="h-3.5 w-3.5" />
+                              Start Trip
+                            </button>
+                          )}
+
+                          {duty.status === 'IN_TRANSIT' && (
+                            <button
+                              type="button"
+                              onClick={() => arriveDropMutation.mutate(duty.id)}
+                              disabled={arriveDropMutation.isPending}
+                              className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 py-2 text-xs font-semibold text-emerald-200 hover:bg-emerald-500 hover:text-slate-950 transition"
+                            >
+                              <Navigation className="h-3.5 w-3.5" />
+                              Arrived Destination
+                            </button>
+                          )}
+
+                          {duty.status === 'ARRIVED_DROP' && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const matchingTrip = trips?.find((t) => t.duty_id === duty.id);
+                                setCompleteTripModalDuty(duty);
+                                setCompleteForm({
+                                  end_odometer: matchingTrip ? (parseFloat(matchingTrip.start_odometer) + 50).toFixed(2) : '50050.00',
+                                  toll_amount: '0.00',
+                                  fuel_amount: '0.00',
+                                  parking_amount: '0.00',
+                                  waiting_minutes: 0,
+                                  notes: '',
+                                });
+                                setFormError('');
+                              }}
+                              className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-blue-500/15 border border-blue-500/30 py-2 text-xs font-semibold text-blue-200 hover:bg-blue-500 hover:text-white transition"
+                            >
+                              <FileCheck2 className="h-3.5 w-3.5" />
+                              Complete Trip & Duty
+                            </button>
+                          )}
+
+                          {duty.status === 'DUTY_COMPLETED' && (
+                            <div className="flex items-center justify-center gap-1.5 rounded-lg bg-teal-500/10 border border-teal-500/20 py-1.5 text-[11px] font-semibold text-teal-300">
+                              <CheckCircle2 className="h-3.5 w-3.5" />
+                              Billing Ready Record
+                            </div>
+                          )}
+                        </div>
+                      </article>
+                    ))
+                  )}
+                </div>
+              </section>
+            );
+          })}
+        </div>
+      )}
 
       {/* Modal: Start Trip */}
       {startTripModalDuty && (
@@ -432,10 +690,12 @@ export function DispatchPage() {
                 />
               </div>
 
-              <div className="rounded-xl border border-slate-800/80 bg-slate-950/60 p-3 text-xs text-slate-400">
-                <span className="font-semibold text-slate-300">Starting Location: </span>
-                {startTripModalDuty.pickup_address}
-              </div>
+              {startTripModalDuty.pickup_address && (
+                <div className="rounded-xl border border-slate-800/80 bg-slate-950/60 p-3 text-xs text-slate-400">
+                  <span className="font-semibold text-slate-300">Starting Location: </span>
+                  {startTripModalDuty.pickup_address}
+                </div>
+              )}
 
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
                 <button

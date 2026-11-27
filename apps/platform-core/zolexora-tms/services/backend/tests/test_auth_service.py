@@ -79,3 +79,56 @@ def test_docker_url_swap(monkeypatch):
     assert zolexora.auth_service_url() == "http://host.docker.internal:3081"
     monkeypatch.setattr(settings, "TMS_IN_DOCKER", False)
     assert zolexora.auth_service_url() == "http://localhost:3081"
+
+
+async def test_business_session_introspection_and_catalog_mapping(auth_service):
+    from app.auth.catalog import TMS_PERMISSIONS, expand_auth_permissions
+
+    member_id = "2b1e7c33-1111-4444-8888-999900001111"
+    auth_service.responses["biz-tms"] = httpx.Response(
+        200,
+        json={
+            "authenticated": True,
+            "user": {
+                "member_id": member_id,
+                "kind": "person",
+                "zolexora_id": "ZX-1111-2222-3333",
+                "email": "ops@fleet.test",
+                "display_name": "Ops Lead",
+            },
+            "org": {
+                "zolexora_org_id": "ZX-ORG-4B8T-9M2K-7Y4X",
+                "name": "Alpha Fleet",
+                "status": "active",
+                "business_kind": "company",
+            },
+            "role": "manager",
+            "product": "tms",
+            "permissions": ["org:team:view", "tms:operations_bookings:view"],
+            "mfa_setup_required": False,
+            "verification": {"pan": "verified"},
+        },
+    )
+    auth_service.responses["biz-ims"] = httpx.Response(
+        200,
+        json={
+            "authenticated": True,
+            "user": {"member_id": member_id, "zolexora_id": "ZX-1111-2222-3333"},
+            "org": {"zolexora_org_id": "ZX-ORG-4B8T-9M2K-7Y4X", "name": "Alpha Fleet", "status": "active"},
+            "product": "ims",
+            "permissions": ["ims:items:view"],
+        },
+    )
+
+    ident = await identity_from_token("biz-tms")
+    assert str(ident.id) == member_id
+    assert ident.is_business_session is True
+    assert ident.zolexora_org_id == "ZX-ORG-4B8T-9M2K-7Y4X"
+    assert ident.auth_role == "manager"
+    assert "tms:operations_bookings:view" in TMS_PERMISSIONS
+    expanded = expand_auth_permissions(ident.auth_permissions)
+    assert "operations.bookings.view" in expanded
+
+    with pytest.raises(HTTPException) as exc:
+        await identity_from_token("biz-ims")
+    assert exc.value.status_code == 401

@@ -3,7 +3,7 @@ import { useAuth } from '../features/auth/useAuth';
 import { Loader2 } from 'lucide-react';
 
 export function ProtectedRoute() {
-  const { user, isLoading, authMe, error } = useAuth();
+  const { user, businessSession, isLoading, authMe, error } = useAuth();
 
   if (isLoading) {
     return (
@@ -16,7 +16,7 @@ export function ProtectedRoute() {
     );
   }
 
-  if (!user) {
+  if (!user || !businessSession) {
     return <Navigate to="/authentication" replace />;
   }
 
@@ -25,8 +25,8 @@ export function ProtectedRoute() {
     return <Navigate to="/authentication" replace />;
   }
 
-  // If user is authenticated but has no organisation assigned yet, redirect to authentication (workspace setup)
-  if (authMe && !authMe.organisation_id) {
+  // If business session is authenticated but has no TMS workspace initialized yet, redirect to setup
+  if (!authMe || !authMe.organisation_id) {
     return <Navigate to="/authentication" replace />;
   }
 

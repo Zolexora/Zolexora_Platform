@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import uuid
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
+from app.auth.catalog import expand_auth_permissions
 from app.auth.dependencies import (
     AuthenticatedIdentity,
     ensure_profile,
@@ -17,7 +18,7 @@ from app.modules.identity.organisations.models import Organisation
 from app.modules.identity.organisations.membership_models import OrganisationMember, MemberStatus
 from app.modules.identity.organisations.schemas import OrganisationResponse
 from app.modules.identity.roles.schemas import EffectivePermissionsResponse
-from app.modules.identity.roles.service import resolve_effective_permissions
+from app.modules.identity.roles.service import _build_structured, resolve_effective_permissions
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -31,12 +32,20 @@ class UserMeResponse(BaseModel):
     user_id: uuid.UUID  # alias used by the frontends
     email: Optional[str]
     full_name: Optional[str]
+    zolexora_id: Optional[str] = None
+    phone_number: Optional[str] = None
+    member_kind: Optional[str] = None
     organisation_id: Optional[uuid.UUID]
     workspace_type: Optional[str] = None
     zolexora_org_id: Optional[str] = None
+    org_name: Optional[str] = None
+    business_kind: Optional[str] = None
     is_creator: bool
     is_commander: bool
     is_platform_admin: bool = False
+    is_business_session: bool = False
+    mfa_setup_required: bool = False
+    verification: Dict[str, Any] = Field(default_factory=dict)
     role_code: Optional[str] = None
 
 
@@ -48,18 +57,32 @@ class AuthBootstrapResponse(BaseModel):
 
 
 def _build_user_me(identity: AuthenticatedIdentity, row: Optional[dict]) -> UserMeResponse:
+    is_commander = bool(row and row["is_commander"]) or (
+        identity.is_business_session and identity.auth_role == "owner"
+    )
+    role_code = identity.auth_role if identity.is_business_session else (
+        ("CREATOR" if row["is_creator"] else "MEMBER") if row else None
+    )
     return UserMeResponse(
         id=identity.id,
         user_id=identity.id,
         email=identity.email,
         full_name=identity.full_name,
+        zolexora_id=identity.zolexora_id,
+        phone_number=identity.phone_number,
+        member_kind=identity.member_kind,
         organisation_id=row["organisation_id"] if row else None,
         workspace_type=row.get("workspace_type") if row else None,
-        zolexora_org_id=identity.zolexora_org_id,
+        zolexora_org_id=(row.get("zolexora_org_id") if row else None) or identity.zolexora_org_id,
+        org_name=identity.org_name,
+        business_kind=identity.business_kind,
         is_creator=row["is_creator"] if row else False,
-        is_commander=row["is_commander"] if row else False,
+        is_commander=is_commander,
         is_platform_admin=identity.is_platform_admin,
-        role_code=("CREATOR" if row["is_creator"] else "MEMBER") if row else None,
+        is_business_session=identity.is_business_session,
+        mfa_setup_required=identity.mfa_setup_required,
+        verification=identity.verification,
+        role_code=role_code,
     )
 
 
@@ -94,6 +117,14 @@ async def get_auth_bootstrap(
         return AuthBootstrapResponse(me=me)
 
     org_id = row["organisation_id"]
+    if identity.is_business_session and identity.org_name and row.get("org_name") and row["org_name"] != identity.org_name:
+        async with rls_bypass(db):
+            from sqlalchemy import update as sa_update
+            await db.execute(
+                sa_update(Organisation).where(Organisation.id == org_id).values(name=identity.org_name[:160])
+            )
+        row["org_name"] = identity.org_name[:160]
+
     if "org_name" in row:
         organisation = OrganisationResponse(
             id=org_id,
@@ -101,6 +132,7 @@ async def get_auth_bootstrap(
             organisation_type=row["org_type"],
             workspace_type=row["workspace_type"],
             status=row["org_status"],
+            zolexora_org_id=row.get("zolexora_org_id") or identity.zolexora_org_id,
             created_at=row["org_created_at"],
             updated_at=row["org_updated_at"],
         )
@@ -110,17 +142,43 @@ async def get_auth_bootstrap(
         organisation = OrganisationResponse.model_validate(org_obj) if org_obj else None
 
     runtime: Optional[RuntimeConfiguration] = ApplicationRuntimeService.get_cached_runtime(org_id)
-    needs_tenant_ctx = "org_name" in row and (not row["is_commander"] or runtime is None)
+    is_commander = bool(row["is_commander"]) or (
+        identity.is_business_session and identity.auth_role == "owner"
+    )
+    needs_tenant_ctx = "org_name" in row and ((not is_commander and not identity.is_business_session) or runtime is None)
     if needs_tenant_ctx:
         await set_tenant_context(db, org_id)
 
-    effective_permissions = await resolve_effective_permissions(
-        org_id,
-        identity.id,
-        db,
-        member_id=row.get("member_id"),
-        is_commander=row["is_commander"],
-    )
+    if identity.is_business_session:
+        if is_commander:
+            effective_permissions = await resolve_effective_permissions(
+                org_id,
+                identity.id,
+                db,
+                member_id=row.get("member_id"),
+                is_commander=True,
+            )
+            effective_permissions.permissions = sorted(
+                set(effective_permissions.permissions) | set(identity.auth_permissions)
+            )
+        else:
+            expanded = expand_auth_permissions(identity.auth_permissions)
+            effective_permissions = EffectivePermissionsResponse(
+                user_id=identity.id,
+                organisation_id=org_id,
+                is_commander=False,
+                role_name=identity.auth_role,
+                permissions=expanded,
+                modules=_build_structured([p for p in expanded if "." in p]),
+            )
+    else:
+        effective_permissions = await resolve_effective_permissions(
+            org_id,
+            identity.id,
+            db,
+            member_id=row.get("member_id"),
+            is_commander=is_commander,
+        )
 
     if runtime is None:
         try:

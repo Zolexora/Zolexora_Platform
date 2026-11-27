@@ -12,14 +12,15 @@ import {
   CreditCard,
   Receipt,
   Settings,
-  LogOut,
   Shield,
   Crown,
   ChevronRight,
+  UserCircle2,
+  ArrowLeftRight,
 } from 'lucide-react';
 import { useAuth } from '../features/auth/useAuth';
 import { useApplicationRuntime } from '../providers/ApplicationRuntimeProvider';
-import { SidebarBrand } from '../components/SidebarBrand';
+import { SidebarBrand, SidebarUserFooter, useSidebarCollapsed } from '../components/SidebarBrand';
 
 
 
@@ -81,28 +82,36 @@ const navigation = [
       { name: 'Roles & Permissions', href: '/sp/settings/roles', icon: Shield },
       { name: 'Members & Access', href: '/sp/settings/members', icon: Users },
       { name: 'Operating Units', href: '/sp/settings/operating-units', icon: Building2 },
+      { name: 'My Account & 2FA', href: '/sp/profile', icon: UserCircle2 },
     ],
   },
 ];
 
 export function DashboardLayout() {
-  const { user, authMe, organisation, isCommander, signOut } = useAuth();
+  const { user, authMe, organisation, zolexoraOrgId, personalSignedIn, isCommander, switchBusiness, signOut } = useAuth();
   const runtime = useApplicationRuntime();
   const navigate = useNavigate();
+  const { collapsed, toggleCollapsed } = useSidebarCollapsed();
+
+  const opsModule = runtime.modules['operations'];
+  const financeModule = runtime.modules['finance'];
 
   const filteredNavigation = navigation.map(group => {
-    // Basic runtime module filtering
+    // Check canonical module & page flags (`!== false` so absent keys default to enabled).
     if (group.section === 'Operations') {
+      if (opsModule?.enabled === false) return { ...group, items: [] };
       return {
         ...group,
         items: group.items.filter(item => {
-          if (item.name === 'Bookings' && !runtime.modules['bookings']?.enabled) return false;
-          if (item.name === 'Duties' && !runtime.modules['duties']?.enabled) return false;
-          return true;
-        })
+          const pageCode =
+            item.name === 'Bookings' ? 'bookings' :
+            item.name === 'Duties' ? 'duties' :
+            item.name === 'Dispatch Board' ? 'dispatch' : null;
+          return !pageCode || opsModule?.pages?.[pageCode]?.enabled !== false;
+        }),
       };
     }
-    if (group.section === 'Billing' && !runtime.modules['billing']?.enabled) {
+    if (group.section === 'Billing & Receivables' && (financeModule?.enabled === false || financeModule?.pages?.['billing']?.enabled === false)) {
       return { ...group, items: [] };
     }
     return group;
@@ -113,59 +122,107 @@ export function DashboardLayout() {
     navigate('/authentication');
   };
 
+  const handleSwitchBusiness = async () => {
+    await switchBusiness();
+    navigate('/authentication');
+  };
+
   return (
     <div className="flex min-h-screen bg-slate-950 text-slate-100 antialiased">
       {/* Sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-slate-800/80 bg-slate-900/90 backdrop-blur-xl">
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 flex flex-col border-r border-slate-800/80 bg-slate-900/90 backdrop-blur-xl transition-all duration-200 ${
+          collapsed ? 'w-20' : 'w-64'
+        }`}
+      >
         {/* Brand Header */}
         <SidebarBrand
           applicationName={runtime.branding.application_name}
           logoUrl={runtime.branding.logo_url}
           subtitle="Transport Hub"
+          collapsed={collapsed}
+          onToggleCollapse={toggleCollapsed}
         />
 
         {/* Organisation Context Card */}
-        <div className="p-4 border-b border-slate-800/60">
-          <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-300 truncate max-w-[140px]">
-                {organisation?.name || 'Loading Workspace...'}
-              </span>
-              {isCommander ? (
-                <span className="inline-flex items-center gap-1 rounded-full bg-silver-900/30 px-2 py-0.5 text-[10px] font-semibold text-silver-500 border border-silver-700/30">
-                  <Crown className="h-3 w-3" />
-                  Commander
+        {collapsed ? (
+          <div className="border-b border-slate-800/60 p-2.5 flex flex-col items-center gap-2">
+            <div
+              title={organisation?.name || 'Workspace'}
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-800 bg-slate-950/60 text-silver-400"
+            >
+              {isCommander ? <Crown className="h-4 w-4" /> : <Shield className="h-4 w-4" />}
+            </div>
+            {personalSignedIn && (
+              <button
+                type="button"
+                onClick={handleSwitchBusiness}
+                title="Switch Business"
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-800 bg-slate-900/70 text-slate-300 hover:border-cyan-500/40 hover:text-white transition"
+              >
+                <ArrowLeftRight className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="p-4 border-b border-slate-800/60">
+            <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-300 truncate max-w-[140px]">
+                  {organisation?.name || 'Loading Workspace...'}
                 </span>
-              ) : (
-                <span className="inline-flex items-center gap-1 rounded-full bg-navy-800/40 px-2 py-0.5 text-[10px] font-semibold text-silver-500 border border-navy-600/30">
-                  <Shield className="h-3 w-3" />
-                  {authMe?.role_code || 'Member'}
+                {isCommander ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-silver-900/30 px-2 py-0.5 text-[10px] font-semibold text-silver-500 border border-silver-700/30">
+                    <Crown className="h-3 w-3" />
+                    Commander
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-navy-800/40 px-2 py-0.5 text-[10px] font-semibold text-silver-500 border border-navy-600/30">
+                    <Shield className="h-3 w-3" />
+                    {authMe?.role_code || 'Member'}
+                  </span>
+                )}
+              </div>
+              <div className="mt-1 flex items-center justify-between text-[11px] text-slate-500">
+                <span className="truncate">{organisation?.organisation_type || 'Transport Org'}</span>
+                <span className="font-mono text-[9px] text-slate-500">
+                  {zolexoraOrgId || (organisation?.id ? organisation.id.substring(0, 6) : '---')}
                 </span>
+              </div>
+              {personalSignedIn && (
+                <button
+                  type="button"
+                  onClick={handleSwitchBusiness}
+                  className="mt-2 w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/70 py-1 text-[11px] text-slate-300 hover:border-cyan-500/40 hover:text-white transition"
+                >
+                  <ArrowLeftRight className="h-3 w-3" /> Switch Business
+                </button>
               )}
             </div>
-            <div className="mt-1 flex items-center justify-between text-[11px] text-slate-500">
-              <span className="truncate">{organisation?.organisation_type || 'Transport Org'}</span>
-              <span className="font-mono text-[9px] text-slate-600">ID: {organisation?.id ? organisation.id.substring(0, 6) : '---'}</span>
-            </div>
           </div>
-        </div>
+        )}
 
         {/* Navigation Sections */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
+        <nav className={`flex-1 overflow-y-auto overflow-x-hidden py-4 ${collapsed ? 'px-2 space-y-3' : 'px-3 space-y-6'}`}>
           {filteredNavigation.map((group) => (
             <div key={group.section} className="space-y-1">
-              <p className="px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                {group.section}
-              </p>
-              <div className="mt-2 space-y-0.5">
+              {!collapsed && (
+                <p className="px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                  {group.section}
+                </p>
+              )}
+              <div className={collapsed ? 'space-y-1' : 'mt-2 space-y-0.5'}>
                 {group.items.map((item) => {
                   const Icon = item.icon;
                   return (
                     <NavLink
                       key={item.name}
                       to={item.href}
+                      title={collapsed ? item.name : undefined}
                       className={({ isActive }) =>
-                        `group flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition ${
+                        `group flex items-center rounded-lg text-sm font-medium transition ${
+                          collapsed ? 'justify-center px-2 py-2.5' : 'justify-between px-3 py-2'
+                        } ${
                           isActive
                             ? 'bg-navy-600 text-white shadow-md shadow-navy-800/20'
                             : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
@@ -174,9 +231,11 @@ export function DashboardLayout() {
                     >
                       <div className="flex items-center gap-3">
                         <Icon className="h-4 w-4 shrink-0" />
-                        <span>{item.name}</span>
+                        {!collapsed && <span>{item.name}</span>}
                       </div>
-                      <ChevronRight className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      {!collapsed && (
+                        <ChevronRight className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      )}
                     </NavLink>
                   );
                 })}
@@ -186,27 +245,17 @@ export function DashboardLayout() {
         </nav>
 
         {/* User Footer */}
-        <div className="border-t border-slate-800/80 p-3">
-          <div className="flex items-center justify-between rounded-lg bg-slate-950/40 p-2 border border-slate-800/60">
-            <div className="flex flex-col truncate pr-2">
-              <span className="text-xs font-medium text-slate-200 truncate">
-                {user?.email || 'Authenticated User'}
-              </span>
-              <span className="text-[10px] text-slate-500">Production Tenant</span>
-            </div>
-            <button
-              onClick={handleSignOut}
-              title="Sign Out"
-              className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-red-400 transition"
-            >
-              <LogOut className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
+        <SidebarUserFooter
+          profileTo="/sp/profile"
+          displayName={authMe?.full_name || user?.email || 'Authenticated User'}
+          subtitle={authMe?.zolexora_id || 'Manage Account'}
+          collapsed={collapsed}
+          onSignOut={handleSignOut}
+        />
       </aside>
 
       {/* Main Content Area */}
-      <div className="pl-64 flex flex-1 flex-col min-w-0">
+      <div className={`flex flex-1 flex-col min-w-0 transition-all duration-200 ${collapsed ? 'pl-20' : 'pl-64'}`}>
         {/* Top bar */}
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-800/80 bg-slate-950/80 px-8 backdrop-blur-md">
           <div className="flex items-center gap-2 text-xs text-slate-400">

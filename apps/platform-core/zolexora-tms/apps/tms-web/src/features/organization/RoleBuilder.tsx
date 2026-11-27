@@ -1,220 +1,209 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { X, Check } from 'lucide-react';
-import { apiClient } from '../../lib/api';
-import type { RoleResponse, CapabilityRegistryResponse, RoleCreateRequest, RoleUpdateRequest, RolePermission } from '../../types';
+import { useState, useEffect } from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { X, Shield, Check } from 'lucide-react';
+import {
+  createCentralRole,
+  getPermissionCatalog,
+  updateCentralRole,
+  type CatalogPermissionItem,
+  type CentralRole,
+} from '../../lib/authServiceApi';
 
 interface RoleBuilderProps {
-  role: RoleResponse | null;
+  orgId: string;
+  role: CentralRole | null;
   onClose: () => void;
   onSuccess: () => void;
 }
 
-export function RoleBuilder({ role, onClose, onSuccess }: RoleBuilderProps) {
-  const queryClient = useQueryClient();
-  const isEditing = !!role;
-
+export function RoleBuilder({ orgId, role, onClose, onSuccess }: RoleBuilderProps) {
+  const [scope, setScope] = useState<'tms' | 'org'>((role?.scope as 'tms' | 'org') || 'tms');
   const [name, setName] = useState(role?.name || '');
-  const [description, setDescription] = useState(role?.description || '');
-  const [selectedPermissions, setSelectedPermissions] = useState<Set<string>>(
-    new Set(role?.current_permissions.map(p => `${p.module_code}.${p.page_code}.${p.action_code}`) || [])
-  );
-  const [changeNote, setChangeNote] = useState('');
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set(role?.permissions || []));
+  const [blockedKeys, setBlockedKeys] = useState<Set<string>>(new Set(role?.blocks || []));
+  const [error, setError] = useState('');
 
-  const { data: registry, isLoading: registryLoading } = useQuery({
-    queryKey: ['capability-registry'],
-    queryFn: () => apiClient<CapabilityRegistryResponse>('/api/v1/capabilities'),
+  const { data: catalog, isLoading } = useQuery({
+    queryKey: ['central-catalog', 'tms'],
+    queryFn: () => getPermissionCatalog('tms'),
   });
+
+  useEffect(() => {
+    if (role) {
+      setScope((role.scope as 'tms' | 'org') || 'tms');
+      setName(role.name);
+      setSelectedKeys(new Set(role.permissions || []));
+      setBlockedKeys(new Set(role.blocks || []));
+    }
+  }, [role]);
+
+  const isBuiltIn = !!role?.built_in;
+
+  const availablePermissions: CatalogPermissionItem[] = (() => {
+    if (!catalog) return [];
+    const common = catalog.common || [];
+    if (scope === 'org') {
+      return [...(catalog.org || []), ...common];
+    }
+    const productPerms = (catalog.products || [])
+      .filter((p) => p.product === 'tms' && p.status === 'active')
+      .map((p) => ({ key: p.key, description: p.description }));
+    return [...productPerms, ...common];
+  })();
 
   const saveMutation = useMutation({
-    mutationFn: (data: RoleCreateRequest | RoleUpdateRequest) => {
-      if (isEditing) {
-        return apiClient(`/api/v1/organisations/roles/${role.id}`, {
-          method: 'PATCH',
-          body: JSON.stringify(data),
-        });
+    mutationFn: () => {
+      if (role) {
+        if (isBuiltIn) {
+          return updateCentralRole(orgId, role.id, { blocks: [...blockedKeys] });
+        }
+        return updateCentralRole(orgId, role.id, { name: name.trim(), permissions: [...selectedKeys] });
       }
-      return apiClient('/api/v1/organisations/roles', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
+      return createCentralRole(orgId, { scope, name: name.trim(), permissions: [...selectedKeys] });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['org-roles'] });
-      onSuccess();
-    },
+    onSuccess: () => onSuccess(),
+    onError: (err: Error) => setError(err.message || 'Failed to save role'),
   });
 
-  const handleTogglePermission = (capStr: string) => {
-    const next = new Set(selectedPermissions);
-    if (next.has(capStr)) {
-      next.delete(capStr);
+  const toggleKey = (key: string) => {
+    if (isBuiltIn) {
+      setBlockedKeys((prev) => {
+        const next = new Set(prev);
+        if (next.has(key)) next.delete(key);
+        else next.add(key);
+        return next;
+      });
     } else {
-      next.add(capStr);
+      setSelectedKeys((prev) => {
+        const next = new Set(prev);
+        if (next.has(key)) next.delete(key);
+        else next.add(key);
+        return next;
+      });
     }
-    setSelectedPermissions(next);
-  };
-
-  const handleToggleModule = (mod: any) => {
-    const next = new Set(selectedPermissions);
-    const modCaps = mod.pages.flatMap((p: any) => p.actions.map((a: any) => `${mod.code}.${p.code}.${a.code}`));
-    const allSelected = modCaps.every((c: string) => next.has(c));
-    
-    modCaps.forEach((c: string) => {
-      if (allSelected) {
-        next.delete(c);
-      } else {
-        next.add(c);
-      }
-    });
-    setSelectedPermissions(next);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const perms: RolePermission[] = Array.from(selectedPermissions).map(capStr => {
-      const [module_code, page_code, action_code] = capStr.split('.');
-      return { module_code, page_code, action_code };
-    });
-
-    saveMutation.mutate({
-      name,
-      description,
-      permissions: perms,
-      change_note: changeNote || (isEditing ? 'Updated role' : 'Created role'),
-    });
+    setError('');
+    if (!isBuiltIn && !name.trim()) {
+      setError('Role name is required');
+      return;
+    }
+    saveMutation.mutate();
   };
 
-  if (registryLoading) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm">
-        <div className="text-slate-400">Loading capability registry...</div>
-      </div>
-    );
-  }
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 sm:p-6">
-      <div className="flex h-full w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl">
-        <div className="flex items-center justify-between border-b border-slate-800 p-6">
-          <h3 className="text-xl font-semibold text-white">
-            {isEditing ? 'Edit Role' : 'Create Role'}
-          </h3>
-          <button
-            onClick={onClose}
-            className="rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition"
-          >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+      <div className="flex max-h-[90vh] w-full max-w-4xl flex-col rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl">
+        <div className="flex items-center justify-between border-b border-slate-800 px-6 py-4">
+          <div className="flex items-center gap-3">
+            <Shield className="h-5 w-5 text-cyan-400" />
+            <h3 className="text-lg font-semibold text-white">
+              {isBuiltIn ? `Configure Built-in Role: ${role?.name}` : role ? `Edit Role: ${role.name}` : 'Create Centralised Role'}
+            </h3>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-slate-800 hover:text-white">
             <X className="h-5 w-5" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-1 flex-col overflow-hidden">
-          <div className="flex-1 overflow-y-auto p-6 space-y-8">
-            {role?.source === 'SYSTEM' && (
-              <div className="rounded-lg bg-navy-800/40 p-4 border border-navy-600/20 text-sm text-silver-200">
-                This is a system-managed role. You cannot change its name, but you may alter its permissions for your organization.
+          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+            {error && (
+              <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-400">
+                {error}
               </div>
             )}
-            
-            <div className="space-y-4">
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-300">Role Name</label>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">Role Scope</label>
+                <select
+                  value={scope}
+                  disabled={!!role}
+                  onChange={(e) => {
+                    setScope(e.target.value as 'tms' | 'org');
+                    setSelectedKeys(new Set());
+                  }}
+                  className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm text-white focus:border-cyan-500 focus:outline-none disabled:opacity-60"
+                >
+                  <option value="tms">TMS Product Role (tms:* &amp; common:*)</option>
+                  <option value="org">Business Role (org:* &amp; common:*)</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">Role Name</label>
                 <input
                   type="text"
                   required
-                  disabled={role?.source === 'SYSTEM'}
+                  disabled={isBuiltIn}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="mt-1 block w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white placeholder-slate-400 focus:border-navy-500 focus:outline-none focus:ring-1 focus:ring-navy-500 disabled:opacity-50"
-                  placeholder="e.g. Dispatch Manager"
+                  placeholder="e.g. Fleet Dispatcher"
+                  className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm text-white focus:border-cyan-500 focus:outline-none disabled:opacity-60"
                 />
               </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-slate-300">Description</label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="mt-1 block w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white placeholder-slate-400 focus:border-navy-500 focus:outline-none focus:ring-1 focus:ring-navy-500"
-                  placeholder="Describe the purpose of this role"
-                  rows={2}
-                />
-              </div>
-
-              {isEditing && (
-                <div>
-                  <label className="block text-sm font-medium text-slate-300">Change Note (Required for auditing)</label>
-                  <input
-                    type="text"
-                    required
-                    value={changeNote}
-                    onChange={(e) => setChangeNote(e.target.value)}
-                    className="mt-1 block w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white placeholder-slate-400 focus:border-navy-500 focus:outline-none focus:ring-1 focus:ring-navy-500"
-                    placeholder="e.g. Added vendor management permissions"
-                  />
-                </div>
-              )}
             </div>
 
             <div>
-              <h4 className="text-lg font-medium text-white mb-4">Capabilities</h4>
-              <div className="space-y-6">
-                {registry?.modules.map(mod => (
-                  <div key={mod.code} className="rounded-xl border border-slate-800 bg-slate-900/50 overflow-hidden">
-                    <div 
-                      className="flex items-center justify-between bg-slate-800/50 px-4 py-3 cursor-pointer hover:bg-slate-800 transition"
-                      onClick={() => handleToggleModule(mod)}
-                    >
-                      <h5 className="font-medium text-white">{mod.name}</h5>
-                    </div>
-                    <div className="p-4 space-y-4">
-                      {mod.pages.map(page => (
-                        <div key={page.code}>
-                          <h6 className="text-sm font-medium text-slate-400 mb-2">{page.name}</h6>
-                          <div className="flex flex-wrap gap-2">
-                            {page.actions.map(action => {
-                              const capStr = `${mod.code}.${page.code}.${action.code}`;
-                              const isSelected = selectedPermissions.has(capStr);
-                              return (
-                                <button
-                                  key={action.code}
-                                  type="button"
-                                  onClick={() => handleTogglePermission(capStr)}
-                                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition ${
-                                    isSelected 
-                                      ? 'bg-navy-600 text-white shadow-sm' 
-                                      : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-300'
-                                  }`}
-                                >
-                                  {isSelected && <Check className="h-3 w-3" />}
-                                  {action.name}
-                                </button>
-                              );
-                            })}
-                          </div>
+              <h4 className="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-3">
+                {isBuiltIn
+                  ? 'Select permissions to BLOCK from this built-in role'
+                  : `Select Permissions (${selectedKeys.size} selected)`}
+              </h4>
+
+              {isLoading ? (
+                <div className="py-8 text-center text-slate-400">Loading permission catalog…</div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                  {availablePermissions.map((perm) => {
+                    const checked = isBuiltIn ? blockedKeys.has(perm.key) : selectedKeys.has(perm.key);
+                    return (
+                      <label
+                        key={perm.key}
+                        onClick={() => toggleKey(perm.key)}
+                        className={`flex items-start gap-3 rounded-xl border p-3 cursor-pointer transition ${
+                          checked
+                            ? isBuiltIn
+                              ? 'border-red-700/50 bg-red-950/30'
+                              : 'border-cyan-600/50 bg-cyan-950/30'
+                            : 'border-slate-800 bg-slate-950/50 hover:border-slate-700'
+                        }`}
+                      >
+                        <div
+                          className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                            checked
+                              ? isBuiltIn
+                                ? 'bg-red-600 border-red-600 text-white'
+                                : 'bg-cyan-600 border-cyan-600 text-white'
+                              : 'border-slate-600 bg-slate-900'
+                          }`}
+                        >
+                          {checked && <Check className="h-3 w-3" />}
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
+                        <div className="min-w-0">
+                          <p className="font-mono text-xs text-white truncate">{perm.key}</p>
+                          <p className="text-xs text-slate-400 mt-0.5">{perm.description}</p>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-3 border-t border-slate-800 p-6 bg-slate-900">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-lg px-4 py-2 text-sm font-medium text-slate-300 hover:bg-slate-800 transition"
-            >
+          <div className="flex items-center justify-end gap-3 border-t border-slate-800 bg-slate-900/50 px-6 py-4">
+            <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm font-medium text-slate-300 hover:bg-slate-800">
               Cancel
             </button>
             <button
               type="submit"
               disabled={saveMutation.isPending}
-              className="rounded-lg bg-navy-600 px-6 py-2 text-sm font-medium text-white hover:bg-navy-600 transition disabled:opacity-50"
+              className="rounded-lg bg-cyan-600 px-6 py-2 text-sm font-semibold text-white hover:bg-cyan-500 disabled:opacity-50"
             >
-              {saveMutation.isPending ? 'Saving...' : 'Save Role'}
+              {saveMutation.isPending ? 'Saving…' : isBuiltIn ? 'Save Blocks' : role ? 'Update Role' : 'Create Role'}
             </button>
           </div>
         </form>

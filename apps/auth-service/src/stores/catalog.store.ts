@@ -58,11 +58,14 @@ export class CatalogStore {
         "SELECT COALESCE(max(version), 0) + 1 AS v FROM zolexora_catalog_versions WHERE product = $1", [product],
       )).rows[0].v;
 
-      for (const [key, description] of wanted) {
+      if (wanted.size > 0) {
+        const keys = [...wanted.keys()];
+        const descriptions = [...wanted.values()];
         await tx.query(
-          `INSERT INTO zolexora_permission_catalog (key, product, description, status, version) VALUES ($1, $2, $3, 'active', $4)
+          `INSERT INTO zolexora_permission_catalog (key, product, description, status, version)
+           SELECT k, $1, d, 'active', $4 FROM unnest($2::text[], $3::text[]) AS t(k, d)
            ON CONFLICT (key) DO UPDATE SET description = EXCLUDED.description, status = 'active', version = EXCLUDED.version, updated_at = now()`,
-          [key, product, description, version],
+          [product, keys, descriptions, version],
         );
       }
       // Earlier pending removals are superseded by this list.

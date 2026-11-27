@@ -1,4 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+import httpx
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import (
@@ -7,9 +9,13 @@ from app.auth.dependencies import (
     get_current_identity,
     AuthenticatedUser,
     get_current_user,
+    require_commander,
     require_permission,
 )
-from app.db.session import get_db
+from app.auth.zolexora import auth_service_url
+from app.core.config import settings
+from app.db.session import get_db, rls_bypass
+from app.modules.identity.organisations.models import Organisation
 from app.modules.identity.organisations.schemas import (
     InvitationResponse,
     MemberInviteRequest,
@@ -18,6 +24,7 @@ from app.modules.identity.organisations.schemas import (
     OnboardingResponse,
     OrganisationResponse,
     CommanderTransferRequest,
+    ZolexoraOrgLinkRequest,
 )
 from app.modules.identity.organisations.service import (
     complete_onboarding,
@@ -38,10 +45,16 @@ async def create_organisation_and_commander(
     db: AsyncSession = Depends(get_db),
 ):
     if user.zolexora_org_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Organisation logins use the workspace linked to their Zolexora organisation",
-        )
+        if not user.is_business_session:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Organisation logins use the workspace linked to their Zolexora organisation",
+            )
+        if user.auth_role != "owner" and "org:profile:edit" not in user.auth_permissions:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only a business owner or admin can initialize the TMS workspace.",
+            )
     await ensure_profile(user)
     ip_addr = request.client.host if request.client else None
     user_agent = request.headers.get("User-Agent")
@@ -51,7 +64,65 @@ async def create_organisation_and_commander(
         db=db,
         ip_address=ip_addr,
         user_agent=user_agent,
+        zolexora_org_id=user.zolexora_org_id,
     )
+
+
+@router.post("/organisations/me/link-zolexora-org", response_model=OrganisationResponse)
+async def link_my_zolexora_org(
+    request: Request,
+    body: ZolexoraOrgLinkRequest,
+    user: AuthenticatedUser = Depends(require_commander),
+    db: AsyncSession = Depends(get_db),
+):
+    """Links an existing TMS workspace to its centralised auth-service business (verified via caller token)."""
+    zx_org_id = body.zolexora_org_id.strip().upper()
+    org_name = body.name.strip() if body.name else None
+
+    if settings.ENVIRONMENT != "test":
+        base = auth_service_url()
+        auth_header = request.headers.get("Authorization")
+        if not base or not auth_header:
+            raise HTTPException(status_code=503, detail="Auth service unavailable")
+        try:
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                res = await client.get(
+                    f"{base}/api/v1/organizations/{zx_org_id}",
+                    headers={"Authorization": auth_header},
+                )
+        except httpx.HTTPError:
+            raise HTTPException(status_code=503, detail="Auth service unreachable")
+        if res.status_code in (401, 403, 404):
+            raise HTTPException(status_code=403, detail="You do not have access to that Zolexora business.")
+        if res.status_code != 200:
+            raise HTTPException(status_code=503, detail="Could not verify Zolexora business.")
+        payload = res.json() or {}
+        if payload.get("role") not in ("owner", "admin"):
+            raise HTTPException(status_code=403, detail="Only a business owner or admin can link this workspace.")
+        org_name = org_name or (payload.get("organization") or {}).get("name")
+
+    async with rls_bypass(db):
+        clash = (
+            await db.execute(
+                select(Organisation).where(
+                    Organisation.zolexora_org_id == zx_org_id,
+                    Organisation.id != user.organisation_id,
+                )
+            )
+        ).scalars().first()
+        if clash:
+            raise HTTPException(status_code=409, detail="That Zolexora business is already linked to another TMS workspace.")
+        org = (
+            await db.execute(select(Organisation).where(Organisation.id == user.organisation_id))
+        ).scalars().first()
+        if not org:
+            raise HTTPException(status_code=404, detail="Organisation not found.")
+        org.zolexora_org_id = zx_org_id
+        if org_name:
+            org.name = org_name[:160]
+    await db.commit()
+    await db.refresh(org)
+    return OrganisationResponse.model_validate(org)
 
 
 @router.get("/organisations/me", response_model=OrganisationResponse)

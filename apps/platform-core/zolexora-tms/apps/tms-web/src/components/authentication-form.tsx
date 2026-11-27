@@ -1,27 +1,24 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth as useZolexoraAuth } from '@zolexora/auth-client/react';
 import { TurnstileWidget } from '@zolexora/auth-client/turnstile';
-import { isValidZolexoraOrgId, isPublicWebmailDomain } from '@zolexora/auth-client';
 import { usePublicSignIn } from '@zolexora/auth-client/public-sign-in';
+import {
+  AuthServiceError,
+  createBusiness,
+  employeeSignIn,
+  employeeVerifyMfa,
+  listBusinesses,
+  type Business,
+} from '@zolexora/auth-client/business-session';
 import { Building2, Users, ShieldAlert, Loader2, Plus, ChevronRight, Truck, Eye, EyeOff } from 'lucide-react';
 import type { WorkspaceType } from '../types';
 import { useAuth } from '../features/auth/useAuth';
 import { apiClient } from '../lib/api';
+import { listActivityGroups, type ActivityGroup } from '../lib/authServiceApi';
 import { AUTH_SERVICE_PUBLIC_URL, TURNSTILE_SITE_KEY } from '../lib/runtime';
 import { firebaseAuth } from '../lib/firebase';
-
-const ORGANISATION_TYPES = [
-  'Sole Proprietorship / Proprietor', 'Partnership Firm', 'Limited Liability Partnership (LLP)',
-  'Private Limited Company', 'Public Limited Company', 'One Person Company (OPC)', 'Limited Company',
-  'Section 8 Company', 'Non-Profit Organisation', 'Trust', 'Public Trust', 'Private Trust',
-  'Charitable Trust', 'Society', 'Co-operative Society', 'Hindu Undivided Family (HUF)',
-  'Government Organisation', 'Government Department', 'Public Sector Undertaking (PSU)',
-  'Municipal Corporation', 'Local Government Body', 'Educational Institution', 'University', 'School',
-  'College', 'Hospital', 'Healthcare Organisation', 'NGO', 'Religious Organisation', 'Foundation',
-  'Family Office', 'Startup', 'Freelancer / Individual', 'Self Employed', 'Other',
-];
 
 type OwnerMode = 'flow' | 'reset' | 'reset_confirm';
 
@@ -31,7 +28,34 @@ const button =
   'w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 py-2.5 px-4 text-sm font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed';
 const link = 'text-xs text-cyan-400 hover:text-cyan-300';
 
-/** POSTs to a Zolexora auth-service public endpoint and returns the JSON body (throws its message). */
+/** Maps auth-service PAN-based business_kind to TMS's legal classification label. */
+function mapBusinessKindToTmsType(kind?: string | null): string {
+  switch ((kind || '').toLowerCase()) {
+    case 'individual':
+      return 'Freelancer / Individual';
+    case 'proprietor':
+    case 'sole_proprietorship':
+      return 'Sole Proprietorship / Proprietor';
+    case 'llp':
+      return 'Limited Liability Partnership (LLP)';
+    case 'partnership':
+      return 'Partnership Firm';
+    case 'huf':
+      return 'Hindu Undivided Family (HUF)';
+    case 'trust':
+      return 'Trust';
+    case 'society':
+    case 'association':
+      return 'Society';
+    case 'government':
+    case 'public_body':
+      return 'Government Organisation';
+    case 'company':
+    default:
+      return 'Private Limited Company';
+  }
+}
+
 async function authPost(path: string, body: Record<string, unknown>) {
   const res = await fetch(`${AUTH_SERVICE_PUBLIC_URL()}${path}`, {
     method: 'POST',
@@ -45,14 +69,14 @@ async function authPost(path: string, body: Record<string, unknown>) {
   return data;
 }
 
-function Field({ label, type, className, ...props }: { label: string } & React.InputHTMLAttributes<HTMLInputElement>) {
+function Field({ label, type, className, required = true, ...props }: { label: string } & React.InputHTMLAttributes<HTMLInputElement>) {
   const [showPassword, setShowPassword] = useState(false);
   const isPassword = type === 'password';
   const inputEl = (
     <input
       type={isPassword && showPassword ? 'text' : type}
       className={`${className ?? input}${isPassword ? ' pr-10' : ''} ${isPassword ? '' : 'mt-1.5'}`.trim()}
-      required
+      required={required}
       {...props}
     />
   );
@@ -98,7 +122,7 @@ function Turnstile({ action, onToken }: { action: string; onToken: (t: string) =
   );
 }
 
-function ErrorBox({ message }: { message: string | null }) {
+function ErrorBox({ message }: { message: string | null | undefined }) {
   if (!message) return null;
   return (
     <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-xs text-red-400 flex items-start gap-2">
@@ -120,18 +144,392 @@ function Card({ title, subtitle, children }: { title: string; subtitle: string; 
   );
 }
 
+function useAction() {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const run = useCallback(async (action: () => Promise<void>) => {
+    setError(null);
+    setBusy(true);
+    try {
+      await action();
+    } catch (err: any) {
+      setError(err?.message || 'Something went wrong.');
+    } finally {
+      setBusy(false);
+    }
+  }, []);
+  return { busy, error, setError, run };
+}
+
+/** Track 1 business picker & PAN-driven centralised business creation (ADR 0004 §2/§3a). */
+function BusinessPicker() {
+  const { getToken } = useZolexoraAuth();
+  const { enterBusiness, signOut } = useAuth();
+  const { busy, error, setError, run } = useAction();
+
+  const [businesses, setBusinesses] = useState<Business[] | null>(null);
+  const [activities, setActivities] = useState<ActivityGroup[]>([]);
+  const [creating, setCreating] = useState(false);
+  const [mfaFor, setMfaFor] = useState<Business | null>(null);
+  const [code, setCode] = useState('');
+
+  const [pan, setPan] = useState('');
+  const [legalName, setLegalName] = useState('');
+  const [tradeName, setTradeName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [activityPrimary, setActivityPrimary] = useState('');
+  const [registered, setRegistered] = useState<'' | 'yes' | 'no'>('');
+
+  useEffect(() => {
+    let active = true;
+    void run(async () => {
+      const token = await getToken();
+      if (!token) throw new Error('Your sign-in expired. Sign in again.');
+      const [list, groups] = await Promise.all([
+        listBusinesses(AUTH_SERVICE_PUBLIC_URL(), token),
+        listActivityGroups().catch(() => [] as ActivityGroup[]),
+      ]);
+      if (!active) return;
+      setBusinesses(list);
+      setActivities(groups);
+      setCreating(list.length === 0);
+    });
+    return () => {
+      active = false;
+    };
+  }, [getToken, run]);
+
+  const open = (b: Business, mfaCode?: string) =>
+    run(async () => {
+      try {
+        await enterBusiness(b.zolexora_org_id, mfaCode);
+      } catch (err) {
+        if (err instanceof AuthServiceError && err.code === 'AUTH_MFA_REQUIRED') {
+          setMfaFor(b);
+          return;
+        }
+        throw err;
+      }
+    });
+
+  if (!businesses) {
+    return (
+      <Card title="Your businesses" subtitle="Loading from Zolexora Auth Service…">
+        <ErrorBox message={error} />
+        {error ? (
+          <button className={button} onClick={() => signOut()}>Sign out</button>
+        ) : (
+          <div className="flex justify-center py-4"><Loader2 className="h-6 w-6 animate-spin text-cyan-400" /></div>
+        )}
+      </Card>
+    );
+  }
+
+  if (mfaFor) {
+    return (
+      <Card title="Confirm it's you" subtitle={`Enter authenticator code for ${mfaFor.name}`}>
+        <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); void open(mfaFor, code.trim()); }}>
+          <Field label="Authenticator code" inputMode="numeric" autoComplete="one-time-code" value={code} onChange={(e) => setCode(e.target.value)} />
+          <ErrorBox message={error} />
+          <button className={button} disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Continue'}</button>
+          <button type="button" className={`${link} w-full`} onClick={() => { setMfaFor(null); setCode(''); setError(null); }}>Back</button>
+        </form>
+      </Card>
+    );
+  }
+
+  if (!creating) {
+    return (
+      <Card title="Choose a business" subtitle="Centralised organisations on your Zolexora account">
+        <div className="space-y-2">
+          {businesses.map((b) => (
+            <button
+              key={b.zolexora_org_id}
+              type="button"
+              disabled={busy}
+              onClick={() => void open(b)}
+              className="w-full flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3 text-left hover:border-cyan-500 disabled:opacity-50"
+            >
+              <span>
+                <span className="block text-sm font-semibold text-white">{b.name}</span>
+                <span className="block text-[11px] text-slate-400">
+                  <span className="font-mono">{b.zolexora_org_id}</span>
+                  {' · '}
+                  {[b.role_name || b.role, b.business_kind, b.status !== 'active' ? b.status : null].filter(Boolean).join(' · ')}
+                </span>
+              </span>
+              <ChevronRight className="w-4 h-4 text-slate-500" />
+            </button>
+          ))}
+        </div>
+        <ErrorBox message={error} />
+        <button type="button" className={`${button} !bg-none border border-slate-700 bg-slate-900 hover:bg-slate-800`} onClick={() => { setCreating(true); setError(null); }}>
+          <Plus className="w-4 h-4" /> Create a business
+        </button>
+        <button type="button" className={`${link} w-full`} onClick={() => signOut()}>Sign out</button>
+      </Card>
+    );
+  }
+
+  const panUpper = pan.trim().toUpperCase();
+  const personalPan = panUpper[3] === 'P';
+  const firmPan = panUpper[3] === 'F';
+
+  return (
+    <Card title="Create a business" subtitle="Registered centrally via Zolexora Auth (PAN encrypted)">
+      <form
+        className="space-y-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void run(async () => {
+            const token = await getToken();
+            if (!token) throw new Error('Your sign-in expired. Sign in again.');
+            const created = await createBusiness(AUTH_SERVICE_PUBLIC_URL(), token, {
+              pan: panUpper,
+              legal_name: legalName.trim(),
+              trade_name: tradeName.trim() || null,
+              email: email.trim() || null,
+              phone: phone.trim() || null,
+              activity_primary: activityPrimary || null,
+              ...(personalPan ? { has_business_registration: registered === 'yes' } : {}),
+              ...(firmPan ? { has_llpin: registered === 'yes' } : {}),
+            });
+            await enterBusiness(created.zolexora_org_id);
+          });
+        }}
+      >
+        <Field label="PAN" className={`${input} mt-1.5 font-mono uppercase`} maxLength={10} placeholder="ABCDE1234F" value={pan} onChange={(e) => setPan(e.target.value)} />
+        <Field label="Legal name (as on PAN)" minLength={2} maxLength={200} value={legalName} onChange={(e) => setLegalName(e.target.value)} />
+        <Field label="Trade name (optional)" required={false} minLength={2} maxLength={200} value={tradeName} onChange={(e) => setTradeName(e.target.value)} />
+        {(personalPan || firmPan) && (
+          <label className="block text-xs font-medium text-slate-300">
+            {personalPan ? 'Is the business registered (GST, Udyam, shop licence)?' : 'Is this firm an LLP (has an LLPIN)?'}
+            <select className={`${input} mt-1.5`} required value={registered} onChange={(e) => setRegistered(e.target.value as 'yes' | 'no')}>
+              <option value="" disabled>Choose</option>
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+            </select>
+          </label>
+        )}
+        {activities.length > 0 && (
+          <label className="block text-xs font-medium text-slate-300">
+            Primary business activity (optional)
+            <select className={`${input} mt-1.5`} value={activityPrimary} onChange={(e) => setActivityPrimary(e.target.value)}>
+              <option value="">Select activity group…</option>
+              {activities.map((g) => (
+                <option key={g.key} value={g.key}>{g.label}</option>
+              ))}
+            </select>
+          </label>
+        )}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Field label="Business email (optional)" required={false} type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <Field label="Business phone (optional)" required={false} type="tel" placeholder="+919876543210" value={phone} onChange={(e) => setPhone(e.target.value)} />
+        </div>
+        <ErrorBox message={error} />
+        <button className={button} disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Create business'}</button>
+        {businesses.length > 0
+          ? <button type="button" className={`${link} w-full`} onClick={() => { setCreating(false); setError(null); }}>Back to my businesses</button>
+          : <button type="button" className={`${link} w-full`} onClick={() => signOut()}>Sign out</button>}
+      </form>
+    </Card>
+  );
+}
+
+/** First-time TMS workspace setup once a business session is active for a ZX-ORG. */
+function WorkspaceSetup() {
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const { businessSession, authMe, switchBusiness, signOut } = useAuth();
+  const { busy, error, run } = useAction();
+  const [workspaceType, setWorkspaceType] = useState<WorkspaceType>('SERVICE_PROVIDER');
+  const [workspaceName, setWorkspaceName] = useState(() => businessSession?.org.name || '');
+
+  const isOwner = authMe?.is_commander || businessSession?.org.role === 'owner';
+
+  if (!isOwner) {
+    return (
+      <Card title="TMS workspace not set up" subtitle={businessSession?.org.zolexora_org_id || ''}>
+        <p className="text-sm text-slate-300">
+          Your business owner hasn&apos;t initialized Zolexora TMS for <strong>{businessSession?.org.name}</strong> yet.
+        </p>
+        <div className="flex flex-col gap-2">
+          <button type="button" className={button} onClick={() => void switchBusiness()}>Switch business</button>
+          <button type="button" className={`${link} w-full`} onClick={() => void signOut()}>Sign out</button>
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <Card title="Initialize TMS Workspace" subtitle={`${businessSession?.org.name} · ${businessSession?.org.zolexora_org_id}`}>
+      <form
+        className="space-y-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void run(async () => {
+            const created = await apiClient<{ organisation: { id: string; workspace_type: WorkspaceType } }>('/api/v1/onboarding', {
+              method: 'POST',
+              body: JSON.stringify({
+                name: workspaceName.trim() || businessSession?.org.name || 'Zolexora TMS',
+                organisation_type: mapBusinessKindToTmsType(authMe?.business_kind),
+                workspace_type: workspaceType,
+                zolexora_org_id: businessSession?.org.zolexora_org_id,
+              }),
+            });
+            localStorage.setItem('zolexora_active_org_id', created.organisation.id);
+            await queryClient.invalidateQueries({ queryKey: ['auth-bootstrap'] });
+            navigate(created.organisation.workspace_type === 'CLIENT' ? '/client/dashboard' : '/sp/dashboard', { replace: true });
+          });
+        }}
+      >
+        <Field label="Workspace Display Name" minLength={2} maxLength={160} value={workspaceName} onChange={(e) => setWorkspaceName(e.target.value)} />
+        <div>
+          <p className="mb-2 text-xs font-medium text-slate-300">How will {businessSession?.org.name} use TMS?</p>
+          <div className="grid grid-cols-2 gap-3">
+            {(['SERVICE_PROVIDER', 'CLIENT'] as const).map((wt) => (
+              <button
+                key={wt}
+                type="button"
+                onClick={() => setWorkspaceType(wt)}
+                className={`flex flex-col items-center gap-1.5 rounded-xl border p-4 text-sm font-semibold transition ${
+                  workspaceType === wt
+                    ? 'border-cyan-500 bg-cyan-500/10 text-white'
+                    : 'border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-600'
+                }`}
+              >
+                {wt === 'SERVICE_PROVIDER' ? <Truck className="w-5 h-5" /> : <Building2 className="w-5 h-5" />}
+                {wt === 'SERVICE_PROVIDER' ? 'Service Provider' : 'Client'}
+                <span className="text-[10px] font-normal text-slate-500">
+                  {wt === 'SERVICE_PROVIDER' ? 'Manage fleet & dispatch' : 'Book & track transport'}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+        <ErrorBox message={error} />
+        <button className={button} disabled={busy}>
+          {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Launch TMS Workspace'}
+        </button>
+        <div className="flex justify-between pt-1">
+          <button type="button" className={link} onClick={() => void switchBusiness()}>Switch business</button>
+          <button type="button" className={link} onClick={() => void signOut()}>Sign out</button>
+        </div>
+      </form>
+    </Card>
+  );
+}
+
+/** Track 2 employee sign in (ZX-id, phone, or corporate email + optional business picker + MFA). */
+function StaffSignIn({ tabs }: { tabs: React.ReactNode }) {
+  const { adoptBusinessSession } = useAuth();
+  const { busy, error, run } = useAction();
+  const [orgId, setOrgId] = useState('');
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const [turnstileKey, setTurnstileKey] = useState(0);
+  const [choice, setChoice] = useState<{ ticket: string; businesses: { zolexora_org_id: string; name: string }[] } | null>(null);
+  const [mfaTicket, setMfaTicket] = useState<string | null>(null);
+  const [code, setCode] = useState('');
+
+  const signIn = (params: Parameters<typeof employeeSignIn>[1]) =>
+    run(async () => {
+      try {
+        const r = await employeeSignIn(AUTH_SERVICE_PUBLIC_URL(), params);
+        if (r.status === 'choose_business') setChoice({ ticket: r.login_ticket, businesses: r.businesses });
+        else if (r.status === 'mfa_required') { setChoice(null); setMfaTicket(r.mfa_ticket); }
+        else await adoptBusinessSession();
+      } finally {
+        setTurnstileToken('');
+        setTurnstileKey((k) => k + 1);
+      }
+    });
+
+  if (mfaTicket) {
+    return (
+      <div className="w-full max-w-md mx-auto">
+        <Card title="Confirm it's you" subtitle="Enter the code from your authenticator app">
+          <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); void run(async () => { await employeeVerifyMfa(AUTH_SERVICE_PUBLIC_URL(), mfaTicket, code.trim()); await adoptBusinessSession(); }); }}>
+            <Field label="Authenticator code" inputMode="numeric" autoComplete="one-time-code" value={code} onChange={(e) => setCode(e.target.value)} />
+            <ErrorBox message={error} />
+            <button className={button} disabled={busy}>{busy ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Continue'}</button>
+            <button type="button" className={`${link} w-full`} onClick={() => { setMfaTicket(null); setCode(''); }}>Start again</button>
+          </form>
+        </Card>
+      </div>
+    );
+  }
+
+  if (choice) {
+    return (
+      <div className="w-full max-w-md mx-auto">
+        <Card title="Choose a business" subtitle="Your employee login belongs to multiple businesses">
+          <div className="space-y-2">
+            {choice.businesses.map((b) => (
+              <button
+                key={b.zolexora_org_id}
+                type="button"
+                disabled={busy}
+                onClick={() => void signIn({ product: 'zolexora-tms', loginTicket: choice.ticket, orgId: b.zolexora_org_id })}
+                className="w-full flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3 text-left hover:border-cyan-500 disabled:opacity-50"
+              >
+                <span>
+                  <span className="block text-sm font-semibold text-white">{b.name}</span>
+                  <span className="block text-[11px] font-mono text-slate-400">{b.zolexora_org_id}</span>
+                </span>
+                <ChevronRight className="w-4 h-4 text-slate-500" />
+              </button>
+            ))}
+          </div>
+          <ErrorBox message={error} />
+          <button type="button" className={`${link} w-full`} onClick={() => setChoice(null)}>Start again</button>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full max-w-md mx-auto">
+      {tabs}
+      <Card title="Staff & Driver Login" subtitle="Sign in with your ZX ID, phone, or work email">
+        <form
+          className="space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void signIn({
+              product: 'zolexora-tms',
+              orgId: orgId.trim().toUpperCase() || undefined,
+              identifier: identifier.trim(),
+              password,
+              turnstileToken,
+            });
+          }}
+        >
+          <Field label="Work email, phone, or Zolexora ID" autoComplete="username" value={identifier} onChange={(e) => setIdentifier(e.target.value)} />
+          <Field label="Password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+          <Field label="Business ID (optional)" required={false} className={`${input} mt-1.5 font-mono`} placeholder="ZX-ORG-XXXX-XXXX-XXXX" value={orgId} onChange={(e) => setOrgId(e.target.value.toUpperCase())} />
+          <Turnstile key={turnstileKey} action="track2-employee-login" onToken={setTurnstileToken} />
+          <ErrorBox message={error} />
+          <button className={button} disabled={busy || !turnstileToken}>
+            {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Sign in as staff'}
+          </button>
+        </form>
+      </Card>
+    </div>
+  );
+}
+
 /**
- * Zolexora TMS sign-in, all through the Zolexora auth service:
- * - Owner / Commander: Track 1 account — Continue with Google, email or phone (Firebase verifies
- *   Google and the phone; the auth service issues the session), then picks one of their organisations
- *   (always listed, even if there is only one) or creates another.
- * - Staff & Drivers: Track 2 employee login with the ZX-ORG id.
+ * Zolexora TMS sign-in (ADR 0004 / ADR 0005):
+ * - Owner / Person (Track 1): signs into Zolexora account, picks or creates a PAN-typed business,
+ *   and opens an ES256 business session for TMS.
+ * - Staff & Drivers (Track 2): signs straight into a TMS business session.
  */
 export function AuthenticationForm() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const { user, authMe, isLoading, signOut } = useAuth();
-  const { orgSignIn } = useZolexoraAuth();
+  const { businessSession, personalSignedIn, authMe, isLoading } = useAuth();
 
   const [tab, setTab] = useState<'owner' | 'staff'>('owner');
   const [mode, setMode] = useState<OwnerMode>('flow');
@@ -142,50 +540,15 @@ export function AuthenticationForm() {
   const [phone, setPhone] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [code, setCode] = useState('');
-  const [orgId, setOrgId] = useState('');
-  const [staffId, setStaffId] = useState('');
-  const [orgName, setOrgName] = useState('');
-  const [orgType, setOrgType] = useState(ORGANISATION_TYPES[0]);
   const [turnstileToken, setTurnstileToken] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const { busy, error, setError, run } = useAction();
 
-  const [creatingOrg, setCreatingOrg] = useState(false);
-  const isOwner = Boolean(user && authMe && !authMe.zolexora_org_id);
-  const [workspaceType, setWorkspaceType] = useState<WorkspaceType>('SERVICE_PROVIDER');
-
-  const myOrgs = useQuery({
-    queryKey: ['my-organisations', authMe?.user_id],
-    queryFn: () => apiClient<{ id: string; name: string; organisation_type?: string; workspace_type?: WorkspaceType; is_commander: boolean }[]>('/api/v1/auth/my-organisations'),
-    enabled: isOwner,
-  });
-
-  // Staff land in their organisation's workspace; owners choose below.
   useEffect(() => {
-    if (!isLoading && user && authMe?.organisation_id && authMe.zolexora_org_id) {
+    if (!isLoading && businessSession && authMe?.organisation_id) {
       navigate(authMe.workspace_type === 'CLIENT' ? '/client/dashboard' : '/sp/dashboard', { replace: true });
     }
-  }, [user, authMe, isLoading, navigate]);
-
-  const openOrganisation = async (orgId: string, wsType?: WorkspaceType) => {
-    localStorage.setItem('zolexora_active_org_id', orgId);
-    await queryClient.invalidateQueries();
-    navigate(wsType === 'CLIENT' ? '/client/dashboard' : '/sp/dashboard', { replace: true });
-  };
-
-  const run = async (action: () => Promise<void>) => {
-    setError(null);
-    setNotice(null);
-    setBusy(true);
-    try {
-      await action();
-    } catch (err: any) {
-      setError(err?.message || 'Something went wrong.');
-    } finally {
-      setBusy(false);
-    }
-  };
+  }, [businessSession, authMe, isLoading, navigate]);
 
   const go = (next: OwnerMode) => {
     setMode(next);
@@ -193,120 +556,36 @@ export function AuthenticationForm() {
     setTurnstileToken('');
   };
 
-  const refreshAuth = () => Promise.all([
-    queryClient.invalidateQueries({ queryKey: ['auth-bootstrap'] }),
-    queryClient.invalidateQueries({ queryKey: ['auth-me'] }),
-  ]);
-
-  const flow = usePublicSignIn({ firebaseAuth, product: 'zolexora-tms', authUrl: AUTH_SERVICE_PUBLIC_URL(), onSignedIn: () => void refreshAuth() });
-  /** Turnstile tokens are single-use: get a fresh widget after every attempt that spent one. */
+  const flow = usePublicSignIn({ firebaseAuth, product: 'zolexora-tms', authUrl: AUTH_SERVICE_PUBLIC_URL() });
   const withTurnstile = async (action: (token: string) => Promise<boolean>) => {
     await action(turnstileToken);
     setTurnstileToken('');
     setTurnstileKey((k) => k + 1);
   };
 
-  // Signed in: owners always choose (or create) an organisation; staff without a linked workspace wait
-  if (user && !isLoading && authMe && (isOwner || !authMe.organisation_id)) {
-    if (authMe.zolexora_org_id) {
-      return (
-        <Card title="Workspace not linked" subtitle={`Organisation ${authMe.zolexora_org_id}`}>
-          <p className="text-sm text-slate-300">
-            Your organisation is not connected to a TMS workspace yet, or your access is suspended. Ask your
-            administrator to link it.
-          </p>
-          <button className={button} onClick={() => signOut()}>Sign out</button>
-        </Card>
-      );
-    }
-    if (myOrgs.isLoading) return <Loader2 className="h-8 w-8 animate-spin text-slate-400" />;
-    const orgs = myOrgs.data ?? [];
-    if (orgs.length > 0 && !creatingOrg) {
-      return (
-        <Card title="Choose an organisation" subtitle="Organisations connected to your Zolexora account">
-          <div className="space-y-2">
-            {orgs.map((o) => (
-              <button key={o.id} type="button" onClick={() => openOrganisation(o.id, o.workspace_type)}
-                className="w-full flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3 text-left hover:border-cyan-500">
-                <span>
-                  <span className="block text-sm font-semibold text-white">{o.name}</span>
-                  <span className="block text-[11px] text-slate-400">{[o.organisation_type, o.is_commander ? 'Commander' : 'Member'].filter(Boolean).join(' · ')}</span>
-                </span>
-                <ChevronRight className="w-4 h-4 text-slate-500" />
-              </button>
-            ))}
-          </div>
-          <button type="button" className={`${button} !bg-none border border-slate-700 bg-slate-900 hover:bg-slate-800`} onClick={() => setCreatingOrg(true)}>
-            <Plus className="w-4 h-4" /> Create another organisation
-          </button>
-          <button type="button" className={`${link} w-full`} onClick={() => signOut()}>Sign out</button>
-        </Card>
-      );
-    }
+  if (isLoading) {
+    return <Loader2 className="h-8 w-8 animate-spin text-slate-400" />;
+  }
+
+  if (businessSession && authMe && !authMe.organisation_id) {
     return (
-      <Card title={orgs.length ? 'Create another organisation' : 'Create your workspace'} subtitle="You will be the Commander of this organisation">
-        <form
-          className="space-y-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            run(async () => {
-              const created = await apiClient<{ organisation: { id: string; workspace_type: WorkspaceType } }>('/api/v1/onboarding', {
-                method: 'POST',
-                body: JSON.stringify({ name: orgName.trim(), organisation_type: orgType, workspace_type: workspaceType }),
-              });
-              setOrgName('');
-              setCreatingOrg(false);
-              await openOrganisation(created.organisation.id, created.organisation.workspace_type);
-            });
-          }}
-        >
-          <Field label="Organisation name" minLength={2} maxLength={160} value={orgName} onChange={(e) => setOrgName(e.target.value)} />
-          <label className="block text-xs font-medium text-slate-300">
-            Organisation type
-            <select className={`${input} mt-1.5`} value={orgType} onChange={(e) => setOrgType(e.target.value)}>
-              {ORGANISATION_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-            </select>
-          </label>
-          <div>
-            <p className="mb-2 text-xs font-medium text-slate-300">Workspace type</p>
-            <div className="grid grid-cols-2 gap-3">
-              {(['SERVICE_PROVIDER', 'CLIENT'] as const).map((wt) => (
-                <button
-                  key={wt}
-                  type="button"
-                  onClick={() => setWorkspaceType(wt)}
-                  className={`flex flex-col items-center gap-1.5 rounded-xl border p-4 text-sm font-semibold transition ${
-                    workspaceType === wt
-                      ? 'border-cyan-500 bg-cyan-500/10 text-white'
-                      : 'border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-600'
-                  }`}
-                >
-                  {wt === 'SERVICE_PROVIDER' ? <Truck className="w-5 h-5" /> : <Building2 className="w-5 h-5" />}
-                  {wt === 'SERVICE_PROVIDER' ? 'Service Provider' : 'Client'}
-                  <span className="text-[10px] font-normal text-slate-500">
-                    {wt === 'SERVICE_PROVIDER' ? 'Manage fleet & dispatch' : 'Book & track transport'}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-          <ErrorBox message={error} />
-          <button className={button} disabled={busy}>{busy ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create organisation'}</button>
-          {orgs.length > 0
-            ? <button type="button" className={`${link} w-full`} onClick={() => setCreatingOrg(false)}>Back to my organisations</button>
-            : <button type="button" className={`${link} w-full`} onClick={() => signOut()}>Sign out</button>}
-        </form>
-      </Card>
+      <div className="w-full max-w-md mx-auto">
+        <WorkspaceSetup />
+      </div>
     );
   }
 
-  if (user && isLoading) {
-    return <Loader2 className="h-8 w-8 animate-spin text-slate-400" />;
+  if (personalSignedIn && !businessSession) {
+    return (
+      <div className="w-full max-w-md mx-auto">
+        <BusinessPicker />
+      </div>
+    );
   }
 
   const tabs = (
     <div className="mb-4 grid grid-cols-2 rounded-xl bg-slate-900/90 p-1 border border-slate-800 text-sm">
-      {([['owner', 'Owner / Commander', Building2], ['staff', 'Staff & Drivers', Users]] as const).map(([key, label, Icon]) => (
+      {([['owner', 'Owner / Account', Building2], ['staff', 'Staff & Drivers', Users]] as const).map(([key, label, Icon]) => (
         <button
           key={key}
           type="button"
@@ -320,40 +599,7 @@ export function AuthenticationForm() {
   );
 
   if (tab === 'staff') {
-    const webmail = staffId.includes('@') && isPublicWebmailDomain(staffId);
-    return (
-      <div className="w-full max-w-md mx-auto">
-        {tabs}
-        <Card title="Staff & Driver Login" subtitle="Sign in to your organisation's workspace">
-          <form
-            className="space-y-4"
-            onSubmit={(e) => {
-              e.preventDefault();
-              const cleanOrgId = orgId.trim().toUpperCase();
-              if (!isValidZolexoraOrgId(cleanOrgId)) {
-                setError('Invalid Organisation ID. Expected ZX-ORG-XXXX-XXXX-XXXX');
-                return;
-              }
-              run(async () => {
-                await orgSignIn({ product: 'zolexora-tms', org_id: cleanOrgId, user_id_or_email: staffId.trim(), password, turnstileToken });
-                localStorage.removeItem('zolexora_active_org_id'); // the backend picks the linked workspace
-                await refreshAuth();
-              });
-            }}
-          >
-            <Field label="Organisation ID" className={`${input} mt-1.5 font-mono`} value={orgId} onChange={(e) => setOrgId(e.target.value.toUpperCase())} />
-            <Field label="Corporate email or user ID" autoComplete="username" value={staffId} onChange={(e) => setStaffId(e.target.value)} />
-            {webmail && <p className="text-[11px] text-amber-400">Staff accounts use a corporate email or employee ID.</p>}
-            <Field label="Password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
-            <Turnstile action="track2-employee-login" onToken={setTurnstileToken} />
-            <ErrorBox message={error} />
-            <button className={button} disabled={busy || webmail || !turnstileToken}>
-              {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Sign in as staff'}
-            </button>
-          </form>
-        </Card>
-      </div>
-    );
+    return <StaffSignIn tabs={tabs} />;
   }
 
   const busyIcon = <Loader2 className="w-4 h-4 animate-spin" />;

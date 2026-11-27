@@ -28,7 +28,7 @@ def _get_client() -> httpx.AsyncClient:
     if _client is None or _client.is_closed or _client_factory is not httpx.AsyncClient:
         _client_factory = httpx.AsyncClient
         _client = httpx.AsyncClient(
-            timeout=httpx.Timeout(5.0, connect=3.0),
+            timeout=httpx.Timeout(12.0, connect=5.0),
             limits=httpx.Limits(max_keepalive_connections=20, max_connections=100),
         )
     return _client
@@ -94,14 +94,48 @@ async def introspect(token: str) -> Dict[str, Any]:
         raise InvalidToken("Rejected by auth service")
     if res.status_code != 200:
         raise AuthServiceError(f"Auth service returned {res.status_code}")
-    user = (res.json() or {}).get("user") or {}
-    if not user.get("uid"):
-        raise InvalidToken("Auth service returned no user")
+    data = res.json() or {}
+    user = data.get("user") or {}
+    org = data.get("org") or {}
+
+    if user.get("member_id") and org.get("zolexora_org_id"):
+        product = data.get("product")
+        if product not in ("tms", "zolexora-tms"):
+            raise InvalidToken("Token not issued for Zolexora TMS")
+        if org.get("status") not in (None, "active"):
+            raise InvalidToken("Business is not active")
+        identity: Dict[str, Any] = {
+            "uid": str(user["member_id"]),
+            "member_id": str(user["member_id"]),
+            "kind": user.get("kind"),
+            "zolexora_id": user.get("zolexora_id"),
+            "email": user.get("email"),
+            "phone_number": user.get("phone_number"),
+            "display_name": user.get("display_name"),
+            "org_id": org.get("zolexora_org_id"),
+            "org_name": org.get("name"),
+            "org_status": org.get("status"),
+            "business_kind": org.get("business_kind"),
+            "role": data.get("role"),
+            "product": product,
+            "permissions": list(data.get("permissions") or []),
+            "mfa_setup_required": bool(data.get("mfa_setup_required")),
+            "verification": data.get("verification") or {},
+            "is_platform_admin": False,
+            "is_business_session": True,
+        }
+    else:
+        if not user.get("uid"):
+            raise InvalidToken("Auth service returned no user")
+        identity = {
+            **user,
+            "is_business_session": False,
+        }
 
     # Evict expired entries first, then oldest LRU entry to avoid thundering-herd cache clears.
     while _cache and next(iter(_cache.values()))[0] <= now:
         _cache.popitem(last=False)
     while len(_cache) >= _CACHE_MAX:
         _cache.popitem(last=False)
-    _cache[key] = (now + CACHE_TTL_SECONDS, user)
-    return user
+    _cache[key] = (now + CACHE_TTL_SECONDS, identity)
+    return identity

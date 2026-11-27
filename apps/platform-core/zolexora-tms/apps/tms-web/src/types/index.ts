@@ -6,6 +6,7 @@ export interface Organisation {
   organisation_type: string;
   workspace_type: WorkspaceType;
   status: 'ACTIVE' | 'SUSPENDED' | 'ARCHIVED';
+  zolexora_org_id?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -13,13 +14,22 @@ export interface Organisation {
 export interface AuthMeResponse {
   user_id: string;
   email: string | null;
+  full_name?: string | null;
+  zolexora_id?: string | null;
+  phone_number?: string | null;
+  member_kind?: 'person' | 'employee' | string | null;
   organisation_id: string | null;
   role_code: string | null;
-  permissions: string[];
+  permissions?: string[];
   is_creator: boolean;
   is_commander: boolean;
   zolexora_org_id?: string | null;
+  org_name?: string | null;
+  business_kind?: string | null;
   is_platform_admin?: boolean;
+  is_business_session?: boolean;
+  mfa_setup_required?: boolean;
+  verification?: Record<string, string>;
   workspace_type?: WorkspaceType | null;
 }
 
@@ -389,7 +399,7 @@ export interface DispatchBoardItem {
   id: string;
   duty_number: string;
   booking_id: string;
-  booking_number: string;
+  booking_number?: string;
   customer_name?: string;
   driver_id?: string;
   driver_name?: string;
@@ -397,11 +407,12 @@ export interface DispatchBoardItem {
   vehicle_id?: string;
   vehicle_registration?: string;
   vehicle_type?: string;
-  pickup_address: string;
-  drop_address: string;
+  pickup_address?: string;
+  drop_address?: string;
   scheduled_start_time: string;
   scheduled_end_time: string;
   actual_start_time?: string;
+  notes?: string;
   status: DutyLifecycleStatus;
 }
 

@@ -32,6 +32,11 @@ async def lifespan(app: FastAPI):
         logger.info("Platform role templates verified.")
     except Exception as e:
         logger.warning(f"Database auto-init on startup skipped or failed: {e}")
+    try:
+        from app.auth.catalog import register_catalog
+        await register_catalog()
+    except Exception as e:
+        logger.warning(f"TMS permission catalog registration failed: {e}")
     yield
     from app.auth.zolexora import close_client as close_auth_client
     await close_auth_client()

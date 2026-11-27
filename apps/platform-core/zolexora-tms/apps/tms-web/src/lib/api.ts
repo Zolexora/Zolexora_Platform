@@ -1,37 +1,60 @@
-import { getSessionToken, expireSession } from './session';
-import { runtimeEnv } from './runtime';
+import {
+  getBusinessAccessToken,
+  loadBusinessSession,
+  refreshBusinessSession,
+} from '@zolexora/auth-client/business-session';
+import { expireSession, getPersonalToken } from './session';
+import { AUTH_SERVICE_PUBLIC_URL, runtimeEnv } from './runtime';
 
 export function getApiBaseUrl(): string {
   return runtimeEnv('VITE_API_BASE_URL');
 }
 
-export async function apiClient<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const token = getSessionToken();
-  const baseUrl = getApiBaseUrl();
-  
-  const headers = new Headers(options.headers || {});
-  // Let the browser set the multipart boundary for uploads
-  if (!(options.body instanceof FormData)) {
-    headers.set('Content-Type', 'application/json');
+async function resolveBearerToken(): Promise<{ token: string | null; isBusiness: boolean }> {
+  const authUrl = AUTH_SERVICE_PUBLIC_URL();
+  if (authUrl && loadBusinessSession()) {
+    const token = await getBusinessAccessToken(authUrl);
+    if (token) return { token, isBusiness: true };
   }
-  
-  if (token) {
-    headers.set('Authorization', `Bearer ${token}`);
-  }
-  
-  // Inject explicit tenant context for the backend
-  const activeOrgId = localStorage.getItem('zolexora_active_org_id');
-  if (activeOrgId) {
-    headers.set('X-Organization-Id', activeOrgId);
-  }
+  return { token: getPersonalToken(), isBusiness: false };
+}
 
-  const response = await fetch(`${baseUrl}${endpoint}`, {
+export async function apiClient<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  const baseUrl = getApiBaseUrl();
+  const buildHeaders = (token: string | null) => {
+    const headers = new Headers(options.headers || {});
+    // Let the browser set the multipart boundary for uploads
+    if (!(options.body instanceof FormData)) {
+      headers.set('Content-Type', 'application/json');
+    }
+    if (token) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
+    const activeOrgId = localStorage.getItem('zolexora_active_org_id');
+    if (activeOrgId) {
+      headers.set('X-Organization-Id', activeOrgId);
+    }
+    return headers;
+  };
+
+  const { token, isBusiness } = await resolveBearerToken();
+  let response = await fetch(`${baseUrl}${endpoint}`, {
     ...options,
-    headers,
+    headers: buildHeaders(token),
   });
 
+  if (response.status === 401 && isBusiness && loadBusinessSession()) {
+    const refreshed = await refreshBusinessSession(AUTH_SERVICE_PUBLIC_URL()).catch(() => null);
+    if (refreshed?.access_token) {
+      response = await fetch(`${baseUrl}${endpoint}`, {
+        ...options,
+        headers: buildHeaders(refreshed.access_token),
+      });
+    }
+  }
+
   if (response.status === 401) {
-    expireSession();
+    expireSession(isBusiness ? 'business' : 'all');
   }
 
   if (!response.ok) {

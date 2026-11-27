@@ -9,11 +9,23 @@ const defaultRuntimeConfig: RuntimeConfiguration = {
   application: { id: 'zolexora-tms', name: 'Zolexora TMS', type: 'STANDARD', version: '1.0.0', status: 'ACTIVE' },
   branding: { application_name: 'Zolexora TMS', logo_url: null, theme: {} },
   modules: {
-    bookings: { name: 'Bookings', enabled: true, pages: {} },
-    duties: { name: 'Duties', enabled: true, pages: {} },
-    billing: { name: 'Billing', enabled: true, pages: {} },
+    operations: {
+      name: 'Operations',
+      enabled: true,
+      pages: {
+        bookings: { name: 'Bookings', enabled: true, actions: {} },
+        duties: { name: 'Duties', enabled: true, actions: {} },
+        dispatch: { name: 'Dispatch', enabled: true, actions: {} },
+      },
+    },
+    finance: {
+      name: 'Finance',
+      enabled: true,
+      pages: {
+        billing: { name: 'Billing', enabled: true, actions: {} },
+      },
+    },
     fleet: { name: 'Fleet', enabled: true, pages: {} },
-    dispatch: { name: 'Dispatch', enabled: true, pages: {} },
   },
   features: {},
   navigation: [],

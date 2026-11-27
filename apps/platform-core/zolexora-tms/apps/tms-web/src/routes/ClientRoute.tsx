@@ -3,7 +3,7 @@ import { useAuth } from '../features/auth/useAuth';
 import { Loader2 } from 'lucide-react';
 
 export function ClientRoute() {
-  const { user, isLoading, authMe, error } = useAuth();
+  const { user, businessSession, isLoading, authMe, error } = useAuth();
 
   if (isLoading) {
     return (
@@ -16,8 +16,8 @@ export function ClientRoute() {
     );
   }
 
-  if (!user || error) return <Navigate to="/authentication" replace />;
-  if (authMe && !authMe.organisation_id) return <Navigate to="/authentication" replace />;
+  if (!user || !businessSession || error) return <Navigate to="/authentication" replace />;
+  if (!authMe || !authMe.organisation_id) return <Navigate to="/authentication" replace />;
   // Service providers who land on /client/* get redirected to their dashboard
   if (authMe?.workspace_type && authMe.workspace_type === 'SERVICE_PROVIDER') {
     return <Navigate to="/sp/dashboard" replace />;

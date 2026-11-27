@@ -22,6 +22,7 @@ class OrganisationCreate(OrganisationBase):
 class OrganisationResponse(OrganisationBase):
     id: uuid.UUID
     status: OrganisationStatus
+    zolexora_org_id: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 
@@ -29,7 +30,12 @@ class OrganisationResponse(OrganisationBase):
 
 
 class OnboardingRequest(OrganisationBase):
-    pass
+    zolexora_org_id: Optional[str] = Field(None, min_length=3, max_length=64, pattern=r"^[A-Za-z0-9_-]+$")
+
+
+class ZolexoraOrgLinkRequest(BaseModel):
+    zolexora_org_id: str = Field(..., min_length=3, max_length=64, pattern=r"^[A-Za-z0-9_-]+$")
+    name: Optional[str] = Field(None, min_length=2, max_length=160)
 
 
 class OnboardingResponse(BaseModel):

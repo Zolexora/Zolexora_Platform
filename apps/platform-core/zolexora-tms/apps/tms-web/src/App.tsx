@@ -46,6 +46,8 @@ import { ClientDutiesPage } from './features/client-duties/ClientDutiesPage';
 import { ClientInvoicesPage } from './features/client-invoices/ClientInvoicesPage';
 import { ClientPaymentsPage } from './features/client-payments/ClientPaymentsPage';
 import { ClientSettingsPage } from './features/client-settings/ClientSettingsPage';
+import { UserProfilePage } from './features/profile/UserProfilePage';
+import { AcceptInvitePage } from './pages/AcceptInvitePage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -101,8 +103,10 @@ export function App() {
               <Route path="/contact" element={<ContactPage />} />
             </Route>
 
-            {/* Authentication */}
+            {/* Authentication & Invites */}
             <Route path="/authentication" element={<AuthPageWrapper showBack><AuthenticationForm /></AuthPageWrapper>} />
+            <Route path="/invite" element={<AcceptInvitePage />} />
+            <Route path="/invites/accept" element={<AcceptInvitePage />} />
             <Route path="/login" element={<Navigate to="/authentication" replace />} />
             <Route path="/onboarding" element={<Navigate to="/authentication" replace />} />
             <Route path="/auth" element={<Navigate to="/authentication" replace />} />
@@ -135,6 +139,7 @@ export function App() {
                 <Route path="settings" element={<WorkspaceSettingsPage />} />
                 <Route path="settings/roles" element={<RolesPage />} />
                 <Route path="settings/members" element={<MembersPage />} />
+                <Route path="profile" element={<UserProfilePage />} />
               </Route>
             </Route>
 
@@ -147,6 +152,7 @@ export function App() {
                 <Route path="/client/invoices" element={<ClientInvoicesPage />} />
                 <Route path="/client/payments" element={<ClientPaymentsPage />} />
                 <Route path="/client/settings" element={<ClientSettingsPage />} />
+                <Route path="/client/profile" element={<UserProfilePage />} />
               </Route>
             </Route>
 

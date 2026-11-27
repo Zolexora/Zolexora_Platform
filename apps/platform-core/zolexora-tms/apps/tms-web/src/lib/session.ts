@@ -1,9 +1,20 @@
 import { SESSION_EXPIRED_EVENT, SESSION_STORAGE_KEY } from '@zolexora/auth-client';
+import {
+  BUSINESS_SESSION_EXPIRED_EVENT,
+  loadBusinessSession,
+} from '@zolexora/auth-client/business-session';
 
 const BOOTSTRAP_CACHE_KEY = 'zolexora_tms_bootstrap_cache';
 
-/** The Zolexora auth-service session token saved by ZolexoraAuthProvider. */
+/** The active bearer token for TMS API calls (business session preferred, personal Track 1 fallback). */
 export function getSessionToken(): string | null {
+  const biz = loadBusinessSession();
+  if (biz?.access_token) return biz.access_token;
+  return getPersonalToken();
+}
+
+/** The Track 1 personal Zolexora account token saved by ZolexoraAuthProvider. */
+export function getPersonalToken(): string | null {
   try {
     return JSON.parse(localStorage.getItem(SESSION_STORAGE_KEY) || 'null')?.token ?? null;
   } catch {
@@ -43,8 +54,13 @@ export function clearBootstrapCache(): void {
   }
 }
 
-/** Tells ZolexoraAuthProvider the session is no longer valid (it clears it and signs out). */
-export function expireSession(): void {
+/** Notifies auth providers that the active business/personal session is no longer valid. */
+export function expireSession(mode: 'business' | 'all' = 'all'): void {
   clearBootstrapCache();
-  window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT));
+  if (loadBusinessSession()) {
+    window.dispatchEvent(new CustomEvent(BUSINESS_SESSION_EXPIRED_EVENT));
+  }
+  if (mode === 'all') {
+    window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT));
+  }
 }
