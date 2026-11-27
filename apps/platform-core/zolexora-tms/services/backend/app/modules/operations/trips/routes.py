@@ -1,7 +1,8 @@
 import uuid
 from typing import Optional
-from fastapi import APIRouter, Depends, File, Form, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 
 from app.auth.dependencies import get_current_active_organisation, CurrentUserContext
 from app.db.session import get_db
@@ -14,6 +15,7 @@ from app.modules.operations.trips.schemas import (
     TripStartRequest,
 )
 from app.modules.operations.trips import service
+from app.modules.operations.trips.models import Trip, TripStatus
 
 router = APIRouter(prefix="/api/v1/trips", tags=["Trips"])
 

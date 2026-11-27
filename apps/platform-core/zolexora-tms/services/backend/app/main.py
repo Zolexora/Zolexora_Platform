@@ -128,6 +128,7 @@ from app.modules.operations.operating_units.routes import router as operating_un
 from app.modules.crm.vendors.routes import router as vendors_router
 from app.modules.fleet.drivers.routes import router as drivers_router
 from app.modules.operations.trips.routes import router as trips_router
+from app.modules.operations.trips.share_routes import share_router as trips_share_router, public_router as trips_public_router
 from app.modules.operations.dispatch.routes import router as dispatch_router
 from app.modules.core.compliance.routes import router as compliance_router
 from app.modules.finance.invoices.routes import router as invoices_router
@@ -157,6 +158,8 @@ app.include_router(operating_units_router)
 app.include_router(vendors_router)
 app.include_router(drivers_router)
 app.include_router(trips_router)
+app.include_router(trips_share_router)
+app.include_router(trips_public_router)
 app.include_router(dispatch_router)
 app.include_router(compliance_router)
 # Finance routers declare short prefixes (/invoices, /payments, ...)

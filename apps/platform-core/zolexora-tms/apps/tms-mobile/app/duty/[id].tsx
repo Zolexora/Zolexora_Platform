@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   Linking,
   Modal,
+  Share,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -634,6 +635,26 @@ export default function DutyDetailScreen() {
                 >
                   <Text style={styles.mapsBtnText}>🗺️  Open Live Location in Maps</Text>
                 </TouchableOpacity>
+                {/* Share link button — only for supervisors / ops (non-driver) */}
+                {!isAssignedDriver && (
+                  <TouchableOpacity
+                    style={[styles.mapsBtn, { marginTop: 8, backgroundColor: theme.colors.primaryMuted }]}
+                    onPress={async () => {
+                      try {
+                        const res = await dutiesService.createShareLink(trip.id);
+                        await Share.share({
+                          title: 'Track your shipment',
+                          message: `Track live: ${res.share_url}`,
+                          url: res.share_url,
+                        });
+                      } catch (e: unknown) {
+                        Alert.alert('Share Failed', e instanceof Error ? e.message : 'Could not generate link');
+                      }
+                    }}
+                  >
+                    <Text style={[styles.mapsBtnText, { color: theme.colors.primaryLight }]}>🔗  Share Live Tracking Link</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             ) : (
               <Text style={styles.gpsMeta}>

@@ -149,4 +149,11 @@ export const dutiesService = {
     const qs = query.toString();
     return apiClient<TripEventRecord[]>(`/api/v1/trips/${tripId}/events${qs ? `?${qs}` : ''}`);
   },
+
+  createShareLink(tripId: string): Promise<{ share_token: string; share_url: string; expires_at: string }> {
+    return apiClient<{ share_token: string; share_url: string; expires_at: string }>(
+      `/api/v1/trips/${tripId}/share-link`,
+      { method: 'POST' },
+    );
+  },
 };

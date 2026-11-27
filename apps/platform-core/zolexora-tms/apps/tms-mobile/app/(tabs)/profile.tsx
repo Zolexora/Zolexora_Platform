@@ -14,6 +14,7 @@ import { PERSONA_META } from '../../src/lib/personas';
 import { theme } from '../../src/lib/theme';
 import { Card } from '../../src/components/Card';
 import { Button } from '../../src/components/Button';
+import { ComplianceBadge } from '../../src/components/ComplianceBadge';
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
@@ -140,18 +141,7 @@ export default function ProfileScreen() {
               Driver & License {isLicenseExpiringSoon ? '⚠️' : ''}
             </Text>
             <InfoRow label="License No." value={driver.license_number} />
-            <InfoRow
-              label="Expiry"
-              value={
-                driver.license_expiry
-                  ? new Date(driver.license_expiry).toLocaleDateString('en-IN', {
-                      day: 'numeric',
-                      month: 'long',
-                      year: 'numeric',
-                    })
-                  : '—'
-              }
-            />
+            <ComplianceBadge label="License Expiry" expiry={driver.license_expiry} daysWarn={90} />
             {isLicenseExpiringSoon && (
               <Text style={styles.warningText}>
                 License expires within 90 days — contact your fleet manager for renewal.

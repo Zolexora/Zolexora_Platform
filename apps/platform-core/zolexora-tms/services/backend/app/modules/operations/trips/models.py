@@ -59,6 +59,8 @@ class Trip(Base):
     pod_notes: Mapped[Optional[str]] = mapped_column(Text)
     pod_uploaded_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(True))
     notes: Mapped[Optional[str]] = mapped_column(Text)
+    share_token: Mapped[Optional[str]] = mapped_column(String(64), unique=True)
+    share_token_expires_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(True))
 
 
 class TripEvent(Base):

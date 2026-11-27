@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   RefreshControl,
+  TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
@@ -79,6 +80,7 @@ export default function DutiesScreen() {
   const router = useRouter();
   const { driver, vendor, activeOrg, activeMode } = useAuth();
   const [activeFilter, setActiveFilter] = useState<DutyStatus | 'ALL'>('ALL');
+  const [searchText, setSearchText] = useState('');
   const isDriverScoped = activeMode === 'driver';
   const isVendorScoped = activeMode === 'vendor' || activeMode === 'driver_vendor';
 
@@ -103,15 +105,39 @@ export default function DutiesScreen() {
     refetchInterval: 30_000,
   });
 
-  const filtered = activeFilter === 'ALL'
-    ? duties
-    : duties.filter((d) => d.status === activeFilter);
+  const filtered = useMemo(() => {
+    let list = activeFilter === 'ALL' ? duties : duties.filter((d) => d.status === activeFilter);
+    if (searchText.trim()) {
+      const q = searchText.trim().toLowerCase();
+      list = list.filter((d) =>
+        d.duty_number?.toLowerCase().includes(q) ||
+        d.vehicle?.registration_number?.toLowerCase().includes(q) ||
+        d.booking?.pickup_address?.toLowerCase().includes(q) ||
+        d.booking?.drop_address?.toLowerCase().includes(q) ||
+        d.booking?.cargo_description?.toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [duties, activeFilter, searchText]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.title}>My Duties</Text>
         <Text style={styles.count}>{filtered.length} shown</Text>
+      </View>
+
+      {/* Search Bar */}
+      <View style={styles.searchRow}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search duty #, vehicle, route..."
+          placeholderTextColor={theme.colors.textMuted}
+          value={searchText}
+          onChangeText={setSearchText}
+          returnKeyType="search"
+          clearButtonMode="while-editing"
+        />
       </View>
 
       {/* Filter Pills */}
@@ -173,6 +199,21 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 22, fontWeight: '800', color: theme.colors.textPrimary },
   count: { fontSize: 12, color: theme.colors.textMuted },
+
+  searchRow: {
+    paddingHorizontal: theme.spacing.lg,
+    paddingBottom: theme.spacing.sm,
+  },
+  searchInput: {
+    backgroundColor: theme.colors.surfaceSubtle,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.md,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: 9,
+    fontSize: 14,
+    color: theme.colors.textPrimary,
+  },
 
   filterRow: {
     flexDirection: 'row',

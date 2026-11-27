@@ -8,6 +8,7 @@ import { dutiesService } from '../../src/services/dutiesService';
 import { theme } from '../../src/lib/theme';
 import { Card } from '../../src/components/Card';
 import { StatusBadge } from '../../src/components/StatusBadge';
+import { ComplianceBadge } from '../../src/components/ComplianceBadge';
 import type { VehicleDetails, Duty } from '../../src/types/tms';
 
 function InfoRow({ label, value }: { label: string; value?: string | null }) {
@@ -81,30 +82,17 @@ export default function VehicleDetailScreen() {
           <InfoRow label="Ownership" value={vehicle.ownership_type} />
         </Card>
 
-        {/* Capacity & Docs */}
+        {/* Compliance & Docs — colour-coded expiry badges */}
         <Card style={styles.section}>
-          <Text style={styles.sectionTitle}>Capacity & Documents</Text>
-          <InfoRow label="Payload (kg)" value={vehicle.payload_capacity_kg?.toString()} />
-          <InfoRow label="RC Expiry" value={vehicle.rc_expiry
-            ? new Date(vehicle.rc_expiry).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })
-            : null}
-          />
-          <InfoRow label="PUC Expiry" value={vehicle.puc_expiry
-            ? new Date(vehicle.puc_expiry).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })
-            : null}
-          />
-          <InfoRow label="Insurance Expiry" value={vehicle.insurance_expiry
-            ? new Date(vehicle.insurance_expiry).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })
-            : null}
-          />
-          <InfoRow label="Permit Expiry" value={vehicle.permit_expiry
-            ? new Date(vehicle.permit_expiry).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })
-            : null}
-          />
-          <InfoRow label="Fitness Expiry" value={vehicle.fitness_expiry
-            ? new Date(vehicle.fitness_expiry).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })
-            : null}
-          />
+          <Text style={styles.sectionTitle}>📋 Compliance & Documents</Text>
+          {vehicle.payload_capacity_kg != null && (
+            <InfoRow label="Payload (kg)" value={vehicle.payload_capacity_kg.toString()} />
+          )}
+          <ComplianceBadge label="RC (Registration)" expiry={vehicle.rc_expiry} />
+          <ComplianceBadge label="PUC (Pollution)" expiry={vehicle.puc_expiry} daysWarn={15} />
+          <ComplianceBadge label="Insurance" expiry={vehicle.insurance_expiry} />
+          <ComplianceBadge label="Permit" expiry={vehicle.permit_expiry} />
+          <ComplianceBadge label="Fitness" expiry={vehicle.fitness_expiry} />
         </Card>
 
         {/* Recent Duties */}
