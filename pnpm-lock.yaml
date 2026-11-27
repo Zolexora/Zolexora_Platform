@@ -3406,6 +3406,9 @@ importers:
       expo-linking:
         specifier: ~8.0.10
         version: 8.0.12(68033404c955b7d4cb67d3244074f9e6)
+      expo-location:
+        specifier: ~18.1.6
+        version: 18.1.6(03cd8dd57bc6d56ae269aebd617816b4)
       expo-router:
         specifier: ~6.0.17
         version: 6.0.24(cfbc9ec5db241a5d6c8296690d2c16c2)
@@ -13112,6 +13115,11 @@ packages:
 
   expo-local-authentication@17.0.9:
     resolution: {integrity: sha512-Ro2m6JJ7ebaDCMsnh6CeXKqXUdK5xP2lnrJlAopUO2DGqX5693BWC14ANFihFWL6qEV7IIV4hGpdU5RYyBCbuQ==}
+    peerDependencies:
+      expo: '*'
+
+  expo-location@18.1.6:
+    resolution: {integrity: sha512-l5dQQ2FYkrBgNzaZN1BvSmdhhcztFOUucu2kEfDBMV4wSIuTIt/CKsho+F3RnAiWgvui1wb1WTTf80E8zq48hA==}
     peerDependencies:
       expo: '*'
 
@@ -32864,6 +32872,24 @@ snapshots:
     dependencies:
       expo: 54.0.37(986090f79d59315f3f12c5ed83aaf91f)
       invariant: 2.2.4
+    transitivePeerDependencies:
+      - '@babel/core'
+      - '@expo/metro-runtime'
+      - '@types/react'
+      - '@types/react-dom'
+      - expo-constants
+      - expo-linking
+      - expo-router
+      - react-native
+      - react-native-gesture-handler
+      - react-native-reanimated
+      - react-native-safe-area-context
+      - react-native-screens
+      - react-native-webview
+
+  expo-location@18.1.6(03cd8dd57bc6d56ae269aebd617816b4):
+    dependencies:
+      expo: 54.0.37(986090f79d59315f3f12c5ed83aaf91f)
     transitivePeerDependencies:
       - '@babel/core'
       - '@expo/metro-runtime'

@@ -24,6 +24,16 @@ export interface TripRecord {
   notes?: string | null;
 }
 
+export interface TripEventRecord {
+  id: string;
+  trip_id: string;
+  event_type: string;
+  timestamp: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  notes?: string | null;
+}
+
 /** Duties + trip operations. Errors propagate: the app never fakes success. */
 export const dutiesService = {
   getDuties(params?: { status?: DutyStatus; driver_id?: string; vendor_id?: string }): Promise<Duty[]> {
@@ -117,5 +127,15 @@ export const dutiesService = {
 
   getTrip(tripId: string): Promise<TripRecord> {
     return apiClient<TripRecord>(`/api/v1/trips/${tripId}`);
+  },
+
+  postTripEvent(
+    tripId: string,
+    payload: { event_type: string; latitude?: number; longitude?: number; notes?: string },
+  ): Promise<TripEventRecord> {
+    return apiClient<TripEventRecord>(`/api/v1/trips/${tripId}/events`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
   },
 };

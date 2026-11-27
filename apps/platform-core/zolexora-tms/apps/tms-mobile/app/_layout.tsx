@@ -4,6 +4,8 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '../src/context/AuthContext';
+import { OpsToastBanner } from '../src/components/OpsToastBanner';
+import { OpsWebSocketGate } from '../src/components/OpsWebSocketGate';
 import { theme } from '../src/lib/theme';
 
 const queryClient = new QueryClient({
@@ -20,6 +22,8 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
+          <OpsWebSocketGate />
+          <OpsToastBanner />
           <StatusBar style="light" />
           <Stack
             screenOptions={{

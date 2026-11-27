@@ -25,6 +25,7 @@
     "expo-haptics": "~15.0.8",
     "expo-image-picker": "^58.0.10",
     "expo-linking": "~8.0.10",
+    "expo-location": "~18.1.6",
     "expo-router": "~6.0.17",
     "expo-secure-store": "~15.0.7",
     "expo-splash-screen": "~31.0.12",

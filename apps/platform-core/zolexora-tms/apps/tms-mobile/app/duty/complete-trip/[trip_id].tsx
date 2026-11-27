@@ -11,6 +11,7 @@ import { dutiesService } from '../../../src/services/dutiesService';
 import { theme } from '../../../src/lib/theme';
 import { Card } from '../../../src/components/Card';
 import { Button } from '../../../src/components/Button';
+import { useDriverLocation } from '../../../src/lib/useDriverLocation';
 
 function AmountField({
   label, icon, value, onChange,
@@ -54,6 +55,8 @@ export default function CompleteTripScreen() {
   const [podNotes, setPodNotes] = useState('');
   const [notes, setNotes] = useState('');
 
+  const { getLocation, currentLocation } = useDriverLocation(tripId);
+
   const { mutate, isPending } = useMutation({
     mutationFn: async () => {
       let podUrl: string | undefined;
@@ -68,6 +71,9 @@ export default function CompleteTripScreen() {
         podUrl = res.pod_attachment_url;
       }
 
+      // Capture final location for end_location
+      const coords = await getLocation();
+
       return dutiesService.completeTrip(tripId!, {
         end_odometer: parseFloat(endOdometer),
         toll_amount: toll ? parseFloat(toll) : 0,
@@ -77,6 +83,7 @@ export default function CompleteTripScreen() {
         pod_attachment_url: podUrl,
         pod_notes: podNotes || undefined,
         notes: notes || undefined,
+        end_location: coords ? (coords as unknown as Record<string, unknown>) : undefined,
       });
     },
     onSuccess: () => {
@@ -133,6 +140,11 @@ export default function CompleteTripScreen() {
               onChangeText={setEndOdometer}
               autoFocus
             />
+            {currentLocation && (
+              <Text style={styles.locationText}>
+                📍 {currentLocation.latitude.toFixed(5)}, {currentLocation.longitude.toFixed(5)}
+              </Text>
+            )}
           </Card>
 
           {/* Expenses */}
@@ -202,6 +214,7 @@ const styles = StyleSheet.create({
     padding: theme.spacing.md, fontSize: 28, fontWeight: '800',
     color: theme.colors.textPrimary, textAlign: 'center',
   },
+  locationText: { fontSize: 11, color: theme.colors.textMuted, marginTop: 6, textAlign: 'center' },
   podBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
     backgroundColor: theme.colors.surfaceSubtle,

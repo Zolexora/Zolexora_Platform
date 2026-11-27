@@ -10,6 +10,7 @@ import { dutiesService } from '../../../src/services/dutiesService';
 import { theme } from '../../../src/lib/theme';
 import { Card } from '../../../src/components/Card';
 import { Button } from '../../../src/components/Button';
+import { useDriverLocation } from '../../../src/lib/useDriverLocation';
 
 export default function StartTripScreen() {
   const { id: dutyId } = useLocalSearchParams<{ id: string }>();
@@ -17,12 +18,16 @@ export default function StartTripScreen() {
   const qc = useQueryClient();
 
   const [odometer, setOdometer] = useState('');
+  const { getLocation, currentLocation } = useDriverLocation(null);
 
   const { mutate, isPending } = useMutation({
-    mutationFn: () =>
-      dutiesService.startTrip(dutyId!, {
+    mutationFn: async () => {
+      const coords = await getLocation();
+      return dutiesService.startTrip(dutyId!, {
         start_odometer: parseFloat(odometer),
-      }),
+        start_location: coords ? (coords as unknown as Record<string, unknown>) : undefined,
+      });
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['duty', dutyId] });
       qc.invalidateQueries({ queryKey: ['duties'] });
@@ -69,6 +74,14 @@ export default function StartTripScreen() {
             <Text style={styles.hint}>Enter the current odometer reading on the vehicle dashboard.</Text>
           </Card>
 
+          {currentLocation && (
+            <Card style={[styles.card, { marginTop: theme.spacing.sm }]}>
+              <Text style={styles.locationText}>
+                📍 {currentLocation.latitude.toFixed(5)}, {currentLocation.longitude.toFixed(5)}
+              </Text>
+            </Card>
+          )}
+
           <Button
             title="Start Trip"
             variant="primary"
@@ -102,4 +115,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   hint: { fontSize: 12, color: theme.colors.textMuted, marginTop: 8, textAlign: 'center' },
+  locationText: { fontSize: 12, color: theme.colors.textMuted, textAlign: 'center' },
 });

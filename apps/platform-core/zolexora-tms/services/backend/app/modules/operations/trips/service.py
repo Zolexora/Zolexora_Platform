@@ -266,6 +266,33 @@ async def get_trip(
     return TripResponse.model_validate(trip)
 
 
+async def add_trip_event(
+    org_id: uuid.UUID,
+    trip_id: uuid.UUID,
+    req: "TripMilestoneRequest",
+    db: AsyncSession,
+) -> "TripEventResponse":
+    """Records a TripEvent (e.g. location_update) for an in-progress trip."""
+    stmt = select(Trip).where(Trip.id == trip_id, Trip.organisation_id == org_id)
+    res = await db.execute(stmt)
+    trip = res.scalars().first()
+    if not trip:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
+
+    from app.modules.operations.trips.models import TripEvent
+    event = TripEvent(
+        trip_id=trip_id,
+        event_type=req.event_type,
+        latitude=req.latitude,
+        longitude=req.longitude,
+        notes=req.notes,
+    )
+    db.add(event)
+    await db.commit()
+    await db.refresh(event)
+    return TripEventResponse.model_validate(event)
+
+
 async def list_trips(
     org_id: uuid.UUID,
     db: AsyncSession,

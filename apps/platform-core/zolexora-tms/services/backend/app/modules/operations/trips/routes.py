@@ -7,6 +7,8 @@ from app.auth.dependencies import get_current_active_organisation, CurrentUserCo
 from app.db.session import get_db
 from app.modules.operations.trips.schemas import (
     TripCompleteRequest,
+    TripEventResponse,
+    TripMilestoneRequest,
     TripReceiptAddRequest,
     TripResponse,
     TripStartRequest,
@@ -83,6 +85,22 @@ async def upload_pod(
         db=db,
     )
     return {"pod_attachment_url": url}
+
+
+@router.post("/{trip_id}/events", response_model=TripEventResponse, status_code=status.HTTP_201_CREATED)
+async def add_trip_event(
+    trip_id: uuid.UUID,
+    req: TripMilestoneRequest,
+    ctx: CurrentUserContext = Depends(get_current_active_organisation),
+    db: AsyncSession = Depends(get_db),
+):
+    """Records a trip event (location ping, milestone) for an in-progress trip."""
+    return await service.add_trip_event(
+        org_id=ctx.organisation_id,
+        trip_id=trip_id,
+        req=req,
+        db=db,
+    )
 
 
 @router.get("", response_model=list[TripResponse])
