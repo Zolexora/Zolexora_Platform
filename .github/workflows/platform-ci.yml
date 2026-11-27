@@ -13,7 +13,7 @@ jobs:
   static:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Shell syntax (all tracked scripts)
         run: git ls-files '*.sh' | grep -v '/services/frappe/' | xargs -r -n1 bash -n
       - name: Compose files are valid
