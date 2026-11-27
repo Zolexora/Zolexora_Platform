@@ -11,7 +11,7 @@ from app.modules.operations.bookings.models import Booking, BookingRequest
 from app.modules.operations.bookings.schemas_request import BookingRequestCreate, BookingRequestResponse
 from app.modules.operations.bookings.enums import BookingRequestStatus, BookingStatus
 from app.modules.operations.bookings.schemas import BookingResponse
-from app.modules.operations.bookings.service import ensure_customer, new_booking_number
+from app.modules.operations.bookings.service import ensure_customer, new_booking_number, passenger_safety_defaults
 
 
 async def _get(ctx: OrgContext, request_id: uuid.UUID) -> BookingRequest:
@@ -87,6 +87,9 @@ async def confirm_booking_request(ctx: OrgContext, request_id: uuid.UUID) -> Boo
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot confirm request from this status")
     await _set_status(ctx, req, BookingRequestStatus.CONFIRMED, "confirmed")
 
+    service_val = req.service_type.value if hasattr(req.service_type, "value") else str(req.service_type)
+    pin, escort = passenger_safety_defaults(service_val, req.pickup_datetime)
+
     booking = Booking(
         booking_number=new_booking_number(),
         organisation_id=ctx.organisation_id,
@@ -107,6 +110,8 @@ async def confirm_booking_request(ctx: OrgContext, request_id: uuid.UUID) -> Boo
         vehicle_requirements=req.vehicle_requirements,
         operational_instructions=req.special_instructions,
         rate_card_version_id=req.rate_card_version_id,
+        boarding_pin=pin,
+        escort_required=escort,
         source=req.source,
         status=BookingStatus.CONFIRMED,
         created_by_user_id=ctx.user_id,

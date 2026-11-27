@@ -18,6 +18,26 @@ def new_booking_number() -> str:
     return f"BK-{datetime.datetime.now().year}-{uuid.uuid4().hex[:8].upper()}"
 
 
+def passenger_safety_defaults(
+    service_type_value: str,
+    pickup_datetime: datetime.datetime,
+    existing_pin: Optional[str] = None,
+    existing_escort: Optional[bool] = None,
+) -> tuple[Optional[str], bool]:
+    """Return (boarding_pin, escort_required) defaults for PASSENGER bookings."""
+    pin = existing_pin
+    if not pin and service_type_value == "PASSENGER":
+        pin = str(secrets.randbelow(9000) + 1000)
+    escort = existing_escort
+    if escort is None:
+        # Night-shift IST (20:00 to 06:00) defaults to escort_required for PASSENGER trips
+        ist = datetime.timezone(datetime.timedelta(hours=5, minutes=30))
+        aware_dt = pickup_datetime if pickup_datetime.tzinfo else pickup_datetime.replace(tzinfo=datetime.timezone.utc)
+        local_dt = aware_dt.astimezone(ist)
+        escort = service_type_value == "PASSENGER" and (local_dt.hour >= 20 or local_dt.hour < 6)
+    return pin, escort
+
+
 async def ensure_customer(ctx: OrgContext, customer_id: uuid.UUID) -> None:
     res = await ctx.db.execute(
         select(Client.id).where(Client.id == customer_id, Client.organisation_id == ctx.organisation_id)
@@ -52,13 +72,14 @@ async def create_booking(ctx: OrgContext, req: BookingCreate) -> BookingResponse
             d_lat, d_lng = d_geo.latitude, d_geo.longitude
 
     data = req.model_dump()
-    if not data.get("boarding_pin") and req.service_type.value == "PASSENGER":
-        data["boarding_pin"] = str(secrets.randbelow(9000) + 1000)
-    if data.get("escort_required") is None:
-        # Night-shift IST (20:00 to 06:00) defaults to escort_required for PASSENGER trips
-        ist = datetime.timezone(datetime.timedelta(hours=5, minutes=30))
-        local_dt = (req.pickup_datetime if req.pickup_datetime.tzinfo else req.pickup_datetime.replace(tzinfo=datetime.timezone.utc)).astimezone(ist)
-        data["escort_required"] = req.service_type.value == "PASSENGER" and (local_dt.hour >= 20 or local_dt.hour < 6)
+    pin, escort = passenger_safety_defaults(
+        req.service_type.value,
+        req.pickup_datetime,
+        existing_pin=data.get("boarding_pin"),
+        existing_escort=data.get("escort_required"),
+    )
+    data["boarding_pin"] = pin
+    data["escort_required"] = escort
     data.update(
         pickup_address=req.pickup_address.strip(),
         drop_address=req.drop_address.strip(),

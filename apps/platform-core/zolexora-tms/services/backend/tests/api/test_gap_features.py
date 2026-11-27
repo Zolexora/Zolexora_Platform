@@ -299,3 +299,24 @@ async def test_gap_features_end_to_end():
         assert gen1.status_code == 200 and gen1.json()["created_count"] == 3
         gen2 = await client.post(f"/api/v1/rosters/{rid}/generate-duties", json={"days_ahead": 3}, headers=headers)
         assert gen2.status_code == 200 and gen2.json()["created_count"] == 0 and gen2.json()["skipped_count"] == 3
+
+        # BookingRequest -> Confirm flow inherits PASSENGER boarding_pin + night-shift escort defaults
+        br_res = await client.post(
+            "/api/v1/booking-requests",
+            json={
+                "customer_id": client_id,
+                "booking_type": "ETS",
+                "service_type": "PASSENGER",
+                "pickup_address": "Bellandur Gate 1",
+                "drop_address": "HSR Layout Sector 2",
+                "pickup_datetime": "2026-12-01T17:30:00Z",  # 23:00 IST -> night shift
+                "passenger_info": {"name": "Meera", "count": 2, "shift": "Night 23:00"},
+            },
+            headers=headers,
+        )
+        assert br_res.status_code == 201, br_res.text
+        conf_res = await client.post(f"/api/v1/booking-requests/{br_res.json()['id']}/confirm", headers=headers)
+        assert conf_res.status_code == 200, conf_res.text
+        confirmed_booking = conf_res.json()
+        assert confirmed_booking["boarding_pin"] and len(confirmed_booking["boarding_pin"]) == 4
+        assert confirmed_booking["escort_required"] is True

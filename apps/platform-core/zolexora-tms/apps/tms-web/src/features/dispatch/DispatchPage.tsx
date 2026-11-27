@@ -99,6 +99,40 @@ function formatShortSchedule(iso?: string): string {
   });
 }
 
+const BOOKING_TYPE_META: Record<string, { emoji: string; label: string; cls: string }> = {
+  ETS:        { emoji: '🧑‍💼', label: 'ETS',     cls: 'border-indigo-500/40 bg-indigo-500/10 text-indigo-300' },
+  PASSENGER:  { emoji: '👥',   label: 'PAX',     cls: 'border-indigo-500/40 bg-indigo-500/10 text-indigo-300' },
+  SHUTTLE:    { emoji: '🚐',   label: 'Shuttle', cls: 'border-cyan-500/40 bg-cyan-500/10 text-cyan-300' },
+  CORPORATE:  { emoji: '🏢',   label: 'Corp Cab',cls: 'border-blue-500/40 bg-blue-500/10 text-blue-300' },
+  AIRPORT:    { emoji: '✈️',   label: 'Airport', cls: 'border-purple-500/40 bg-purple-500/10 text-purple-300' },
+  SPOT:       { emoji: '🚕',   label: 'Spot',    cls: 'border-amber-500/40 bg-amber-500/10 text-amber-300' },
+};
+
+function bookingTypeBadge(type?: string | null) {
+  if (!type) return null;
+  const meta = BOOKING_TYPE_META[type] ?? { emoji: '📋', label: type, cls: 'border-slate-700 bg-slate-800 text-slate-300' };
+  return { ...meta };
+}
+
+/** Plays a short 880 Hz beep — used for SOS alerts. No external library. */
+function playSOSBeep() {
+  try {
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = 880;
+    osc.type = 'square';
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.6);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.6);
+  } catch {
+    // Ignore in envs where AudioContext is blocked
+  }
+}
+
 interface DispatchBoardResponse {
   organisation_id: string;
   total_active: number;
@@ -173,6 +207,7 @@ export function DispatchPage() {
             }
             if (msg?.event === 'trip.exception') {
               const isSos = msg?.data?.event_type === 'SOS_EMERGENCY';
+              if (isSos) playSOSBeep();
               const text = isSos
                 ? `🆘 EMERGENCY SOS on ${msg?.data?.trip_number || 'active trip'}`
                 : `⚠️ Trip exception (${msg?.data?.event_type}) on ${msg?.data?.trip_number || 'trip'}`;
@@ -556,6 +591,35 @@ export function DispatchPage() {
                             {duty.customer_name}
                           </div>
                         )}
+
+                        {/* People-transport meta row */}
+                        {(duty.booking_type || duty.passenger_count || duty.shift_label || duty.escort_required) && (() => {
+                          const badge = bookingTypeBadge(duty.booking_type);
+                          return (
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              {badge && (
+                                <span className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${badge.cls}`}>
+                                  {badge.emoji} {badge.label}
+                                </span>
+                              )}
+                              {duty.passenger_count != null && duty.passenger_count > 0 && (
+                                <span className="inline-flex items-center gap-1 rounded-md border border-teal-500/30 bg-teal-500/10 px-2 py-0.5 text-[10px] font-semibold text-teal-300">
+                                  👤 {duty.passenger_count}
+                                </span>
+                              )}
+                              {duty.shift_label && (
+                                <span className="inline-flex items-center gap-1 rounded-md border border-slate-700 bg-slate-800/60 px-2 py-0.5 text-[10px] text-slate-400 truncate max-w-[120px]">
+                                  🕐 {duty.shift_label}
+                                </span>
+                              )}
+                              {duty.escort_required && (
+                                <span className="inline-flex items-center gap-1 rounded-md border border-rose-500/40 bg-rose-500/10 px-2 py-0.5 text-[10px] font-semibold text-rose-300">
+                                  🛡️ Escort
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
 
                         {/* Driver & Vehicle */}
                         <div className="grid grid-cols-1 gap-1.5 text-xs">

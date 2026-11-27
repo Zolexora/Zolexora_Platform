@@ -31,14 +31,15 @@ export function BookingsPage() {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [formError, setFormError] = useState('');
 
-  // New Booking Request Form State
+  // New Booking Request Form State (people-transport first: ETS + PASSENGER)
   const [requestForm, setRequestForm] = useState<BookingRequestCreate>({
     customer_id: '',
-    booking_type: 'SPOT',
-    service_type: 'CARGO',
+    booking_type: 'ETS',
+    service_type: 'PASSENGER',
     pickup_address: '',
     drop_address: '',
     pickup_datetime: new Date(Date.now() + 3600000).toISOString().slice(0, 16),
+    passenger_info: { name: '', phone: '', count: 1, shift: '' },
     cargo_info: { weight_kg: '', material: '' },
     special_instructions: '',
     estimated_pricing: '',
@@ -73,15 +74,34 @@ export function BookingsPage() {
 
   // Create Request Mutation
   const createRequestMutation = useMutation({
-    mutationFn: (data: BookingRequestCreate) =>
-      apiClient<BookingRequest>('/api/v1/booking-requests', {
+    mutationFn: (data: BookingRequestCreate) => {
+      const pax = data.passenger_info || {};
+      const cargo = data.cargo_info || {};
+      const cleanPax = data.service_type === 'PASSENGER'
+        ? {
+            ...(pax.name ? { name: String(pax.name).trim() } : {}),
+            ...(pax.phone ? { phone: String(pax.phone).trim() } : {}),
+            ...(pax.count ? { count: Number(pax.count) || 1 } : {}),
+            ...(pax.shift ? { shift: String(pax.shift).trim() } : {}),
+          }
+        : {};
+      const cleanCargo = data.service_type === 'CARGO'
+        ? {
+            ...(cargo.material ? { material: String(cargo.material).trim() } : {}),
+            ...(cargo.weight_kg ? { weight_kg: Number(cargo.weight_kg) } : {}),
+          }
+        : {};
+      return apiClient<BookingRequest>('/api/v1/booking-requests', {
         method: 'POST',
         body: JSON.stringify({
           ...data,
+          passenger_info: cleanPax,
+          cargo_info: cleanCargo,
           pickup_datetime: new Date(data.pickup_datetime).toISOString(),
           estimated_pricing: data.estimated_pricing ? data.estimated_pricing : undefined,
         }),
-      }),
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['booking-requests'] });
       setIsRequestModalOpen(false);
@@ -158,8 +178,8 @@ export function BookingsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Transport Bookings</h1>
-          <p className="text-sm text-slate-400">Manage client booking requests and authoritative transport contracts.</p>
+          <h1 className="text-2xl font-bold text-white">People Transport &amp; Trip Bookings</h1>
+          <p className="text-sm text-slate-400">Manage corporate cab requests, ETS shuttle bookings, and authoritative trip orders.</p>
         </div>
         <button
           onClick={() => {
@@ -245,12 +265,31 @@ export function BookingsPage() {
                       {booking.booking_number}
                     </td>
                     <td className="px-5 py-4">
-                      <span className="inline-block rounded-md bg-slate-800 px-2 py-0.5 text-xs font-semibold text-slate-300 mr-2">
-                        {booking.booking_type}
-                      </span>
-                      <span className="inline-block rounded-md bg-navy-900/60 border border-navy-700/40 px-2 py-0.5 text-xs font-semibold text-silver-300">
-                        {booking.service_type}
-                      </span>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="inline-block rounded-md bg-slate-800 px-2 py-0.5 text-xs font-semibold text-slate-300">
+                          {booking.booking_type}
+                        </span>
+                        <span className="inline-block rounded-md bg-navy-900/60 border border-navy-700/40 px-2 py-0.5 text-xs font-semibold text-silver-300">
+                          {booking.service_type}
+                        </span>
+                        {booking.boarding_pin && (
+                          <span className="inline-block rounded-md bg-indigo-500/15 border border-indigo-500/30 px-2 py-0.5 font-mono text-[11px] font-semibold text-indigo-300">
+                            PIN {booking.boarding_pin}
+                          </span>
+                        )}
+                        {booking.escort_required && (
+                          <span className="inline-block rounded-md bg-rose-500/15 border border-rose-500/30 px-2 py-0.5 text-[11px] font-semibold text-rose-300">
+                            🛡️ Escort
+                          </span>
+                        )}
+                      </div>
+                      {booking.service_type === 'PASSENGER' && booking.passenger_info && (booking.passenger_info.name || booking.passenger_info.count || booking.passenger_info.shift) && (
+                        <div className="mt-1 text-[11px] text-slate-400">
+                          {booking.passenger_info.name && <span className="text-slate-300 font-medium">{booking.passenger_info.name}</span>}
+                          {booking.passenger_info.count ? ` · 👤 ${booking.passenger_info.count}` : ''}
+                          {booking.passenger_info.shift ? ` · 🕐 ${booking.passenger_info.shift}` : ''}
+                        </div>
+                      )}
                     </td>
                     <td className="px-5 py-4 max-w-xs truncate">
                       <div className="flex items-center gap-1.5 text-slate-200">
@@ -329,12 +368,21 @@ export function BookingsPage() {
                       {req.request_number}
                     </td>
                     <td className="px-5 py-4">
-                      <span className="inline-block rounded-md bg-slate-800 px-2 py-0.5 text-xs font-semibold text-slate-300 mr-2">
-                        {req.booking_type}
-                      </span>
-                      <span className="inline-block rounded-md bg-navy-900/60 border border-navy-700/40 px-2 py-0.5 text-xs font-semibold text-silver-300">
-                        {req.service_type}
-                      </span>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="inline-block rounded-md bg-slate-800 px-2 py-0.5 text-xs font-semibold text-slate-300">
+                          {req.booking_type}
+                        </span>
+                        <span className="inline-block rounded-md bg-navy-900/60 border border-navy-700/40 px-2 py-0.5 text-xs font-semibold text-silver-300">
+                          {req.service_type}
+                        </span>
+                      </div>
+                      {req.service_type === 'PASSENGER' && req.passenger_info && (req.passenger_info.name || req.passenger_info.count || req.passenger_info.shift) && (
+                        <div className="mt-1 text-[11px] text-slate-400">
+                          {req.passenger_info.name && <span className="text-slate-300 font-medium">{req.passenger_info.name}</span>}
+                          {req.passenger_info.count ? ` · 👤 ${req.passenger_info.count}` : ''}
+                          {req.passenger_info.shift ? ` · 🕐 ${req.passenger_info.shift}` : ''}
+                        </div>
+                      )}
                     </td>
                     <td className="px-5 py-4 max-w-xs truncate">
                       <div className="flex items-center gap-1.5 text-slate-200">
@@ -392,7 +440,7 @@ export function BookingsPage() {
       {/* Modal: New Booking Request */}
       {isRequestModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl">
+          <div className="w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
               <div>
                 <h3 className="text-lg font-bold text-white">Create Booking Request</h3>
@@ -439,15 +487,15 @@ export function BookingsPage() {
                     onChange={(e) => setRequestForm({ ...requestForm, booking_type: e.target.value as BookingType })}
                     className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:border-navy-500 focus:outline-none"
                   >
-                    <option value="SPOT">Spot / Ad-hoc</option>
-                    <option value="CONTRACT">Contract / Dedicated</option>
-                    <option value="LOCAL">Local City Run</option>
-                    <option value="AIRPORT">Airport Transfer</option>
-                    <option value="OUTSTATION">Outstation Intercity</option>
-                    <option value="CORPORATE">Corporate Commute</option>
-                    <option value="RENTAL">Package Rental</option>
-                    <option value="ETS">ETS Shuttle</option>
+                    <option value="ETS">ETS Shuttle / Shift</option>
                     <option value="FIXED">Fixed Route</option>
+                    <option value="CORPORATE">Corporate Cab</option>
+                    <option value="AIRPORT">Airport Transfer</option>
+                    <option value="SPOT">Spot / Ad-hoc</option>
+                    <option value="RENTAL">Package Rental</option>
+                    <option value="LOCAL">Local City Run</option>
+                    <option value="OUTSTATION">Outstation Intercity</option>
+                    <option value="CONTRACT">Contract / Dedicated</option>
                     <option value="RECURRING">Recurring Schedule</option>
                   </select>
                 </div>
@@ -458,18 +506,122 @@ export function BookingsPage() {
                     onChange={(e) => setRequestForm({ ...requestForm, service_type: e.target.value as BookingServiceType })}
                     className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:border-navy-500 focus:outline-none"
                   >
-                    <option value="CARGO">Cargo / Freight</option>
                     <option value="PASSENGER">Passenger Transit</option>
+                    <option value="CARGO">Cargo / Parcel</option>
                   </select>
                 </div>
               </div>
+
+              {requestForm.service_type === 'PASSENGER' ? (
+                <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-3 space-y-3">
+                  <div className="text-[11px] font-semibold uppercase tracking-wider text-indigo-300">
+                    Passenger / Shift Details
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-400 mb-1">Passenger / Lead Employee</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Ananya Sharma (EMP-204)"
+                        value={requestForm.passenger_info?.name ?? ''}
+                        onChange={(e) =>
+                          setRequestForm({
+                            ...requestForm,
+                            passenger_info: { ...(requestForm.passenger_info || {}), name: e.target.value },
+                          })
+                        }
+                        className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-1.5 text-sm text-white placeholder-slate-600 focus:border-navy-500 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-400 mb-1">Passenger Mobile</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. +91 98765 43210"
+                        value={requestForm.passenger_info?.phone ?? ''}
+                        onChange={(e) =>
+                          setRequestForm({
+                            ...requestForm,
+                            passenger_info: { ...(requestForm.passenger_info || {}), phone: e.target.value },
+                          })
+                        }
+                        className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-1.5 text-sm text-white placeholder-slate-600 focus:border-navy-500 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-400 mb-1">Headcount</label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={60}
+                        value={requestForm.passenger_info?.count ?? 1}
+                        onChange={(e) =>
+                          setRequestForm({
+                            ...requestForm,
+                            passenger_info: { ...(requestForm.passenger_info || {}), count: Number(e.target.value) || 1 },
+                          })
+                        }
+                        className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-1.5 text-sm text-white focus:border-navy-500 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-400 mb-1">Shift Label / Flight No</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Night Login 22:00 / AI-502"
+                        value={requestForm.passenger_info?.shift ?? ''}
+                        onChange={(e) =>
+                          setRequestForm({
+                            ...requestForm,
+                            passenger_info: { ...(requestForm.passenger_info || {}), shift: e.target.value },
+                          })
+                        }
+                        className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-1.5 text-sm text-white placeholder-slate-600 focus:border-navy-500 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3 rounded-xl border border-slate-800 bg-slate-950/60 p-3">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-400 mb-1">Material / Parcel Type</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. IT Hardware"
+                      value={requestForm.cargo_info?.material ?? ''}
+                      onChange={(e) =>
+                        setRequestForm({
+                          ...requestForm,
+                          cargo_info: { ...(requestForm.cargo_info || {}), material: e.target.value },
+                        })
+                      }
+                      className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-1.5 text-sm text-white placeholder-slate-600 focus:border-navy-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-400 mb-1">Weight (kg)</label>
+                    <input
+                      type="number"
+                      placeholder="e.g. 250"
+                      value={requestForm.cargo_info?.weight_kg ?? ''}
+                      onChange={(e) =>
+                        setRequestForm({
+                          ...requestForm,
+                          cargo_info: { ...(requestForm.cargo_info || {}), weight_kg: e.target.value },
+                        })
+                      }
+                      className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-1.5 text-sm text-white placeholder-slate-600 focus:border-navy-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-medium text-slate-400 mb-1">Pickup Address *</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Warehouse 3, Bhiwandi Logistics Park, Maharashtra"
+                  placeholder={requestForm.service_type === 'PASSENGER' ? 'e.g. Electronic City Phase 1 / Employee Pickup' : 'e.g. Warehouse 3, Bhiwandi Logistics Park'}
                   value={requestForm.pickup_address}
                   onChange={(e) => setRequestForm({ ...requestForm, pickup_address: e.target.value })}
                   className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-navy-500 focus:outline-none"
@@ -481,7 +633,7 @@ export function BookingsPage() {
                 <input
                   type="text"
                   required
-                  placeholder="e.g. JNPT Port Container Terminal 2, Navi Mumbai"
+                  placeholder={requestForm.service_type === 'PASSENGER' ? 'e.g. Manyata Tech Park Gate 2 / Airport T1' : 'e.g. JNPT Port Container Terminal 2'}
                   value={requestForm.drop_address}
                   onChange={(e) => setRequestForm({ ...requestForm, drop_address: e.target.value })}
                   className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-navy-500 focus:outline-none"
@@ -593,7 +745,7 @@ export function BookingsPage() {
                 <label className="block text-xs font-medium text-slate-400 mb-1">Duty Notes / Special Instructions</label>
                 <textarea
                   rows={3}
-                  placeholder="Special instructions for driver, cargo handling instructions, or client gate pass requirements..."
+                  placeholder="Driver reporting point, escort / passenger pickup notes, or gate pass requirements..."
                   value={dutyForm.notes}
                   onChange={(e) => setDutyForm({ ...dutyForm, notes: e.target.value })}
                   className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-navy-500 focus:outline-none"

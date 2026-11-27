@@ -297,6 +297,10 @@ export interface Booking {
   cargo_info: Record<string, any>;
   vehicle_requirements: Record<string, any>;
   driver_requirements: Record<string, any>;
+  boarding_pin?: string | null;
+  escort_required?: boolean;
+  escort_guard_name?: string | null;
+  safe_drop_confirmed_at?: string | null;
   status: BookingOperationalStatus;
   source: string;
   created_at: string;
@@ -414,6 +418,13 @@ export interface DispatchBoardItem {
   actual_start_time?: string;
   notes?: string;
   status: DutyLifecycleStatus;
+  // People-transport fields
+  booking_type?: string | null;
+  service_type?: string | null;
+  passenger_name?: string | null;
+  passenger_count?: number | null;
+  shift_label?: string | null;
+  escort_required?: boolean | null;
 }
 
 
