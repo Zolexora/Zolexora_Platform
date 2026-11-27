@@ -65,24 +65,27 @@ async def test_gap_features_end_to_end():
         assert v_res.status_code == 201, v_res.text
         vehicle_id = v_res.json()["id"]
 
-        # 3. Create multi-stop booking with e-Way Bill expiring in 4h
+        # 3. Create ETS / Fixed multi-stop passenger trip with e-Way Bill & stops
         b_res = await client.post(
             "/api/v1/bookings",
             json={
                 "customer_id": client_id,
-                "pickup_address": "Bhiwandi Hub, Mumbai",
+                "booking_type": "ETS",
+                "service_type": "PASSENGER",
+                "pickup_address": "Bhiwandi Pickup Point",
                 "pickup_lat": 19.2813,
                 "pickup_lng": 73.0483,
-                "drop_address": "Chakan MIDC, Pune",
+                "drop_address": "Chakan Tech Campus",
                 "drop_lat": 18.7606,
                 "drop_lng": 73.8636,
                 "pickup_datetime": now.isoformat(),
+                "passenger_info": {"name": "Ananya Verma", "phone": "+919800003333", "count": 3, "shift": "Night 22:00"},
                 "eway_bill_number": "123456789012",
                 "eway_bill_valid_until": (now + datetime.timedelta(hours=4)).isoformat(),
                 "stops": [
-                    {"seq": 1, "stop_type": "PICKUP", "address": "Bhiwandi Warehouse 2", "status": "PENDING"},
-                    {"seq": 2, "stop_type": "DROP", "address": "Talegaon Dock A", "status": "PENDING"},
-                    {"seq": 3, "stop_type": "DROP", "address": "Chakan Plant 4", "status": "PENDING"},
+                    {"seq": 1, "stop_type": "PICKUP", "address": "Pickup Stop 1", "employee_id": "EMP-101", "status": "PENDING"},
+                    {"seq": 2, "stop_type": "PICKUP", "address": "Pickup Stop 2", "employee_id": "EMP-102", "status": "PENDING"},
+                    {"seq": 3, "stop_type": "DROP", "address": "Chakan Tech Campus Gate 4", "status": "PENDING"},
                 ],
             },
             headers=headers,
@@ -124,6 +127,9 @@ async def test_gap_features_end_to_end():
         duty_detail = await client.get(f"/api/v1/duties/{duty_id}", headers=headers)
         assert duty_detail.status_code == 200, duty_detail.text
         assert len(duty_detail.json()["booking"]["stops"]) == 3
+        assert duty_detail.json()["booking"]["passenger_name"] == "Ananya Verma"
+        assert duty_detail.json()["booking"]["passenger_count"] == 3
+        assert duty_detail.json()["booking"]["shift_label"] == "Night 22:00"
         assert duty_detail.json()["booking"]["eway_bill_number"] == "123456789012"
 
         # Duties search + date filter check
@@ -156,17 +162,17 @@ async def test_gap_features_end_to_end():
         pub = await client.get(f"/api/v1/tracking/public/{share_token}")
         assert pub.status_code == 200, pub.text
         assert pub.json()["latest_latitude"] == 19.0123
-        assert pub.json()["pickup_address"] == "Bhiwandi Hub, Mumbai"
+        assert pub.json()["pickup_address"] == "Bhiwandi Pickup Point"
 
-        # 6. Multi-stop manifest progression
+        # 6. Multi-stop ETS boarding & drop progression
         s1 = await client.post(
-            f"/api/v1/duties/{duty_id}/stops/2/update",
-            json={"status": "DELIVERED", "notes": "Signed by gatekeeper"},
+            f"/api/v1/duties/{duty_id}/stops/1/update",
+            json={"status": "BOARDED", "notes": "Employee boarded cab"},
             headers=headers,
         )
         assert s1.status_code == 200, s1.text
         stops_after = {s["seq"]: s for s in s1.json()["booking"]["stops"]}
-        assert stops_after[2]["status"] == "DELIVERED"
+        assert stops_after[1]["status"] == "BOARDED"
 
         # 7. FASTag sync + double-charge detection + reconciliation
         plaza_time = now + datetime.timedelta(minutes=5)

@@ -77,8 +77,8 @@ function distanceMeters(lat1: number, lon1: number, lat2: number, lon2: number):
 const EXCEPTION_OPTIONS: Array<{ label: string; code: string }> = [
   { label: '🚦  Traffic / Route Delay', code: 'DELAY_TRAFFIC' },
   { label: '🔧  Vehicle Breakdown', code: 'BREAKDOWN' },
-  { label: '⏳  Loading / Unloading Wait', code: 'LOADING_WAIT' },
-  { label: '🚧  Toll / Checkpost Hold', code: 'CHECKPOINT_HOLD' },
+  { label: '⏳  Passenger / Employee Wait', code: 'PASSENGER_WAIT' },
+  { label: '🚧  Toll / Gate Check Hold', code: 'CHECKPOINT_HOLD' },
   { label: '🆘  Emergency SOS Alert', code: 'SOS_EMERGENCY' },
 ];
 
@@ -218,7 +218,13 @@ export default function DutyDetailScreen() {
   });
 
   const stopMutation = useMutation({
-    mutationFn: async ({ seq, status }: { seq: number; status: 'ARRIVED' | 'DELIVERED' }) => {
+    mutationFn: async ({
+      seq,
+      status,
+    }: {
+      seq: number;
+      status: 'ARRIVED' | 'BOARDED' | 'DROPPED' | 'NO_SHOW' | 'DELIVERED';
+    }) => {
       const coords = await getLocation();
       return dutiesService.updateDutyStop(id!, seq, {
         status,
@@ -381,9 +387,22 @@ export default function DutyDetailScreen() {
         {/* Booking Details */}
         {duty.booking && (
           <Card style={styles.section}>
-            <Text style={styles.sectionTitle}>📋  Booking Details</Text>
-            <InfoBlock label="Customer" value={duty.booking.customer_name} />
-            <InfoBlock label="Phone" value={duty.booking.customer_phone} />
+            <Text style={styles.sectionTitle}>
+              📋  {duty.booking.booking_type ? `${duty.booking.booking_type} Trip Details` : 'Trip Details'}
+            </Text>
+            <InfoBlock label="Organisation / Account" value={duty.booking.customer_name} />
+            <InfoBlock label="Coordinator Phone" value={duty.booking.customer_phone} />
+            <InfoBlock
+              label="Passenger"
+              value={
+                duty.booking.passenger_name
+                  ? `${duty.booking.passenger_name}${duty.booking.passenger_count ? ` (${duty.booking.passenger_count} pax)` : ''}`
+                  : duty.booking.passenger_count
+                    ? `${duty.booking.passenger_count} passenger(s)`
+                    : undefined
+              }
+            />
+            <InfoBlock label="Shift / Flight" value={duty.booking.shift_label} />
             <InfoBlock label="Cargo" value={duty.booking.cargo_description} />
             {duty.booking.cargo_weight_kg && (
               <InfoBlock label="Weight" value={`${duty.booking.cargo_weight_kg} kg`} />
@@ -490,20 +509,27 @@ export default function DutyDetailScreen() {
           </Card>
         )}
 
-        {/* LTL / Multi-Stop Manifest */}
+        {/* ETS / Multi-Stop Passenger Roster */}
         {duty.booking?.stops && duty.booking.stops.length > 0 && (
           <Card style={styles.section}>
-            <Text style={styles.sectionTitle}>📦  Multi-Stop Manifest ({duty.booking.stops.length} stops)</Text>
+            <Text style={styles.sectionTitle}>👥  Boarding & Drop Stops ({duty.booking.stops.length})</Text>
             {[...duty.booking.stops]
               .sort((a, b) => a.seq - b.seq)
               .map((stop) => {
-                const isDone = stop.status === 'DELIVERED';
+                const isDone =
+                  stop.status === 'BOARDED' ||
+                  stop.status === 'DROPPED' ||
+                  stop.status === 'NO_SHOW' ||
+                  stop.status === 'DELIVERED';
                 const isArrived = stop.status === 'ARRIVED';
+                const completeStatus = stop.stop_type === 'PICKUP' ? 'BOARDED' : 'DROPPED';
+                const completeLabel = stop.stop_type === 'PICKUP' ? '✓ Boarded' : '✓ Dropped';
                 return (
                   <View key={stop.seq} style={styles.stopRow}>
                     <View style={styles.stopHeader}>
                       <Text style={styles.stopTitle}>
-                        #{stop.seq} · {stop.stop_type}
+                        Stop #{stop.seq} · {stop.stop_type}
+                        {stop.employee_id ? ` · ${stop.employee_id}` : ''}
                       </Text>
                       <StatusBadge status={stop.status} />
                     </View>
@@ -542,9 +568,16 @@ export default function DutyDetailScreen() {
                           <TouchableOpacity
                             style={[styles.quickNavBtn, { borderColor: theme.colors.success }]}
                             disabled={stopMutation.isPending}
-                            onPress={() => stopMutation.mutate({ seq: stop.seq, status: 'DELIVERED' })}
+                            onPress={() => stopMutation.mutate({ seq: stop.seq, status: completeStatus })}
                           >
-                            <Text style={[styles.quickNavText, { color: theme.colors.success }]}>✓ Delivered</Text>
+                            <Text style={[styles.quickNavText, { color: theme.colors.success }]}>{completeLabel}</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[styles.quickNavBtn, { borderColor: theme.colors.danger }]}
+                            disabled={stopMutation.isPending}
+                            onPress={() => stopMutation.mutate({ seq: stop.seq, status: 'NO_SHOW' })}
+                          >
+                            <Text style={[styles.quickNavText, { color: theme.colors.danger }]}>No-Show</Text>
                           </TouchableOpacity>
                         </>
                       )}
@@ -696,7 +729,7 @@ export default function DutyDetailScreen() {
             )}
             {trip.pod_attachment_url && (
               <View style={styles.podBadge}>
-                <Text style={styles.podBadgeText}>✅  POD Uploaded</Text>
+                <Text style={styles.podBadgeText}>✅  Trip Sheet Signed</Text>
               </View>
             )}
             {fastagQuery.data && fastagQuery.data.transactions.length > 0 && (
@@ -765,8 +798,8 @@ export default function DutyDetailScreen() {
                       try {
                         const res = await dutiesService.createShareLink(trip.id);
                         await Share.share({
-                          title: 'Track your shipment',
-                          message: `Track live: ${res.share_url}`,
+                          title: 'Track live cab / trip',
+                          message: `Track your vehicle live: ${res.share_url}`,
                           url: res.share_url,
                         });
                       } catch (e: unknown) {

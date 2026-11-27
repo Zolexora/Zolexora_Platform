@@ -61,8 +61,14 @@ class DutyAssignmentResponse(BaseModel):
 class DutyBookingSummary(BaseModel):
     id: uuid.UUID
     booking_number: str
+    booking_type: Optional[str] = None
+    service_type: Optional[str] = None
     customer_name: Optional[str] = None
     customer_phone: Optional[str] = None
+    passenger_name: Optional[str] = None
+    passenger_phone: Optional[str] = None
+    passenger_count: Optional[int] = None
+    shift_label: Optional[str] = None
     pickup_address: str
     pickup_lat: Optional[float] = None
     pickup_lng: Optional[float] = None
@@ -79,7 +85,7 @@ class DutyBookingSummary(BaseModel):
 
 
 class DutyStopUpdateRequest(BaseModel):
-    status: str = Field(..., pattern="^(ARRIVED|DELIVERED)$")
+    status: str = Field(..., pattern="^(ARRIVED|BOARDED|DROPPED|NO_SHOW|DELIVERED)$")
     pod_url: Optional[str] = None
     notes: Optional[str] = None
     latitude: Optional[float] = Field(None, ge=-90.0, le=90.0)

@@ -7,14 +7,17 @@ from app.modules.operations.bookings.enums import BookingStatus, BookingServiceT
 
 class BookingStop(BaseModel):
     seq: int = Field(..., ge=1)
-    stop_type: str = Field(default="DROP", description="PICKUP | DROP")
+    stop_type: str = Field(default="PICKUP", description="PICKUP | DROP")
     address: str = Field(..., min_length=3)
     lat: Optional[float] = None
     lng: Optional[float] = None
     contact_name: Optional[str] = None
     contact_phone: Optional[str] = None
-    status: str = Field(default="PENDING", description="PENDING | ARRIVED | DELIVERED")
+    employee_id: Optional[str] = None
+    status: str = Field(default="PENDING", description="PENDING | ARRIVED | BOARDED | DROPPED | NO_SHOW | DELIVERED")
     arrived_at: Optional[datetime.datetime] = None
+    boarded_at: Optional[datetime.datetime] = None
+    dropped_at: Optional[datetime.datetime] = None
     delivered_at: Optional[datetime.datetime] = None
     pod_url: Optional[str] = None
     notes: Optional[str] = None

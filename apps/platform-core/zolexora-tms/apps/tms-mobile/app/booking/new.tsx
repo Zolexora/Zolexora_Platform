@@ -25,8 +25,8 @@ interface ClientItem {
   phone?: string | null;
 }
 
-const SERVICE_TYPES = ['CARGO', 'PASSENGER'] as const;
-const BOOKING_TYPES = ['SPOT', 'CONTRACT'] as const;
+const BOOKING_TYPES = ['ETS', 'FIXED', 'SPOT', 'AIRPORT', 'RENTAL', 'CORPORATE'] as const;
+const SERVICE_TYPES = ['PASSENGER', 'CARGO'] as const;
 
 export default function NewBookingScreen() {
   const router = useRouter();
@@ -40,11 +40,15 @@ export default function NewBookingScreen() {
   });
 
   const [customerId, setCustomerId] = useState('');
-  const [bookingType, setBookingType] = useState<(typeof BOOKING_TYPES)[number]>('SPOT');
-  const [serviceType, setServiceType] = useState<(typeof SERVICE_TYPES)[number]>('CARGO');
+  const [bookingType, setBookingType] = useState<(typeof BOOKING_TYPES)[number]>('ETS');
+  const [serviceType, setServiceType] = useState<(typeof SERVICE_TYPES)[number]>('PASSENGER');
   const [pickupAddress, setPickupAddress] = useState('');
   const [dropAddress, setDropAddress] = useState('');
   const [pickupHoursAhead, setPickupHoursAhead] = useState<number>(2);
+  const [passengerName, setPassengerName] = useState('');
+  const [passengerPhone, setPassengerPhone] = useState('');
+  const [passengerCount, setPassengerCount] = useState('1');
+  const [shiftLabel, setShiftLabel] = useState('');
   const [material, setMaterial] = useState('');
   const [weightKg, setWeightKg] = useState('');
   const [instructions, setInstructions] = useState('');
@@ -67,6 +71,14 @@ export default function NewBookingScreen() {
           pickup_address: pickupAddress.trim(),
           drop_address: dropAddress.trim(),
           pickup_datetime: pickupDt,
+          passenger_info: serviceType === 'PASSENGER'
+            ? {
+                ...(passengerName.trim() ? { name: passengerName.trim() } : {}),
+                ...(passengerPhone.trim() ? { phone: passengerPhone.trim() } : {}),
+                ...(passengerCount ? { count: parseInt(passengerCount, 10) || 1 } : {}),
+                ...(shiftLabel.trim() ? { shift: shiftLabel.trim() } : {}),
+              }
+            : {},
           cargo_info: serviceType === 'CARGO'
             ? {
                 ...(material.trim() ? { material: material.trim() } : {}),
@@ -84,7 +96,7 @@ export default function NewBookingScreen() {
       qc.invalidateQueries({ queryKey: ['mobile-booking-requests'] });
       qc.invalidateQueries({ queryKey: ['mobile-bookings'] });
       Alert.alert(
-        'Request Submitted',
+        'Trip Request Submitted',
         `Booking request ${created.request_number} has been sent to dispatch.`,
         [{ text: 'Done', onPress: () => router.back() }],
       );
@@ -96,11 +108,11 @@ export default function NewBookingScreen() {
 
   const handleSubmit = () => {
     if (!customerId) {
-      Alert.alert('Client Required', 'No client profile found in this workspace.');
+      Alert.alert('Client Required', 'No client organisation found in this workspace.');
       return;
     }
     if (pickupAddress.trim().length < 3 || dropAddress.trim().length < 3) {
-      Alert.alert('Address Required', 'Enter valid pickup and drop locations.');
+      Alert.alert('Location Required', 'Enter valid pickup and drop points.');
       return;
     }
     createMutation.mutate();
@@ -110,12 +122,12 @@ export default function NewBookingScreen() {
     <SafeAreaView style={styles.safe} edges={['bottom']}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.content}>
-          <Text style={styles.heading}>📦 Request Transport</Text>
-          <Text style={styles.sub}>Submit a booking request directly to operations & dispatch.</Text>
+          <Text style={styles.heading}>🚖 Request Cab / Trip</Text>
+          <Text style={styles.sub}>Book an ETS shuttle, fixed route cab, airport transfer, or corporate trip.</Text>
 
           {clients.length > 1 && (
             <Card style={styles.section}>
-              <Text style={styles.sectionTitle}>Client / Account</Text>
+              <Text style={styles.sectionTitle}>Corporate Client / Account</Text>
               <View style={styles.chipWrap}>
                 {clients.slice(0, 12).map((c) => {
                   const selected = customerId === c.id;
@@ -134,17 +146,8 @@ export default function NewBookingScreen() {
           )}
 
           <Card style={styles.section}>
-            <Text style={styles.sectionTitle}>Service & Type</Text>
+            <Text style={styles.sectionTitle}>Trip Type & Service</Text>
             <View style={styles.chipRow}>
-              {SERVICE_TYPES.map((s) => (
-                <TouchableOpacity
-                  key={s}
-                  style={[styles.chip, serviceType === s && styles.chipActive]}
-                  onPress={() => setServiceType(s)}
-                >
-                  <Text style={[styles.chipText, serviceType === s && styles.chipTextActive]}>{s}</Text>
-                </TouchableOpacity>
-              ))}
               {BOOKING_TYPES.map((b) => (
                 <TouchableOpacity
                   key={b}
@@ -155,27 +158,40 @@ export default function NewBookingScreen() {
                 </TouchableOpacity>
               ))}
             </View>
+            <View style={[styles.chipRow, { marginTop: 10 }]}>
+              {SERVICE_TYPES.map((s) => (
+                <TouchableOpacity
+                  key={s}
+                  style={[styles.chip, serviceType === s && styles.chipActive]}
+                  onPress={() => setServiceType(s)}
+                >
+                  <Text style={[styles.chipText, serviceType === s && styles.chipTextActive]}>
+                    {s === 'PASSENGER' ? '🧑 People / Cab' : '📦 Cargo'}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </Card>
 
           <Card style={styles.section}>
-            <Text style={styles.sectionTitle}>Route</Text>
-            <Text style={styles.label}>Pickup Address</Text>
+            <Text style={styles.sectionTitle}>Pickup & Drop Route</Text>
+            <Text style={styles.label}>Pickup Point</Text>
             <TextInput
               style={styles.input}
-              placeholder="Warehouse / pickup location"
+              placeholder="Home / Office campus / Terminal"
               placeholderTextColor={theme.colors.textMuted}
               value={pickupAddress}
               onChangeText={setPickupAddress}
             />
-            <Text style={[styles.label, { marginTop: 12 }]}>Drop Address</Text>
+            <Text style={[styles.label, { marginTop: 12 }]}>Drop Point</Text>
             <TextInput
               style={styles.input}
-              placeholder="Destination / delivery address"
+              placeholder="Destination / Campus gate / Hotel"
               placeholderTextColor={theme.colors.textMuted}
               value={dropAddress}
               onChangeText={setDropAddress}
             />
-            <Text style={[styles.label, { marginTop: 12 }]}>Pickup Schedule</Text>
+            <Text style={[styles.label, { marginTop: 12 }]}>Reporting Time</Text>
             <View style={styles.chipRow}>
               {[
                 { label: 'In 2 hrs', hrs: 2 },
@@ -195,13 +211,57 @@ export default function NewBookingScreen() {
             </View>
           </Card>
 
-          {serviceType === 'CARGO' && (
+          {serviceType === 'PASSENGER' ? (
             <Card style={styles.section}>
-              <Text style={styles.sectionTitle}>Cargo Details</Text>
-              <Text style={styles.label}>Material / Goods</Text>
+              <Text style={styles.sectionTitle}>Passenger / Shift Roster</Text>
+              <Text style={styles.label}>Lead Passenger / Employee Name</Text>
               <TextInput
                 style={styles.input}
-                placeholder="e.g. Electronics, Textiles, Pallets"
+                placeholder="e.g. Ananya Verma"
+                placeholderTextColor={theme.colors.textMuted}
+                value={passengerName}
+                onChangeText={setPassengerName}
+              />
+              <Text style={[styles.label, { marginTop: 12 }]}>Passenger Contact Phone</Text>
+              <TextInput
+                style={styles.input}
+                keyboardType="phone-pad"
+                placeholder="e.g. +91 98XXXXXXXX"
+                placeholderTextColor={theme.colors.textMuted}
+                value={passengerPhone}
+                onChangeText={setPassengerPhone}
+              />
+              <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.label}>Passengers</Text>
+                  <TextInput
+                    style={styles.input}
+                    keyboardType="number-pad"
+                    placeholder="1"
+                    placeholderTextColor={theme.colors.textMuted}
+                    value={passengerCount}
+                    onChangeText={setPassengerCount}
+                  />
+                </View>
+                <View style={{ flex: 2 }}>
+                  <Text style={styles.label}>Shift / Flight No. (optional)</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="e.g. Night Shift 22:00 / AI-804"
+                    placeholderTextColor={theme.colors.textMuted}
+                    value={shiftLabel}
+                    onChangeText={setShiftLabel}
+                  />
+                </View>
+              </View>
+            </Card>
+          ) : (
+            <Card style={styles.section}>
+              <Text style={styles.sectionTitle}>Cargo Details</Text>
+              <Text style={styles.label}>Material</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. Equipment / Documents"
                 placeholderTextColor={theme.colors.textMuted}
                 value={material}
                 onChangeText={setMaterial}
@@ -210,7 +270,7 @@ export default function NewBookingScreen() {
               <TextInput
                 style={styles.input}
                 keyboardType="decimal-pad"
-                placeholder="e.g. 1200"
+                placeholder="e.g. 500"
                 placeholderTextColor={theme.colors.textMuted}
                 value={weightKg}
                 onChangeText={setWeightKg}
@@ -219,10 +279,10 @@ export default function NewBookingScreen() {
           )}
 
           <Card style={styles.section}>
-            <Text style={styles.sectionTitle}>Special Instructions</Text>
+            <Text style={styles.sectionTitle}>Trip Notes / Gate Instructions</Text>
             <TextInput
               style={[styles.input, { minHeight: 68, textAlignVertical: 'top' }]}
-              placeholder="Dock info, contact name, handling instructions..."
+              placeholder="Cab type preference, gate number, VIP escort notes..."
               placeholderTextColor={theme.colors.textMuted}
               value={instructions}
               onChangeText={setInstructions}
@@ -231,7 +291,7 @@ export default function NewBookingScreen() {
           </Card>
 
           <Button
-            title="Submit Booking Request"
+            title="Submit Trip Request"
             variant="primary"
             size="lg"
             onPress={handleSubmit}

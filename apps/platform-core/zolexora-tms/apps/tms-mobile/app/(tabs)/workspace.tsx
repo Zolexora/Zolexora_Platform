@@ -256,7 +256,7 @@ export default function WorkspaceScreen() {
         {/* Client / Ops quick booking CTA */}
         {isBookingView && (
           <Button
-            title={activeMode === 'client' ? '📦  Request New Transport' : '+  Create Booking Request'}
+            title={activeMode === 'client' ? '🚖  Request Cab / Trip' : '+  Create Trip Request'}
             variant="primary"
             onPress={() => router.push('/booking/new')}
             style={{ marginBottom: theme.spacing.md }}
@@ -372,12 +372,12 @@ export default function WorkspaceScreen() {
           </Card>
         )}
 
-        {/* Client Live Shipment Tracking */}
+        {/* Client Live Cab & Trip Tracking */}
         {activeMode === 'client' && (
           <Card style={styles.section}>
-            <Text style={styles.sectionTitle}>Live Shipment Tracking ({clientDutiesQuery.data?.length ?? 0})</Text>
+            <Text style={styles.sectionTitle}>Live Cab & Trip Tracking ({clientDutiesQuery.data?.length ?? 0})</Text>
             {(clientDutiesQuery.data ?? []).length === 0 ? (
-              <Text style={styles.emptyText}>No active shipments yet.</Text>
+              <Text style={styles.emptyText}>No active trips yet.</Text>
             ) : (
               (clientDutiesQuery.data ?? []).slice(0, 8).map((d) => (
                 <TouchableOpacity key={d.id} style={styles.listItem} onPress={() => router.push(`/duty/${d.id}`)}>

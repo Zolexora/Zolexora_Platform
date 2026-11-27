@@ -392,6 +392,7 @@ async def add_trip_event(
     if req.event_type in {
         "DELAY_TRAFFIC",
         "BREAKDOWN",
+        "PASSENGER_WAIT",
         "LOADING_WAIT",
         "CHECKPOINT_HOLD",
         "SOS_EMERGENCY",

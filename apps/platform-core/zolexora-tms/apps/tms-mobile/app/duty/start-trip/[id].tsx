@@ -28,7 +28,7 @@ const CHECKLIST_ITEMS: ChecklistItem[] = [
   { key: 'lights', label: 'Lights & Signals', icon: '💡' },
   { key: 'documents', label: 'Documents (RC, PUC, Permit)', icon: '📄' },
   { key: 'fuel', label: 'Fuel Level', icon: '⛽' },
-  { key: 'load', label: 'Load Secured', icon: '📦' },
+  { key: 'cabin', label: 'Cabin Clean, AC & Seatbelts', icon: '💺' },
 ];
 
 interface ChecklistState {

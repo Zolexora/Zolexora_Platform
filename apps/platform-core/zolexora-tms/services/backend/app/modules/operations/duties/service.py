@@ -160,11 +160,23 @@ async def enrich_duties(db: AsyncSession, duties: list[Duty]) -> list[DutyRespon
                 weight_kg = float(raw_weight) if raw_weight not in (None, "") else None
             except (TypeError, ValueError):
                 weight_kg = None
+            pax = b.passenger_info if isinstance(b.passenger_info, dict) else {}
+            raw_pax_count = pax.get("count") or pax.get("passenger_count")
+            try:
+                pax_count = int(raw_pax_count) if raw_pax_count not in (None, "") else None
+            except (TypeError, ValueError):
+                pax_count = None
             base.booking = DutyBookingSummary(
                 id=b.id,
                 booking_number=b.booking_number,
+                booking_type=b.booking_type.value if hasattr(b.booking_type, "value") else str(b.booking_type),
+                service_type=b.service_type.value if hasattr(b.service_type, "value") else str(b.service_type),
                 customer_name=c.name if c else None,
                 customer_phone=c.phone if c else None,
+                passenger_name=pax.get("name") or pax.get("passenger_name"),
+                passenger_phone=pax.get("phone") or pax.get("passenger_phone"),
+                passenger_count=pax_count,
+                shift_label=pax.get("shift") or pax.get("shift_label") or pax.get("flight_no"),
                 pickup_address=b.pickup_address,
                 pickup_lat=b.pickup_lat,
                 pickup_lng=b.pickup_lng,
@@ -378,6 +390,10 @@ async def update_duty_stop(
     updated_stop["status"] = req.status
     if req.status == "ARRIVED":
         updated_stop["arrived_at"] = now.isoformat()
+    elif req.status == "BOARDED":
+        updated_stop["boarded_at"] = now.isoformat()
+    elif req.status == "DROPPED":
+        updated_stop["dropped_at"] = now.isoformat()
     elif req.status == "DELIVERED":
         updated_stop["delivered_at"] = now.isoformat()
     if req.pod_url:

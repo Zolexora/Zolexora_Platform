@@ -31,8 +31,11 @@ export interface BookingStop {
   lng?: number | null;
   contact_name?: string | null;
   contact_phone?: string | null;
-  status: 'PENDING' | 'ARRIVED' | 'DELIVERED' | string;
+  employee_id?: string | null;
+  status: 'PENDING' | 'ARRIVED' | 'BOARDED' | 'DROPPED' | 'NO_SHOW' | 'DELIVERED' | string;
   arrived_at?: string | null;
+  boarded_at?: string | null;
+  dropped_at?: string | null;
   delivered_at?: string | null;
   pod_url?: string | null;
   notes?: string | null;
@@ -41,8 +44,14 @@ export interface BookingStop {
 export interface BookingDetails {
   id: string;
   booking_number: string;
+  booking_type?: string;
+  service_type?: 'PASSENGER' | 'CARGO' | string;
   customer_name?: string;
   customer_phone?: string;
+  passenger_name?: string | null;
+  passenger_phone?: string | null;
+  passenger_count?: number | null;
+  shift_label?: string | null;
   pickup_address: string;
   pickup_lat?: number;
   pickup_lng?: number;

@@ -180,7 +180,13 @@ export const dutiesService = {
   updateDutyStop(
     dutyId: string,
     seq: number,
-    payload: { status: 'ARRIVED' | 'DELIVERED'; pod_url?: string; notes?: string; latitude?: number; longitude?: number },
+    payload: {
+      status: 'ARRIVED' | 'BOARDED' | 'DROPPED' | 'NO_SHOW' | 'DELIVERED';
+      pod_url?: string;
+      notes?: string;
+      latitude?: number;
+      longitude?: number;
+    },
   ): Promise<Duty> {
     return apiClient<Duty>(`/api/v1/duties/${dutyId}/stops/${seq}/update`, {
       method: 'POST',

@@ -64,7 +64,18 @@ function DutyCard({ duty, onPress }: { duty: Duty; onPress: () => void }) {
           </View>
         )}
 
-        {duty.booking?.cargo_description && (
+        {(duty.booking?.passenger_name || duty.booking?.shift_label) ? (
+          <View style={styles.cargoRow}>
+            <Text style={styles.cargoIcon}>🧑</Text>
+            <Text style={styles.cargoText} numberOfLines={1}>
+              {[
+                duty.booking.passenger_name,
+                duty.booking.passenger_count ? `${duty.booking.passenger_count} pax` : null,
+                duty.booking.shift_label,
+              ].filter(Boolean).join('  ·  ')}
+            </Text>
+          </View>
+        ) : duty.booking?.cargo_description ? (
           <View style={styles.cargoRow}>
             <Text style={styles.cargoIcon}>📦</Text>
             <Text style={styles.cargoText} numberOfLines={1}>
@@ -72,7 +83,7 @@ function DutyCard({ duty, onPress }: { duty: Duty; onPress: () => void }) {
               {duty.booking.cargo_weight_kg ? `  ·  ${duty.booking.cargo_weight_kg} kg` : ''}
             </Text>
           </View>
-        )}
+        ) : null}
 
         {duty.vehicle && (
           <Text style={styles.vehicleText}>
@@ -138,6 +149,8 @@ export default function DutiesScreen() {
         d.booking?.customer_name?.toLowerCase().includes(q) ||
         d.booking?.pickup_address?.toLowerCase().includes(q) ||
         d.booking?.drop_address?.toLowerCase().includes(q) ||
+        d.booking?.passenger_name?.toLowerCase().includes(q) ||
+        d.booking?.shift_label?.toLowerCase().includes(q) ||
         d.booking?.cargo_description?.toLowerCase().includes(q)
       );
     }

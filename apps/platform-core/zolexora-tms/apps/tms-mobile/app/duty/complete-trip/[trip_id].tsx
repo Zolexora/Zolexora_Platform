@@ -50,7 +50,7 @@ function SignaturePad({ onSave }: { onSave: (dataUrl: string) => void }) {
     return pts.reduce((d, p, i) => i === 0 ? `M${p.x},${p.y}` : `${d} L${p.x},${p.y}`, '');
   };
 
-  const handleSave = () => {
+    const handleSave = () => {
     if (!paths.length) { Alert.alert('Empty Signature', 'Please sign above first.'); return; }
     // Encode paths as compact JSON (backend stores as metadata string)
     const encoded = JSON.stringify(paths.map(pointsToSvgPath));
@@ -62,7 +62,7 @@ function SignaturePad({ onSave }: { onSave: (dataUrl: string) => void }) {
 
   return (
     <View style={sigStyles.wrapper}>
-      <Text style={sigStyles.label}>Recipient Signature</Text>
+      <Text style={sigStyles.label}>Passenger / Coordinator Signature</Text>
       <View style={sigStyles.canvas} {...panResponder.panHandlers}>
         {/* Drawn lines rendered as absolute-position views (thin lines) */}
         {paths.map((path, pi) =>
@@ -262,7 +262,7 @@ export default function CompleteTripScreen() {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.content}>
           <Text style={styles.heading}>🏁 Complete Trip</Text>
-          <Text style={styles.sub}>Record final odometer, expenses, and Proof of Delivery.</Text>
+          <Text style={styles.sub}>Record ending odometer, toll/parking expenses, and trip closure sign-off.</Text>
 
           {/* Odometer */}
           <Card style={styles.section}>
@@ -286,12 +286,12 @@ export default function CompleteTripScreen() {
             <AmountField label="Waiting (min)" icon="⏱️" value={waiting} onChange={setWaiting} />
           </Card>
 
-          {/* Rich e-POD */}
+          {/* Trip Sheet & Guest Sign-Off */}
           <Card style={styles.section}>
-            <Text style={styles.sectionTitle}>📋 e-Proof of Delivery</Text>
+            <Text style={styles.sectionTitle}>📋 Trip Sheet & Guest Sign-Off</Text>
 
             {/* Multi-photo */}
-            <Text style={styles.podSubLabel}>Photos ({podUris.length}/{MAX_PHOTOS})</Text>
+            <Text style={styles.podSubLabel}>Duty Slip / Receipt Photos ({podUris.length}/{MAX_PHOTOS})</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 10 }}>
               {podUris.map((uri, i) => (
                 <View key={i} style={styles.thumbContainer}>
@@ -312,18 +312,18 @@ export default function CompleteTripScreen() {
             {/* Recipient Signature */}
             <SignaturePad onSave={setSignatureData} />
 
-            {/* Delivery OTP */}
+            {/* Trip Closure OTP / Employee PIN */}
             <View style={{ marginTop: 14 }}>
-              <Text style={styles.podSubLabel}>Delivery OTP (from recipient, optional)</Text>
+              <Text style={styles.podSubLabel}>Trip Closure OTP / Employee PIN (optional)</Text>
               <TextInput style={styles.otpInput} keyboardType="number-pad" placeholder="e.g. 4821"
                 placeholderTextColor={theme.colors.textMuted} value={deliveryOtp}
                 onChangeText={v => setDeliveryOtp(v.replace(/\D/g, '').slice(0, 6))}
                 maxLength={6} />
             </View>
 
-            {/* POD Notes */}
+            {/* Trip Sheet Notes */}
             <TextInput style={[styles.notesInput, { marginTop: 14 }]}
-              placeholder="POD notes (optional)" placeholderTextColor={theme.colors.textMuted}
+              placeholder="Passenger / coordinator remarks (optional)" placeholderTextColor={theme.colors.textMuted}
               value={podNotes} onChangeText={setPodNotes} multiline numberOfLines={2} />
           </Card>
 
