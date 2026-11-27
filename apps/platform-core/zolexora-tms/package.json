@@ -2,7 +2,7 @@
   "name": "@zolexora/tms",
   "private": true,
   "version": "0.1.0",
-  "packageManager": "pnpm@11.24.0",
+  "packageManager": "pnpm@12.23.0",
   "scripts": {
     "local:start": "bash scripts/local-start.sh",
     "docker:start": "bash scripts/docker-start.sh start",

@@ -179,27 +179,20 @@ async def get_organisation_by_id(
     user_id: uuid.UUID,
     db: AsyncSession,
 ) -> OrganisationResponse:
-    # Tenant Isolation: verify caller is an active member
-    mem_stmt = select(OrganisationMember).where(
-        OrganisationMember.organisation_id == org_id,
-        OrganisationMember.user_id == user_id,
-        OrganisationMember.status == MemberStatus.ACTIVE,
+    stmt = (
+        select(Organisation)
+        .join(OrganisationMember, OrganisationMember.organisation_id == Organisation.id)
+        .where(
+            Organisation.id == org_id,
+            OrganisationMember.user_id == user_id,
+            OrganisationMember.status == MemberStatus.ACTIVE,
+        )
     )
-    mem_res = await db.execute(mem_stmt)
-    membership = mem_res.scalars().first()
-    if not membership:
+    org = (await db.execute(stmt)).scalars().first()
+    if not org:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied: You do not belong to this organisation",
-        )
-
-    org_stmt = select(Organisation).where(Organisation.id == org_id)
-    org_res = await db.execute(org_stmt)
-    org = org_res.scalars().first()
-    if not org:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Organisation not found",
         )
 
     return OrganisationResponse.model_validate(org)

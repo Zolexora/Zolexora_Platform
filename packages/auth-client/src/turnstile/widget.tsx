@@ -1,9 +1,13 @@
 import React, {
   useEffect,
+  useLayoutEffect,
   useRef,
   useImperativeHandle,
   forwardRef,
 } from "react";
+
+const useIsomorphicLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
 import { loadTurnstileScript } from "./loader.js";
 import type {
   TurnstileRenderOptions,
@@ -166,9 +170,24 @@ export const TurnstileWidget = forwardRef<
         }
       });
 
+    // Clean up widget synchronously before React detaches the DOM container on unmount.
     return () => {
       active = false;
       isMountedRef.current = false;
+    };
+  }, [
+    siteKey,
+    action,
+    cData,
+    theme,
+    size,
+    execution,
+    tabIndex,
+    responseFieldName,
+  ]);
+
+  useIsomorphicLayoutEffect(() => {
+    return () => {
       if (
         widgetIdRef.current &&
         typeof window !== "undefined" &&

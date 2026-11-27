@@ -193,7 +193,10 @@ export function AuthenticationForm() {
     setTurnstileToken('');
   };
 
-  const refreshAuth = () => queryClient.invalidateQueries({ queryKey: ['auth-me'] });
+  const refreshAuth = () => Promise.all([
+    queryClient.invalidateQueries({ queryKey: ['auth-bootstrap'] }),
+    queryClient.invalidateQueries({ queryKey: ['auth-me'] }),
+  ]);
 
   const flow = usePublicSignIn({ firebaseAuth, product: 'zolexora-tms', authUrl: AUTH_SERVICE_PUBLIC_URL(), onSignedIn: () => void refreshAuth() });
   /** Turnstile tokens are single-use: get a fresh widget after every attempt that spent one. */

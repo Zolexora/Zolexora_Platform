@@ -1,52 +1,39 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth as useZolexoraAuth } from '@zolexora/auth-client/react';
 import { apiClient } from '../../lib/api';
-import type { AuthMeResponse, Organisation, EffectivePermissionsResponse } from '../../types';
+import type { AuthBootstrapResponse } from '../../types';
 
-/** Zolexora auth-service session + the caller's TMS workspace context. */
+/** Zolexora auth-service session + the caller's TMS workspace context (single-round-trip bootstrap). */
 export function useAuth() {
   const queryClient = useQueryClient();
   const { user, loading: isSessionLoading, signOut: zolexoraSignOut } = useZolexoraAuth();
-  const token = user ? user.uid : null; // query key: refetch when the signed-in user changes
+  const token = user ? user.uid : null;
+  const activeOrgStorage = typeof window !== 'undefined' ? localStorage.getItem('zolexora_active_org_id') : null;
 
   const {
-    data: authMe,
-    isLoading: isAuthMeLoading,
-    error: authMeError,
+    data: bootstrap,
+    isLoading: isBootstrapLoading,
+    error: bootstrapError,
   } = useQuery({
-    queryKey: ['auth-me', token],
-    queryFn: () => apiClient<AuthMeResponse>('/api/v1/auth/me'),
+    queryKey: ['auth-bootstrap', token, activeOrgStorage],
+    queryFn: () => apiClient<AuthBootstrapResponse>('/api/v1/auth/bootstrap'),
     enabled: !!token,
   });
 
-  // Keep localStorage in sync with the active org from the backend auth response
+  const authMe = bootstrap?.me;
+  const organisation = bootstrap?.organisation ?? undefined;
+  const permissions = bootstrap?.effective_permissions ?? undefined;
+  const runtime = bootstrap?.runtime ?? undefined;
+
+  // Keep localStorage in sync with the active org from the backend bootstrap response
   useEffect(() => {
     if (authMe?.organisation_id) {
       localStorage.setItem('zolexora_active_org_id', authMe.organisation_id);
-    } else if (!isAuthMeLoading && !authMe) {
+    } else if (!isBootstrapLoading && !authMe) {
       localStorage.removeItem('zolexora_active_org_id');
     }
-  }, [authMe?.organisation_id, isAuthMeLoading, authMe]);
-
-  const {
-    data: organisation,
-    isLoading: isOrgLoading,
-    error: orgError,
-  } = useQuery({
-    queryKey: ['organisation-me', token],
-    queryFn: () => apiClient<Organisation>('/api/v1/organisations/me'),
-    enabled: !!token && !!authMe?.organisation_id,
-  });
-
-  const {
-    data: permissions,
-    isLoading: isPermissionsLoading,
-  } = useQuery({
-    queryKey: ['effective-permissions', token, authMe?.organisation_id],
-    queryFn: () => apiClient<EffectivePermissionsResponse>('/api/v1/organisations/me/effective-permissions'),
-    enabled: !!token && !!authMe?.organisation_id,
-  });
+  }, [authMe?.organisation_id, isBootstrapLoading, authMe]);
 
   const signOut = async () => {
     localStorage.removeItem('zolexora_active_org_id');
@@ -56,11 +43,15 @@ export function useAuth() {
 
   const isCommander = authMe?.is_commander === true || permissions?.is_commander === true;
 
+  const permissionSet = useMemo(
+    () => new Set(permissions?.permissions ?? []),
+    [permissions?.permissions]
+  );
+
   const hasPermission = (module: string, page: string, action: string) => {
     if (isCommander) return true;
     if (!permissions) return false;
-    const requiredCap = `${module}.${page}.${action}`;
-    return permissions.permissions.includes(requiredCap);
+    return permissionSet.has(`${module}.${page}.${action}`);
   };
 
   return {
@@ -68,8 +59,9 @@ export function useAuth() {
     authMe,
     organisation,
     permissions,
-    isLoading: isSessionLoading || (!!user && (isAuthMeLoading || isOrgLoading || isPermissionsLoading)),
-    error: authMeError || orgError,
+    runtime,
+    isLoading: isSessionLoading || (!!user && isBootstrapLoading),
+    error: bootstrapError,
     isCommander,
     hasPermission,
     signOut,

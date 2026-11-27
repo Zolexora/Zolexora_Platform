@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc
 
-from app.db.session import get_db
+from app.db.session import get_db, rls_bypass
 from app.auth.dependencies import AuthenticatedIdentity, require_platform_admin
 from app.modules.identity.organisations.models import Organisation, OrganisationStatus
 from app.modules.identity.organisations.membership_models import OrganisationMember
@@ -84,17 +84,18 @@ async def get_platform_stats(
     db: AsyncSession = Depends(get_db),
     admin: AuthenticatedIdentity = Depends(require_platform_admin),
 ):
-    total_res = await db.execute(select(func.count(Organisation.id)))
-    total_tenants = total_res.scalar() or 0
+    async with rls_bypass(db):
+        total_res = await db.execute(select(func.count(Organisation.id)))
+        total_tenants = total_res.scalar() or 0
 
-    active_res = await db.execute(select(func.count(Organisation.id)).where(Organisation.status == OrganisationStatus.ACTIVE))
-    active_tenants = active_res.scalar() or 0
+        active_res = await db.execute(select(func.count(Organisation.id)).where(Organisation.status == OrganisationStatus.ACTIVE))
+        active_tenants = active_res.scalar() or 0
 
-    suspended_res = await db.execute(select(func.count(Organisation.id)).where(Organisation.status == OrganisationStatus.SUSPENDED))
-    suspended_tenants = suspended_res.scalar() or 0
+        suspended_res = await db.execute(select(func.count(Organisation.id)).where(Organisation.status == OrganisationStatus.SUSPENDED))
+        suspended_tenants = suspended_res.scalar() or 0
 
-    members_res = await db.execute(select(func.count(OrganisationMember.id)))
-    total_members = members_res.scalar() or 0
+        members_res = await db.execute(select(func.count(OrganisationMember.id)))
+        total_members = members_res.scalar() or 0
 
     return PlatformStatsResponse(
         total_tenants=total_tenants,
@@ -107,39 +108,52 @@ async def get_platform_stats(
 @router.get("/organisations", response_model=List[AdminOrganisationResponse])
 async def list_admin_organisations(
     include_members: bool = Query(False),
+    limit: int = Query(100, ge=1, le=500),
+    offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),
     admin: AuthenticatedIdentity = Depends(require_platform_admin),
 ):
-    orgs_query = await db.execute(select(Organisation).order_by(desc(Organisation.created_at)))
-    organisations = orgs_query.scalars().all()
+    async with rls_bypass(db):
+        orgs_query = await db.execute(
+            select(Organisation).order_by(desc(Organisation.created_at)).offset(offset).limit(limit)
+        )
+        organisations = orgs_query.scalars().all()
+        org_ids = [org.id for org in organisations]
 
-    # Pre-fetch member counts
-    counts_query = await db.execute(
-        select(OrganisationMember.organisation_id, func.count(OrganisationMember.id))
-        .group_by(OrganisationMember.organisation_id)
-    )
-    counts_map = dict(counts_query.all())
-
-    # Pre-fetch quotas
-    quotas_query = await db.execute(select(TenantQuota))
-    quotas_map = {q.organisation_id: q for q in quotas_query.scalars().all()}
-
-    # Pre-fetch members if requested
-    members_map = {}
-    if include_members:
-        members_query = await db.execute(select(OrganisationMember).order_by(desc(OrganisationMember.created_at)))
-        for m in members_query.scalars().all():
-            members_map.setdefault(m.organisation_id, []).append(
-                MemberItem(
-                    id=str(m.id),
-                    organisation_id=str(m.organisation_id),
-                    user_id=str(m.user_id),
-                    status=m.status.value if hasattr(m.status, "value") else str(m.status),
-                    is_creator=m.is_creator,
-                    is_commander=m.is_commander,
-                    created_at=m.created_at,
-                )
+        counts_map = {}
+        quotas_map = {}
+        members_map = {}
+        if org_ids:
+            counts_query = await db.execute(
+                select(OrganisationMember.organisation_id, func.count(OrganisationMember.id))
+                .where(OrganisationMember.organisation_id.in_(org_ids))
+                .group_by(OrganisationMember.organisation_id)
             )
+            counts_map = dict(counts_query.all())
+
+            quotas_query = await db.execute(
+                select(TenantQuota).where(TenantQuota.organisation_id.in_(org_ids))
+            )
+            quotas_map = {q.organisation_id: q for q in quotas_query.scalars().all()}
+
+            if include_members:
+                members_query = await db.execute(
+                    select(OrganisationMember)
+                    .where(OrganisationMember.organisation_id.in_(org_ids))
+                    .order_by(desc(OrganisationMember.created_at))
+                )
+                for m in members_query.scalars().all():
+                    members_map.setdefault(m.organisation_id, []).append(
+                        MemberItem(
+                            id=str(m.id),
+                            organisation_id=str(m.organisation_id),
+                            user_id=str(m.user_id),
+                            status=m.status.value if hasattr(m.status, "value") else str(m.status),
+                            is_creator=m.is_creator,
+                            is_commander=m.is_commander,
+                            created_at=m.created_at,
+                        )
+                    )
 
     response = []
     for org in organisations:
@@ -187,24 +201,26 @@ async def link_zolexora_org(
     admin: AuthenticatedIdentity = Depends(require_platform_admin),
 ):
     """Employees of the given auth-service organisation sign in to this TMS workspace."""
-    org = (await db.execute(select(Organisation).where(Organisation.id == organisation_id))).scalar_one_or_none()
-    if not org:
-        raise HTTPException(status_code=404, detail="Organisation not found")
-    if body.zolexora_org_id:
-        taken = (await db.execute(
-            select(Organisation.id).where(Organisation.zolexora_org_id == body.zolexora_org_id, Organisation.id != org.id)
-        )).scalar()
-        if taken:
-            raise HTTPException(status_code=409, detail="That Zolexora organisation is already linked to another workspace")
-    org.zolexora_org_id = body.zolexora_org_id
-    db.add(PlatformAuditLog(
-        user_id=admin.id,
-        organisation_id=org.id,
-        event_type="ORGANISATION_ZOLEXORA_LINKED",
-        entity_type="organisations",
-        entity_id=str(org.id),
-        payload=f"Linked '{org.name}' to Zolexora organisation {body.zolexora_org_id or '(none)'}",
-    ))
+    async with rls_bypass(db):
+        org = (await db.execute(select(Organisation).where(Organisation.id == organisation_id))).scalar_one_or_none()
+        if not org:
+            raise HTTPException(status_code=404, detail="Organisation not found")
+        if body.zolexora_org_id:
+            taken = (await db.execute(
+                select(Organisation.id).where(Organisation.zolexora_org_id == body.zolexora_org_id, Organisation.id != org.id)
+            )).scalar()
+            if taken:
+                raise HTTPException(status_code=409, detail="That Zolexora organisation is already linked to another workspace")
+        org.zolexora_org_id = body.zolexora_org_id
+        db.add(PlatformAuditLog(
+            user_id=admin.id,
+            organisation_id=org.id,
+            event_type="ORGANISATION_ZOLEXORA_LINKED",
+            entity_type="organisations",
+            entity_id=str(org.id),
+            payload=f"Linked '{org.name}' to Zolexora organisation {body.zolexora_org_id or '(none)'}",
+        ))
+        await db.flush()
     await db.commit()
     return {"id": str(org.id), "zolexora_org_id": org.zolexora_org_id}
 
@@ -215,22 +231,24 @@ async def suspend_organisation(
     db: AsyncSession = Depends(get_db),
     admin: AuthenticatedIdentity = Depends(require_platform_admin),
 ):
-    query = await db.execute(select(Organisation).where(Organisation.id == organisation_id))
-    org = query.scalar_one_or_none()
-    if not org:
-        raise HTTPException(status_code=404, detail="Organisation not found")
+    async with rls_bypass(db):
+        query = await db.execute(select(Organisation).where(Organisation.id == organisation_id))
+        org = query.scalar_one_or_none()
+        if not org:
+            raise HTTPException(status_code=404, detail="Organisation not found")
 
-    org.status = OrganisationStatus.SUSPENDED
+        org.status = OrganisationStatus.SUSPENDED
 
-    audit = PlatformAuditLog(
-        user_id=admin.id,
-        organisation_id=org.id,
-        event_type="ORGANISATION_SUSPENDED",
-        entity_type="organisations",
-        entity_id=str(org.id),
-        payload=f"Suspended organisation '{org.name}' ({org.id})",
-    )
-    db.add(audit)
+        audit = PlatformAuditLog(
+            user_id=admin.id,
+            organisation_id=org.id,
+            event_type="ORGANISATION_SUSPENDED",
+            entity_type="organisations",
+            entity_id=str(org.id),
+            payload=f"Suspended organisation '{org.name}' ({org.id})",
+        )
+        db.add(audit)
+        await db.flush()
     await db.commit()
 
     return {"message": f"Organisation '{org.name}' has been suspended successfully."}
@@ -242,22 +260,24 @@ async def activate_organisation(
     db: AsyncSession = Depends(get_db),
     admin: AuthenticatedIdentity = Depends(require_platform_admin),
 ):
-    query = await db.execute(select(Organisation).where(Organisation.id == organisation_id))
-    org = query.scalar_one_or_none()
-    if not org:
-        raise HTTPException(status_code=404, detail="Organisation not found")
+    async with rls_bypass(db):
+        query = await db.execute(select(Organisation).where(Organisation.id == organisation_id))
+        org = query.scalar_one_or_none()
+        if not org:
+            raise HTTPException(status_code=404, detail="Organisation not found")
 
-    org.status = OrganisationStatus.ACTIVE
+        org.status = OrganisationStatus.ACTIVE
 
-    audit = PlatformAuditLog(
-        user_id=admin.id,
-        organisation_id=org.id,
-        event_type="ORGANISATION_ACTIVATED",
-        entity_type="organisations",
-        entity_id=str(org.id),
-        payload=f"Activated organisation '{org.name}' ({org.id})",
-    )
-    db.add(audit)
+        audit = PlatformAuditLog(
+            user_id=admin.id,
+            organisation_id=org.id,
+            event_type="ORGANISATION_ACTIVATED",
+            entity_type="organisations",
+            entity_id=str(org.id),
+            payload=f"Activated organisation '{org.name}' ({org.id})",
+        )
+        db.add(audit)
+        await db.flush()
     await db.commit()
 
     return {"message": f"Organisation '{org.name}' has been activated successfully."}
@@ -269,8 +289,9 @@ async def get_organisation_quota(
     db: AsyncSession = Depends(get_db),
     admin: AuthenticatedIdentity = Depends(require_platform_admin),
 ):
-    query = await db.execute(select(TenantQuota).where(TenantQuota.organisation_id == organisation_id))
-    quota = query.scalar_one_or_none()
+    async with rls_bypass(db):
+        query = await db.execute(select(TenantQuota).where(TenantQuota.organisation_id == organisation_id))
+        quota = query.scalar_one_or_none()
     if not quota:
         return QuotaSchema()
 
@@ -289,44 +310,45 @@ async def update_organisation_quota(
     db: AsyncSession = Depends(get_db),
     admin: AuthenticatedIdentity = Depends(require_platform_admin),
 ):
-    org_query = await db.execute(select(Organisation).where(Organisation.id == organisation_id))
-    org = org_query.scalar_one_or_none()
-    if not org:
-        raise HTTPException(status_code=404, detail="Organisation not found")
+    async with rls_bypass(db):
+        org_query = await db.execute(select(Organisation).where(Organisation.id == organisation_id))
+        org = org_query.scalar_one_or_none()
+        if not org:
+            raise HTTPException(status_code=404, detail="Organisation not found")
 
-    query = await db.execute(select(TenantQuota).where(TenantQuota.organisation_id == organisation_id))
-    quota = query.scalar_one_or_none()
+        query = await db.execute(select(TenantQuota).where(TenantQuota.organisation_id == organisation_id))
+        quota = query.scalar_one_or_none()
 
-    if not quota:
-        quota = TenantQuota(
+        if not quota:
+            quota = TenantQuota(
+                organisation_id=organisation_id,
+                tier=req.tier or "STANDARD",
+                max_members=req.max_members or 50,
+                max_vehicles=req.max_vehicles or 100,
+                max_duties_per_month=req.max_duties_per_month or 1000,
+            )
+            db.add(quota)
+        else:
+            if req.tier is not None:
+                quota.tier = req.tier
+            if req.max_members is not None:
+                quota.max_members = req.max_members
+            if req.max_vehicles is not None:
+                quota.max_vehicles = req.max_vehicles
+            if req.max_duties_per_month is not None:
+                quota.max_duties_per_month = req.max_duties_per_month
+
+        audit = PlatformAuditLog(
+            user_id=admin.id,
             organisation_id=organisation_id,
-            tier=req.tier or "STANDARD",
-            max_members=req.max_members or 50,
-            max_vehicles=req.max_vehicles or 100,
-            max_duties_per_month=req.max_duties_per_month or 1000,
+            event_type="ORGANISATION_QUOTA_UPDATED",
+            entity_type="tenant_quotas",
+            entity_id=str(organisation_id),
+            payload=f"Updated quota for org {organisation_id}: tier={quota.tier}, max_members={quota.max_members}, max_vehicles={quota.max_vehicles}",
         )
-        db.add(quota)
-    else:
-        if req.tier is not None:
-            quota.tier = req.tier
-        if req.max_members is not None:
-            quota.max_members = req.max_members
-        if req.max_vehicles is not None:
-            quota.max_vehicles = req.max_vehicles
-        if req.max_duties_per_month is not None:
-            quota.max_duties_per_month = req.max_duties_per_month
-
-    audit = PlatformAuditLog(
-        user_id=admin.id,
-        organisation_id=organisation_id,
-        event_type="ORGANISATION_QUOTA_UPDATED",
-        entity_type="tenant_quotas",
-        entity_id=str(organisation_id),
-        payload=f"Updated quota for org {organisation_id}: tier={quota.tier}, max_members={quota.max_members}, max_vehicles={quota.max_vehicles}",
-    )
-    db.add(audit)
+        db.add(audit)
+        await db.flush()
     await db.commit()
-    await db.refresh(quota)
 
     return QuotaSchema(
         tier=quota.tier,

@@ -5,9 +5,10 @@ signature, expiry and revocation. TMS never verifies tokens itself. Results are 
 for a short time so a page load doesn't call the auth service once per request; a
 revoked session stops working within CACHE_TTL_SECONDS.
 """
+from collections import OrderedDict
 import hashlib
 import time
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import httpx
 from jose import jwt
@@ -16,7 +17,29 @@ from app.core.config import settings
 
 CACHE_TTL_SECONDS = 30
 _CACHE_MAX = 10_000
-_cache: Dict[str, tuple[float, Dict[str, Any]]] = {}
+_cache: OrderedDict[str, tuple[float, Dict[str, Any]]] = OrderedDict()
+_client: Optional[httpx.AsyncClient] = None
+_client_factory: Any = None
+
+
+def _get_client() -> httpx.AsyncClient:
+    """Reuse one keep-alive AsyncClient per process while still honoring test monkeypatches."""
+    global _client, _client_factory
+    if _client is None or _client.is_closed or _client_factory is not httpx.AsyncClient:
+        _client_factory = httpx.AsyncClient
+        _client = httpx.AsyncClient(
+            timeout=httpx.Timeout(5.0, connect=3.0),
+            limits=httpx.Limits(max_keepalive_connections=20, max_connections=100),
+        )
+    return _client
+
+
+async def close_client() -> None:
+    global _client, _client_factory
+    if _client is not None and not _client.is_closed:
+        await _client.aclose()
+    _client = None
+    _client_factory = None
 
 
 class AuthServiceError(Exception):
@@ -53,15 +76,18 @@ async def introspect(token: str) -> Dict[str, Any]:
     key = hashlib.sha256(token.encode()).hexdigest()
     hit = _cache.get(key)
     now = time.monotonic()
-    if hit and hit[0] > now:
-        return hit[1]
+    if hit:
+        if hit[0] > now:
+            _cache.move_to_end(key)
+            return hit[1]
+        _cache.pop(key, None)
 
     base = auth_service_url()
     if not base:
         raise AuthServiceError("AUTH_SERVICE_URL is not set (Infisical)")
     try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            res = await client.get(f"{base}/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
+        client = _get_client()
+        res = await client.get(f"{base}/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
     except httpx.HTTPError as e:
         raise AuthServiceError("Auth service unreachable") from e
     if res.status_code in (401, 403):
@@ -72,7 +98,10 @@ async def introspect(token: str) -> Dict[str, Any]:
     if not user.get("uid"):
         raise InvalidToken("Auth service returned no user")
 
-    if len(_cache) >= _CACHE_MAX:
-        _cache.clear()
+    # Evict expired entries first, then oldest LRU entry to avoid thundering-herd cache clears.
+    while _cache and next(iter(_cache.values()))[0] <= now:
+        _cache.popitem(last=False)
+    while len(_cache) >= _CACHE_MAX:
+        _cache.popitem(last=False)
     _cache[key] = (now + CACHE_TTL_SECONDS, user)
     return user

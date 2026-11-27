@@ -56,7 +56,7 @@ agy mcp add <name> <commandOrUrl> [args...]
   - `apps/tms-admin` (`@zolexora/tms-admin`): admin dashboard — Vite + React 19, dev port 3032.
   - `apps/tms-mobile` (`@zolexora/tms-mobile`): Expo app.
   - `services/backend`: FastAPI API (port 4030 in Docker, host `4031`).
-  - `compose.yaml` + `nginx.conf`: Docker stack, gateway on host `3090`.
+  - `compose.yaml` + `nginx-conf.d/`: Docker stack, gateway on host `3090`.
 - **Development Scripts** (run from the repo root):
   - `pnpm dev:tms:infisical` / `pnpm dev:tms:admin:infisical` / `pnpm dev:tms:api:infisical`: dev servers with Infisical secrets.
   - `pnpm dev:tms:mobile`: Expo dev server.

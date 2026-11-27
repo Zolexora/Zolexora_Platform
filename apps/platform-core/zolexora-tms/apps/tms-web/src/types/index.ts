@@ -23,6 +23,13 @@ export interface AuthMeResponse {
   workspace_type?: WorkspaceType | null;
 }
 
+export interface AuthBootstrapResponse {
+  me: AuthMeResponse;
+  organisation: Organisation | null;
+  effective_permissions: import('./roles').EffectivePermissionsResponse | null;
+  runtime: import('./runtime').RuntimeConfiguration | null;
+}
+
 export interface OrganisationMember {
   id: string;
   organisation_id: string;

@@ -1,12 +1,14 @@
+from collections import OrderedDict
 import logging
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, Optional, Set
 import uuid
 from fastapi import Depends, HTTPException, Security, status, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pydantic import BaseModel
-from sqlalchemy import text
+from pydantic import BaseModel, Field
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.tenant import TenantContext
 from app.core.config import settings
@@ -27,13 +29,17 @@ class AuthenticatedIdentity(BaseModel):
     zolexora_org_id: Optional[str] = None
     is_platform_admin: bool = False
 
+_PERMISSION_ALIASES = {"users.manage": "identity.users.manage"}
+
+
 class AuthenticatedUser(AuthenticatedIdentity):
     organisation_id: uuid.UUID
+    member_id: Optional[uuid.UUID] = None
     workspace_type: Optional[str] = None
     is_creator: bool = False
     is_commander: bool = False
     role_code: Optional[str] = None
-    permissions: List[str] = []
+    permissions: Set[str] = Field(default_factory=set)
 
     @property
     def user_id(self) -> uuid.UUID:
@@ -42,7 +48,10 @@ class AuthenticatedUser(AuthenticatedIdentity):
     def has_permission(self, permission: str) -> bool:
         if self.is_commander:
             return True
-        return permission in self.permissions
+        if permission in self.permissions:
+            return True
+        alias = _PERMISSION_ALIASES.get(permission)
+        return bool(alias and alias in self.permissions)
 
 CurrentUserContext = AuthenticatedUser
 
@@ -81,13 +90,15 @@ async def get_current_identity(
     return await identity_from_token(credentials.credentials)
 
 
-_known_profiles: set[uuid.UUID] = set()
+_KNOWN_PROFILES_MAX = 10_000
+_known_profiles: OrderedDict[uuid.UUID, None] = OrderedDict()
 
 
 async def ensure_profile(identity: AuthenticatedIdentity) -> None:
     """profiles.id is referenced by audit columns (verified_by, closed_by...): make sure the row
     exists. Own committed session, so a failing request can't roll it back behind the cache."""
     if identity.id in _known_profiles:
+        _known_profiles.move_to_end(identity.id)
         return
     name = (identity.full_name or (identity.email or "").split("@")[0] or f"User {identity.id.hex[:8]}").strip()
     if len(name) < 2:
@@ -100,10 +111,12 @@ async def ensure_profile(identity: AuthenticatedIdentity) -> None:
             """),
             {"id": identity.id, "name": name[:160]},
         )
-    _known_profiles.add(identity.id)
+    if len(_known_profiles) >= _KNOWN_PROFILES_MAX:
+        _known_profiles.popitem(last=False)
+    _known_profiles[identity.id] = None
 
 
-_MEMBER_COLUMNS = "m.organisation_id, m.is_creator, m.is_commander, o.workspace_type::text AS workspace_type"
+_MEMBER_COLUMNS = "m.id AS member_id, m.organisation_id, m.is_creator, m.is_commander, o.workspace_type::text AS workspace_type"
 
 
 async def resolve_membership(
@@ -186,6 +199,7 @@ async def get_current_active_organisation(
     return AuthenticatedUser(
         **identity.model_dump(),
         organisation_id=row["organisation_id"],
+        member_id=row.get("member_id"),
         workspace_type=row.get("workspace_type"),
         is_creator=row["is_creator"],
         is_commander=row["is_commander"],
@@ -210,8 +224,59 @@ async def get_current_user(user: AuthenticatedUser = Depends(get_current_active_
     # Alias to not break legacy routes
     return user
 
+async def _resolve_member_permissions(
+    db: AsyncSession, org_id: uuid.UUID, member_id: uuid.UUID
+) -> tuple[Optional[str], set[str]]:
+    """Loads active role permissions + user overrides for a non-commander member."""
+    from app.modules.identity.roles.models import (
+        OrganisationRoleVersion,
+        OverrideType,
+        RoleAssignment,
+        UserPermissionOverride,
+    )
+
+    assign_stmt = (
+        select(RoleAssignment)
+        .where(
+            RoleAssignment.organisation_id == org_id,
+            RoleAssignment.member_id == member_id,
+            RoleAssignment.is_active == True,
+        )
+        .options(
+            selectinload(RoleAssignment.role_version).selectinload(OrganisationRoleVersion.permissions),
+            selectinload(RoleAssignment.role),
+        )
+    )
+    assignment = (await db.execute(assign_stmt)).scalar_one_or_none()
+    caps: set[str] = set()
+    role_name = assignment.role.name if assignment and assignment.role else None
+    if assignment and assignment.role_version:
+        for p in assignment.role_version.permissions:
+            caps.add(f"{p.module_code}.{p.page_code}.{p.action_code}")
+
+    override_stmt = select(UserPermissionOverride).where(
+        UserPermissionOverride.organisation_id == org_id,
+        UserPermissionOverride.member_id == member_id,
+    )
+    for ov in (await db.execute(override_stmt)).scalars().all():
+        cap = f"{ov.module_code}.{ov.page_code}.{ov.action_code}"
+        if ov.override_type == OverrideType.GRANT:
+            caps.add(cap)
+        elif ov.override_type == OverrideType.RESTRICT:
+            caps.discard(cap)
+
+    return role_name, caps
+
+
 def require_permission(permission: str) -> Callable:
-    async def dependency(user: AuthenticatedUser = Depends(get_current_active_organisation)) -> AuthenticatedUser:
+    async def dependency(
+        user: AuthenticatedUser = Depends(get_current_active_organisation),
+        db: AsyncSession = Depends(get_db),
+    ) -> AuthenticatedUser:
+        if not user.is_commander and not user.permissions and user.member_id:
+            role_name, caps = await _resolve_member_permissions(db, user.organisation_id, user.member_id)
+            user.role_code = role_name
+            user.permissions = caps
         if not user.has_permission(permission):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,

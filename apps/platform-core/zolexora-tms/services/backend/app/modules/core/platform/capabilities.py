@@ -168,6 +168,20 @@ TMS_CAPABILITY_REGISTRY = AppDef(
                     ]
                 )
             ]
+        ),
+        ModuleDef(
+            code="identity",
+            name="Identity & Access",
+            pages=[
+                PageDef(
+                    code="users",
+                    name="Users & Roles",
+                    actions=[
+                        ActionDef(code="view", name="View Users"),
+                        ActionDef(code="manage", name="Manage Users & Roles"),
+                    ]
+                )
+            ]
         )
     ]
 )

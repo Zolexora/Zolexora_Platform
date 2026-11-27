@@ -33,12 +33,12 @@ const defaultRuntimeConfig: RuntimeConfiguration = {
 const ApplicationRuntimeContext = createContext<RuntimeConfiguration>(defaultRuntimeConfig);
 
 export function ApplicationRuntimeProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, authMe, runtime: bootstrapRuntime } = useAuth();
   
   const { data: runtimeConfig, isLoading, error } = useQuery<RuntimeConfiguration>({
-    queryKey: ['application-runtime', user?.uid],
+    queryKey: ['application-runtime', user?.uid, authMe?.organisation_id],
     queryFn: () => apiClient<RuntimeConfiguration>('/api/v1/application/runtime'),
-    enabled: !!user, // Only fetch when authenticated
+    enabled: !!user && !!authMe?.organisation_id && !bootstrapRuntime,
     staleTime: 1000 * 60 * 5, // Cache for 5 mins
   });
 
@@ -50,7 +50,7 @@ export function ApplicationRuntimeProvider({ children }: { children: ReactNode }
     );
   }
 
-  if (isLoading) {
+  if (!bootstrapRuntime && isLoading) {
     return (
       <div className="flex h-screen w-full flex-col items-center justify-center bg-slate-950 text-slate-400">
         <Loader2 className="h-8 w-8 animate-spin text-navy-300 mb-4" />
@@ -59,7 +59,7 @@ export function ApplicationRuntimeProvider({ children }: { children: ReactNode }
     );
   }
 
-  const activeConfig = (!error && runtimeConfig) ? runtimeConfig : defaultRuntimeConfig;
+  const activeConfig = bootstrapRuntime ?? ((!error && runtimeConfig) ? runtimeConfig : defaultRuntimeConfig);
 
   return (
     <ApplicationRuntimeContext.Provider value={activeConfig}>

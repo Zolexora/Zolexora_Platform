@@ -14,7 +14,7 @@ import uuid
 from typing import Optional
 
 from fastapi import HTTPException, status
-from sqlalchemy import select, func, delete
+from sqlalchemy import select, func, delete, tuple_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -59,7 +59,21 @@ def _build_capability_set() -> set[str]:
     return caps
 
 
+def _build_structured(flat_caps: list[str]) -> dict[str, dict[str, list[str]]]:
+    """Convert flat 'module.page.action' list to nested dict."""
+    result: dict[str, dict[str, list[str]]] = {}
+    for cap in flat_caps:
+        parts = cap.split(".")
+        if len(parts) != 3:
+            continue
+        mod, page, action = parts
+        result.setdefault(mod, {}).setdefault(page, []).append(action)
+    return result
+
+
 VALID_CAPABILITIES: set[str] = _build_capability_set()
+_ALL_CAPS_SORTED: list[str] = sorted(VALID_CAPABILITIES)
+_ALL_CAPS_STRUCTURED: dict[str, dict[str, list[str]]] = _build_structured(_ALL_CAPS_SORTED)
 
 
 def _validate_capabilities(perms: list) -> None:
@@ -109,31 +123,31 @@ async def list_roles(org_id: uuid.UUID, db: AsyncSession) -> list[RoleResponse]:
     stmt = (
         select(OrganisationRole)
         .where(OrganisationRole.organisation_id == org_id)
-        .options(
-            selectinload(OrganisationRole.versions).selectinload(
-                OrganisationRoleVersion.permissions
-            )
-        )
         .order_by(OrganisationRole.created_at)
     )
-    result = await db.execute(stmt)
-    roles = result.scalars().all()
+    roles = (await db.execute(stmt)).scalars().all()
+    if not roles:
+        return []
 
-    # Get member counts per role
+    # Load only each role's active current_version + permissions instead of all historical versions.
+    version_pairs = [(r.id, r.current_version) for r in roles]
+    ver_stmt = (
+        select(OrganisationRoleVersion)
+        .where(tuple_(OrganisationRoleVersion.role_id, OrganisationRoleVersion.version_number).in_(version_pairs))
+        .options(selectinload(OrganisationRoleVersion.permissions))
+    )
+    current_versions = {v.role_id: v for v in (await db.execute(ver_stmt)).scalars().all()}
+
     count_stmt = (
         select(RoleAssignment.role_id, func.count(RoleAssignment.id))
         .where(RoleAssignment.organisation_id == org_id, RoleAssignment.is_active == True)
         .group_by(RoleAssignment.role_id)
     )
-    count_result = await db.execute(count_stmt)
-    member_counts = dict(count_result.all())
+    member_counts = dict((await db.execute(count_stmt)).all())
 
     out = []
     for role in roles:
-        # Find current version
-        current_v = next(
-            (v for v in role.versions if v.version_number == role.current_version), None
-        )
+        current_v = current_versions.get(role.id)
         out.append(RoleResponse(
             id=role.id,
             organisation_id=role.organisation_id,
@@ -496,44 +510,40 @@ async def resolve_effective_permissions(
     org_id: uuid.UUID,
     user_id: uuid.UUID,
     db: AsyncSession,
+    member_id: Optional[uuid.UUID] = None,
+    is_commander: Optional[bool] = None,
 ) -> EffectivePermissionsResponse:
     """
     Resolves the complete effective permission set for a user in an org.
-    
-    Algorithm:
-    1. Get member record (verify membership + commander flag)
-    2. If Commander: all capabilities granted (Commander bypasses RBAC)
-    3. Else: get active role assignment → role version → permissions
-    4. Apply user overrides: + GRANTs, - RESTRICTs
-    5. Return structured + flat permission set
-    """
-    # 1. Get member
-    member_stmt = select(OrganisationMember).where(
-        OrganisationMember.organisation_id == org_id,
-        OrganisationMember.user_id == user_id,
-    )
-    member = (await db.execute(member_stmt)).scalar_one_or_none()
-    if not member:
-        raise HTTPException(status_code=403, detail="User is not a member of this organisation.")
 
-    # 2. Commander shortcut — full access to all TMS capabilities
-    if member.is_commander:
-        all_caps = sorted(VALID_CAPABILITIES)
-        structured = _build_structured(all_caps)
+    1. Use caller-supplied membership flags if present (avoids re-querying OrganisationMember).
+    2. If Commander: return precomputed full TMS capability set in O(1).
+    3. Else: get active role assignment → role version → permissions, then apply GRANT/RESTRICT overrides.
+    """
+    if member_id is None or is_commander is None:
+        member_stmt = select(OrganisationMember.id, OrganisationMember.is_commander).where(
+            OrganisationMember.organisation_id == org_id,
+            OrganisationMember.user_id == user_id,
+        )
+        row = (await db.execute(member_stmt)).first()
+        if not row:
+            raise HTTPException(status_code=403, detail="User is not a member of this organisation.")
+        member_id, is_commander = row.id, row.is_commander
+
+    if is_commander:
         return EffectivePermissionsResponse(
             user_id=user_id,
             organisation_id=org_id,
             is_commander=True,
-            permissions=all_caps,
-            modules=structured,
+            permissions=_ALL_CAPS_SORTED,
+            modules=_ALL_CAPS_STRUCTURED,
         )
 
-    # 3. Role assignment
     assign_stmt = (
         select(RoleAssignment)
         .where(
             RoleAssignment.organisation_id == org_id,
-            RoleAssignment.member_id == member.id,
+            RoleAssignment.member_id == member_id,
             RoleAssignment.is_active == True,
         )
         .options(selectinload(RoleAssignment.role_version).selectinload(OrganisationRoleVersion.permissions))
@@ -553,10 +563,9 @@ async def resolve_effective_permissions(
         for p in (assignment.role_version.permissions if assignment.role_version else []):
             granted_caps.add(f"{p.module_code}.{p.page_code}.{p.action_code}")
 
-    # 4. Apply user overrides
     override_stmt = select(UserPermissionOverride).where(
         UserPermissionOverride.organisation_id == org_id,
-        UserPermissionOverride.member_id == member.id,
+        UserPermissionOverride.member_id == member_id,
     )
     overrides = (await db.execute(override_stmt)).scalars().all()
 
@@ -567,10 +576,7 @@ async def resolve_effective_permissions(
         elif ov.override_type == OverrideType.RESTRICT:
             granted_caps.discard(cap)
 
-    # Filter to only valid capabilities (in case registry changed)
     final_caps = sorted(granted_caps & VALID_CAPABILITIES)
-    structured = _build_structured(final_caps)
-
     return EffectivePermissionsResponse(
         user_id=user_id,
         organisation_id=org_id,
@@ -579,20 +585,8 @@ async def resolve_effective_permissions(
         role_name=role_name,
         role_version=role_version,
         permissions=final_caps,
-        modules=structured,
+        modules=_build_structured(final_caps),
     )
-
-
-def _build_structured(flat_caps: list[str]) -> dict[str, dict[str, list[str]]]:
-    """Convert flat 'module.page.action' list to nested dict."""
-    result: dict[str, dict[str, list[str]]] = {}
-    for cap in flat_caps:
-        parts = cap.split(".")
-        if len(parts) != 3:
-            continue
-        mod, page, action = parts
-        result.setdefault(mod, {}).setdefault(page, []).append(action)
-    return result
 
 
 # ---------------------------------------------------------------------------

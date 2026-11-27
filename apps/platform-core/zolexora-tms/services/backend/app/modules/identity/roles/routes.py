@@ -10,6 +10,7 @@ from app.auth.dependencies import (
     AuthenticatedUser,
     get_current_user,
     get_current_active_organisation,
+    require_permission,
 )
 from app.db.session import get_db
 from app.modules.core.platform.capabilities import TMS_CAPABILITY_REGISTRY
@@ -98,10 +99,9 @@ async def list_organisation_roles(
 @router.post("/organisations/roles", response_model=RoleResponse, status_code=status.HTTP_201_CREATED)
 async def create_organisation_role(
     req: RoleCreateRequest,
-    user: AuthenticatedUser = Depends(get_current_active_organisation),
+    user: AuthenticatedUser = Depends(require_permission("users.manage")),
     db: AsyncSession = Depends(get_db),
 ):
-    _require_role_management(user)
     return await create_role(user.organisation_id, user.id, req, db)
 
 
@@ -138,20 +138,18 @@ async def get_organisation_role(
 async def update_organisation_role(
     role_id: uuid.UUID,
     req: RoleUpdateRequest,
-    user: AuthenticatedUser = Depends(get_current_active_organisation),
+    user: AuthenticatedUser = Depends(require_permission("users.manage")),
     db: AsyncSession = Depends(get_db),
 ):
-    _require_role_management(user)
     return await update_role(role_id, user.organisation_id, user.id, req, db)
 
 
 @router.post("/organisations/roles/{role_id}/archive", status_code=status.HTTP_200_OK)
 async def archive_organisation_role(
     role_id: uuid.UUID,
-    user: AuthenticatedUser = Depends(get_current_active_organisation),
+    user: AuthenticatedUser = Depends(require_permission("users.manage")),
     db: AsyncSession = Depends(get_db),
 ):
-    _require_role_management(user)
     await archive_role(role_id, user.organisation_id, user.id, db)
     return {"message": "Role archived successfully."}
 
@@ -172,10 +170,9 @@ async def list_members_roles(
 async def assign_member_role(
     member_id: uuid.UUID,
     req: AssignRoleRequest,
-    user: AuthenticatedUser = Depends(get_current_active_organisation),
+    user: AuthenticatedUser = Depends(require_permission("users.manage")),
     db: AsyncSession = Depends(get_db),
 ):
-    _require_role_management(user)
     result = await assign_role_to_member(user.organisation_id, member_id, user.id, req, db)
     if result is None:
         return {"message": "Role unassigned successfully."}
@@ -190,10 +187,9 @@ async def assign_member_role(
 async def add_member_override(
     member_id: uuid.UUID,
     req: OverrideCreateRequest,
-    user: AuthenticatedUser = Depends(get_current_active_organisation),
+    user: AuthenticatedUser = Depends(require_permission("users.manage")),
     db: AsyncSession = Depends(get_db),
 ):
-    _require_role_management(user)
     override = await add_permission_override(user.organisation_id, member_id, user.id, req, db)
     return OverrideResponse(
         id=override.id,
@@ -209,10 +205,9 @@ async def add_member_override(
 @router.delete("/organisations/permission-overrides/{override_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def remove_member_override(
     override_id: uuid.UUID,
-    user: AuthenticatedUser = Depends(get_current_active_organisation),
+    user: AuthenticatedUser = Depends(require_permission("users.manage")),
     db: AsyncSession = Depends(get_db),
 ):
-    _require_role_management(user)
     await remove_permission_override(override_id, user.organisation_id, user.id, db)
 
 
@@ -230,18 +225,10 @@ async def get_effective_permissions(
     Commander gets all capabilities. Others get role + overrides applied.
     Frontend runtime should consume this to drive navigation and action availability.
     """
-    return await resolve_effective_permissions(user.organisation_id, user.id, db)
-
-
-# ---------------------------------------------------------------------------
-# Authorization guard helper
-# ---------------------------------------------------------------------------
-
-def _require_role_management(user: AuthenticatedUser) -> None:
-    """Commander can always manage roles. Others need 'users.manage' permission (future)."""
-    from fastapi import HTTPException
-    if not user.is_commander and not user.has_permission("users.manage"):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only the Commander or users with 'users.manage' permission can manage roles.",
-        )
+    return await resolve_effective_permissions(
+        user.organisation_id,
+        user.id,
+        db,
+        member_id=user.member_id,
+        is_commander=user.is_commander,
+    )

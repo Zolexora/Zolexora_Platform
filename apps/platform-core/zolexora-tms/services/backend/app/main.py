@@ -33,6 +33,8 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"Database auto-init on startup skipped or failed: {e}")
     yield
+    from app.auth.zolexora import close_client as close_auth_client
+    await close_auth_client()
     logger.info("Shutting down Zolexora TMS API service...")
 
 app = FastAPI(
