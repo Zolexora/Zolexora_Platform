@@ -89,7 +89,10 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
     ttlSeconds: env.OTP_TTL_SECONDS,
     maxAttempts: env.OTP_MAX_ATTEMPTS,
   });
-  const mail = opts.mail ?? new MailService({ apiUrl: env.RESEND_API_URL, apiKey: env.RESEND_API_KEY, from: env.AUTH_FROM_EMAIL });
+  const mail = opts.mail ?? new MailService(
+    { apiUrl: env.RESEND_API_URL, apiKey: env.RESEND_API_KEY, from: env.AUTH_FROM_EMAIL },
+    (m) => app.log.error(m),
+  );
   const storage = new StorageService({
     cloudName: env.CLOUDINARY_CLOUD_NAME,
     apiKey: env.CLOUDINARY_API_KEY,
