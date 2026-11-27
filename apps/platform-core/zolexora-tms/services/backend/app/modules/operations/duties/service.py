@@ -8,6 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.dependencies import OrgContext
 from app.core.audit import record_audit
 from app.core.websocket import ws_manager
+from app.core.push import send_duty_assigned_push, send_duty_dispatched_push
+from app.modules.core.devices.models import DeviceToken
 from app.modules.crm.clients.models import Client
 from app.modules.fleet.drivers.models import Driver
 from app.modules.fleet.vehicles.models import Vehicle
@@ -54,7 +56,36 @@ async def _commit_and_broadcast(ctx: OrgContext, duty: Duty, event: str) -> Duty
     await ws_manager.broadcast_to_org(
         ctx.organisation_id, event, {"duty_id": str(duty.id), "duty_number": duty.duty_number, "booking_id": str(duty.booking_id)}
     )
+    # Fire-and-forget push to the assigned driver (if any token registered)
+    if duty.driver_id and event in ("duty.assigned", "duty.dispatched"):
+        await _push_to_driver(ctx, duty, event)
     return DutyResponse.model_validate(duty)
+
+
+async def _push_to_driver(ctx: OrgContext, duty: Duty, event: str) -> None:
+    """Look up the driver's push token and send a notification. Best-effort."""
+    try:
+        # driver_id is the Profile UUID; DeviceToken.user_id maps to the same identity
+        stmt = select(DeviceToken).where(DeviceToken.user_id == duty.driver_id).limit(1)
+        result = await ctx.db.execute(stmt)
+        row = result.scalars().first()
+        if not row:
+            return
+        if event == "duty.assigned":
+            await send_duty_assigned_push(
+                driver_token=row.token,
+                duty_number=duty.duty_number,
+                duty_id=str(duty.id),
+            )
+        elif event == "duty.dispatched":
+            await send_duty_dispatched_push(
+                driver_token=row.token,
+                duty_number=duty.duty_number,
+                duty_id=str(duty.id),
+            )
+    except Exception as exc:  # pragma: no cover
+        import logging
+        logging.getLogger("zolexora.duties").warning("Push failed for duty %s: %s", duty.id, exc)
 
 
 async def create_duty(ctx: OrgContext, req: DutyCreate) -> DutyResponse:
