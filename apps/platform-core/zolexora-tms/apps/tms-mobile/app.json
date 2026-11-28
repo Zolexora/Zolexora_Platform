@@ -61,6 +61,11 @@
     "experiments": {
       "typedRoutes": true
     },
+    "extra": {
+      "eas": {
+        "projectId": "4c9dffde-f0cd-4a58-b552-33d370e36f12"
+      }
+    },
     "owner": "zolexora"
   }
 }
