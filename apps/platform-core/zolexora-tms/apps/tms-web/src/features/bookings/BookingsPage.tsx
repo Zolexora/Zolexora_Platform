@@ -1198,8 +1198,8 @@ export function BookingsPage() {
                   {orgServices.length === 0 && (
                     <p className="mt-1 text-[11px] text-amber-300">
                       Add your services in{' '}
-                      <Link to="/our-services-catalog" className="underline font-semibold">
-                        Our Services
+                      <Link to="/create-services" className="underline font-semibold">
+                        Create Services
                       </Link>{' '}
                       first.
                     </p>

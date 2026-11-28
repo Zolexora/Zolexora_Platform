@@ -141,7 +141,7 @@ export function OurServicesPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Our Services</h1>
+          <h1 className="text-2xl font-bold text-white">Create Services</h1>
           <p className="text-sm text-slate-400">
             Define your own transport service types. Active services appear in the Booking Type dropdown.
           </p>
