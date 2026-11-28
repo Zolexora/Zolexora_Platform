@@ -14,13 +14,13 @@
   },
   "dependencies": {
     "@fastify/cors": "^10.0.2",
-    "@fastify/swagger": "^9.4.2",
+    "@fastify/swagger": "^9.9.5",
     "@fastify/swagger-ui": "^5.2.2",
     "@xmldom/xmldom": "^0.9.12",
-    "@zip.js/zip.js": "^2.24.0",
+    "@zip.js/zip.js": "^2.25.0",
     "@zolexora/utils": "workspace:*",
     "aws4fetch": "^1.0.20",
-    "fastify": "^5.2.1",
+    "fastify": "^5.12.8",
     "jose": "^6",
     "pg": "^8.13.3",
     "pino": "^9.6.0",
@@ -29,7 +29,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@electric-sql/pglite": "^0.5.15",
+    "@electric-sql/pglite": "^0.6.0",
     "@types/node": "^25.3.3",
     "@types/pg": "^8.11.11",
     "@zolexora/tsconfig": "workspace:*",

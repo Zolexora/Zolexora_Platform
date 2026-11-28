@@ -14,8 +14,8 @@
     "class-variance-authority": "catalog:",
     "clsx": "catalog:",
     "lucide-react": "catalog:",
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
     "tailwind-merge": "catalog:"
   },
   "devDependencies": {

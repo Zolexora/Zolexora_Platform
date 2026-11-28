@@ -141,7 +141,7 @@
     "cli:setup": "bash scripts/dev/setup-cli-ecosystem.sh"
   },
   "devDependencies": {
-    "turbo": "^2.11.7",
+    "turbo": "^2.11.13",
     "typescript": "^5.9.3",
     "vitest": "^5.0.3"
   }

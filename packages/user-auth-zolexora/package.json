@@ -16,14 +16,14 @@
   "devDependencies": {
     "@types/node": "^26.2.0",
     "@types/pg": "^8.23.1",
-    "@types/react": "^19.2.0",
+    "@types/react": "^19.3.2",
     "next": "^15.3.0",
     "typescript": "^5.4.5"
   },
   "dependencies": {
     "@zolexora/utils": "workspace:*",
     "pg": "^8.23.1",
-    "resend": "^6.14.0"
+    "resend": "^6.39.0"
   },
   "peerDependencies": {
     "next": ">=15.0.0",
