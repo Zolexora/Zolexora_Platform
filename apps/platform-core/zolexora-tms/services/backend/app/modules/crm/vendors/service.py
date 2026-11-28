@@ -1,3 +1,4 @@
+import secrets
 import uuid
 from typing import Any, Optional
 from fastapi import HTTPException, status
@@ -18,7 +19,16 @@ from app.modules.crm.vendors.schemas import (
 
 
 def _generate_vendor_code() -> str:
-    return f"VND-{uuid.uuid4().hex[:8].upper()}"
+    return f"v{secrets.randbelow(100_000_000):08d}@zolexora.com"
+
+
+def _normalize_partner_code(raw: Optional[str]) -> Optional[str]:
+    if not raw:
+        return None
+    val = raw.strip()
+    if not val:
+        return None
+    return val.lower() if "@" in val else val.upper()
 
 
 async def _ensure_unique_gstin(
@@ -48,10 +58,12 @@ def _build_vendor_and_audit(
     actor_id: uuid.UUID,
     req: VendorCreate,
 ) -> tuple[Vendor, AuditLog]:
+    zx_handle = _normalize_partner_code(req.zolexora_org_id)
+    vendor_code = zx_handle if (req.is_zolexora_user and zx_handle) else _generate_vendor_code()
     vendor = Vendor(
         id=uuid.uuid4(),
         organisation_id=org_id,
-        vendor_code=_generate_vendor_code(),
+        vendor_code=vendor_code,
         name=req.name.strip(),
         vendor_type=req.vendor_type,
         contact_person=req.contact_person.strip() if req.contact_person else None,
@@ -65,7 +77,7 @@ def _build_vendor_and_audit(
         bank_ifsc=req.bank_ifsc.strip().upper() if req.bank_ifsc else None,
         bank_name=req.bank_name.strip() if req.bank_name else None,
         is_zolexora_user=bool(req.is_zolexora_user),
-        zolexora_org_id=req.zolexora_org_id.strip().upper() if req.zolexora_org_id else None,
+        zolexora_org_id=zx_handle if req.is_zolexora_user else None,
         status=VendorStatus.ACTIVE,
     )
     audit = AuditLog(

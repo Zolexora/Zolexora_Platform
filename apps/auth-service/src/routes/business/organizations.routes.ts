@@ -1,5 +1,6 @@
 import { FastifyInstance, FastifyRequest } from "fastify";
 import { z } from "zod";
+import { formatZolexoraHandle, isValidZolexoraOrgId, normalizeZolexoraOrgId } from "@zolexora/utils";
 import { createAuthMiddleware } from "../../middleware/auth.middleware.js";
 import { businessKindFromPan, normalizeId, PAN_RE } from "../../business/identifiers.js";
 import { last4 } from "../../services/cipher.service.js";
@@ -26,6 +27,8 @@ const profilePatch = z.object({
 }).strict();
 
 const orgFields = {
+  userid: z.string().trim().min(3).max(50).optional(),
+  zolexora_org_id: z.string().trim().min(3).max(64).optional(),
   legal_name: name,
   trade_name: name.nullable().optional(),
   email: email.nullable().optional(),
@@ -124,9 +127,22 @@ export async function organizationRoutes(app: FastifyInstance, d: BusinessDeps &
     if (pan[3] !== "P" && (await d.team.countOrgsWithPan(panHash)) > 0) {
       throw conflict("A business with this PAN already exists. Ask its owner to invite you.", "ORG_PAN_EXISTS");
     }
+    let customOrgId: string | null = null;
+    const requestedHandle = b.userid ?? b.zolexora_org_id;
+    if (requestedHandle) {
+      try {
+        customOrgId = b.userid ? formatZolexoraHandle(b.userid) : normalizeZolexoraOrgId(requestedHandle);
+      } catch (e: any) {
+        throw badRequest(e?.message || "Invalid Zolexora ID format.", "ORG_INVALID_ZOLEXORA_ID");
+      }
+      if (await d.team.isZolexoraIdTaken(customOrgId)) {
+        throw conflict(`Zolexora ID '${customOrgId}' is already taken. Choose another.`, "ORG_ZOLEXORA_ID_TAKEN");
+      }
+    }
     let created;
     try {
       created = await d.team.createOrg({
+        zolexora_org_id: customOrgId,
         legal_name: b.legal_name,
         trade_name: b.trade_name ?? null,
         pan_holder_type: pan[3],
@@ -205,6 +221,36 @@ export async function organizationRoutes(app: FastifyInstance, d: BusinessDeps &
     );
     await audit(d, req, actor.id, "org.closed", actor.org.id);
     return { success: true };
+  });
+
+  // ── Partner Zolexora ID reservation / verification (Phase 1) ────────────────
+  app.post("/api/v1/partners/reserve-id", { preHandler: [authenticate] }, async (req) => {
+    const body = parse(z.object({
+      kind: z.enum(["client", "vendor"]),
+      is_zolexora_user: z.boolean().default(false),
+      zolexora_id: z.string().trim().max(64).optional(),
+      owner_org_id: z.string().uuid().optional(),
+      display_name: z.string().trim().max(200).optional(),
+    }).strict(), req.body);
+
+    if (body.is_zolexora_user) {
+      if (!body.zolexora_id || !isValidZolexoraOrgId(body.zolexora_id)) {
+        throw badRequest("Provide a valid Zolexora ID (e.g. company@zolexora.com).", "PARTNER_INVALID_ZOLEXORA_ID");
+      }
+      const normalized = normalizeZolexoraOrgId(body.zolexora_id);
+      const org = await d.team.getOrg(normalized);
+      if (!org || org.status === "deactivated") {
+        throw notFound(`No active Zolexora business found for '${normalized}'.`);
+      }
+      return { success: true, zolexora_id: org.zolexora_org_id, organization_name: org.name, verified: true };
+    }
+
+    const reserved = await d.team.reservePartnerZolexoraId(
+      body.kind,
+      body.owner_org_id ?? null,
+      body.display_name ?? null,
+    );
+    return { success: true, zolexora_id: reserved, verified: false };
   });
 
   // ── What the business does (ADR 0004 §2a) ─────────────────────────────────

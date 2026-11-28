@@ -9,6 +9,8 @@ export const CROCKFORD_BASE32_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
  */
 export const ZOLEXORA_ID_REGEX = /^ZX-[2-9A-HJ-NP-Z]{4}-[2-9A-HJ-NP-Z]{4}-[2-9A-HJ-NP-Z]{4}$/i;
 export const ZOLEXORA_ORG_ID_REGEX = /^ZX-ORG-[2-9A-HJ-NP-Z]{4}-[2-9A-HJ-NP-Z]{4}-[2-9A-HJ-NP-Z]{4}$/i;
+export const ZOLEXORA_HANDLE_REGEX = /^[a-z0-9][a-z0-9._-]{1,48}[a-z0-9]@zolexora\.com$/i;
+export const ZOLEXORA_PARTNER_HANDLE_REGEX = /^[cv][0-9]{6,12}@zolexora\.com$/i;
 
 /**
  * Generates cryptographically secure random bytes across Browser, Node, Edge, and Mobile.
@@ -42,21 +44,50 @@ export function generateZolexoraId(prefix = "ZX"): string {
   return `${prefix}-${id.slice(0, 4)}-${id.slice(4, 8)}-${id.slice(8, 12)}`;
 }
 
-/**
- * Validates whether an ID matches the official Zolexora ID format.
- */
-export function isValidZolexoraId(id: string): boolean {
+export function isValidZolexoraHandle(id: string): boolean {
   if (!id || typeof id !== "string") return false;
-  return ZOLEXORA_ID_REGEX.test(id.trim());
+  return ZOLEXORA_HANDLE_REGEX.test(id.trim());
+}
+
+export function formatZolexoraHandle(userid: string): string {
+  const clean = userid.trim().toLowerCase().replace(/@zolexora\.com$/i, "");
+  const handle = `${clean}@zolexora.com`;
+  if (!ZOLEXORA_HANDLE_REGEX.test(handle)) {
+    throw new Error(`Invalid Zolexora userid "${userid}". Use 3-50 lowercase letters, digits, '.', '_' or '-'.`);
+  }
+  return handle;
+}
+
+export function generatePartnerZolexoraId(kind: "client" | "vendor"): string {
+  const prefix = kind === "client" ? "c" : "v";
+  const bytes = getRandomBytes(8);
+  let digits = "";
+  for (let i = 0; i < 8; i++) {
+    digits += String(bytes[i]! % 10);
+  }
+  return `${prefix}${digits}@zolexora.com`;
 }
 
 /**
- * Normalizes a Zolexora ID to uppercase standard format.
+ * Validates whether an ID matches the official Zolexora ID format (legacy ZX-... or userid@zolexora.com).
+ */
+export function isValidZolexoraId(id: string): boolean {
+  if (!id || typeof id !== "string") return false;
+  const trimmed = id.trim();
+  return ZOLEXORA_ID_REGEX.test(trimmed) || ZOLEXORA_HANDLE_REGEX.test(trimmed);
+}
+
+/**
+ * Normalizes a Zolexora ID (lowercase for @zolexora.com handles, uppercase for ZX-...).
  */
 export function normalizeZolexoraId(id: string): string {
-  const clean = id?.trim().toUpperCase();
-  if (!isValidZolexoraId(clean)) {
-    throw new Error(`Invalid Zolexora ID format: "${id}". Expected ZX-XXXX-XXXX-XXXX`);
+  const trimmed = id?.trim();
+  if (trimmed && ZOLEXORA_HANDLE_REGEX.test(trimmed)) {
+    return trimmed.toLowerCase();
+  }
+  const clean = trimmed?.toUpperCase();
+  if (!clean || !ZOLEXORA_ID_REGEX.test(clean)) {
+    throw new Error(`Invalid Zolexora ID format: "${id}". Expected userid@zolexora.com or ZX-XXXX-XXXX-XXXX`);
   }
   return clean;
 }
@@ -70,20 +101,25 @@ export function generateZolexoraOrgId(): string {
 }
 
 /**
- * Validates whether an ID matches the official Zolexora Organization ID format.
+ * Validates whether an ID matches the official Zolexora Organization ID format (ZX-ORG-... or userid@zolexora.com).
  */
 export function isValidZolexoraOrgId(id: string): boolean {
   if (!id || typeof id !== "string") return false;
-  return ZOLEXORA_ORG_ID_REGEX.test(id.trim());
+  const trimmed = id.trim();
+  return ZOLEXORA_ORG_ID_REGEX.test(trimmed) || ZOLEXORA_HANDLE_REGEX.test(trimmed);
 }
 
 /**
- * Normalizes a Zolexora Organization ID to uppercase standard format.
+ * Normalizes a Zolexora Organization ID (lowercase for @zolexora.com handles, uppercase for ZX-ORG-...).
  */
 export function normalizeZolexoraOrgId(id: string): string {
-  const clean = id?.trim().toUpperCase();
-  if (!isValidZolexoraOrgId(clean)) {
-    throw new Error(`Invalid Zolexora Organization ID format: "${id}". Expected ZX-ORG-XXXX-XXXX-XXXX`);
+  const trimmed = id?.trim();
+  if (trimmed && ZOLEXORA_HANDLE_REGEX.test(trimmed)) {
+    return trimmed.toLowerCase();
+  }
+  const clean = trimmed?.toUpperCase();
+  if (!clean || !ZOLEXORA_ORG_ID_REGEX.test(clean)) {
+    throw new Error(`Invalid Zolexora Organization ID format: "${id}". Expected userid@zolexora.com or ZX-ORG-XXXX-XXXX-XXXX`);
   }
   return clean;
 }

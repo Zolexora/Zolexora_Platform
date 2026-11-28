@@ -1,4 +1,4 @@
-import { generateZolexoraOrgId, normalizeZolexoraOrgId } from "@zolexora/utils";
+import { generatePartnerZolexoraId, generateZolexoraOrgId, normalizeZolexoraOrgId } from "@zolexora/utils";
 import { Db } from "../db.js";
 import { AccessInput, RoleRow } from "../rbac/engine.js";
 
@@ -70,7 +70,9 @@ const INVITE_COLS = `id, organization_id, kind, email, phone_number, org_role_id
   accepted_at, revoked_at, reset_member_id, created_at`;
 
 export type NewOrg = Pick<OrgRow, "legal_name" | "trade_name" | "pan_holder_type" | "business_kind" | "pan_encrypted" | "pan_last4"
-  | "pan_hash" | "email" | "phone" | "address" | "logo_url" | "activity_primary" | "activity_others">;
+  | "pan_hash" | "email" | "phone" | "address" | "logo_url" | "activity_primary" | "activity_others"> & {
+  zolexora_org_id?: string | null;
+};
 
 export const ORG_EDITABLE = ["legal_name", "trade_name", "email", "phone", "address", "logo_url", "activity_primary", "activity_others"] as const;
 export type OrgPatch = Partial<Pick<OrgRow, (typeof ORG_EDITABLE)[number] | "official_activities" | "mfa_policy" | "status">>;
@@ -96,7 +98,7 @@ export class TeamStore {
             pan_hash, email, phone, address, logo_url, activity_primary, activity_others, created_by)
          VALUES ($1, $2, 'active', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12::jsonb, $13, $14, $15::jsonb, $16)
          RETURNING ${ORG_COLS}`,
-        [generateZolexoraOrgId(), data.trade_name || data.legal_name, data.legal_name, data.trade_name, data.pan_holder_type,
+        [data.zolexora_org_id || generateZolexoraOrgId(), data.trade_name || data.legal_name, data.legal_name, data.trade_name, data.pan_holder_type,
           data.business_kind, data.pan_encrypted, data.pan_last4, data.pan_hash, data.email, data.phone, json(data.address),
           data.logo_url, data.activity_primary, json(data.activity_others ?? []), ownerUserId],
       )).rows[0];
@@ -121,7 +123,39 @@ export class TeamStore {
     } catch {
       return null;
     }
-    return (await this.db.query<OrgRow>(`SELECT ${ORG_COLS} FROM zolexora_organizations WHERE zolexora_org_id = $1`, [id])).rows[0] ?? null;
+    return (await this.db.query<OrgRow>(`SELECT ${ORG_COLS} FROM zolexora_organizations WHERE LOWER(zolexora_org_id) = LOWER($1)`, [id])).rows[0] ?? null;
+  }
+
+  async isZolexoraIdTaken(candidate: string): Promise<boolean> {
+    const r = await this.db.query<{ taken: boolean }>(
+      `SELECT (
+         EXISTS(SELECT 1 FROM zolexora_organizations WHERE LOWER(zolexora_org_id) = LOWER($1))
+         OR EXISTS(SELECT 1 FROM zolexora_auth_users WHERE LOWER(zolexora_id) = LOWER($1))
+         OR EXISTS(SELECT 1 FROM zolexora_partner_ids WHERE LOWER(zolexora_id) = LOWER($1))
+       ) AS taken`,
+      [candidate.trim()],
+    );
+    return r.rows[0]?.taken === true;
+  }
+
+  async reservePartnerZolexoraId(kind: "client" | "vendor", ownerOrgId: string | null, displayName: string | null): Promise<string> {
+    for (let attempt = 0; attempt < 10; attempt++) {
+      const candidate = generatePartnerZolexoraId(kind);
+      const taken = await this.isZolexoraIdTaken(candidate);
+      if (taken) continue;
+      try {
+        await this.db.query(
+          `INSERT INTO zolexora_partner_ids (zolexora_id, partner_kind, owner_org_id, display_name)
+           VALUES ($1, $2, $3, $4)`,
+          [candidate, kind, ownerOrgId, displayName],
+        );
+        return candidate;
+      } catch (err: any) {
+        if (err?.code === "23505") continue;
+        throw err;
+      }
+    }
+    throw new Error("Failed to reserve unique partner Zolexora ID after 10 attempts.");
   }
 
   async getOrgById(id: string): Promise<OrgRow | null> {

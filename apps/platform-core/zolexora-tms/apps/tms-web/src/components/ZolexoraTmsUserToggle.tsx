@@ -46,13 +46,13 @@ export function ZolexoraTmsUserToggle({
       {isZolexoraUser && (
         <div>
           <label className="block text-[11px] font-medium text-slate-400">
-            Zolexora Org ID (optional)
+            Zolexora ID (&lt;userid&gt;@zolexora.com)
           </label>
           <input
             type="text"
             value={zolexoraOrgId || ''}
-            onChange={(e) => onChange(true, e.target.value.toUpperCase())}
-            placeholder="e.g. ZX-ORG-XXXX-XXXX-XXXX"
+            onChange={(e) => onChange(true, e.target.value.trim().toLowerCase())}
+            placeholder="e.g. infosys@zolexora.com"
             maxLength={64}
             className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 font-mono text-xs text-white placeholder-slate-600 focus:border-cyan-500 focus:outline-none"
           />

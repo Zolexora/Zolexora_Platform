@@ -25,7 +25,7 @@ class Vendor(Base, TimestampMixin):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     organisation_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("organisations.id", ondelete="CASCADE"), nullable=False, index=True)
-    vendor_code: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    vendor_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
     name: Mapped[str] = mapped_column(String(160), nullable=False)
     vendor_type: Mapped[VendorType] = mapped_column(Enum(VendorType, name="vendor_type", create_type=False), nullable=False)
     contact_person: Mapped[str | None] = mapped_column(String(120), nullable=True)

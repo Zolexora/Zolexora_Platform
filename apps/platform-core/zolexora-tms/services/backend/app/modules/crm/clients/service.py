@@ -1,3 +1,4 @@
+import secrets
 import uuid
 from typing import Any, List, Optional
 from fastapi import HTTPException, status
@@ -17,7 +18,16 @@ from app.modules.operations.operating_units.repository import OperatingUnitRepos
 
 
 def _generate_client_code() -> str:
-    return f"CLT-{uuid.uuid4().hex[:8].upper()}"
+    return f"c{secrets.randbelow(100_000_000):08d}@zolexora.com"
+
+
+def _normalize_partner_code(raw: Optional[str]) -> Optional[str]:
+    if not raw:
+        return None
+    val = raw.strip()
+    if not val:
+        return None
+    return val.lower() if "@" in val else val.upper()
 
 
 class ClientService:
@@ -90,7 +100,13 @@ class ClientService:
         payload["name"] = payload["name"].strip()
         payload["gstin"] = payload["gstin"].strip().upper() if payload.get("gstin") else None
         payload["pan"] = payload["pan"].strip().upper() if payload.get("pan") else None
-        payload["client_code"] = _generate_client_code()
+        zx_handle = _normalize_partner_code(payload.get("zolexora_org_id"))
+        if payload.get("is_zolexora_user") and zx_handle:
+            payload["zolexora_org_id"] = zx_handle
+            payload["client_code"] = zx_handle
+        else:
+            payload["zolexora_org_id"] = None
+            payload["client_code"] = _generate_client_code()
 
         await self._ensure_unique_tax_ids(payload["gstin"], payload["pan"])
         try:
