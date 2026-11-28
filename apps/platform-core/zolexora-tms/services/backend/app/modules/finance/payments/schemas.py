@@ -2,7 +2,7 @@ import uuid
 import datetime
 from typing import List, Optional
 from decimal import Decimal
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class PaymentAllocationCreate(BaseModel):
@@ -23,15 +23,16 @@ class PaymentCreateRequest(BaseModel):
 
 
 class PaymentAllocationResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: uuid.UUID
     invoice_id: uuid.UUID
     amount_allocated: Decimal
-    
-    class Config:
-        from_attributes = True
 
 
 class PaymentResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: uuid.UUID
     organisation_id: uuid.UUID
     customer_id: Optional[uuid.UUID]
@@ -45,6 +46,3 @@ class PaymentResponse(BaseModel):
     status: str
     notes: Optional[str]
     allocations: List[PaymentAllocationResponse] = []
-    
-    class Config:
-        from_attributes = True

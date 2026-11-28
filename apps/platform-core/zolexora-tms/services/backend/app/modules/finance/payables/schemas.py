@@ -2,7 +2,7 @@ import uuid
 import datetime
 from typing import List, Optional
 from decimal import Decimal
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class PayableLineCreate(BaseModel):
@@ -22,16 +22,17 @@ class PayableCreateRequest(BaseModel):
 
 
 class PayableLineResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: uuid.UUID
     description: str
     amount: Decimal
     is_deduction: bool
 
-    class Config:
-        from_attributes = True
-
 
 class PayableResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: uuid.UUID
     organisation_id: uuid.UUID
     vendor_id: Optional[uuid.UUID]
@@ -48,9 +49,6 @@ class PayableResponse(BaseModel):
     created_at: datetime.datetime
     lines: List[PayableLineResponse] = []
 
-    class Config:
-        from_attributes = True
-
 
 class SettlementCreateRequest(BaseModel):
     amount: Decimal
@@ -60,6 +58,8 @@ class SettlementCreateRequest(BaseModel):
 
 
 class SettlementResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: uuid.UUID
     payable_id: uuid.UUID
     amount: Decimal
@@ -67,6 +67,3 @@ class SettlementResponse(BaseModel):
     payment_reference: Optional[str]
     notes: Optional[str]
     created_at: datetime.datetime
-
-    class Config:
-        from_attributes = True

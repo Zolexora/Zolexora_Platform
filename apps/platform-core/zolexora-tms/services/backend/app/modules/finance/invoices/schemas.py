@@ -2,7 +2,7 @@ import datetime
 import uuid
 from typing import List, Optional
 from decimal import Decimal
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class InvoiceCreateRequest(BaseModel):
@@ -33,5 +33,4 @@ class InvoiceResponse(BaseModel):
     notes: Optional[str]
     terms: Optional[str]
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

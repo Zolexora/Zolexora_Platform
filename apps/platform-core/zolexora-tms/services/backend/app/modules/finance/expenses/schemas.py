@@ -2,7 +2,7 @@ import uuid
 import datetime
 from typing import Optional
 from decimal import Decimal
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ExpenseCreateRequest(BaseModel):
@@ -33,5 +33,4 @@ class ExpenseResponse(BaseModel):
     notes: Optional[str]
     created_at: datetime.datetime
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
