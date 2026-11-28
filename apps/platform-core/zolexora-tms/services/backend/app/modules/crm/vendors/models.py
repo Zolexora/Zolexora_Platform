@@ -1,6 +1,6 @@
 import enum
 import uuid
-from sqlalchemy import Enum, ForeignKey, String, Integer
+from sqlalchemy import Enum, ForeignKey, Index, String, Integer, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 from app.db.base import Base, TimestampMixin
@@ -25,6 +25,7 @@ class Vendor(Base, TimestampMixin):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     organisation_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("organisations.id", ondelete="CASCADE"), nullable=False, index=True)
+    vendor_code: Mapped[str | None] = mapped_column(String(32), nullable=True)
     name: Mapped[str] = mapped_column(String(160), nullable=False)
     vendor_type: Mapped[VendorType] = mapped_column(Enum(VendorType, name="vendor_type", create_type=False), nullable=False)
     contact_person: Mapped[str | None] = mapped_column(String(120), nullable=True)
@@ -39,3 +40,20 @@ class Vendor(Base, TimestampMixin):
     bank_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     status: Mapped[VendorStatus] = mapped_column(Enum(VendorStatus, name="vendor_status", create_type=False), default=VendorStatus.ACTIVE, nullable=False)
     notes: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    __table_args__ = (
+        Index(
+            "uq_vendors_org_vendor_code",
+            "organisation_id",
+            "vendor_code",
+            unique=True,
+            postgresql_where=text("vendor_code IS NOT NULL"),
+        ),
+        Index(
+            "uq_vendors_org_gstin",
+            "organisation_id",
+            "gstin",
+            unique=True,
+            postgresql_where=text("gstin IS NOT NULL"),
+        ),
+    )

@@ -3,6 +3,7 @@ from typing import Any, Optional
 from fastapi import HTTPException, status
 from pydantic import ValidationError
 from sqlalchemy import desc, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.core.audit.models import AuditLog
@@ -16,6 +17,32 @@ from app.modules.crm.vendors.schemas import (
 )
 
 
+def _generate_vendor_code() -> str:
+    return f"VND-{uuid.uuid4().hex[:8].upper()}"
+
+
+async def _ensure_unique_gstin(
+    org_id: uuid.UUID,
+    gstin: Optional[str],
+    db: AsyncSession,
+    exclude_vendor_id: Optional[uuid.UUID] = None,
+) -> None:
+    if not gstin:
+        return
+    stmt = select(Vendor.id).where(
+        Vendor.organisation_id == org_id,
+        Vendor.gstin == gstin,
+    )
+    if exclude_vendor_id is not None:
+        stmt = stmt.where(Vendor.id != exclude_vendor_id)
+    existing = (await db.execute(stmt.limit(1))).scalar_one_or_none()
+    if existing is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Vendor with GSTIN / Aadhaar No '{gstin}' already exists",
+        )
+
+
 def _build_vendor_and_audit(
     org_id: uuid.UUID,
     actor_id: uuid.UUID,
@@ -24,6 +51,7 @@ def _build_vendor_and_audit(
     vendor = Vendor(
         id=uuid.uuid4(),
         organisation_id=org_id,
+        vendor_code=_generate_vendor_code(),
         name=req.name.strip(),
         vendor_type=req.vendor_type,
         contact_person=req.contact_person.strip() if req.contact_person else None,
@@ -56,11 +84,19 @@ async def create_vendor(
     req: VendorCreate,
     db: AsyncSession,
 ) -> VendorResponse:
+    await _ensure_unique_gstin(org_id=org_id, gstin=req.gstin, db=db)
     vendor, audit = _build_vendor_and_audit(org_id=org_id, actor_id=actor_id, req=req)
     db.add(vendor)
     db.add(audit)
 
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Vendor with GSTIN / Aadhaar No '{req.gstin}' already exists",
+        )
     await db.refresh(vendor)
     return VendorResponse.model_validate(vendor)
 
@@ -73,6 +109,7 @@ async def bulk_create_vendors(
 ) -> VendorBulkCreateResponse:
     created_vendors: list[Vendor] = []
     errors: list[VendorBulkItemError] = []
+    parsed_rows: list[tuple[int, VendorCreate]] = []
 
     for idx, raw in enumerate(items, start=1):
         cleaned = {
@@ -92,6 +129,32 @@ async def bulk_create_vendors(
                 )
             )
             continue
+        parsed_rows.append((idx, req))
+
+    candidate_gstins = {req.gstin for _, req in parsed_rows if req.gstin}
+    existing_gstins: set[str] = set()
+    if candidate_gstins:
+        res = await db.execute(
+            select(Vendor.gstin).where(
+                Vendor.organisation_id == org_id,
+                Vendor.gstin.in_(candidate_gstins),
+            )
+        )
+        existing_gstins = {g for g in res.scalars().all() if g}
+
+    seen_gstins: set[str] = set()
+    for idx, req in parsed_rows:
+        if req.gstin and (req.gstin in existing_gstins or req.gstin in seen_gstins):
+            errors.append(
+                VendorBulkItemError(
+                    row=idx,
+                    name=req.name,
+                    error=f"Duplicate GSTIN / Aadhaar No '{req.gstin}' already exists",
+                )
+            )
+            continue
+        if req.gstin:
+            seen_gstins.add(req.gstin)
 
         vendor, audit = _build_vendor_and_audit(org_id=org_id, actor_id=actor_id, req=req)
         db.add(vendor)
@@ -103,6 +166,7 @@ async def bulk_create_vendors(
         for vendor in created_vendors:
             await db.refresh(vendor)
 
+    errors.sort(key=lambda e: e.row)
     return VendorBulkCreateResponse(
         created_count=len(created_vendors),
         failed_count=len(errors),
@@ -130,7 +194,12 @@ async def list_vendors(
 
     if search:
         pattern = f"%{search.strip()}%"
-        stmt = stmt.where(Vendor.name.ilike(pattern) | Vendor.phone.ilike(pattern))
+        stmt = stmt.where(
+            Vendor.name.ilike(pattern)
+            | Vendor.phone.ilike(pattern)
+            | Vendor.gstin.ilike(pattern)
+            | Vendor.vendor_code.ilike(pattern)
+        )
 
     stmt = stmt.order_by(desc(Vendor.created_at)).offset(skip).limit(limit)
     res = await db.execute(stmt)
@@ -171,6 +240,13 @@ async def update_vendor(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vendor not found")
 
     update_data = req.model_dump(exclude_unset=True)
+    if "gstin" in update_data and update_data["gstin"]:
+        await _ensure_unique_gstin(
+            org_id=org_id,
+            gstin=update_data["gstin"],
+            db=db,
+            exclude_vendor_id=vendor_id,
+        )
     for field, val in update_data.items():
         if val is not None and isinstance(val, str):
             val = val.strip()

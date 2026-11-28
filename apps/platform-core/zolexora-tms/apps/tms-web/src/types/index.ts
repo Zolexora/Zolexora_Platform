@@ -89,6 +89,7 @@ export interface CustomerCreate {
 export interface Vendor {
   id: string;
   organisation_id: string;
+  vendor_code?: string;
   name: string;
   vendor_type: 'FLEET_SUPPLIER' | 'DCO' | 'EMI_DRIVER' | 'WORKSHOP' | 'FUEL_PARTNER' | 'BROKER' | 'OTHER';
   contact_person?: string;

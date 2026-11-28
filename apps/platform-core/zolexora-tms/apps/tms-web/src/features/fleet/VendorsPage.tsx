@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Building2, Plus, Search, AlertCircle, X, ShieldCheck, Upload, Download, CheckCircle2 } from 'lucide-react';
+import { Building2, Plus, Search, AlertCircle, X, ShieldCheck, Upload, Download, CheckCircle2, Eye } from 'lucide-react';
 import { apiClient } from '../../lib/api';
 import type { Vendor, VendorCreate, VendorBulkCreateResponse, VendorBulkItemError } from '../../types';
 import { EntityComplianceManager } from '../compliance/EntityComplianceManager';
@@ -152,6 +152,7 @@ export function VendorsPage() {
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [complianceModalId, setComplianceModalId] = useState<string | null>(null);
+  const [profileVendor, setProfileVendor] = useState<Vendor | null>(null);
   const [formError, setFormError] = useState('');
 
   // Bulk state
@@ -305,7 +306,14 @@ export function VendorsPage() {
                 <tr key={v.id} className="hover:bg-slate-800/30 transition">
                   <td className="px-5 py-4">
                     <div className="font-semibold text-white">{v.name}</div>
-                    <div className="text-xs text-slate-400 font-mono">{v.gstin || 'No GSTIN'}</div>
+                    <div className="text-xs text-slate-400 font-mono flex items-center gap-2 mt-0.5">
+                      {v.vendor_code && (
+                        <span className="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] text-silver-300">
+                          {v.vendor_code}
+                        </span>
+                      )}
+                      <span>{v.gstin || 'No GSTIN / Aadhaar'}</span>
+                    </div>
                   </td>
                   <td className="px-5 py-4">
                     <span className="rounded-md bg-navy-800/40 px-2 py-0.5 text-xs font-medium text-silver-300 border border-navy-600/20">
@@ -332,14 +340,24 @@ export function VendorsPage() {
                     </span>
                   </td>
                   <td className="px-5 py-4">
-                    <button
-                      onClick={() => setComplianceModalId(v.id)}
-                      className="inline-flex items-center gap-1 rounded bg-slate-800 px-2 py-1 text-xs font-medium text-slate-300 hover:bg-slate-700 hover:text-white"
-                      title="Manage Compliance"
-                    >
-                      <ShieldCheck className="h-3.5 w-3.5 text-silver-300" />
-                      Docs
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setProfileVendor(v)}
+                        className="inline-flex items-center gap-1 rounded bg-slate-800 px-2 py-1 text-xs font-medium text-slate-300 hover:bg-slate-700 hover:text-white"
+                        title="View Profile"
+                      >
+                        <Eye className="h-3.5 w-3.5 text-silver-300" />
+                        Profile
+                      </button>
+                      <button
+                        onClick={() => setComplianceModalId(v.id)}
+                        className="inline-flex items-center gap-1 rounded bg-slate-800 px-2 py-1 text-xs font-medium text-slate-300 hover:bg-slate-700 hover:text-white"
+                        title="Manage Compliance"
+                      >
+                        <ShieldCheck className="h-3.5 w-3.5 text-silver-300" />
+                        Docs
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -357,6 +375,123 @@ export function VendorsPage() {
           </tbody>
         </table>
       </div>
+
+      {/* Vendor Profile Modal */}
+      {profileVendor && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="w-full max-w-2xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl space-y-5 my-8">
+            <div className="flex items-start justify-between border-b border-slate-800 pb-4">
+              <div>
+                <div className="flex items-center gap-2.5">
+                  <h2 className="text-lg font-bold text-white">{profileVendor.name}</h2>
+                  <span
+                    className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                      profileVendor.status === 'ACTIVE'
+                        ? 'bg-silver-900/60 text-silver-300 border border-silver-700/30'
+                        : 'bg-slate-700/20 text-slate-400'
+                    }`}
+                  >
+                    {profileVendor.status}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 mt-1 text-xs text-slate-400">
+                  {profileVendor.vendor_code && (
+                    <span className="rounded bg-slate-800 px-2 py-0.5 font-mono text-silver-300">
+                      {profileVendor.vendor_code}
+                    </span>
+                  )}
+                  <span className="rounded bg-navy-800/40 px-2 py-0.5 font-medium text-silver-300 border border-navy-600/20">
+                    {profileVendor.vendor_type.replace(/_/g, ' ')}
+                  </span>
+                </div>
+              </div>
+              <button onClick={() => setProfileVendor(null)} className="text-slate-400 hover:text-white">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+              <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4 space-y-2.5">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">Contact &amp; Tax</h3>
+                <div>
+                  <div className="text-[11px] text-slate-500">Contact Person</div>
+                  <div className="text-white">{profileVendor.contact_person || '—'}</div>
+                </div>
+                <div>
+                  <div className="text-[11px] text-slate-500">Email</div>
+                  <div className="text-white">{profileVendor.email || '—'}</div>
+                </div>
+                <div>
+                  <div className="text-[11px] text-slate-500">Phone</div>
+                  <div className="text-white font-mono">{profileVendor.phone || '—'}</div>
+                </div>
+                <div>
+                  <div className="text-[11px] text-slate-500">Address</div>
+                  <div className="text-white">{profileVendor.address || '—'}</div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  <div>
+                    <div className="text-[11px] text-slate-500">GSTIN / Aadhaar No</div>
+                    <div className="text-white font-mono text-xs">{profileVendor.gstin || '—'}</div>
+                  </div>
+                  <div>
+                    <div className="text-[11px] text-slate-500">PAN</div>
+                    <div className="text-white font-mono text-xs">{profileVendor.pan || '—'}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4 space-y-2.5">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">Bank &amp; Settlement</h3>
+                <div>
+                  <div className="text-[11px] text-slate-500">Bank Account Name</div>
+                  <div className="text-white">{profileVendor.bank_account_name || '—'}</div>
+                </div>
+                <div>
+                  <div className="text-[11px] text-slate-500">Bank Account Number</div>
+                  <div className="text-white font-mono">{profileVendor.bank_account_number || '—'}</div>
+                </div>
+                <div>
+                  <div className="text-[11px] text-slate-500">Bank IFSC</div>
+                  <div className="text-white font-mono">{profileVendor.bank_ifsc || '—'}</div>
+                </div>
+                <div>
+                  <div className="text-[11px] text-slate-500">Bank Name</div>
+                  <div className="text-white">{profileVendor.bank_name || '—'}</div>
+                </div>
+                <div className="pt-1">
+                  <div className="text-[11px] text-slate-500">Created</div>
+                  <div className="text-xs text-slate-300">
+                    {new Date(profileVendor.created_at).toLocaleDateString()}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-3 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => {
+                  const id = profileVendor.id;
+                  setProfileVendor(null);
+                  setComplianceModalId(id);
+                }}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-200 hover:bg-slate-700 transition"
+              >
+                <ShieldCheck className="h-4 w-4 text-silver-300" />
+                Compliance Docs
+              </button>
+              <button
+                type="button"
+                onClick={() => setProfileVendor(null)}
+                className="rounded-lg bg-navy-600 px-5 py-2 text-sm font-semibold text-white hover:bg-navy-600 transition"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Compliance Modal */}
       {complianceModalId && (

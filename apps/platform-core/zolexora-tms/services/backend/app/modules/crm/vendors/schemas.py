@@ -67,6 +67,7 @@ class VendorResponse(VendorBase):
 
     id: uuid.UUID
     organisation_id: uuid.UUID
+    vendor_code: Optional[str] = None
     status: VendorStatus
     created_at: datetime.datetime
     updated_at: datetime.datetime
