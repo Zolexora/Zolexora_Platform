@@ -22,6 +22,8 @@ interface TopRightProfileMenuProps {
   displayName: string;
   subtitle: string;
   organisationName: string;
+  organisationType?: string;
+  zolexoraOrgId?: string | null;
   roleLabel: string;
   isCommander?: boolean;
   personalSignedIn?: boolean;
@@ -43,6 +45,8 @@ export function TopRightProfileMenu({
   displayName,
   subtitle,
   organisationName,
+  organisationType,
+  zolexoraOrgId,
   roleLabel,
   isCommander = false,
   personalSignedIn = false,
@@ -133,18 +137,26 @@ export function TopRightProfileMenu({
                 <p className="truncate font-mono text-[11px] text-slate-400">{subtitle}</p>
               </div>
             </div>
-            <div className="mt-2.5 flex items-center justify-between gap-2 rounded-lg border border-slate-800/80 bg-slate-900/80 px-2.5 py-1.5">
-              <span className="truncate text-xs font-medium text-slate-300">{organisationName}</span>
-              {isCommander ? (
-                <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-silver-900/40 px-2 py-0.5 text-[10px] font-semibold text-silver-300 border border-silver-700/30">
-                  <Crown className="h-2.5 w-2.5" />
-                  Commander
-                </span>
-              ) : (
-                <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-slate-800 px-2 py-0.5 text-[10px] font-semibold text-slate-300 border border-slate-700">
-                  <Shield className="h-2.5 w-2.5" />
-                  {roleLabel}
-                </span>
+            <div className="mt-2.5 rounded-lg border border-slate-800/80 bg-slate-900/80 px-2.5 py-2 space-y-1">
+              <div className="flex items-center justify-between gap-2">
+                <span className="truncate text-xs font-medium text-slate-200">{organisationName}</span>
+                {isCommander ? (
+                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-silver-900/40 px-2 py-0.5 text-[10px] font-semibold text-silver-300 border border-silver-700/30">
+                    <Crown className="h-2.5 w-2.5" />
+                    Commander
+                  </span>
+                ) : (
+                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-slate-800 px-2 py-0.5 text-[10px] font-semibold text-slate-300 border border-slate-700">
+                    <Shield className="h-2.5 w-2.5" />
+                    {roleLabel}
+                  </span>
+                )}
+              </div>
+              {(organisationType || zolexoraOrgId) && (
+                <div className="flex items-center justify-between gap-2 text-[10px] text-slate-500">
+                  <span className="truncate">{organisationType || ''}</span>
+                  {zolexoraOrgId && <span className="font-mono shrink-0">{zolexoraOrgId}</span>}
+                </div>
               )}
             </div>
           </div>

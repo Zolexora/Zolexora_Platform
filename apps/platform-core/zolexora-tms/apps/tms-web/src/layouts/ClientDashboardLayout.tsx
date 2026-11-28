@@ -69,35 +69,6 @@ export function ClientDashboardLayout() {
           onToggleCollapse={toggleCollapsed}
         />
 
-        {/* Organisation Context Card */}
-        {collapsed ? (
-          <div className="border-b border-slate-800/60 p-2.5 flex flex-col items-center gap-2">
-            <div
-              title={organisation?.name || 'Client Organisation'}
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-cyan-800/40 bg-cyan-950/20 text-cyan-400"
-            >
-              <Building2 className="h-4 w-4" />
-            </div>
-          </div>
-        ) : (
-          <div className="p-4 border-b border-slate-800/60">
-            <div className="rounded-xl border border-cyan-800/40 bg-cyan-950/20 p-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-300 truncate max-w-[140px]">
-                  {organisation?.name || 'Loading...'}
-                </span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-cyan-900/30 px-2 py-0.5 text-[10px] font-semibold text-cyan-400 border border-cyan-700/30">
-                  <Building2 className="h-3 w-3" />
-                  Client
-                </span>
-              </div>
-              <div className="mt-1 text-[11px] text-slate-500 truncate">
-                {zolexoraOrgId || organisation?.organisation_type || 'Client Organisation'}
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Navigation */}
         <nav className={`flex-1 overflow-y-auto overflow-x-hidden py-4 ${collapsed ? 'px-2 space-y-3' : 'px-3 space-y-6'}`}>
           {clientNavigation.map((group) => (
@@ -160,6 +131,8 @@ export function ClientDashboardLayout() {
               displayName={authMe?.full_name || user?.email || 'Authenticated User'}
               subtitle={authMe?.zolexora_id || user?.email || 'Manage Account'}
               organisationName={organisation?.name || 'Client Workspace'}
+              organisationType={organisation?.organisation_type || 'Client Organisation'}
+              zolexoraOrgId={zolexoraOrgId}
               roleLabel="Client"
               personalSignedIn={personalSignedIn}
               profileHref="/client/profile"

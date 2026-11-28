@@ -135,45 +135,6 @@ export function DashboardLayout() {
           onToggleCollapse={toggleCollapsed}
         />
 
-        {/* Organisation Context Card */}
-        {collapsed ? (
-          <div className="border-b border-slate-800/60 p-2.5 flex flex-col items-center gap-2">
-            <div
-              title={organisation?.name || 'Workspace'}
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-800 bg-slate-950/60 text-silver-400"
-            >
-              {isCommander ? <Crown className="h-4 w-4" /> : <Shield className="h-4 w-4" />}
-            </div>
-          </div>
-        ) : (
-          <div className="p-4 border-b border-slate-800/60">
-            <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-300 truncate max-w-[140px]">
-                  {organisation?.name || 'Loading Workspace...'}
-                </span>
-                {isCommander ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-silver-900/30 px-2 py-0.5 text-[10px] font-semibold text-silver-500 border border-silver-700/30">
-                    <Crown className="h-3 w-3" />
-                    Commander
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-navy-800/40 px-2 py-0.5 text-[10px] font-semibold text-silver-500 border border-navy-600/30">
-                    <Shield className="h-3 w-3" />
-                    {authMe?.role_code || 'Member'}
-                  </span>
-                )}
-              </div>
-              <div className="mt-1 flex items-center justify-between text-[11px] text-slate-500">
-                <span className="truncate">{organisation?.organisation_type || 'Transport Org'}</span>
-                <span className="font-mono text-[9px] text-slate-500">
-                  {zolexoraOrgId || (organisation?.id ? organisation.id.substring(0, 6) : '---')}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Navigation Sections */}
         <nav className={`flex-1 overflow-y-auto overflow-x-hidden py-4 ${collapsed ? 'px-2 space-y-3' : 'px-3 space-y-6'}`}>
           {filteredNavigation.map((group) => (
@@ -237,6 +198,8 @@ export function DashboardLayout() {
               displayName={authMe?.full_name || user?.email || 'Authenticated User'}
               subtitle={authMe?.zolexora_id || user?.email || 'Manage Account'}
               organisationName={organisation?.name || 'Zolexora TMS'}
+              organisationType={organisation?.organisation_type || 'Transport Org'}
+              zolexoraOrgId={zolexoraOrgId || (organisation?.id ? organisation.id.substring(0, 6) : null)}
               roleLabel={authMe?.role_code || 'Member'}
               isCommander={isCommander}
               personalSignedIn={personalSignedIn}
