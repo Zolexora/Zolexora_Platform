@@ -35,10 +35,10 @@ TMS has no auth of its own: every app signs in through `apps/auth-service`, like
 
 | App | Login | Vault keys |
 |---|---|---|
-| tms-web | Owners: Track 1 (Continue with Google / email / phone, password reset). Staff: Track 2 employee login with the ZX-ORG id | `AUTH_SERVICE_PUBLIC_URL`, `TURNSTILE_SITE_KEY`, `NEXT_PUBLIC_TMS_CLIENT_FIREBASE_API_KEY`, `NEXT_PUBLIC_TMS_CLIENT_FIREBASE_AUTH_DOMAIN`, `NEXT_PUBLIC_TMS_CLIENT_FIREBASE_APP_ID`, `NEXT_PUBLIC_FIREBASE_PROJECT_ID` |
-| tms-admin | Track 3 platform-admin login | `AUTH_SERVICE_PUBLIC_URL`, `TURNSTILE_SITE_KEY` |
-| tms-mobile | Track 2 employee login (Turnstile in a WebView, token in the device keystore) | `AUTH_SERVICE_PUBLIC_URL`, `TURNSTILE_SITE_KEY`, `EXPO_PUBLIC_API_BASE_URL` |
-| backend | Checks every bearer token with the auth service's `/api/v1/auth/me` (30 s cache) | `AUTH_SERVICE_URL` |
+| tms-web | Owners: Track 1 (Continue with Google / email / phone, password reset). Staff: Track 2 employee login with the ZX-ORG id | `TMS_AUTH_SERVICE_PUBLIC_URL`, `TMS_TURNSTILE_SITE_KEY`, `NEXT_PUBLIC_TMS_CLIENT_FIREBASE_API_KEY`, `NEXT_PUBLIC_TMS_CLIENT_FIREBASE_AUTH_DOMAIN`, `NEXT_PUBLIC_TMS_CLIENT_FIREBASE_APP_ID`, `NEXT_PUBLIC_FIREBASE_PROJECT_ID` |
+| tms-admin | Track 3 platform-admin login | `TMS_AUTH_SERVICE_PUBLIC_URL`, `TMS_TURNSTILE_SITE_KEY` |
+| tms-mobile | Track 2 employee login (Turnstile in a WebView, token in the device keystore) | `TMS_AUTH_SERVICE_PUBLIC_URL`, `TMS_TURNSTILE_SITE_KEY`, `EXPO_PUBLIC_API_BASE_URL` |
+| backend | Checks every bearer token with the auth service's `/api/v1/auth/me` (30 s cache) | `TMS_AUTH_SERVICE_URL` |
 
 - Platform admins are the auth service's `is_platform_admin` users.
 - Employees (tokens with a ZX-ORG id) work in the TMS workspace a platform admin linked to that ZX-ORG (`PUT /api/v1/admin/organisations/{id}/zolexora-org`); their membership is created on first sign-in.

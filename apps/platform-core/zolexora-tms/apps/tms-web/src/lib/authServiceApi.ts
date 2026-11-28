@@ -156,7 +156,7 @@ async function authFetch<T>(
   options: RequestInit & { tokenMode?: TokenMode; explicitToken?: string | null } = {},
 ): Promise<T> {
   const baseUrl = AUTH_SERVICE_PUBLIC_URL();
-  if (!baseUrl) throw new Error('AUTH_SERVICE_PUBLIC_URL is not configured.');
+  if (!baseUrl) throw new Error('TMS_AUTH_SERVICE_PUBLIC_URL is not configured.');
 
   const { tokenMode = 'business', explicitToken, ...init } = options;
 
