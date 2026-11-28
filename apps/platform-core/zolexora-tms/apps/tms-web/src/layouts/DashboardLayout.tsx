@@ -12,16 +12,14 @@ import {
   FileText,
   CreditCard,
   Receipt,
-  Settings,
   Shield,
   Crown,
   ChevronRight,
-  UserCircle2,
-  ArrowLeftRight,
 } from 'lucide-react';
 import { useAuth } from '../features/auth/useAuth';
 import { useApplicationRuntime } from '../providers/ApplicationRuntimeProvider';
-import { SidebarBrand, SidebarUserFooter, useSidebarCollapsed } from '../components/SidebarBrand';
+import { SidebarBrand, useSidebarCollapsed } from '../components/SidebarBrand';
+import { TopRightProfileMenu, SP_ADMIN_MENU_ITEMS } from '../components/TopRightProfileMenu';
 
 
 
@@ -79,16 +77,6 @@ const navigation = [
       { name: 'Financial Periods', href: '/sp/financial-periods', icon: FileText },
     ],
   },
-  {
-    section: 'Administration',
-    items: [
-      { name: 'Workspace & RBAC', href: '/sp/settings', icon: Settings },
-      { name: 'Roles & Permissions', href: '/sp/settings/roles', icon: Shield },
-      { name: 'Members & Access', href: '/sp/settings/members', icon: Users },
-      { name: 'Operating Units', href: '/sp/settings/operating-units', icon: Building2 },
-      { name: 'My Account & 2FA', href: '/sp/profile', icon: UserCircle2 },
-    ],
-  },
 ];
 
 export function DashboardLayout() {
@@ -142,7 +130,6 @@ export function DashboardLayout() {
         {/* Brand Header */}
         <SidebarBrand
           applicationName={runtime.branding.application_name}
-          logoUrl={runtime.branding.logo_url}
           subtitle="Transport Hub"
           collapsed={collapsed}
           onToggleCollapse={toggleCollapsed}
@@ -157,16 +144,6 @@ export function DashboardLayout() {
             >
               {isCommander ? <Crown className="h-4 w-4" /> : <Shield className="h-4 w-4" />}
             </div>
-            {personalSignedIn && (
-              <button
-                type="button"
-                onClick={handleSwitchBusiness}
-                title="Switch Business"
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-800 bg-slate-900/70 text-slate-300 hover:border-cyan-500/40 hover:text-white transition"
-              >
-                <ArrowLeftRight className="h-3.5 w-3.5" />
-              </button>
-            )}
           </div>
         ) : (
           <div className="p-4 border-b border-slate-800/60">
@@ -193,15 +170,6 @@ export function DashboardLayout() {
                   {zolexoraOrgId || (organisation?.id ? organisation.id.substring(0, 6) : '---')}
                 </span>
               </div>
-              {personalSignedIn && (
-                <button
-                  type="button"
-                  onClick={handleSwitchBusiness}
-                  className="mt-2 w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/70 py-1 text-[11px] text-slate-300 hover:border-cyan-500/40 hover:text-white transition"
-                >
-                  <ArrowLeftRight className="h-3 w-3" /> Switch Business
-                </button>
-              )}
             </div>
           </div>
         )}
@@ -247,15 +215,6 @@ export function DashboardLayout() {
             </div>
           ))}
         </nav>
-
-        {/* User Footer */}
-        <SidebarUserFooter
-          profileTo="/sp/profile"
-          displayName={authMe?.full_name || user?.email || 'Authenticated User'}
-          subtitle={authMe?.zolexora_id || 'Manage Account'}
-          collapsed={collapsed}
-          onSignOut={handleSignOut}
-        />
       </aside>
 
       {/* Main Content Area */}
@@ -268,18 +227,25 @@ export function DashboardLayout() {
             <span className="font-semibold text-slate-200">{organisation?.name || 'Zolexora TMS'}</span>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 rounded-full border border-silver-700/30 bg-silver-900/60 px-3 py-1 text-xs font-medium text-silver-300">
+          <div className="flex items-center gap-3">
+            <div className="hidden md:flex items-center gap-2 rounded-full border border-silver-700/30 bg-silver-900/60 px-3 py-1 text-xs font-medium text-silver-300">
               <span className="h-2 w-2 rounded-full bg-silver-300 animate-pulse" />
               API Connected: Render
             </div>
 
-            {isCommander && (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-silver-700/30 bg-silver-900/30 px-3 py-1 text-xs font-medium text-silver-400">
-                <Crown className="h-3.5 w-3.5" />
-                Commander Authority Active
-              </span>
-            )}
+            <TopRightProfileMenu
+              displayName={authMe?.full_name || user?.email || 'Authenticated User'}
+              subtitle={authMe?.zolexora_id || user?.email || 'Manage Account'}
+              organisationName={organisation?.name || 'Zolexora TMS'}
+              roleLabel={authMe?.role_code || 'Member'}
+              isCommander={isCommander}
+              personalSignedIn={personalSignedIn}
+              profileHref="/sp/profile"
+              adminItems={SP_ADMIN_MENU_ITEMS}
+              onSwitchBusiness={handleSwitchBusiness}
+              onSignOut={handleSignOut}
+              accent="navy"
+            />
           </div>
         </header>
 

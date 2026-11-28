@@ -5,15 +5,13 @@ import {
   MapPin,
   Receipt,
   CreditCard,
-  Settings,
   Building2,
   ChevronRight,
-  UserCircle2,
-  ArrowLeftRight,
 } from 'lucide-react';
 import { useAuth } from '../features/auth/useAuth';
 import { useApplicationRuntime } from '../providers/ApplicationRuntimeProvider';
-import { SidebarBrand, SidebarUserFooter, useSidebarCollapsed } from '../components/SidebarBrand';
+import { SidebarBrand, useSidebarCollapsed } from '../components/SidebarBrand';
+import { TopRightProfileMenu, CLIENT_ADMIN_MENU_ITEMS } from '../components/TopRightProfileMenu';
 
 const clientNavigation = [
   {
@@ -34,13 +32,6 @@ const clientNavigation = [
     items: [
       { name: 'Invoices', href: '/client/invoices', icon: Receipt },
       { name: 'Payments', href: '/client/payments', icon: CreditCard },
-    ],
-  },
-  {
-    section: 'Account',
-    items: [
-      { name: 'Settings & Team', href: '/client/settings', icon: Settings },
-      { name: 'My Account & 2FA', href: '/client/profile', icon: UserCircle2 },
     ],
   },
 ];
@@ -72,7 +63,6 @@ export function ClientDashboardLayout() {
         {/* Brand Header */}
         <SidebarBrand
           applicationName={runtime.branding.application_name}
-          logoUrl={runtime.branding.logo_url}
           subtitle="Client Portal"
           subtitleClassName="text-cyan-500"
           collapsed={collapsed}
@@ -88,16 +78,6 @@ export function ClientDashboardLayout() {
             >
               <Building2 className="h-4 w-4" />
             </div>
-            {personalSignedIn && (
-              <button
-                type="button"
-                onClick={handleSwitchBusiness}
-                title="Switch Business"
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-cyan-800/40 bg-cyan-950/30 text-cyan-200 hover:bg-cyan-900/40 transition"
-              >
-                <ArrowLeftRight className="h-3.5 w-3.5" />
-              </button>
-            )}
           </div>
         ) : (
           <div className="p-4 border-b border-slate-800/60">
@@ -114,15 +94,6 @@ export function ClientDashboardLayout() {
               <div className="mt-1 text-[11px] text-slate-500 truncate">
                 {zolexoraOrgId || organisation?.organisation_type || 'Client Organisation'}
               </div>
-              {personalSignedIn && (
-                <button
-                  type="button"
-                  onClick={handleSwitchBusiness}
-                  className="mt-2 w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-cyan-800/40 bg-cyan-950/30 py-1 text-[11px] text-cyan-200 hover:bg-cyan-900/40 transition"
-                >
-                  <ArrowLeftRight className="h-3 w-3" /> Switch Business
-                </button>
-              )}
             </div>
           </div>
         )}
@@ -168,15 +139,6 @@ export function ClientDashboardLayout() {
             </div>
           ))}
         </nav>
-
-        {/* User Footer */}
-        <SidebarUserFooter
-          profileTo="/client/profile"
-          displayName={authMe?.full_name || user?.email || 'Authenticated User'}
-          subtitle={authMe?.zolexora_id || 'Manage Account'}
-          collapsed={collapsed}
-          onSignOut={handleSignOut}
-        />
       </aside>
 
       {/* Main Content Area */}
@@ -188,9 +150,24 @@ export function ClientDashboardLayout() {
             <span>/</span>
             <span className="font-semibold text-slate-200">{organisation?.name || 'Zolexora TMS'}</span>
           </div>
-          <div className="flex items-center gap-2 rounded-full border border-cyan-700/30 bg-cyan-900/20 px-3 py-1 text-xs font-medium text-cyan-400">
-            <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
-            Client Workspace
+          <div className="flex items-center gap-3">
+            <div className="hidden md:flex items-center gap-2 rounded-full border border-cyan-700/30 bg-cyan-900/20 px-3 py-1 text-xs font-medium text-cyan-400">
+              <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
+              Client Workspace
+            </div>
+
+            <TopRightProfileMenu
+              displayName={authMe?.full_name || user?.email || 'Authenticated User'}
+              subtitle={authMe?.zolexora_id || user?.email || 'Manage Account'}
+              organisationName={organisation?.name || 'Client Workspace'}
+              roleLabel="Client"
+              personalSignedIn={personalSignedIn}
+              profileHref="/client/profile"
+              adminItems={CLIENT_ADMIN_MENU_ITEMS}
+              onSwitchBusiness={handleSwitchBusiness}
+              onSignOut={handleSignOut}
+              accent="cyan"
+            />
           </div>
         </header>
 
