@@ -140,6 +140,8 @@ class RateCardVersion(Base):
     effective_from: Mapped[datetime.datetime] = mapped_column(DateTime(True), nullable=False)
     effective_to: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(True))
 
+    rules: Mapped[list['RateCardRule']] = relationship('RateCardRule', cascade='all, delete-orphan')
+
 
 class RateCardRule(Base):
     __tablename__ = 'rate_card_rules'

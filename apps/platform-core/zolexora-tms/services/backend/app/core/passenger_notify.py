@@ -22,8 +22,10 @@ from app.core.audit import record_audit
 from app.core.config import settings
 from app.core.websocket import ws_manager
 from app.core.push import send_passenger_boarding_pin_push
+from app.modules.core.devices.models import DeviceToken
 from app.modules.fleet.drivers.models import Driver
 from app.modules.fleet.vehicles.models import Vehicle
+from app.modules.identity.users.models import Profile
 from app.modules.operations.bookings.enums import BookingServiceType
 from app.modules.operations.bookings.models import Booking
 from app.modules.operations.duties.models import Duty
@@ -70,11 +72,42 @@ def _compose_message(
     return " ".join(parts)
 
 
+async def _resolve_passenger_push_tokens(
+    db: AsyncSession,
+    recipients: List[Dict[str, Any]],
+) -> Dict[str, List[str]]:
+    """Map normalized recipient phone digits -> registered Expo push tokens."""
+    target_digits = {
+        digits for r in recipients if (digits := _clean_phone_digits(r.get("phone")))
+    }
+    if not target_digits:
+        return {}
+    try:
+        rows = (
+            await db.execute(
+                select(Profile.phone, DeviceToken.token).join(
+                    DeviceToken, DeviceToken.user_id == Profile.id
+                )
+            )
+        ).all()
+    except Exception as exc:
+        logger.warning("Passenger push token lookup failed: %s", exc)
+        return {}
+
+    tokens_by_digits: Dict[str, List[str]] = {}
+    for prof_phone, token in rows:
+        digits = _clean_phone_digits(prof_phone)
+        if digits and digits in target_digits and token:
+            tokens_by_digits.setdefault(digits, []).append(token)
+    return tokens_by_digits
+
+
 async def _dispatch_external(
     *,
     payload: Dict[str, Any],
     recipients: List[Dict[str, Any]],
     duty_number: str,
+    push_tokens_by_digits: Optional[Dict[str, List[str]]] = None,
 ) -> None:
     webhook_url = settings.PASSENGER_NOTIFY_WEBHOOK_URL or os.getenv("PASSENGER_NOTIFY_WEBHOOK_URL")
     if webhook_url:
@@ -107,25 +140,31 @@ async def _dispatch_external(
             except Exception as exc:
                 logger.warning("Resend passenger email error: %s", exc)
 
-    # Expo push notifications to passengers who have registered device tokens
-    duty_id = payload.get("duty_id", "")
-    stage = payload.get("stage", "")
-    tracking_url = payload.get("tracking_url")
-    for r in recipients:
-        push_token = r.get("push_token")
-        if not push_token:
-            continue
-        try:
-            await send_passenger_boarding_pin_push(
-                token=push_token,
-                duty_number=duty_number,
-                duty_id=duty_id,
-                boarding_pin=r.get("boarding_pin"),
-                stage=stage,
-                tracking_url=tracking_url,
-            )
-        except Exception as exc:
-            logger.warning("Passenger push error: %s", exc)
+    # Expo push notifications to passengers whose registered Profile phone matches
+    if push_tokens_by_digits:
+        duty_id = payload.get("duty_id", "")
+        stage = payload.get("stage", "")
+        tracking_url = payload.get("tracking_url")
+        sent_tokens: set[str] = set()
+        for r in recipients:
+            digits = _clean_phone_digits(r.get("phone"))
+            if not digits:
+                continue
+            for push_token in push_tokens_by_digits.get(digits, ()):
+                if push_token in sent_tokens:
+                    continue
+                sent_tokens.add(push_token)
+                try:
+                    await send_passenger_boarding_pin_push(
+                        token=push_token,
+                        duty_number=duty_number,
+                        duty_id=duty_id,
+                        boarding_pin=r.get("boarding_pin"),
+                        stage=stage,
+                        tracking_url=tracking_url,
+                    )
+                except Exception as exc:
+                    logger.warning("Passenger push error: %s", exc)
 
 
 async def notify_passengers_for_duty(
@@ -202,7 +241,6 @@ async def notify_passengers_for_duty(
                 "boarding_pin": pin,
                 "message": msg,
                 "wa_url": f"https://wa.me/{digits}?text={quote(msg)}" if digits else None,
-                "push_token": None,  # populated below if DeviceToken available
             })
 
     pax = booking.passenger_info if isinstance(booking.passenger_info, dict) else {}
@@ -229,7 +267,6 @@ async def notify_passengers_for_duty(
             "boarding_pin": booking.boarding_pin,
             "message": msg,
             "wa_url": f"https://wa.me/{digits}?text={quote(msg)}" if digits else None,
-            "push_token": None,  # populated below if DeviceToken available
         })
 
     summary_message = recipients[0]["message"] if recipients else _compose_message(
@@ -282,5 +319,11 @@ async def notify_passengers_for_duty(
             "tracking_url": tracking_url,
         },
     )
-    await _dispatch_external(payload=result, recipients=recipients, duty_number=duty.duty_number)
+    push_tokens_by_digits = await _resolve_passenger_push_tokens(db, recipients)
+    await _dispatch_external(
+        payload=result,
+        recipients=recipients,
+        duty_number=duty.duty_number,
+        push_tokens_by_digits=push_tokens_by_digits,
+    )
     return result

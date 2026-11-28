@@ -17,6 +17,7 @@ export interface TripRecord {
   parking_amount: number;
   waiting_minutes: number;
   status: 'NOT_STARTED' | 'IN_TRANSIT' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  share_token?: string | null;
   pod_attachment_url?: string | null;
   pod_notes?: string | null;
   pod_uploaded_at?: string | null;

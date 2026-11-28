@@ -422,7 +422,17 @@ export default function WorkspaceScreen() {
               <Text style={styles.emptyText}>No active trips yet.</Text>
             ) : (
               (clientDutiesQuery.data ?? []).slice(0, 8).map((d) => (
-                <TouchableOpacity key={d.id} style={styles.listItem} onPress={() => router.push(`/duty/${d.id}`)}>
+                <TouchableOpacity
+                  key={d.id}
+                  style={styles.listItem}
+                  onPress={() =>
+                    router.push(
+                      d.booking?.service_type !== 'CARGO'
+                        ? `/duty/passenger-trip?id=${d.id}`
+                        : `/duty/${d.id}`,
+                    )
+                  }
+                >
                   <View style={styles.listItemLeft}>
                     <Text style={styles.itemTitle}>{d.booking?.booking_number || d.duty_number}</Text>
                     <Text style={styles.itemSub} numberOfLines={1}>

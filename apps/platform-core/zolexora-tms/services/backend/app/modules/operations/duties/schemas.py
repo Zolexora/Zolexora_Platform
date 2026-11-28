@@ -156,6 +156,10 @@ class DutyTripSummary(BaseModel):
     status: str
     start_odometer: float
     end_odometer: Optional[float] = None
+    total_distance_km: Optional[float] = None
+    start_timestamp: Optional[datetime.datetime] = None
+    end_timestamp: Optional[datetime.datetime] = None
+    share_token: Optional[str] = None
     toll_amount: float = 0.0
     fuel_amount: float = 0.0
     parking_amount: float = 0.0

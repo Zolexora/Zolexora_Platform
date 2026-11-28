@@ -55,15 +55,16 @@ const MILESTONE_LABELS: Record<string, string> = {
 };
 
 export default function PassengerTripScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, dutyId } = useLocalSearchParams<{ id?: string; dutyId?: string }>();
+  const targetId = id ?? dutyId;
   const router = useRouter();
 
   const { data: duty, isLoading, error } = useQuery<Duty>({
-    queryKey: ['duty', id],
-    queryFn: () => dutiesService.getDutyById(id!),
-    enabled: !!id,
-    refetchInterval: (data) => {
-      const status = data?.status;
+    queryKey: ['duty', targetId],
+    queryFn: () => dutiesService.getDutyById(targetId!),
+    enabled: !!targetId,
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
       if (
         status === DutyStatus.DUTY_COMPLETED ||
         status === DutyStatus.CANCELLED
@@ -77,9 +78,9 @@ export default function PassengerTripScreen() {
   const trip = (duty as (typeof duty & { trip?: TripRecord | null }) | undefined)?.trip ?? null;
 
   const boardingPin =
-    (duty?.booking as any)?.boarding_pin ||
-    (duty?.booking as any)?.stops?.find(
-      (s: any) => String(s.stop_type).toUpperCase() === 'PICKUP',
+    duty?.booking?.boarding_pin ||
+    duty?.booking?.stops?.find(
+      (s) => String(s.stop_type).toUpperCase() === 'PICKUP',
     )?.boarding_pin ||
     null;
 
@@ -93,9 +94,9 @@ export default function PassengerTripScreen() {
   }, [trackingUrl]);
 
   const dialDriver = useCallback(() => {
-    const phone = (duty?.driver as any)?.phone;
+    const phone = duty?.driver?.phone;
     if (phone) Linking.openURL(`tel:${phone.replace(/\s+/g, '')}`).catch(() => {});
-  }, [duty?.driver]);
+  }, [duty?.driver?.phone]);
 
   if (isLoading) {
     return (
@@ -109,7 +110,7 @@ export default function PassengerTripScreen() {
     return (
       <SafeAreaView style={styles.center}>
         <Text style={styles.errorText}>Unable to load trip details.</Text>
-        <Button label="Go Back" onPress={() => router.back()} variant="secondary" />
+        <Button title="Go Back" onPress={() => router.back()} variant="secondary" />
       </SafeAreaView>
     );
   }
@@ -145,13 +146,13 @@ export default function PassengerTripScreen() {
         {/* Route */}
         <Card>
           <Text style={styles.sectionTitle}>Route</Text>
-          <InfoRow label="From" value={(duty.booking as any)?.pickup_address} />
-          <InfoRow label="To" value={(duty.booking as any)?.drop_address} />
+          <InfoRow label="From" value={duty.booking?.pickup_address} />
+          <InfoRow label="To" value={duty.booking?.drop_address} />
           <InfoRow
             label="Scheduled Pickup"
             value={
-              (duty.booking as any)?.pickup_datetime
-                ? new Date((duty.booking as any).pickup_datetime).toLocaleString()
+              duty.booking?.pickup_datetime
+                ? new Date(duty.booking.pickup_datetime).toLocaleString()
                 : undefined
             }
           />
@@ -160,12 +161,12 @@ export default function PassengerTripScreen() {
         {/* Vehicle & Driver */}
         <Card>
           <Text style={styles.sectionTitle}>Your Cab</Text>
-          <InfoRow label="Vehicle" value={(duty.vehicle as any)?.registration_number} />
-          <InfoRow label="Type" value={(duty.vehicle as any)?.vehicle_type} />
-          <InfoRow label="Driver" value={(duty.driver as any)?.full_name} />
-          {(duty.driver as any)?.phone && (
+          <InfoRow label="Vehicle" value={duty.vehicle?.registration_number} />
+          <InfoRow label="Type" value={duty.vehicle?.vehicle_type} />
+          <InfoRow label="Driver" value={duty.driver?.full_name} />
+          {duty.driver?.phone && (
             <TouchableOpacity style={styles.dialBtn} onPress={dialDriver}>
-              <Text style={styles.dialText}>📞 Call Driver — {(duty.driver as any).phone}</Text>
+              <Text style={styles.dialText}>📞 Call Driver — {duty.driver.phone}</Text>
             </TouchableOpacity>
           )}
         </Card>
@@ -177,7 +178,7 @@ export default function PassengerTripScreen() {
             <Text style={styles.trackingHint}>
               Tap below to open the live map and see your cab in real-time.
             </Text>
-            <Button label="🗺  Track Live on Map" onPress={openTracking} variant="primary" />
+            <Button title="🗺  Track Live on Map" onPress={openTracking} variant="primary" />
           </Card>
         )}
 
@@ -216,7 +217,7 @@ const styles = StyleSheet.create({
   },
   backBtn: { padding: 4 },
   backText: { fontSize: 18, color: theme.colors.primary },
-  title: { fontSize: 20, fontWeight: '700', color: theme.colors.text },
+  title: { fontSize: 20, fontWeight: '700', color: theme.colors.textPrimary },
   sectionTitle: {
     fontSize: 14,
     fontWeight: '600',
@@ -228,7 +229,7 @@ const styles = StyleSheet.create({
   milestoneLabel: {
     fontSize: 18,
     fontWeight: '700',
-    color: theme.colors.text,
+    color: theme.colors.textPrimary,
     marginBottom: 12,
   },
   infoRow: {
@@ -239,7 +240,7 @@ const styles = StyleSheet.create({
     borderBottomColor: theme.colors.border,
   },
   infoLabel: { fontSize: 13, color: theme.colors.textSecondary, flex: 1 },
-  infoValue: { fontSize: 13, fontWeight: '600', color: theme.colors.text, flex: 2, textAlign: 'right' },
+  infoValue: { fontSize: 13, fontWeight: '600', color: theme.colors.textPrimary, flex: 2, textAlign: 'right' },
   pinContainer: {
     alignItems: 'center',
     paddingVertical: 12,
@@ -262,5 +263,5 @@ const styles = StyleSheet.create({
   },
   dialText: { fontSize: 14, color: theme.colors.primary, fontWeight: '600' },
   trackingHint: { fontSize: 13, color: theme.colors.textSecondary, marginBottom: 10 },
-  errorText: { fontSize: 16, color: theme.colors.error, marginBottom: 12 },
+  errorText: { fontSize: 16, color: theme.colors.danger, marginBottom: 12 },
 });

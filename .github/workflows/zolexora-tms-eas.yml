@@ -44,6 +44,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-node
+        with:
+          node-version: '22'
       - name: Run TypeScript check
         run: pnpm --filter @zolexora/utils build && pnpm --filter @zolexora/tms-mobile run typecheck
 
@@ -59,9 +61,11 @@ jobs:
           lfs: true
 
       - uses: ./.github/actions/setup-node
+        with:
+          node-version: '22'
 
       # Infisical is the only secret source — injects EXPO_PUBLIC_API_BASE_URL,
-      # TMS_AUTH_SERVICE_PUBLIC_URL, TMS_TURNSTILE_SITE_KEY (and optional EAS_PROJECT_ID).
+      # TMS_AUTH_SERVICE_PUBLIC_URL, TMS_TURNSTILE_SITE_KEY, TMS_EXPO_TOKEN.
       - uses: ./.github/actions/infisical
         with:
           client-id: ${{ secrets.INFISICAL_CLIENT_ID }}
@@ -71,11 +75,14 @@ jobs:
           environment: ${{ inputs.environment || 'prod' }}
 
       - name: Verify required Infisical keys
+        env:
+          EXPO_TOKEN_RESOLVED: ${{ env.TMS_EXPO_TOKEN || secrets.TMS_EXPO_TOKEN || secrets.EXPO_TOKEN }}
         run: |
           missing=0
           [ -n "${EXPO_PUBLIC_API_BASE_URL:-}" ] || { echo "::error title=Missing Infisical key::EXPO_PUBLIC_API_BASE_URL (/Zolexora_TMS)"; missing=1; }
           [ -n "${TMS_AUTH_SERVICE_PUBLIC_URL:-${AUTH_SERVICE_PUBLIC_URL:-}}" ] || { echo "::error title=Missing Infisical key::TMS_AUTH_SERVICE_PUBLIC_URL (/Zolexora_TMS)"; missing=1; }
           [ -n "${TMS_TURNSTILE_SITE_KEY:-${TURNSTILE_SITE_KEY:-}}" ] || { echo "::error title=Missing Infisical key::TMS_TURNSTILE_SITE_KEY (/Zolexora_TMS)"; missing=1; }
+          [ -n "${EXPO_TOKEN_RESOLVED:-}" ] || { echo "::error title=Missing Expo token::Set TMS_EXPO_TOKEN in Infisical (/Zolexora_TMS) or GitHub secrets"; missing=1; }
           exit "$missing"
 
       - name: Setup Expo + EAS CLI
@@ -83,12 +90,12 @@ jobs:
         with:
           expo-version: latest
           eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
+          token: ${{ env.TMS_EXPO_TOKEN || secrets.TMS_EXPO_TOKEN || secrets.EXPO_TOKEN }}
 
       - name: Trigger EAS Build
         working-directory: ${{ env.WORKING_DIR }}
         env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EXPO_TOKEN: ${{ env.TMS_EXPO_TOKEN || secrets.TMS_EXPO_TOKEN || secrets.EXPO_TOKEN }}
         run: |
           PLATFORM="${{ inputs.platform || 'android' }}"
           PROFILE="${{ inputs.profile || (startsWith(github.ref, 'refs/tags/') && 'production' || 'preview') }}"

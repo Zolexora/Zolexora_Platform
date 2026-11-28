@@ -171,7 +171,7 @@ class FinancialEngine:
             duty_id=duty.id,
             trip_id=trip.id if trip else None,
             rate_card_version_id=rate_card_version.id,
-            operational_inputs=facts,
+            operational_inputs={k: (str(v) if isinstance(v, Decimal) else v) for k, v in facts.items()},
             currency="INR", # Could be inherited from rate card
             is_finalized=False,
             created_by_user_id=user_id

@@ -56,7 +56,9 @@ export function usePushNotifications(isAuthenticated: boolean) {
       const data = response?.notification?.request?.content?.data as
         | { screen?: string; duty_id?: string }
         | undefined;
-      if (data?.screen === 'duty' && data?.duty_id) {
+      if (data?.screen === 'passenger-trip' && data?.duty_id) {
+        router.push(`/duty/passenger-trip?id=${data.duty_id}`);
+      } else if (data?.screen === 'duty' && data?.duty_id) {
         router.push(`/duty/${data.duty_id}`);
       }
     };

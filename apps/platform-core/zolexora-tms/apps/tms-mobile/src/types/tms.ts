@@ -106,6 +106,9 @@ export interface DutyTripSummary {
   start_odometer: number;
   end_odometer?: number | null;
   total_distance_km?: number | null;
+  start_timestamp?: string | null;
+  end_timestamp?: string | null;
+  share_token?: string | null;
   toll_amount: number;
   fuel_amount: number;
   parking_amount: number;

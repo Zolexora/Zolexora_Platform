@@ -287,96 +287,12 @@ async def complete_trip(
         },
     )
 
-    # Auto-generate BillingRecord on trip completion (best-effort)
-    await _auto_create_billing_record(org_id, trip, duty, actor_id, db)
+    # Auto-generate BillingRecord + DRAFT Invoice on trip completion (best-effort)
+    if duty:
+        from app.modules.finance.invoices.routes import auto_generate_trip_invoice
+        await auto_generate_trip_invoice(db, org_id, duty, trip, actor_id)
 
     return TripResponse.model_validate(trip)
-
-
-async def _auto_create_billing_record(
-    org_id: uuid.UUID,
-    trip: "Trip",
-    duty: "Duty",
-    actor_id: uuid.UUID,
-    db: AsyncSession,
-) -> None:
-    """Create a PENDING BillingRecord for the completed trip if one doesn't exist yet.
-
-    Attempts to run a FinancialSnapshot via the active rate-card version. If no
-    rate card is configured the record is created without a snapshot — it can be
-    rated manually later.  Best-effort: failures are logged, never raised.
-    """
-    try:
-        from sqlalchemy import select as _sel
-        from app.modules.finance.billing.models import BillingRecord, BillingStatus, FinancialSnapshot
-        from app.modules.finance.billing.enums import BillingStatus as BS
-        from app.modules.operations.bookings.models import Booking as _Booking
-        from app.modules.crm.clients.models import Client as _Client
-
-        # Idempotent: skip if record already exists
-        existing = (await db.execute(
-            _sel(BillingRecord.id).where(BillingRecord.duty_id == duty.id)
-        )).scalar_one_or_none()
-        if existing:
-            return
-
-        # Resolve customer_id from booking
-        booking = (await db.execute(
-            _sel(_Booking).where(_Booking.id == duty.booking_id)
-        )).scalars().first()
-        if not booking or not booking.client_id:
-            return
-
-        # Try to compute a FinancialSnapshot via the billing engine
-        snapshot: Optional[FinancialSnapshot] = None
-        try:
-            from app.modules.finance.billing.models import RateCard, RateCardVersion
-            from app.modules.finance.billing.engine import FinancialEngine
-
-            rv_row = (await db.execute(
-                _sel(RateCardVersion)
-                .join(RateCard, RateCardVersion.rate_card_id == RateCard.id)
-                .where(
-                    RateCard.organisation_id == org_id,
-                    RateCard.customer_id == booking.client_id,
-                    RateCardVersion.is_active.is_(True),
-                )
-                .order_by(RateCardVersion.version_number.desc())
-                .limit(1)
-            )).scalars().first()
-
-            if rv_row:
-                snapshot = await FinancialEngine.calculate_snapshot(
-                    org_id=org_id,
-                    duty=duty,
-                    trip=trip,
-                    rate_card_version=rv_row,
-                    db=db,
-                    actor_user_id=actor_id,
-                )
-                db.add(snapshot)
-                await db.flush()
-        except Exception as snap_exc:
-            import logging
-            logging.getLogger("zolexora.billing").warning(
-                "Could not compute snapshot for trip %s: %s", trip.id, snap_exc
-            )
-
-        record = BillingRecord(
-            id=uuid.uuid4(),
-            organisation_id=org_id,
-            customer_id=booking.client_id,
-            duty_id=duty.id,
-            status=BillingStatus.PENDING,
-            snapshot_id=snapshot.id if snapshot else None,
-        )
-        db.add(record)
-        await db.commit()
-    except Exception as exc:
-        import logging
-        logging.getLogger("zolexora.billing").warning(
-            "Auto billing record creation failed for trip %s: %s", trip.id, exc
-        )
 
 
 async def add_trip_receipt(

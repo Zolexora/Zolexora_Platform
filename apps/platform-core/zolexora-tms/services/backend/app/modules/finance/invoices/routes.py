@@ -17,6 +17,9 @@ from fastapi import BackgroundTasks
 from app.modules.finance.invoices.pdf_service import generate_invoice_pdf_bytes
 from app.core.storage import upload_document_to_r2
 from app.modules.crm.customers.models import Customer
+from app.modules.finance.billing.engine import FinancialEngine
+from app.modules.finance.billing.models import RateCard, RateCardVersion
+from app.modules.operations.bookings.models import Booking
 
 
 router = APIRouter(prefix="/invoices", tags=["Invoices"])
@@ -24,6 +27,169 @@ router = APIRouter(prefix="/invoices", tags=["Invoices"])
 def _generate_invoice_number(db) -> str:
     # In a real app, use a sequence or robust generator. Using UUID prefix for simplicity.
     return f"INV-{uuid.uuid4().hex[:8].upper()}"
+
+
+async def build_invoice_from_records(
+    db: AsyncSession,
+    *,
+    organisation_id: uuid.UUID,
+    customer_id: uuid.UUID,
+    records: List[BillingRecord],
+    invoice_date: datetime.date | datetime.datetime,
+    due_date: datetime.date | datetime.datetime,
+    created_by_user_id: uuid.UUID | None,
+    notes: str | None = None,
+    terms: str | None = None,
+) -> Invoice:
+    """Build and persist a DRAFT Invoice from validated PENDING BillingRecords with snapshots."""
+    invoice = Invoice(
+        organisation_id=organisation_id,
+        customer_id=customer_id,
+        invoice_number=_generate_invoice_number(db),
+        invoice_date=invoice_date,
+        due_date=due_date,
+        notes=notes,
+        terms=terms,
+        status=InvoiceStatus.DRAFT,
+        created_by_user_id=created_by_user_id,
+    )
+
+    subtotal = Decimal("0.00")
+    taxable_amount = Decimal("0.00")
+    tax_amount = Decimal("0.00")
+    discount_amount = Decimal("0.00")
+    grand_total = Decimal("0.00")
+    invoice_lines: List[InvoiceLine] = []
+
+    for r in records:
+        snap: FinancialSnapshot = r.snapshot
+        subtotal += snap.subtotal
+        taxable_amount += snap.taxable_amount
+        tax_amount += snap.tax_amount
+        discount_amount += snap.discount_amount
+        grand_total += snap.grand_total
+
+        for s_line in snap.lines:
+            if not s_line.is_tax:
+                invoice_lines.append(
+                    InvoiceLine(
+                        billing_record_id=r.id,
+                        description=s_line.description,
+                        quantity=s_line.quantity,
+                        unit=s_line.unit,
+                        unit_rate=s_line.unit_rate,
+                        amount=s_line.amount,
+                    )
+                )
+
+    invoice.subtotal = subtotal
+    invoice.taxable_amount = taxable_amount
+    invoice.tax_amount = tax_amount
+    invoice.discount_amount = discount_amount
+    invoice.grand_total = grand_total
+    invoice.amount_due = grand_total
+    invoice.lines = invoice_lines
+
+    db.add(invoice)
+    await db.flush()
+
+    for r in records:
+        r.status = BillingStatus.INVOICED
+        r.invoice_id = invoice.id
+
+    return invoice
+
+
+async def auto_generate_trip_invoice(
+    db: AsyncSession,
+    org_id: uuid.UUID,
+    duty,
+    trip,
+    actor_id: uuid.UUID,
+) -> None:
+    """Create a BillingRecord and (if an active rate card exists) a DRAFT Invoice for a completed trip.
+
+    Best-effort: never raises so trip completion cannot be blocked by missing finance setup.
+    """
+    import logging
+    log = logging.getLogger("zolexora.invoices")
+    try:
+        existing = (
+            await db.execute(select(BillingRecord.id).where(BillingRecord.duty_id == duty.id))
+        ).scalar_one_or_none()
+        if existing:
+            return
+
+        booking = (
+            await db.execute(select(Booking).where(Booking.id == duty.booking_id))
+        ).scalars().first()
+        if not booking or not booking.customer_id:
+            return
+
+        rate_version = None
+        if booking.rate_card_version_id:
+            rate_version = (
+                await db.execute(
+                    select(RateCardVersion)
+                    .options(selectinload(RateCardVersion.rules))
+                    .where(RateCardVersion.id == booking.rate_card_version_id)
+                )
+            ).scalars().first()
+        if not rate_version:
+            rate_version = (
+                await db.execute(
+                    select(RateCardVersion)
+                    .join(RateCard, RateCardVersion.rate_card_id == RateCard.id)
+                    .options(selectinload(RateCardVersion.rules))
+                    .where(
+                        RateCard.organisation_id == org_id,
+                        RateCard.customer_id == booking.customer_id,
+                        RateCard.is_active.is_(True),
+                    )
+                    .order_by(RateCardVersion.version_number.desc())
+                    .limit(1)
+                )
+            ).scalars().first()
+
+        snapshot = None
+        if rate_version:
+            snapshot = await FinancialEngine.calculate_snapshot(
+                db=db,
+                duty=duty,
+                trip=trip,
+                rate_card_version=rate_version,
+                user_id=actor_id,
+            )
+
+        record = BillingRecord(
+            id=uuid.uuid4(),
+            organisation_id=org_id,
+            customer_id=booking.customer_id,
+            duty_id=duty.id,
+            status=BillingStatus.PENDING,
+            snapshot_id=snapshot.id if snapshot else None,
+        )
+        db.add(record)
+        await db.flush()
+
+        if snapshot is not None:
+            record.snapshot = snapshot
+            now = datetime.datetime.now(datetime.timezone.utc)
+            await build_invoice_from_records(
+                db,
+                organisation_id=org_id,
+                customer_id=booking.customer_id,
+                records=[record],
+                invoice_date=now,
+                due_date=now + datetime.timedelta(days=14),
+                created_by_user_id=actor_id,
+                notes=f"Auto-generated on completion of trip {trip.trip_number}",
+            )
+
+        await db.commit()
+    except Exception as exc:
+        await db.rollback()
+        log.warning("Auto invoice generation skipped for trip %s: %s", trip.id, exc)
 
 
 @router.post("", response_model=InvoiceResponse, status_code=status.HTTP_201_CREATED)
@@ -62,66 +228,18 @@ async def create_invoice(
         if not r.snapshot:
             raise HTTPException(status_code=400, detail=f"Billing record {r.id} has no snapshot")
 
-    # Aggregate snapshots into an Invoice
-    invoice = Invoice(
+    invoice = await build_invoice_from_records(
+        db,
         organisation_id=current_org_user.organisation_id,
         customer_id=request.customer_id,
-        invoice_number=_generate_invoice_number(db),
+        records=list(records),
         invoice_date=request.invoice_date,
         due_date=request.due_date,
+        created_by_user_id=current_user.id,
         notes=request.notes,
         terms=request.terms,
-        status=InvoiceStatus.DRAFT,
-        created_by_user_id=current_user.id
     )
-    
-    # We will compute these as we add lines
-    subtotal = 0
-    taxable_amount = 0
-    tax_amount = 0
-    discount_amount = 0
-    grand_total = 0
-    
-    invoice_lines = []
-    
-    for r in records:
-        snap: FinancialSnapshot = r.snapshot
-        subtotal += snap.subtotal
-        taxable_amount += snap.taxable_amount
-        tax_amount += snap.tax_amount
-        discount_amount += snap.discount_amount
-        grand_total += snap.grand_total
-        
-        # We add lines to the invoice
-        for s_line in snap.lines:
-            # We skip adding tax lines as standard invoice lines if we separate them, but keeping it simple:
-            if not s_line.is_tax:
-                il = InvoiceLine(
-                    billing_record_id=r.id,
-                    description=s_line.description,
-                    quantity=s_line.quantity,
-                    unit=s_line.unit,
-                    unit_rate=s_line.unit_rate,
-                    amount=s_line.amount
-                )
-                invoice_lines.append(il)
-                
-    invoice.subtotal = subtotal
-    invoice.taxable_amount = taxable_amount
-    invoice.tax_amount = tax_amount
-    invoice.discount_amount = discount_amount
-    invoice.grand_total = grand_total
-    invoice.amount_due = grand_total
-    
-    invoice.lines = invoice_lines
-    db.add(invoice)
-    await db.flush()  # assigns invoice.id before the billing records reference it
 
-    # Update billing records
-    for r in records:
-        r.status = BillingStatus.INVOICED
-        r.invoice_id = invoice.id
-        
     await db.commit()
     await db.refresh(invoice)
     

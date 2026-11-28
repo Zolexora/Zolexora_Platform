@@ -49,6 +49,10 @@ export default function RootLayout() {
               options={{ title: 'Duty Details', headerBackTitle: 'Back' }}
             />
             <Stack.Screen
+              name="duty/passenger-trip"
+              options={{ title: 'Your Trip', headerBackTitle: 'Back' }}
+            />
+            <Stack.Screen
               name="duty/start-trip/[id]"
               options={{ title: 'Start Trip', headerBackTitle: 'Back' }}
             />
