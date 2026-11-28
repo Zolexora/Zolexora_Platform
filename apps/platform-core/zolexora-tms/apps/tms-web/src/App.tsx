@@ -28,6 +28,7 @@ import { VendorPaymentHistoryPage } from './features/billing/VendorPaymentHistor
 import { VendorSettlementsPage } from './features/billing/VendorSettlementsPage';
 import { FinancialPeriodsPage } from './features/reports/FinancialPeriodsPage';
 import { PnLReportsPage } from './features/reports/PnLReportsPage';
+import { SlaSafetyReportPage } from './features/reports/SlaSafetyReportPage';
 import { WorkspaceSettingsPage } from './features/organization/WorkspaceSettingsPage';
 import { RolesPage } from './features/organization/RolesPage';
 import { MembersPage } from './features/organization/MembersPage';
@@ -139,6 +140,7 @@ export function App() {
                 <Route path="financial-periods" element={<FinancialPeriodsPage />} />
                 <Route path="expenses" element={<ExpensesPage />} />
                 <Route path="reports/pnl" element={<PnLReportsPage />} />
+                <Route path="reports/sla-safety" element={<SlaSafetyReportPage />} />
                 <Route path="compliance" element={<CompliancePage />} />
                 <Route path="settings" element={<WorkspaceSettingsPage />} />
                 <Route path="settings/roles" element={<RolesPage />} />

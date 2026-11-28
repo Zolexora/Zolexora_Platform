@@ -39,6 +39,7 @@ const navigation = [
       { name: 'Shift Rosters', href: '/sp/rosters', icon: CalendarClock },
       { name: 'Duties', href: '/sp/duties', icon: ClipboardList },
       { name: 'Dispatch Board', href: '/sp/dispatch', icon: Radio },
+      { name: 'SLA & Safety Audit', href: '/sp/reports/sla-safety', icon: Shield },
     ],
   },
   {

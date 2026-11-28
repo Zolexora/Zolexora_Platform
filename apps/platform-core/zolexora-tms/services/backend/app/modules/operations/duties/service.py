@@ -29,6 +29,8 @@ from app.modules.operations.duties.schemas import (
     DutyVehicleSummary,
     EscortVerifyRequest,
     SafeDropConfirmRequest,
+    SlaSafetyAuditRow,
+    SlaSafetyReportResponse,
 )
 
 
@@ -553,3 +555,123 @@ async def notify_passengers(ctx: OrgContext, duty_id: uuid.UUID, public_origin: 
             detail="Passenger boarding alerts apply only to PASSENGER duties.",
         )
     return result
+
+
+async def get_sla_safety_report(
+    ctx: OrgContext,
+    *,
+    date_from: Optional[datetime.datetime] = None,
+    date_to: Optional[datetime.datetime] = None,
+    customer_id: Optional[uuid.UUID] = None,
+    booking_type: Optional[str] = None,
+    limit: int = 200,
+) -> SlaSafetyReportResponse:
+    """Computes corporate ETS/cab on-time SLA, boarding/no-show, and night-shift safety compliance."""
+    stmt = (
+        select(Duty)
+        .join(Booking, Booking.id == Duty.booking_id)
+        .where(Duty.organisation_id == ctx.organisation_id, Duty.status != DutyStatus.CANCELLED)
+    )
+    if date_from:
+        stmt = stmt.where(Duty.scheduled_start_time >= date_from)
+    if date_to:
+        stmt = stmt.where(Duty.scheduled_start_time <= date_to)
+    if customer_id:
+        stmt = stmt.where(Booking.customer_id == customer_id)
+    if booking_type and booking_type.upper() != "ALL":
+        stmt = stmt.where(Booking.booking_type == booking_type.upper())
+
+    duties = list((await ctx.db.execute(stmt.order_by(Duty.scheduled_start_time.desc()).limit(limit))).scalars().all())
+    raw_map = {duty.id: duty for duty in duties}
+    enriched = await enrich_duties(ctx.db, duties)
+
+    rows: list[SlaSafetyAuditRow] = []
+    started = 0
+    on_time_count = 0
+    completed = 0
+    escort_req = 0
+    escort_ver = 0
+    safe_drop_conf = 0
+    total_stops = 0
+    boarded_stops = 0
+    dropped_stops = 0
+    no_show_stops = 0
+
+    for d in enriched:
+        b = d.booking
+        raw_d = raw_map.get(d.id)
+        actual_start = getattr(raw_d, "actual_start_time", None) or d.start_time
+        actual_end = getattr(raw_d, "actual_end_time", None) or d.end_time
+        if d.status == DutyStatus.DUTY_COMPLETED:
+            completed += 1
+
+        delay_min: Optional[int] = None
+        on_time: Optional[bool] = None
+        if actual_start and d.scheduled_start_time:
+            started += 1
+            diff = int((actual_start - d.scheduled_start_time).total_seconds() // 60)
+            delay_min = diff
+            on_time = diff <= 15
+            if on_time:
+                on_time_count += 1
+
+        b_escort = bool(b and b.escort_required)
+        if b_escort:
+            escort_req += 1
+            if b and b.escort_guard_name:
+                escort_ver += 1
+            if b and b.safe_drop_confirmed_at:
+                safe_drop_conf += 1
+
+        stops = (b.stops if b and isinstance(b.stops, list) else [])
+        b_cnt = sum(1 for s in stops if str(s.get("status", "")).upper() == "BOARDED")
+        d_cnt = sum(1 for s in stops if str(s.get("status", "")).upper() == "DROPPED")
+        ns_cnt = sum(1 for s in stops if str(s.get("status", "")).upper() == "NO_SHOW")
+        total_stops += len(stops)
+        boarded_stops += b_cnt
+        dropped_stops += d_cnt
+        no_show_stops += ns_cnt
+
+        rows.append(
+            SlaSafetyAuditRow(
+                duty_id=d.id,
+                duty_number=d.duty_number,
+                booking_number=b.booking_number if b else None,
+                booking_type=b.booking_type if b else None,
+                customer_name=b.customer_name if b else None,
+                driver_name=d.driver.full_name if d.driver else None,
+                vehicle_registration=d.vehicle.registration_number if d.vehicle else None,
+                scheduled_start_time=d.scheduled_start_time,
+                actual_start_time=actual_start,
+                actual_end_time=actual_end,
+                delay_minutes=delay_min,
+                on_time=on_time,
+                escort_required=b_escort,
+                escort_guard_name=b.escort_guard_name if b else None,
+                safe_drop_confirmed_at=b.safe_drop_confirmed_at if b else None,
+                boarded_count=b_cnt,
+                dropped_count=d_cnt,
+                no_show_count=ns_cnt,
+                status=d.status.value if hasattr(d.status, "value") else str(d.status),
+            )
+        )
+
+    on_time_pct = round((on_time_count / started) * 100.0, 1) if started > 0 else 100.0
+    safety_pct = round((safe_drop_conf / escort_req) * 100.0, 1) if escort_req > 0 else 100.0
+
+    return SlaSafetyReportResponse(
+        total_duties=len(enriched),
+        completed_duties=completed,
+        started_duties=started,
+        on_time_start_count=on_time_count,
+        on_time_start_pct=on_time_pct,
+        escort_required_count=escort_req,
+        escort_verified_count=escort_ver,
+        safe_drop_confirmed_count=safe_drop_conf,
+        safety_compliance_pct=safety_pct,
+        total_stops=total_stops,
+        boarded_stops=boarded_stops,
+        dropped_stops=dropped_stops,
+        no_show_stops=no_show_stops,
+        rows=rows,
+    )

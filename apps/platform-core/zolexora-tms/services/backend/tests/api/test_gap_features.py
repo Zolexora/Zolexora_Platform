@@ -374,3 +374,14 @@ async def test_gap_features_end_to_end():
         assert np["boarding_pin"] and len(np["recipients"]) >= 2
         assert np["recipients"][0]["boarding_pin"] in np["message_text"]
         assert np["recipients"][0]["wa_url"].startswith("https://wa.me/")
+
+        # Step 4: Corporate SLA & Night-Shift Safety Audit Report
+        sla_res = await client.get("/api/v1/duties/reports/sla-safety", headers=headers)
+        assert sla_res.status_code == 200, sla_res.text
+        sla = sla_res.json()
+        assert sla["total_duties"] >= 2
+        assert sla["escort_required_count"] >= 1
+        assert sla["escort_verified_count"] >= 1
+        assert sla["safe_drop_confirmed_count"] >= 1
+        assert sla["boarded_stops"] >= 1
+        assert len(sla["rows"]) >= 2

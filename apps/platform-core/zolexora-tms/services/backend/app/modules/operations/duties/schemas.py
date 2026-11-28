@@ -185,3 +185,42 @@ class DutyResponse(DutyBase):
     created_at: datetime.datetime
     updated_at: datetime.datetime
 
+
+class SlaSafetyAuditRow(BaseModel):
+    duty_id: uuid.UUID
+    duty_number: str
+    booking_number: Optional[str] = None
+    booking_type: Optional[str] = None
+    customer_name: Optional[str] = None
+    driver_name: Optional[str] = None
+    vehicle_registration: Optional[str] = None
+    scheduled_start_time: datetime.datetime
+    actual_start_time: Optional[datetime.datetime] = None
+    actual_end_time: Optional[datetime.datetime] = None
+    delay_minutes: Optional[int] = None
+    on_time: Optional[bool] = None
+    escort_required: bool = False
+    escort_guard_name: Optional[str] = None
+    safe_drop_confirmed_at: Optional[datetime.datetime] = None
+    boarded_count: int = 0
+    dropped_count: int = 0
+    no_show_count: int = 0
+    status: str
+
+
+class SlaSafetyReportResponse(BaseModel):
+    total_duties: int
+    completed_duties: int
+    started_duties: int
+    on_time_start_count: int
+    on_time_start_pct: float
+    escort_required_count: int
+    escort_verified_count: int
+    safe_drop_confirmed_count: int
+    safety_compliance_pct: float
+    total_stops: int
+    boarded_stops: int
+    dropped_stops: int
+    no_show_stops: int
+    rows: List[SlaSafetyAuditRow] = Field(default_factory=list)
+

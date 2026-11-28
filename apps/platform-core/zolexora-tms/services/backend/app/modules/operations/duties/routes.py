@@ -14,6 +14,7 @@ from app.modules.operations.duties.schemas import (
     PassengerNotifyRequest,
     PassengerNotifyResponse,
     SafeDropConfirmRequest,
+    SlaSafetyReportResponse,
 )
 from app.modules.operations.duties import service
 
@@ -44,6 +45,25 @@ async def list_duties(
     return await service.list_duties(
         ctx, status, driver_id, vehicle_id, vendor_id, skip, limit,
         search=search, date_from=date_from, date_to=date_to,
+    )
+
+
+@router.get("/reports/sla-safety", response_model=SlaSafetyReportResponse)
+async def get_sla_safety_report(
+    date_from: Optional[datetime.datetime] = None,
+    date_to: Optional[datetime.datetime] = None,
+    customer_id: Optional[uuid.UUID] = None,
+    booking_type: Optional[str] = Query(None, max_length=32),
+    limit: int = Query(200, ge=1, le=500),
+    ctx: OrgContext = Depends(get_org_context),
+):
+    return await service.get_sla_safety_report(
+        ctx,
+        date_from=date_from,
+        date_to=date_to,
+        customer_id=customer_id,
+        booking_type=booking_type,
+        limit=limit,
     )
 
 
