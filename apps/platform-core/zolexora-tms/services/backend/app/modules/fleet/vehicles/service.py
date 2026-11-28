@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.storage import upload_document_to_r2
 from app.core.tenant import TenantContext
 from app.modules.core.audit.models import AuditLog
+from app.modules.crm.vendors.models import Vendor
 from app.modules.fleet.vehicles.enums import (
     FuelType,
     VehicleBodyType,
@@ -22,6 +23,55 @@ from app.modules.fleet.vehicles.schemas import (
     VehicleResponse,
     VehicleUpdate,
 )
+
+
+async def _hydrate_vehicles(
+    vehicles: list[Vehicle],
+    db: AsyncSession,
+) -> list[VehicleResponse]:
+    vendor_ids = {v.vendor_id for v in vehicles if v.vendor_id}
+    vendor_map: dict[uuid.UUID, Vendor] = {}
+    if vendor_ids:
+        res = await db.execute(select(Vendor).where(Vendor.id.in_(vendor_ids)))
+        vendor_map = {vnd.id: vnd for vnd in res.scalars().all()}
+
+    out: list[VehicleResponse] = []
+    for v in vehicles:
+        resp = VehicleResponse.model_validate(v)
+        if v.vendor_id and v.vendor_id in vendor_map:
+            vnd = vendor_map[v.vendor_id]
+            resp.vendor_code = vnd.vendor_code
+            resp.vendor_name = vnd.name
+            resp.vendor_pan = vnd.pan
+        out.append(resp)
+    return out
+
+
+async def _resolve_vendor_id(
+    org_id: uuid.UUID,
+    vendor_id: Optional[uuid.UUID],
+    vendor_code: Optional[str],
+    db: AsyncSession,
+) -> Optional[uuid.UUID]:
+    if vendor_id:
+        return vendor_id
+    if vendor_code and vendor_code.strip():
+        code = vendor_code.strip().upper()
+        vnd = (
+            await db.execute(
+                select(Vendor.id).where(
+                    Vendor.organisation_id == org_id,
+                    Vendor.vendor_code == code,
+                )
+            )
+        ).scalar_one_or_none()
+        if not vnd:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Vendor code '{code}' not found in your organisation",
+            )
+        return vnd
+    return None
 
 
 async def create_vehicle(
@@ -44,13 +94,19 @@ async def create_vehicle(
             detail=f"Vehicle '{reg_clean}' is already registered in your organisation",
         )
 
+    resolved_vendor_id = await _resolve_vendor_id(org_id, req.vendor_id, req.vendor_code, db)
+    ownership = req.ownership_type or (VehicleOwnershipType.ATTACHED if resolved_vendor_id else VehicleOwnershipType.OWNED)
+    if resolved_vendor_id and req.ownership_type == VehicleOwnershipType.OWNED:
+        ownership = VehicleOwnershipType.ATTACHED
+
     vehicle = Vehicle(
         id=uuid.uuid4(),
         organisation_id=org_id,
-        vendor_id=req.vendor_id,
+        vendor_id=resolved_vendor_id,
         registration_number=reg_clean,
-        vehicle_type=req.vehicle_type or VehicleBodyType.TRUCK,
-        ownership_type=req.ownership_type or VehicleOwnershipType.OWNED,
+        vehicle_type=req.vehicle_type or VehicleBodyType.SEDAN,
+        custom_vehicle_type=req.custom_vehicle_type.strip() if req.custom_vehicle_type else None,
+        ownership_type=ownership,
         make=req.make.strip() if req.make else None,
         model=req.model.strip() if req.model else None,
         year=req.year,
@@ -84,7 +140,7 @@ async def create_vehicle(
 
     await db.commit()
     await db.refresh(vehicle)
-    return VehicleResponse.model_validate(vehicle)
+    return (await _hydrate_vehicles([vehicle], db))[0]
 
 
 async def bulk_create_vehicles(
@@ -104,6 +160,14 @@ async def bulk_create_vehicles(
     res = await db.execute(existing_regs_stmt)
     existing_regs = set(res.scalars().all())
 
+    vendor_res = await db.execute(
+        select(Vendor.vendor_code, Vendor.id).where(
+            Vendor.organisation_id == org_id,
+            Vendor.vendor_code.is_not(None),
+        )
+    )
+    vendor_by_code = {code.upper(): vid for code, vid in vendor_res.all() if code}
+
     for idx, item in enumerate(items):
         row_num = idx + 1
         try:
@@ -120,19 +184,33 @@ async def bulk_create_vehicles(
                 )
                 continue
 
-            vtype = VehicleBodyType.TRUCK
-            if item.vehicle_type:
-                try:
-                    vtype = VehicleBodyType(item.vehicle_type.strip().upper())
-                except ValueError:
-                    vtype = VehicleBodyType.TRUCK
+            vendor_id = None
+            if item.vendor_code and item.vendor_code.strip():
+                code_clean = item.vendor_code.strip().upper()
+                vendor_id = vendor_by_code.get(code_clean)
+                if not vendor_id:
+                    errors.append(
+                        {"row": row_num, "registration_number": reg_clean, "error": f"Vendor code '{code_clean}' not found"}
+                    )
+                    continue
 
-            otype = VehicleOwnershipType.OWNED
-            if item.ownership_type:
+            vtype = VehicleBodyType.SEDAN
+            custom_vtype = item.custom_vehicle_type.strip()[:64] if item.custom_vehicle_type and item.custom_vehicle_type.strip() else None
+            if item.vehicle_type and item.vehicle_type.strip():
+                raw_type = item.vehicle_type.strip()
+                try:
+                    vtype = VehicleBodyType(raw_type.upper().replace(" ", "_"))
+                except ValueError:
+                    vtype = VehicleBodyType.OTHER
+                    if not custom_vtype:
+                        custom_vtype = raw_type[:64]
+
+            otype = VehicleOwnershipType.ATTACHED if vendor_id else VehicleOwnershipType.OWNED
+            if item.ownership_type and item.ownership_type.strip():
                 try:
                     otype = VehicleOwnershipType(item.ownership_type.strip().upper())
                 except ValueError:
-                    otype = VehicleOwnershipType.OWNED
+                    pass
 
             ftype = FuelType.DIESEL
             if item.fuel_type:
@@ -144,8 +222,10 @@ async def bulk_create_vehicles(
             vehicle = Vehicle(
                 id=uuid.uuid4(),
                 organisation_id=org_id,
+                vendor_id=vendor_id,
                 registration_number=reg_clean,
                 vehicle_type=vtype,
+                custom_vehicle_type=custom_vtype,
                 ownership_type=otype,
                 make=item.make.strip() if item.make else None,
                 model=item.model.strip() if item.model else None,
@@ -211,8 +291,8 @@ async def list_vehicles(
 
     stmt = stmt.order_by(desc(Vehicle.created_at)).offset(skip).limit(limit)
     res = await db.execute(stmt)
-    vehicles = res.scalars().all()
-    return [VehicleResponse.model_validate(v) for v in vehicles]
+    vehicles = list(res.scalars().all())
+    return await _hydrate_vehicles(vehicles, db)
 
 
 async def get_vehicle(
@@ -232,7 +312,7 @@ async def get_vehicle(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Vehicle not found",
         )
-    return VehicleResponse.model_validate(vehicle)
+    return (await _hydrate_vehicles([vehicle], db))[0]
 
 
 async def update_vehicle(
@@ -274,6 +354,13 @@ async def update_vehicle(
             )
         vehicle.registration_number = reg_clean
 
+    if "vendor_code" in update_data:
+        vcode = update_data.pop("vendor_code")
+        if vcode and str(vcode).strip():
+            vehicle.vendor_id = await _resolve_vendor_id(org_id, None, str(vcode), db)
+        elif "vendor_id" not in update_data:
+            vehicle.vendor_id = None
+
     for field, val in update_data.items():
         if field == "registration_number":
             continue
@@ -293,7 +380,7 @@ async def update_vehicle(
 
     await db.commit()
     await db.refresh(vehicle)
-    return VehicleResponse.model_validate(vehicle)
+    return (await _hydrate_vehicles([vehicle], db))[0]
 
 
 async def delete_vehicle(

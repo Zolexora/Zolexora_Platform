@@ -172,13 +172,35 @@ export interface DriverCreate {
   driver_type?: 'PERMANENT' | 'CONTRACT' | 'MARKET';
 }
 
+export type VehicleBodyType =
+  | 'SEDAN'
+  | 'HATCHBACK'
+  | 'SUV'
+  | 'TEMPO_TRAVELLER'
+  | 'MINI_BUS'
+  | 'BUS'
+  | 'AUTO_RICKSHAW'
+  | 'EV_CAB'
+  | 'TRUCK'
+  | 'TRAILER'
+  | 'CONTAINER'
+  | 'TANKER'
+  | 'TIPPER'
+  | 'TEMPO'
+  | 'PICKUP'
+  | 'OTHER';
+
 export interface Vehicle {
   id: string;
   organisation_id: string;
   vendor_id?: string;
+  vendor_code?: string;
+  vendor_name?: string;
+  vendor_pan?: string;
   registration_number: string;
-  vehicle_type: 'TRUCK' | 'TRAILER' | 'CONTAINER' | 'TANKER' | 'TIPPER' | 'TEMPO' | 'PICKUP' | 'OTHER';
-  ownership_type: 'OWNED' | 'LEASED' | 'ATTACHED';
+  vehicle_type: VehicleBodyType;
+  custom_vehicle_type?: string;
+  ownership_type: 'OWNED' | 'LEASED' | 'EMI' | 'ATTACHED';
   make?: string;
   model?: string;
   year?: number;
@@ -202,9 +224,11 @@ export interface Vehicle {
 
 export interface VehicleCreate {
   vendor_id?: string;
+  vendor_code?: string;
   registration_number: string;
-  vehicle_type: 'TRUCK' | 'TRAILER' | 'CONTAINER' | 'TANKER' | 'TIPPER' | 'TEMPO' | 'PICKUP' | 'OTHER';
-  ownership_type: 'OWNED' | 'LEASED' | 'ATTACHED';
+  vehicle_type: VehicleBodyType;
+  custom_vehicle_type?: string;
+  ownership_type?: 'OWNED' | 'LEASED' | 'EMI' | 'ATTACHED';
   make?: string;
   model?: string;
   year?: number;

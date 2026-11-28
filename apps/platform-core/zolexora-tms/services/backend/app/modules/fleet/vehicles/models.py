@@ -33,8 +33,9 @@ class Vehicle(Base, TimestampMixin):
     vehicle_type: Mapped[VehicleBodyType] = mapped_column(
         Enum(VehicleBodyType, name="vehicle_body_type", create_type=False),
         nullable=False,
-        default=VehicleBodyType.TRUCK,
+        default=VehicleBodyType.SEDAN,
     )
+    custom_vehicle_type: Mapped[str | None] = mapped_column(String(64), nullable=True)
     ownership_type: Mapped[VehicleOwnershipType] = mapped_column(
         Enum(VehicleOwnershipType, name="vehicle_ownership_type", create_type=False),
         nullable=False,

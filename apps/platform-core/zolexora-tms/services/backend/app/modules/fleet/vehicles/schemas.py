@@ -14,7 +14,8 @@ from app.modules.fleet.vehicles.enums import (
 class VehicleBase(BaseModel):
     vendor_id: Optional[uuid.UUID] = None
     registration_number: str = Field(..., min_length=4, max_length=32)
-    vehicle_type: VehicleBodyType = Field(default=VehicleBodyType.TRUCK)
+    vehicle_type: VehicleBodyType = Field(default=VehicleBodyType.SEDAN)
+    custom_vehicle_type: Optional[str] = Field(None, max_length=64)
     ownership_type: VehicleOwnershipType = Field(default=VehicleOwnershipType.OWNED)
     make: Optional[str] = Field(None, max_length=64)
     model: Optional[str] = Field(None, max_length=64)
@@ -35,14 +36,16 @@ class VehicleBase(BaseModel):
 
 
 class VehicleCreate(VehicleBase):
-    pass
+    vendor_code: Optional[str] = Field(None, max_length=32)
 
 
 class VehicleBulkCreateItem(BaseModel):
     """Single vehicle row for bulk import (CSV-friendly, all optional except reg_number)."""
     registration_number: str = Field(..., min_length=4, max_length=32)
-    vehicle_type: Optional[str] = "TRUCK"
-    ownership_type: Optional[str] = "OWNED"
+    vehicle_type: Optional[str] = "SEDAN"
+    custom_vehicle_type: Optional[str] = None
+    vendor_code: Optional[str] = None
+    ownership_type: Optional[str] = None
     make: Optional[str] = None
     model: Optional[str] = None
     year: Optional[int] = None
@@ -66,8 +69,10 @@ class VehicleBulkResult(BaseModel):
 
 class VehicleUpdate(BaseModel):
     vendor_id: Optional[uuid.UUID] = None
+    vendor_code: Optional[str] = Field(None, max_length=32)
     registration_number: Optional[str] = Field(None, min_length=4, max_length=32)
     vehicle_type: Optional[VehicleBodyType] = None
+    custom_vehicle_type: Optional[str] = Field(None, max_length=64)
     ownership_type: Optional[VehicleOwnershipType] = None
     make: Optional[str] = Field(None, max_length=64)
     model: Optional[str] = Field(None, max_length=64)
@@ -93,6 +98,9 @@ class VehicleResponse(VehicleBase):
 
     id: uuid.UUID
     organisation_id: uuid.UUID
+    vendor_code: Optional[str] = None
+    vendor_name: Optional[str] = None
+    vendor_pan: Optional[str] = None
     status: VehicleOperationalStatus
     created_at: datetime.datetime
     updated_at: datetime.datetime

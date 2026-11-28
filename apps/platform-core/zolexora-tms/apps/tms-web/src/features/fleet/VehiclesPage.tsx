@@ -1,32 +1,129 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Truck, Plus, Search, AlertCircle, X, Navigation, ShieldCheck, Upload, Download, CheckCircle2 } from 'lucide-react';
+import { Truck, Plus, Search, AlertCircle, X, Navigation, ShieldCheck, Upload, Download, CheckCircle2, Building2 } from 'lucide-react';
 import { apiClient } from '../../lib/api';
-import type { Vehicle, VehicleCreate } from '../../types';
+import type { Vehicle, VehicleBodyType, VehicleCreate, Vendor } from '../../types';
 import { EntityComplianceManager } from '../compliance/EntityComplianceManager';
 
-const CSV_TEMPLATE_COLS = 'registration_number,vehicle_type,ownership_type,make,model,year,fuel_type,payload_capacity_kg,odometer_km,fastag_id,gps_device_id';
-const CSV_SAMPLE_ROWS = [
-  'MH12AB1234,TRUCK,OWNED,Tata Motors,Signa 4825,2022,DIESEL,25000,0,,',
-  'GJ01CD5678,CONTAINER,LEASED,Ashok Leyland,4923 HB,2021,DIESEL,32000,15000,,',
-].join('\n');
+// ── Vehicle Type Options (Public Transport default + Cargo + Custom) ─────────
+
+const PUBLIC_TRANSPORT_TYPES: { value: VehicleBodyType; label: string }[] = [
+  { value: 'SEDAN', label: 'Sedan / Cab (4+1)' },
+  { value: 'HATCHBACK', label: 'Hatchback' },
+  { value: 'SUV', label: 'SUV / MUV (6+1 / 7+1)' },
+  { value: 'TEMPO_TRAVELLER', label: 'Tempo Traveller (12-26 Seater)' },
+  { value: 'MINI_BUS', label: 'Mini Bus' },
+  { value: 'BUS', label: 'Bus / Coach' },
+  { value: 'AUTO_RICKSHAW', label: 'Auto Rickshaw / 3-Wheeler' },
+  { value: 'EV_CAB', label: 'Electric Cab (EV)' },
+];
+
+const CARGO_TYPES: { value: VehicleBodyType; label: string }[] = [
+  { value: 'TRUCK', label: 'Open Truck' },
+  { value: 'CONTAINER', label: 'Container Body' },
+  { value: 'TRAILER', label: 'Semi-Trailer' },
+  { value: 'TANKER', label: 'Fuel Tanker' },
+  { value: 'TIPPER', label: 'Tipper / Dumper' },
+  { value: 'TEMPO', label: 'Tempo / LCV' },
+  { value: 'PICKUP', label: 'Pickup' },
+];
+
+// ── CSV Helpers (aligned 1-to-1 with Single Entry) ───────────────────────────
+
+const TEMPLATE_HEADERS = [
+  'Registration Number',
+  'Vehicle Type',
+  'Vendor Code',
+  'Make',
+  'Model',
+  'Year',
+  'Fuel Type',
+  'Capacity',
+  'Odometer (KM)',
+  'FASTag ID',
+  'GPS Device ID',
+];
+
+const HEADER_ALIASES: Record<string, string> = {
+  'registration number': 'registration_number',
+  'registration_number': 'registration_number',
+  'vehicle type': 'vehicle_type',
+  'vehicle_type': 'vehicle_type',
+  'custom vehicle type': 'custom_vehicle_type',
+  'custom_vehicle_type': 'custom_vehicle_type',
+  'vendor code': 'vendor_code',
+  'vendor_code': 'vendor_code',
+  'make': 'make',
+  'model': 'model',
+  'year': 'year',
+  'fuel type': 'fuel_type',
+  'fuel_type': 'fuel_type',
+  'capacity': 'payload_capacity_kg',
+  'payload_capacity_kg': 'payload_capacity_kg',
+  'odometer (km)': 'odometer_km',
+  'odometer_km': 'odometer_km',
+  'fastag id': 'fastag_id',
+  'fastag_id': 'fastag_id',
+  'gps device id': 'gps_device_id',
+  'gps_device_id': 'gps_device_id',
+};
 
 type BulkRow = Record<string, string>;
-interface BulkResult { succeeded: number; failed: number; errors: { row: number; registration_number?: string; error: string }[] }
+interface BulkResult {
+  succeeded: number;
+  failed: number;
+  errors: { row: number; registration_number?: string; error: string }[];
+}
+
+function splitCsvLine(line: string): string[] {
+  const cols: string[] = [];
+  let cur = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        cur += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (ch === ',' && !inQuotes) {
+      cols.push(cur.trim());
+      cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+  cols.push(cur.trim());
+  return cols;
+}
 
 function parseVehicleCSV(text: string): BulkRow[] {
-  const [header, ...rows] = text.trim().split('\n');
-  const cols = header.split(',').map((c) => c.trim().toLowerCase());
-  return rows.filter((r) => r.trim()).map((row) => {
-    const vals = row.split(',').map((v) => v.trim());
+  const cleaned = text.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const lines = cleaned.split('\n').filter(Boolean);
+  if (lines.length < 2) return [];
+  const cols = splitCsvLine(lines[0]).map((c) => {
+    const norm = c.toLowerCase();
+    return HEADER_ALIASES[norm] ?? norm;
+  });
+  return lines.slice(1).map((row) => {
+    const vals = splitCsvLine(row);
     const obj: BulkRow = {};
-    cols.forEach((col, i) => { obj[col] = vals[i] ?? ''; });
+    cols.forEach((col, i) => {
+      if (vals[i] !== undefined && vals[i] !== '') obj[col] = vals[i];
+    });
     return obj;
   });
 }
 
-function downloadCSVTemplate() {
-  const content = CSV_TEMPLATE_COLS + '\n' + CSV_SAMPLE_ROWS;
+function downloadCSVTemplate(sampleVendorCode?: string) {
+  const vcode = sampleVendorCode || '';
+  const sampleRows = [
+    `MH12AB1234,SEDAN,${vcode},Maruti Suzuki,Dzire Tour S,2023,CNG,4,12000,,`,
+    `DL01CD5678,BUS,${vcode},Tata Motors,Starbus 32,2022,DIESEL,32,45000,,`,
+  ].join('\n');
+  const content = TEMPLATE_HEADERS.join(',') + '\n' + sampleRows;
   const blob = new Blob([content], { type: 'text/csv' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -34,6 +131,23 @@ function downloadCSVTemplate() {
   a.click();
   URL.revokeObjectURL(a.href);
 }
+
+const EMPTY_FORM: VehicleCreate = {
+  registration_number: '',
+  vehicle_type: 'SEDAN',
+  custom_vehicle_type: '',
+  vendor_id: undefined,
+  vendor_code: '',
+  ownership_type: 'OWNED',
+  make: '',
+  model: '',
+  year: undefined,
+  fuel_type: 'DIESEL',
+  payload_capacity_kg: '',
+  odometer_km: '0.00',
+  fastag_id: '',
+  gps_device_id: '',
+};
 
 export function VehiclesPage() {
   const queryClient = useQueryClient();
@@ -48,6 +162,35 @@ export function VehiclesPage() {
   const [bulkResult, setBulkResult] = useState<BulkResult | null>(null);
   const [bulkError, setBulkError] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const [formData, setFormData] = useState<VehicleCreate>(EMPTY_FORM);
+
+  // Real-time list of added vendors for Vendor Code dropdown & bulk preview lookup
+  const { data: vendors = [] } = useQuery({
+    queryKey: ['vendors', 'dropdown'],
+    queryFn: () => apiClient<Vendor[]>('/api/v1/vendors?limit=200'),
+  });
+
+  const vendorByCode = useMemo(() => {
+    const map = new Map<string, Vendor>();
+    vendors.forEach((v) => {
+      if (v.vendor_code) map.set(v.vendor_code.toUpperCase(), v);
+    });
+    return map;
+  }, [vendors]);
+
+  const selectedVendor = useMemo(
+    () => (formData.vendor_code ? vendorByCode.get(formData.vendor_code.toUpperCase()) : undefined),
+    [formData.vendor_code, vendorByCode]
+  );
+
+  const { data: vehicles, isLoading } = useQuery({
+    queryKey: ['vehicles', search],
+    queryFn: () => {
+      const q = search ? `?search=${encodeURIComponent(search)}` : '';
+      return apiClient<Vehicle[]>(`/api/v1/vehicles${q}`);
+    },
+  });
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     setBulkResult(null);
@@ -70,10 +213,10 @@ export function VehiclesPage() {
   }
 
   const bulkMutation = useMutation({
-    mutationFn: (vehicles: BulkRow[]) =>
+    mutationFn: (vehiclesPayload: BulkRow[]) =>
       apiClient<BulkResult>('/api/v1/vehicles/bulk', {
         method: 'POST',
-        body: JSON.stringify({ vehicles }),
+        body: JSON.stringify({ vehicles: vehiclesPayload }),
       }),
     onSuccess: (res) => {
       setBulkResult(res);
@@ -90,27 +233,6 @@ export function VehiclesPage() {
     if (fileRef.current) fileRef.current.value = '';
   }
 
-  const [formData, setFormData] = useState<VehicleCreate>({
-    registration_number: '',
-    vehicle_type: 'TRUCK',
-    ownership_type: 'OWNED',
-    make: '',
-    model: '',
-    fuel_type: 'DIESEL',
-    payload_capacity_kg: '',
-    odometer_km: '0.00',
-    fastag_id: '',
-    gps_device_id: '',
-  });
-
-  const { data: vehicles, isLoading } = useQuery({
-    queryKey: ['vehicles', search],
-    queryFn: () => {
-      const q = search ? `?search=${encodeURIComponent(search)}` : '';
-      return apiClient<Vehicle[]>(`/api/v1/vehicles${q}`);
-    },
-  });
-
   const createMutation = useMutation({
     mutationFn: (data: VehicleCreate) =>
       apiClient<Vehicle>('/api/v1/vehicles', {
@@ -120,18 +242,7 @@ export function VehiclesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vehicles'] });
       setIsModalOpen(false);
-      setFormData({
-        registration_number: '',
-        vehicle_type: 'TRUCK',
-        ownership_type: 'OWNED',
-        make: '',
-        model: '',
-        fuel_type: 'DIESEL',
-        payload_capacity_kg: '',
-        odometer_km: '0.00',
-        fastag_id: '',
-        gps_device_id: '',
-      });
+      setFormData(EMPTY_FORM);
       setFormError('');
     },
     onError: (err: any) => {
@@ -145,13 +256,21 @@ export function VehiclesPage() {
       setFormError('Registration number is required.');
       return;
     }
-    
-    // Auto format number plate
+    if (formData.vehicle_type === 'OTHER' && !formData.custom_vehicle_type?.trim()) {
+      setFormError('Please specify the custom vehicle type.');
+      return;
+    }
+
     const cleanedPlate = formData.registration_number.toUpperCase().replace(/\s+/g, '');
-    
+
     createMutation.mutate({
       ...formData,
       registration_number: cleanedPlate,
+      custom_vehicle_type: formData.vehicle_type === 'OTHER' ? formData.custom_vehicle_type?.trim() : undefined,
+      vendor_id: selectedVendor?.id,
+      vendor_code: formData.vendor_code || undefined,
+      ownership_type: selectedVendor ? 'ATTACHED' : 'OWNED',
+      year: formData.year ? Number(formData.year) : undefined,
       payload_capacity_kg: formData.payload_capacity_kg ? formData.payload_capacity_kg.toString() : undefined,
     });
   };
@@ -161,7 +280,7 @@ export function VehiclesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white">Fleet Vehicles</h1>
-          <p className="text-sm text-slate-400">Manage heavy commercial vehicles, ownership, and tracking devices.</p>
+          <p className="text-sm text-slate-400">Manage public transport &amp; commercial vehicles, vendor linking, and tracking devices.</p>
         </div>
         <div className="flex gap-2">
           <button
@@ -197,7 +316,7 @@ export function VehiclesPage() {
           <thead className="bg-slate-800/80 text-xs uppercase text-slate-400">
             <tr>
               <th className="px-5 py-4 font-semibold">Registration</th>
-              <th className="px-5 py-4 font-semibold">Type & Ownership</th>
+              <th className="px-5 py-4 font-semibold">Type &amp; Vendor</th>
               <th className="px-5 py-4 font-semibold">Specs</th>
               <th className="px-5 py-4 font-semibold">Telematics</th>
               <th className="px-5 py-4 font-semibold">Odometer</th>
@@ -217,14 +336,22 @@ export function VehiclesPage() {
                 <tr key={v.id} className="hover:bg-slate-800/30 transition">
                   <td className="px-5 py-4">
                     <div className="font-mono font-bold text-white text-base">{v.registration_number}</div>
-                    <div className="text-xs text-slate-400">{v.make || ''} {v.model || ''}</div>
+                    <div className="text-xs text-slate-400">{v.make || ''} {v.model || ''} {v.year ? `(${v.year})` : ''}</div>
                   </td>
                   <td className="px-5 py-4 text-xs">
-                    <div className="font-medium text-slate-200">{v.vehicle_type}</div>
-                    <div className="text-silver-400 text-[11px] font-semibold">{v.ownership_type}</div>
+                    <div className="font-medium text-slate-200">
+                      {v.custom_vehicle_type || v.vehicle_type.replace(/_/g, ' ')}
+                    </div>
+                    {v.vendor_code ? (
+                      <div className="text-silver-300 text-[11px] font-mono mt-0.5">
+                        {v.vendor_code} {v.vendor_name ? `· ${v.vendor_name}` : ''}
+                      </div>
+                    ) : (
+                      <div className="text-slate-500 text-[11px] mt-0.5">Self Owned</div>
+                    )}
                   </td>
                   <td className="px-5 py-4 text-xs">
-                    <div>{v.payload_capacity_kg ? `${v.payload_capacity_kg} kg` : 'Standard'}</div>
+                    <div>{v.payload_capacity_kg ? `${v.payload_capacity_kg}` : 'Standard'}</div>
                     <div className="text-slate-500">{v.fuel_type}</div>
                   </td>
                   <td className="px-5 py-4 text-xs font-mono">
@@ -268,7 +395,7 @@ export function VehiclesPage() {
                   <div className="flex flex-col items-center justify-center text-center">
                     <Truck className="h-8 w-8 text-slate-600 mb-2" />
                     <p className="text-sm font-semibold text-slate-300">No vehicles registered</p>
-                    <p className="text-xs text-slate-500 mt-0.5">Click 'Add Vehicle' to register commercial transport trucks.</p>
+                    <p className="text-xs text-slate-500 mt-0.5">Click 'Add Vehicle' to register public transport or commercial vehicles.</p>
                   </div>
                 </td>
               </tr>
@@ -280,7 +407,7 @@ export function VehiclesPage() {
       {/* Bulk Import Modal */}
       {isBulkOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="w-full max-w-2xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl space-y-4 my-8">
+          <div className="w-full max-w-3xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl space-y-4 my-8">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
                 <Upload className="h-5 w-5 text-navy-400" />
@@ -294,14 +421,13 @@ export function VehiclesPage() {
             {!bulkResult ? (
               <div className="space-y-4 text-sm">
                 <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-3 text-xs text-slate-400 space-y-1">
-                  <p>Upload a CSV file with up to <span className="text-white font-semibold">500 vehicles</span>.</p>
-                  <p>Required columns: <span className="font-mono text-slate-300">registration_number, vehicle_type, ownership_type</span></p>
-                  <p>Vehicle types: TRUCK, CONTAINER, TRAILER, TANKER, TIPPER, TEMPO, PICKUP, OTHER</p>
-                  <p>Ownership: OWNED, LEASED, ATTACHED &nbsp;|&nbsp; Fuel: DIESEL, CNG, ELECTRIC, PETROL</p>
+                  <p>Upload a CSV file aligned with single vehicle entry (up to <span className="text-white font-semibold">5000 vehicles</span>).</p>
+                  <p>Public Transport types (default <span className="font-mono text-slate-200">SEDAN</span>): SEDAN, HATCHBACK, SUV, TEMPO_TRAVELLER, MINI_BUS, BUS, AUTO_RICKSHAW, EV_CAB — or enter any custom type name.</p>
+                  <p><span className="font-mono text-slate-200">Vendor Code</span>: e.g. <span className="font-mono text-slate-300">{vendors[0]?.vendor_code || 'VND-XXXXXXXX'}</span> (leave blank for Self Owned).</p>
                 </div>
 
                 <button
-                  onClick={downloadCSVTemplate}
+                  onClick={() => downloadCSVTemplate(vendors[0]?.vendor_code)}
                   className="inline-flex items-center gap-2 text-xs text-navy-400 hover:text-navy-300 underline underline-offset-2"
                 >
                   <Download className="h-3.5 w-3.5" />
@@ -335,19 +461,42 @@ export function VehiclesPage() {
                       <table className="w-full text-xs text-slate-300">
                         <thead className="bg-slate-800 text-slate-400">
                           <tr>
-                            {['registration_number', 'vehicle_type', 'ownership_type', 'make', 'model', 'fuel_type'].map((col) => (
-                              <th key={col} className="px-3 py-2 text-left font-medium">{col}</th>
-                            ))}
+                            <th className="px-3 py-2 text-left font-medium">Registration</th>
+                            <th className="px-3 py-2 text-left font-medium">Vehicle Type</th>
+                            <th className="px-3 py-2 text-left font-medium">Vendor Code (Name / PAN)</th>
+                            <th className="px-3 py-2 text-left font-medium">Make / Model</th>
+                            <th className="px-3 py-2 text-left font-medium">Fuel</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-800">
-                          {bulkRows.slice(0, 5).map((row, i) => (
-                            <tr key={i}>
-                              {['registration_number', 'vehicle_type', 'ownership_type', 'make', 'model', 'fuel_type'].map((col) => (
-                                <td key={col} className="px-3 py-2 font-mono">{row[col] || '—'}</td>
-                              ))}
-                            </tr>
-                          ))}
+                          {bulkRows.slice(0, 5).map((row, i) => {
+                            const vcode = row.vendor_code?.toUpperCase();
+                            const matchedVendor = vcode ? vendorByCode.get(vcode) : undefined;
+                            return (
+                              <tr key={i}>
+                                <td className="px-3 py-2 font-mono">{row.registration_number || '—'}</td>
+                                <td className="px-3 py-2 font-mono">{row.vehicle_type || 'SEDAN'}</td>
+                                <td className="px-3 py-2">
+                                  {vcode ? (
+                                    matchedVendor ? (
+                                      <div>
+                                        <span className="font-mono text-white">{vcode}</span>
+                                        <div className="text-[10px] text-silver-400">
+                                          {matchedVendor.name} · PAN: {matchedVendor.pan || '—'}
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <span className="font-mono text-red-400">{vcode} (not found)</span>
+                                    )
+                                  ) : (
+                                    <span className="text-slate-500">Self Owned</span>
+                                  )}
+                                </td>
+                                <td className="px-3 py-2">{[row.make, row.model, row.year].filter(Boolean).join(' ') || '—'}</td>
+                                <td className="px-3 py-2 font-mono">{row.fuel_type || 'DIESEL'}</td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
@@ -425,7 +574,6 @@ export function VehiclesPage() {
                 <X className="h-5 w-5" />
               </button>
             </div>
-            
             <div className="dark">
               <EntityComplianceManager entityType="VEHICLE" entityId={complianceModalId} />
             </div>
@@ -433,12 +581,12 @@ export function VehiclesPage() {
         </div>
       )}
 
-      {/* Modal */}
+      {/* Single Vehicle Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto">
           <div className="w-full max-w-lg rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl space-y-4 my-8">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h2 className="text-lg font-bold text-white">Register Commercial Vehicle</h2>
+              <h2 className="text-lg font-bold text-white">Register Vehicle</h2>
               <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-white">
                 <X className="h-5 w-5" />
               </button>
@@ -462,41 +610,78 @@ export function VehiclesPage() {
                   <label className="block text-xs font-medium text-slate-300">Vehicle Type</label>
                   <select
                     value={formData.vehicle_type}
-                    onChange={(e) => setFormData({ ...formData, vehicle_type: e.target.value as any })}
+                    onChange={(e) => setFormData({ ...formData, vehicle_type: e.target.value as VehicleBodyType })}
                     className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
                   >
-                    <option value="TRUCK">Open Truck</option>
-                    <option value="CONTAINER">Container Body</option>
-                    <option value="TRAILER">Semi-Trailer</option>
-                    <option value="TANKER">Fuel Tanker</option>
-                    <option value="TIPPER">Tipper / Dumper</option>
-                    <option value="TEMPO">Tempo / LCV</option>
-                    <option value="PICKUP">Pickup</option>
-                    <option value="OTHER">Other Heavy Vehicle</option>
+                    <optgroup label="Public Transport Vehicles">
+                      {PUBLIC_TRANSPORT_TYPES.map((t) => (
+                        <option key={t.value} value={t.value}>{t.label}</option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Commercial / Cargo">
+                      {CARGO_TYPES.map((t) => (
+                        <option key={t.value} value={t.value}>{t.label}</option>
+                      ))}
+                    </optgroup>
+                    <option value="OTHER">Other (Add Custom Type)</option>
                   </select>
                 </div>
+
                 <div>
-                  <label className="block text-xs font-medium text-slate-300">Ownership Type</label>
+                  <label className="block text-xs font-medium text-slate-300">Vendor Code</label>
                   <select
-                    value={formData.ownership_type}
-                    onChange={(e) => setFormData({ ...formData, ownership_type: e.target.value as any })}
+                    value={formData.vendor_code || ''}
+                    onChange={(e) => setFormData({ ...formData, vendor_code: e.target.value })}
                     className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
                   >
-                    <option value="OWNED">Self Owned</option>
-                    <option value="LEASED">Leased</option>
-                    <option value="ATTACHED">Market / Attached</option>
+                    <option value="">Self Owned (No Vendor)</option>
+                    {vendors.map((v) => (
+                      <option key={v.id} value={v.vendor_code || ''}>
+                        {v.vendor_code ? `${v.vendor_code} — ${v.name}` : v.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              {formData.vehicle_type === 'OTHER' && (
                 <div>
-                  <label className="block text-xs font-medium text-slate-300">Make / Manufacturer</label>
+                  <label className="block text-xs font-medium text-slate-300">Custom Vehicle Type *</label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.custom_vehicle_type || ''}
+                    onChange={(e) => setFormData({ ...formData, custom_vehicle_type: e.target.value })}
+                    placeholder="e.g. Sleeper Coach, Electric Van, Shuttle"
+                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
+                  />
+                </div>
+              )}
+
+              {selectedVendor && (
+                <div className="rounded-lg border border-slate-800 bg-slate-950/70 px-3 py-2.5 flex items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4 text-silver-300 shrink-0" />
+                    <div>
+                      <div className="text-slate-400 text-[10px]">Selected Vendor</div>
+                      <div className="font-semibold text-white">{selectedVendor.name}</div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-slate-400 text-[10px]">PAN</div>
+                    <div className="font-mono text-silver-300">{selectedVendor.pan || 'Not provided'}</div>
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-300">Make</label>
                   <input
                     type="text"
                     value={formData.make}
                     onChange={(e) => setFormData({ ...formData, make: e.target.value })}
-                    placeholder="e.g. Tata Motors"
+                    placeholder="Maruti Suzuki"
                     className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
                   />
                 </div>
@@ -506,7 +691,19 @@ export function VehiclesPage() {
                     type="text"
                     value={formData.model}
                     onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-                    placeholder="e.g. Signa 4825.TK"
+                    placeholder="Dzire Tour S"
+                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-300">Year</label>
+                  <input
+                    type="number"
+                    min={1970}
+                    max={2050}
+                    value={formData.year || ''}
+                    onChange={(e) => setFormData({ ...formData, year: e.target.value ? Number(e.target.value) : undefined })}
+                    placeholder="2023"
                     className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
                   />
                 </div>
@@ -527,12 +724,12 @@ export function VehiclesPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-300">Payload (KG)</label>
+                  <label className="block text-xs font-medium text-slate-300">Capacity (Seats / KG)</label>
                   <input
                     type="number"
                     value={formData.payload_capacity_kg}
                     onChange={(e) => setFormData({ ...formData, payload_capacity_kg: e.target.value })}
-                    placeholder="25000"
+                    placeholder="4"
                     className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
                   />
                 </div>
