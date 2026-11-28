@@ -5,6 +5,7 @@ import { apiClient } from '../../lib/api';
 import type { Customer, CustomerCreate, CustomerBulkCreateResponse, CustomerBulkItemError } from '../../types';
 import { EntityComplianceManager } from '../compliance/EntityComplianceManager';
 import { DownloadChoiceModal, type DownloadTarget } from '../../components/DownloadChoiceModal';
+import { ZolexoraTmsUserToggle } from '../../components/ZolexoraTmsUserToggle';
 
 // ── CSV helpers ──────────────────────────────────────────────────────────────
 
@@ -180,6 +181,8 @@ const EMPTY_CUSTOMER_FORM: CustomerCreate = {
   pan: '',
   credit_limit: '0',
   payment_terms_days: 30,
+  is_zolexora_user: false,
+  zolexora_org_id: '',
   notes: '',
 };
 
@@ -192,6 +195,15 @@ function CustomerFormFields({
 }) {
   return (
     <>
+      <ZolexoraTmsUserToggle
+        entityLabel="Client"
+        isZolexoraUser={Boolean(value.is_zolexora_user)}
+        zolexoraOrgId={value.zolexora_org_id}
+        onChange={(isZx, zxId) =>
+          onChange({ ...value, is_zolexora_user: isZx, zolexora_org_id: zxId ?? '' })
+        }
+      />
+
       <div>
         <label className="block text-xs font-medium text-slate-300">Customer Legal Name *</label>
         <input
@@ -408,6 +420,8 @@ export function CustomersPage() {
       pan: c.pan || '',
       payment_terms_days: c.payment_terms_days,
       credit_limit: c.credit_limit,
+      is_zolexora_user: Boolean(c.is_zolexora_user),
+      zolexora_org_id: c.zolexora_org_id || '',
       notes: c.notes || '',
       status: c.status,
     });
@@ -442,6 +456,7 @@ export function CustomersPage() {
       ...formData,
       gstin: formData.gstin?.trim().toUpperCase() || undefined,
       pan: formData.pan?.trim().toUpperCase() || undefined,
+      zolexora_org_id: formData.is_zolexora_user ? formData.zolexora_org_id?.trim().toUpperCase() || undefined : undefined,
       credit_limit: formData.credit_limit || '0',
     });
   };
@@ -470,6 +485,8 @@ export function CustomersPage() {
         pan: editFormData.pan?.trim().toUpperCase() || undefined,
         payment_terms_days: editFormData.payment_terms_days ?? 30,
         credit_limit: editFormData.credit_limit || '0',
+        is_zolexora_user: Boolean(editFormData.is_zolexora_user),
+        zolexora_org_id: editFormData.is_zolexora_user ? editFormData.zolexora_org_id?.trim().toUpperCase() || undefined : undefined,
         notes: editFormData.notes?.trim() || undefined,
         status: editFormData.status,
       },
@@ -581,7 +598,14 @@ export function CustomersPage() {
               customers.map((c) => (
                 <tr key={c.id} className="hover:bg-slate-800/30 transition">
                   <td className="px-5 py-4">
-                    <div className="font-semibold text-white">{c.name}</div>
+                    <div className="font-semibold text-white flex items-center gap-2">
+                      <span>{c.name}</span>
+                      {c.is_zolexora_user && (
+                        <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2 py-0.5 text-[10px] font-semibold text-cyan-300">
+                          Zolexora TMS
+                        </span>
+                      )}
+                    </div>
                     <div className="text-xs text-slate-400 font-mono flex items-center gap-2 mt-0.5">
                       {c.client_code && (
                         <span className="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] text-silver-300">

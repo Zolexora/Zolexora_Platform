@@ -1,6 +1,6 @@
 import enum
 import uuid
-from sqlalchemy import Enum, ForeignKey, ForeignKeyConstraint, Index, String, UniqueConstraint, DECIMAL, Integer, text
+from sqlalchemy import Boolean, Enum, ForeignKey, ForeignKeyConstraint, Index, String, UniqueConstraint, DECIMAL, Integer, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base, TimestampMixin
@@ -27,6 +27,8 @@ class Client(Base, TimestampMixin):
     payment_terms_days: Mapped[int] = mapped_column(Integer, default=30)
     credit_limit: Mapped[float] = mapped_column(DECIMAL, default=0.0)
     status: Mapped[ClientStatus] = mapped_column(Enum(ClientStatus, name="client_status"), default=ClientStatus.ACTIVE, nullable=False)
+    is_zolexora_user: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false", nullable=False)
+    zolexora_org_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     notes: Mapped[str | None] = mapped_column(String, nullable=True)
 
     locations: Mapped[list["ClientLocation"]] = relationship("ClientLocation", back_populates="client", cascade="all, delete-orphan")

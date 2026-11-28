@@ -1,6 +1,6 @@
 import enum
 import uuid
-from sqlalchemy import Enum, ForeignKey, Index, String, Integer, text
+from sqlalchemy import Boolean, Enum, ForeignKey, Index, String, Integer, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 from app.db.base import Base, TimestampMixin
@@ -39,6 +39,8 @@ class Vendor(Base, TimestampMixin):
     bank_ifsc: Mapped[str | None] = mapped_column(String(20), nullable=True)
     bank_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     status: Mapped[VendorStatus] = mapped_column(Enum(VendorStatus, name="vendor_status", create_type=False), default=VendorStatus.ACTIVE, nullable=False)
+    is_zolexora_user: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false", nullable=False)
+    zolexora_org_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     notes: Mapped[str | None] = mapped_column(String, nullable=True)
 
     __table_args__ = (

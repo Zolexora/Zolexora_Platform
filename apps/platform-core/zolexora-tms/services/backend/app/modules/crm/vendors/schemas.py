@@ -30,6 +30,8 @@ class VendorBase(BaseModel):
     bank_account_number: Optional[str] = Field(None, max_length=64)
     bank_ifsc: Optional[str] = Field(None, max_length=20)
     bank_name: Optional[str] = Field(None, max_length=120)
+    is_zolexora_user: bool = False
+    zolexora_org_id: Optional[str] = Field(None, max_length=64)
 
     @field_validator("gstin")
     @classmethod
@@ -54,6 +56,8 @@ class VendorUpdate(BaseModel):
     bank_account_number: Optional[str] = Field(None, max_length=64)
     bank_ifsc: Optional[str] = Field(None, max_length=20)
     bank_name: Optional[str] = Field(None, max_length=120)
+    is_zolexora_user: bool = False
+    zolexora_org_id: Optional[str] = Field(None, max_length=64)
     status: Optional[VendorStatus] = None
 
     @field_validator("gstin")

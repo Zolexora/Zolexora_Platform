@@ -39,6 +39,8 @@ class ClientBase(BaseModel):
     payment_terms_days: Optional[int] = 30
     credit_limit: Optional[Decimal] = Decimal('0.0')
     status: Optional[str] = "ACTIVE"
+    is_zolexora_user: bool = False
+    zolexora_org_id: Optional[str] = Field(None, max_length=64)
     notes: Optional[str] = None
 
     @field_validator("gstin")
@@ -67,6 +69,8 @@ class ClientUpdate(BaseModel):
     payment_terms_days: Optional[int] = None
     credit_limit: Optional[Decimal] = None
     status: Optional[str] = None
+    is_zolexora_user: Optional[bool] = None
+    zolexora_org_id: Optional[str] = Field(None, max_length=64)
     notes: Optional[str] = None
 
     @field_validator("gstin")

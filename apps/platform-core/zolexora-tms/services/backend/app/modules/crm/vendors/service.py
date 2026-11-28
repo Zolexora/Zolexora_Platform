@@ -64,6 +64,8 @@ def _build_vendor_and_audit(
         bank_account_number=req.bank_account_number.strip() if req.bank_account_number else None,
         bank_ifsc=req.bank_ifsc.strip().upper() if req.bank_ifsc else None,
         bank_name=req.bank_name.strip() if req.bank_name else None,
+        is_zolexora_user=bool(req.is_zolexora_user),
+        zolexora_org_id=req.zolexora_org_id.strip().upper() if req.zolexora_org_id else None,
         status=VendorStatus.ACTIVE,
     )
     audit = AuditLog(

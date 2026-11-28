@@ -5,6 +5,7 @@ import { apiClient } from '../../lib/api';
 import type { Vendor, VendorCreate, VendorBulkCreateResponse, VendorBulkItemError } from '../../types';
 import { EntityComplianceManager } from '../compliance/EntityComplianceManager';
 import { DownloadChoiceModal, type DownloadTarget } from '../../components/DownloadChoiceModal';
+import { ZolexoraTmsUserToggle } from '../../components/ZolexoraTmsUserToggle';
 
 // ── CSV helpers ──────────────────────────────────────────────────────────────
 
@@ -183,6 +184,8 @@ const EMPTY_VENDOR_FORM: VendorCreate = {
   bank_account_number: '',
   bank_ifsc: '',
   bank_name: '',
+  is_zolexora_user: false,
+  zolexora_org_id: '',
 };
 
 function VendorFormFields({
@@ -194,6 +197,15 @@ function VendorFormFields({
 }) {
   return (
     <>
+      <ZolexoraTmsUserToggle
+        entityLabel="Service Provider"
+        isZolexoraUser={Boolean(value.is_zolexora_user)}
+        zolexoraOrgId={value.zolexora_org_id}
+        onChange={(isZx, zxId) =>
+          onChange({ ...value, is_zolexora_user: isZx, zolexora_org_id: zxId ?? '' })
+        }
+      />
+
       <div>
         <label className="block text-xs font-medium text-slate-300">Vendor / Supplier Legal Name *</label>
         <input
@@ -432,6 +444,8 @@ export function VendorsPage() {
       bank_account_number: v.bank_account_number || '',
       bank_ifsc: v.bank_ifsc || '',
       bank_name: v.bank_name || '',
+      is_zolexora_user: Boolean(v.is_zolexora_user),
+      zolexora_org_id: v.zolexora_org_id || '',
       status: v.status,
     });
     setEditError('');
@@ -465,6 +479,8 @@ export function VendorsPage() {
         bank_account_number: editFormData.bank_account_number?.trim() || undefined,
         bank_ifsc: editFormData.bank_ifsc?.trim().toUpperCase() || undefined,
         bank_name: editFormData.bank_name?.trim() || undefined,
+        is_zolexora_user: Boolean(editFormData.is_zolexora_user),
+        zolexora_org_id: editFormData.is_zolexora_user ? editFormData.zolexora_org_id?.trim().toUpperCase() || undefined : undefined,
         status: editFormData.status,
       },
     });
@@ -498,6 +514,8 @@ export function VendorsPage() {
       gstin: cleanGstin || undefined,
       pan: formData.pan?.trim().toUpperCase() || undefined,
       bank_ifsc: formData.bank_ifsc?.trim().toUpperCase() || undefined,
+      is_zolexora_user: Boolean(formData.is_zolexora_user),
+      zolexora_org_id: formData.is_zolexora_user ? formData.zolexora_org_id?.trim().toUpperCase() || undefined : undefined,
     });
   };
 
@@ -605,7 +623,14 @@ export function VendorsPage() {
               vendors.map((v) => (
                 <tr key={v.id} className="hover:bg-slate-800/30 transition">
                   <td className="px-5 py-4">
-                    <div className="font-semibold text-white">{v.name}</div>
+                    <div className="font-semibold text-white flex items-center gap-2">
+                      <span>{v.name}</span>
+                      {v.is_zolexora_user && (
+                        <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2 py-0.5 text-[10px] font-semibold text-cyan-300">
+                          Zolexora TMS
+                        </span>
+                      )}
+                    </div>
                     <div className="text-xs text-slate-400 font-mono flex items-center gap-2 mt-0.5">
                       {v.vendor_code && (
                         <span className="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] text-silver-300">

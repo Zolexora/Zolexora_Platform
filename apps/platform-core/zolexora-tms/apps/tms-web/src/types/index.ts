@@ -69,6 +69,8 @@ export interface Customer {
   payment_terms_days: number;
   credit_limit: string;
   status: 'ACTIVE' | 'INACTIVE' | 'ONBOARDING' | 'SUSPENDED';
+  is_zolexora_user?: boolean;
+  zolexora_org_id?: string;
   notes?: string;
   created_at: string;
   updated_at: string;
@@ -84,6 +86,8 @@ export interface CustomerCreate {
   pan?: string;
   payment_terms_days?: number;
   credit_limit?: string;
+  is_zolexora_user?: boolean;
+  zolexora_org_id?: string;
   notes?: string;
 }
 
@@ -116,6 +120,8 @@ export interface Vendor {
   bank_account_number?: string;
   bank_ifsc?: string;
   bank_name?: string;
+  is_zolexora_user?: boolean;
+  zolexora_org_id?: string;
   status: 'ACTIVE' | 'INACTIVE';
   created_at: string;
   updated_at: string;
@@ -134,6 +140,8 @@ export interface VendorCreate {
   bank_account_number?: string;
   bank_ifsc?: string;
   bank_name?: string;
+  is_zolexora_user?: boolean;
+  zolexora_org_id?: string;
 }
 
 export interface VendorBulkItemError {
