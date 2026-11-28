@@ -326,7 +326,7 @@ export function VendorsPage() {
 
             <form onSubmit={handleSubmit} className="space-y-4 text-sm">
               <div>
-                <label className="block text-xs font-medium text-slate-300">Vendor / Supplier Name *</label>
+                <label className="block text-xs font-medium text-slate-300">Legal Name *</label>
                 <input
                   type="text"
                   required
@@ -379,7 +379,7 @@ export function VendorsPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-300">GSTIN</label>
+                  <label className="block text-xs font-medium text-slate-300">GSTIN / Aadhaar No</label>
                   <input
                     type="text"
                     value={formData.gstin}
