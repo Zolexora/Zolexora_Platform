@@ -968,8 +968,8 @@ importers:
         specifier: ~6.0.23
         version: 6.0.24(c81a9e5c015ac53ac6d2b6c2497f1781)
       expo-secure-store:
-        specifier: ~15.0.8
-        version: 15.0.8(dceb79965a8f444fb8d1ac9790a05ba6)
+        specifier: ~58.0.3
+        version: 58.0.3(dceb79965a8f444fb8d1ac9790a05ba6)
       expo-status-bar:
         specifier: ~3.0.9
         version: 3.0.9(react-native@0.81.5(@babel/core@7.29.7(supports-color@10.2.2))(@react-native-community/cli@13.6.9(supports-color@10.2.2))(@types/react@19.3.0)(react@19.1.0)(supports-color@10.2.2))(react@19.1.0)
@@ -1071,8 +1071,8 @@ importers:
         specifier: ~6.0.23
         version: 6.0.24(c81a9e5c015ac53ac6d2b6c2497f1781)
       expo-secure-store:
-        specifier: ~15.0.8
-        version: 15.0.8(dceb79965a8f444fb8d1ac9790a05ba6)
+        specifier: ~58.0.3
+        version: 58.0.3(dceb79965a8f444fb8d1ac9790a05ba6)
       expo-status-bar:
         specifier: ~3.0.9
         version: 3.0.9(react-native@0.81.5(@babel/core@7.29.7(supports-color@10.2.2))(@react-native-community/cli@13.6.9(supports-color@10.2.2))(@types/react@19.3.0)(react@19.1.0)(supports-color@10.2.2))(react@19.1.0)
@@ -1171,8 +1171,8 @@ importers:
         specifier: ~6.0.23
         version: 6.0.24(c81a9e5c015ac53ac6d2b6c2497f1781)
       expo-secure-store:
-        specifier: ~15.0.8
-        version: 15.0.8(dceb79965a8f444fb8d1ac9790a05ba6)
+        specifier: ~58.0.3
+        version: 58.0.3(dceb79965a8f444fb8d1ac9790a05ba6)
       expo-status-bar:
         specifier: ~3.0.9
         version: 3.0.9(react-native@0.81.5(@babel/core@7.29.7(supports-color@10.2.2))(@react-native-community/cli@13.6.9(supports-color@10.2.2))(@types/react@19.3.0)(react@19.1.0)(supports-color@10.2.2))(react@19.1.0)
@@ -1481,8 +1481,8 @@ importers:
         specifier: ~18.0.13
         version: 18.0.14(e0ccca449fff1175f5c553fee82f658a)
       expo-secure-store:
-        specifier: ~15.0.8
-        version: 15.0.8(dceb79965a8f444fb8d1ac9790a05ba6)
+        specifier: ~58.0.3
+        version: 58.0.3(dceb79965a8f444fb8d1ac9790a05ba6)
       react:
         specifier: 19.1.0
         version: 19.1.0
@@ -3416,8 +3416,8 @@ importers:
         specifier: ~6.0.17
         version: 6.0.24(cfbc9ec5db241a5d6c8296690d2c16c2)
       expo-secure-store:
-        specifier: ~15.0.7
-        version: 15.0.8(03cd8dd57bc6d56ae269aebd617816b4)
+        specifier: ~58.0.3
+        version: 58.0.3(03cd8dd57bc6d56ae269aebd617816b4)
       expo-splash-screen:
         specifier: ~31.0.12
         version: 31.0.13(cc45b119b3b958c6a1a83fe3b8805db8)
@@ -13210,8 +13210,8 @@ packages:
       react-server-dom-webpack:
         optional: true
 
-  expo-secure-store@15.0.8:
-    resolution: {integrity: sha512-lHnzvRajBu4u+P99+0GEMijQMFCOYpWRO4dWsXSuMt77+THPIGjzNvVKrGSl6mMrLsfVaKL8BpwYZLGlgA+zAw==}
+  expo-secure-store@58.0.3:
+    resolution: {integrity: sha512-RpubZfqJREEcwKbx3HFoWbtDd31t+yESMj7Ei5/mGQp5vViwUBzL4nUCZRLFyt+O690mT8We7dDtIUZeIk6LbQ==}
     peerDependencies:
       expo: '*'
 
@@ -33148,7 +33148,7 @@ snapshots:
       - react-native-webview
       - supports-color
 
-  expo-secure-store@15.0.8(03cd8dd57bc6d56ae269aebd617816b4):
+  expo-secure-store@58.0.3(03cd8dd57bc6d56ae269aebd617816b4):
     dependencies:
       expo: 54.0.37(986090f79d59315f3f12c5ed83aaf91f)
     transitivePeerDependencies:
@@ -33166,7 +33166,7 @@ snapshots:
       - react-native-screens
       - react-native-webview
 
-  expo-secure-store@15.0.8(dceb79965a8f444fb8d1ac9790a05ba6):
+  expo-secure-store@58.0.3(dceb79965a8f444fb8d1ac9790a05ba6):
     dependencies:
       expo: 54.0.37(680360f4297d02ca83d0cb48f3dbc3e3)
     transitivePeerDependencies:
