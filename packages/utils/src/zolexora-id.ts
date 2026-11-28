@@ -2,7 +2,7 @@
  * Official canonical Regular Expressions for Zolexora Handles (@zolexora.com).
  */
 export const ZOLEXORA_HANDLE_REGEX = /^[a-z0-9][a-z0-9._-]{1,48}[a-z0-9]@zolexora\.com$/i;
-export const ZOLEXORA_PARTNER_HANDLE_REGEX = /^[cv][0-9]{6,12}@zolexora\.com$/i;
+export const ZOLEXORA_PARTNER_HANDLE_REGEX = /^(?:[cv]|sp)[0-9]{6,12}@zolexora\.com$/i;
 
 /**
  * Generates cryptographically secure random bytes across Browser, Node, Edge, and Mobile.
@@ -34,7 +34,7 @@ export function formatZolexoraHandle(userid: string): string {
   return handle;
 }
 
-export function generateZolexoraHandle(prefix: "u" | "e" | "c" | "v" = "u"): string {
+export function generateZolexoraHandle(prefix: "u" | "e" | "c" | "v" | "sp" = "u"): string {
   const bytes = getRandomBytes(8);
   let digits = "";
   for (let i = 0; i < 8; i++) {
@@ -43,8 +43,9 @@ export function generateZolexoraHandle(prefix: "u" | "e" | "c" | "v" = "u"): str
   return `${prefix}${digits}@zolexora.com`;
 }
 
-export function generatePartnerZolexoraId(kind: "client" | "vendor"): string {
-  return generateZolexoraHandle(kind === "client" ? "c" : "v");
+export function generatePartnerZolexoraId(kind: "client" | "vendor" | "service_provider"): string {
+  const prefix = kind === "client" ? "c" : kind === "vendor" ? "v" : "sp";
+  return generateZolexoraHandle(prefix);
 }
 
 /**

@@ -27,15 +27,19 @@ describe("Zolexora Handle & Partner ID (@zolexora/utils)", () => {
   it("generates valid partner and user @zolexora.com handles", () => {
     const clientId = generatePartnerZolexoraId("client");
     const vendorId = generatePartnerZolexoraId("vendor");
+    const spId = generatePartnerZolexoraId("service_provider");
     const userId = generateZolexoraHandle("u");
 
     expect(clientId).toMatch(/^c[0-9]{8}@zolexora\.com$/);
     expect(vendorId).toMatch(/^v[0-9]{8}@zolexora\.com$/);
+    expect(spId).toMatch(/^sp[0-9]{8}@zolexora\.com$/);
     expect(clientId).toMatch(ZOLEXORA_PARTNER_HANDLE_REGEX);
     expect(vendorId).toMatch(ZOLEXORA_PARTNER_HANDLE_REGEX);
+    expect(spId).toMatch(ZOLEXORA_PARTNER_HANDLE_REGEX);
     expect(userId).toMatch(/^u[0-9]{8}@zolexora\.com$/);
     expect(isValidZolexoraId(clientId)).toBe(true);
     expect(isValidZolexoraId(vendorId)).toBe(true);
+    expect(isValidZolexoraId(spId)).toBe(true);
   });
 
   it("rejects legacy ZX- and malformed IDs", () => {

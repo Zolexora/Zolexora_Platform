@@ -227,7 +227,7 @@ export async function organizationRoutes(app: FastifyInstance, d: BusinessDeps &
   // ── Partner Zolexora ID reservation / verification (Phase 1) ────────────────
   app.post("/api/v1/partners/reserve-id", { preHandler: [authenticate] }, async (req) => {
     const body = parse(z.object({
-      kind: z.enum(["client", "vendor"]),
+      kind: z.enum(["client", "vendor", "service_provider"]),
       is_zolexora_user: z.boolean().default(false),
       zolexora_id: z.string().trim().max(64).optional(),
       owner_org_id: z.string().uuid().optional(),

@@ -137,10 +137,11 @@ export class TeamStore {
   }
 
   /**
-   * Reserves an external client/vendor Zolexora handle (c<8-digits>@zolexora.com or v<8-digits>@zolexora.com)
-   * as a Track 2 organization membership with role = 'client' | 'vendor' and empty permissions.
+   * Reserves an external client/vendor/service_provider Zolexora handle
+   * (c/v/sp<8-digits>@zolexora.com) as a Track 2 organization membership
+   * with role = 'client' | 'vendor' | 'service_provider' and empty permissions.
    */
-  async reservePartnerZolexoraId(kind: "client" | "vendor", ownerOrgId: string): Promise<string> {
+  async reservePartnerZolexoraId(kind: "client" | "vendor" | "service_provider", ownerOrgId: string): Promise<string> {
     for (let attempt = 0; attempt < 10; attempt++) {
       const candidate = generatePartnerZolexoraId(kind);
       const taken = await this.isZolexoraIdTaken(candidate);
