@@ -90,7 +90,7 @@ export interface Vendor {
   id: string;
   organisation_id: string;
   name: string;
-  vendor_type: 'FLEET_SUPPLIER' | 'WORKSHOP' | 'FUEL_PARTNER' | 'BROKER' | 'OTHER';
+  vendor_type: 'FLEET_SUPPLIER' | 'DCO' | 'EMI_DRIVER' | 'WORKSHOP' | 'FUEL_PARTNER' | 'BROKER' | 'OTHER';
   contact_person?: string;
   email?: string;
   phone?: string;
@@ -108,7 +108,7 @@ export interface Vendor {
 
 export interface VendorCreate {
   name: string;
-  vendor_type: 'FLEET_SUPPLIER' | 'WORKSHOP' | 'FUEL_PARTNER' | 'BROKER' | 'OTHER';
+  vendor_type: 'FLEET_SUPPLIER' | 'DCO' | 'EMI_DRIVER' | 'WORKSHOP' | 'FUEL_PARTNER' | 'BROKER' | 'OTHER';
   contact_person?: string;
   email?: string;
   phone?: string;
@@ -119,6 +119,19 @@ export interface VendorCreate {
   bank_account_number?: string;
   bank_ifsc?: string;
   bank_name?: string;
+}
+
+export interface VendorBulkItemError {
+  row: number;
+  name?: string;
+  error: string;
+}
+
+export interface VendorBulkCreateResponse {
+  created_count: number;
+  failed_count: number;
+  created: Vendor[];
+  errors: VendorBulkItemError[];
 }
 
 export interface Driver {

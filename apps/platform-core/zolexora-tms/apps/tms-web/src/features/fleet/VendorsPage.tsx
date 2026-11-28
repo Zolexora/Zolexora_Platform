@@ -1,16 +1,87 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Building2, Plus, Search, AlertCircle, X, ShieldCheck } from 'lucide-react';
+import { Building2, Plus, Search, AlertCircle, X, ShieldCheck, Upload, Download, CheckCircle2 } from 'lucide-react';
 import { apiClient } from '../../lib/api';
-import type { Vendor, VendorCreate } from '../../types';
+import type { Vendor, VendorCreate, VendorBulkCreateResponse, VendorBulkItemError } from '../../types';
 import { EntityComplianceManager } from '../compliance/EntityComplianceManager';
+
+// ── CSV helpers ──────────────────────────────────────────────────────────────
+
+const CSV_HEADERS = [
+  'name', 'vendor_type', 'contact_person', 'email', 'phone',
+  'address', 'gstin', 'pan', 'bank_account_name', 'bank_account_number',
+  'bank_ifsc', 'bank_name',
+] as const;
+
+const VENDOR_TYPES = ['FLEET_SUPPLIER', 'DCO', 'EMI_DRIVER', 'WORKSHOP', 'FUEL_PARTNER', 'BROKER', 'OTHER'] as const;
+
+function parseCsv(text: string): { rows: VendorCreate[]; error?: string } {
+  const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(Boolean);
+  if (lines.length < 2) return { rows: [], error: 'CSV must have a header row and at least one data row.' };
+
+  const header = lines[0].split(',').map((h) => h.trim().toLowerCase());
+  const nameIdx = header.indexOf('name');
+  if (nameIdx === -1) return { rows: [], error: 'CSV must have a "name" column.' };
+
+  const rows: VendorCreate[] = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cols = lines[i].split(',').map((c) => c.trim());
+    const get = (field: string) => {
+      const idx = header.indexOf(field);
+      return idx !== -1 ? cols[idx] || '' : '';
+    };
+    const rawType = get('vendor_type').toUpperCase();
+    const vendor_type = (VENDOR_TYPES as readonly string[]).includes(rawType)
+      ? (rawType as VendorCreate['vendor_type'])
+      : 'FLEET_SUPPLIER';
+    rows.push({
+      name: get('name'),
+      vendor_type,
+      contact_person: get('contact_person') || undefined,
+      email: get('email') || undefined,
+      phone: get('phone') || undefined,
+      address: get('address') || undefined,
+      gstin: get('gstin').toUpperCase() || undefined,
+      pan: get('pan').toUpperCase() || undefined,
+      bank_account_name: get('bank_account_name') || undefined,
+      bank_account_number: get('bank_account_number') || undefined,
+      bank_ifsc: get('bank_ifsc').toUpperCase() || undefined,
+      bank_name: get('bank_name') || undefined,
+    });
+  }
+  return { rows };
+}
+
+function downloadTemplate() {
+  const exampleRow = [
+    'Western Fleet Logistics', 'FLEET_SUPPLIER', 'Rajesh Sharma',
+    'rajesh@wfl.in', '+919811223344', 'Mumbai',
+    '07AAAAA0000A1Z5', 'AAAPA1234A', 'Western Fleet Logistics',
+    '918273645019', 'HDFC0001234', 'HDFC Bank',
+  ].join(',');
+  const csv = [CSV_HEADERS.join(','), exampleRow].join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+  a.download = 'vendor_bulk_template.csv';
+  a.click();
+}
+
+// ── Main component ───────────────────────────────────────────────────────────
 
 export function VendorsPage() {
   const queryClient = useQueryClient();
+  const fileRef = useRef<HTMLInputElement>(null);
+
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [complianceModalId, setComplianceModalId] = useState<string | null>(null);
   const [formError, setFormError] = useState('');
+
+  // Bulk state
+  const [isBulkOpen, setIsBulkOpen] = useState(false);
+  const [bulkRows, setBulkRows] = useState<VendorCreate[]>([]);
+  const [bulkParseError, setBulkParseError] = useState('');
+  const [bulkResult, setBulkResult] = useState<VendorBulkCreateResponse | null>(null);
 
   const [formData, setFormData] = useState<VendorCreate>({
     name: '',
@@ -57,13 +128,24 @@ export function VendorsPage() {
     },
   });
 
+  const bulkMutation = useMutation({
+    mutationFn: (vendors: VendorCreate[]) =>
+      apiClient<VendorBulkCreateResponse>('/api/v1/vendors/bulk', {
+        method: 'POST',
+        body: JSON.stringify({ vendors }),
+      }),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ['vendors'] });
+      setBulkResult(res);
+    },
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim()) {
       setFormError('Vendor name is required.');
       return;
     }
-    
     createMutation.mutate({
       ...formData,
       gstin: formData.gstin?.toUpperCase() || '',
@@ -71,22 +153,57 @@ export function VendorsPage() {
     });
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target?.result as string;
+      const { rows, error } = parseCsv(text);
+      setBulkParseError(error || '');
+      setBulkRows(rows);
+      setBulkResult(null);
+    };
+    reader.readAsText(file);
+  };
+
+  const closeBulk = () => {
+    setIsBulkOpen(false);
+    setBulkRows([]);
+    setBulkParseError('');
+    setBulkResult(null);
+    if (fileRef.current) fileRef.current.value = '';
+  };
+
+  const validBulkRows = bulkRows.filter((r) => r.name.trim().length >= 2);
+
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Vendors & Partners</h1>
+          <h1 className="text-2xl font-bold text-white">Vendors &amp; Partners</h1>
           <p className="text-sm text-slate-400">Market suppliers, agencies, and maintenance partners.</p>
         </div>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="inline-flex items-center gap-2 rounded-xl bg-navy-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-navy-800/30 hover:bg-navy-600 transition"
-        >
-          <Plus className="h-4 w-4" />
-          Add Vendor
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsBulkOpen(true)}
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-slate-700 hover:text-white transition"
+          >
+            <Upload className="h-4 w-4" />
+            Bulk Import
+          </button>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="inline-flex items-center gap-2 rounded-xl bg-navy-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-navy-800/30 hover:bg-navy-600 transition"
+          >
+            <Plus className="h-4 w-4" />
+            Add Vendor
+          </button>
+        </div>
       </div>
 
+      {/* Search */}
       <div className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/60 px-3 py-2 max-w-md">
         <Search className="h-4 w-4 text-slate-500" />
         <input
@@ -98,6 +215,7 @@ export function VendorsPage() {
         />
       </div>
 
+      {/* Table */}
       <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900/40">
         <table className="w-full text-left text-sm text-slate-300">
           <thead className="bg-slate-800/80 text-xs uppercase text-slate-400">
@@ -126,7 +244,7 @@ export function VendorsPage() {
                   </td>
                   <td className="px-5 py-4">
                     <span className="rounded-md bg-navy-800/40 px-2 py-0.5 text-xs font-medium text-silver-300 border border-navy-600/20">
-                      {v.vendor_type.replace('_', ' ')}
+                      {v.vendor_type.replace(/_/g, ' ')}
                     </span>
                   </td>
                   <td className="px-5 py-4 text-xs">
@@ -188,7 +306,6 @@ export function VendorsPage() {
                 <X className="h-5 w-5" />
               </button>
             </div>
-            
             <div className="dark">
               <EntityComplianceManager entityType="VENDOR" entityId={complianceModalId} />
             </div>
@@ -196,7 +313,7 @@ export function VendorsPage() {
         </div>
       )}
 
-      {/* Modal */}
+      {/* Add Vendor Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto">
           <div className="w-full max-w-lg rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl space-y-4 my-8">
@@ -224,10 +341,12 @@ export function VendorsPage() {
                 <label className="block text-xs font-medium text-slate-300">Vendor Type</label>
                 <select
                   value={formData.vendor_type}
-                  onChange={(e) => setFormData({ ...formData, vendor_type: e.target.value as any })}
+                  onChange={(e) => setFormData({ ...formData, vendor_type: e.target.value as VendorCreate['vendor_type'] })}
                   className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
                 >
                   <option value="FLEET_SUPPLIER">Fleet Supplier (Market Vehicles)</option>
+                  <option value="DCO">DCO</option>
+                  <option value="EMI_DRIVER">EMI Driver</option>
                   <option value="WORKSHOP">Maintenance Workshop</option>
                   <option value="FUEL_PARTNER">Fuel Partner</option>
                   <option value="BROKER">Logistics Broker</option>
@@ -330,6 +449,168 @@ export function VendorsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Import Modal */}
+      {isBulkOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="w-full max-w-2xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl space-y-5 my-8">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                <Upload className="h-5 w-5 text-silver-300" />
+                Bulk Import Vendors
+              </h2>
+              <button onClick={closeBulk} className="text-slate-400 hover:text-white">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Template download */}
+            <div className="rounded-lg border border-slate-800 bg-slate-800/40 px-4 py-3 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium text-white">Download CSV Template</p>
+                <p className="text-xs text-slate-400 mt-0.5">Fill in the template and re-upload. <span className="font-mono">vendor_type</span> must be one of: FLEET_SUPPLIER, DCO, EMI_DRIVER, WORKSHOP, FUEL_PARTNER, BROKER, OTHER.</p>
+              </div>
+              <button
+                onClick={downloadTemplate}
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-700 transition"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Template
+              </button>
+            </div>
+
+            {/* File input */}
+            <div>
+              <label className="block text-xs font-medium text-slate-300 mb-1.5">Upload CSV File</label>
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".csv,text/csv"
+                onChange={handleFileChange}
+                className="block w-full text-sm text-slate-400 file:mr-3 file:rounded-lg file:border file:border-slate-700 file:bg-slate-800 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-slate-300 hover:file:bg-slate-700 cursor-pointer"
+              />
+            </div>
+
+            {/* Parse error */}
+            {bulkParseError && (
+              <div className="flex items-start gap-2 rounded-lg border border-red-800/50 bg-red-950/30 px-3 py-2.5 text-xs text-red-400">
+                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                {bulkParseError}
+              </div>
+            )}
+
+            {/* Preview table */}
+            {bulkRows.length > 0 && !bulkResult && (
+              <div>
+                <p className="text-xs text-slate-400 mb-2">
+                  <span className="font-semibold text-white">{bulkRows.length}</span> row(s) parsed —{' '}
+                  <span className="font-semibold text-green-400">{validBulkRows.length}</span> valid,{' '}
+                  <span className="font-semibold text-red-400">{bulkRows.length - validBulkRows.length}</span> invalid (name too short).
+                </p>
+                <div className="overflow-x-auto rounded-lg border border-slate-800 max-h-48">
+                  <table className="w-full text-left text-xs text-slate-300">
+                    <thead className="bg-slate-800/80 text-slate-400 sticky top-0">
+                      <tr>
+                        <th className="px-3 py-2">#</th>
+                        <th className="px-3 py-2">Name</th>
+                        <th className="px-3 py-2">Type</th>
+                        <th className="px-3 py-2">Contact</th>
+                        <th className="px-3 py-2">GSTIN</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/60">
+                      {bulkRows.slice(0, 10).map((r, i) => (
+                        <tr key={i} className={r.name.trim().length < 2 ? 'bg-red-950/20' : ''}>
+                          <td className="px-3 py-2 text-slate-500">{i + 1}</td>
+                          <td className="px-3 py-2 font-semibold text-white">{r.name || <span className="text-red-400 italic">missing</span>}</td>
+                          <td className="px-3 py-2 font-mono">{r.vendor_type}</td>
+                          <td className="px-3 py-2">{r.contact_person || '—'}</td>
+                          <td className="px-3 py-2 font-mono">{r.gstin || '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {bulkRows.length > 10 && (
+                    <p className="px-3 py-2 text-xs text-slate-500 italic">…and {bulkRows.length - 10} more rows</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* API error */}
+            {bulkMutation.isError && (
+              <div className="flex items-start gap-2 rounded-lg border border-red-800/50 bg-red-950/30 px-3 py-2.5 text-xs text-red-400">
+                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                {(bulkMutation.error as any)?.message || 'Import failed. Please try again.'}
+              </div>
+            )}
+
+            {/* Result summary */}
+            {bulkResult && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5 rounded-lg bg-green-950/40 border border-green-800/40 px-3 py-2 text-xs font-semibold text-green-400">
+                    <CheckCircle2 className="h-4 w-4" />
+                    {bulkResult.created_count} Created
+                  </div>
+                  {bulkResult.failed_count > 0 && (
+                    <div className="flex items-center gap-1.5 rounded-lg bg-red-950/40 border border-red-800/40 px-3 py-2 text-xs font-semibold text-red-400">
+                      <AlertCircle className="h-4 w-4" />
+                      {bulkResult.failed_count} Failed
+                    </div>
+                  )}
+                </div>
+                {bulkResult.errors.length > 0 && (
+                  <div className="overflow-x-auto rounded-lg border border-slate-800 max-h-40">
+                    <table className="w-full text-left text-xs text-slate-300">
+                      <thead className="bg-slate-800/80 text-slate-400 sticky top-0">
+                        <tr>
+                          <th className="px-3 py-2">Row</th>
+                          <th className="px-3 py-2">Name</th>
+                          <th className="px-3 py-2">Error</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/60">
+                        {bulkResult.errors.map((e: VendorBulkItemError) => (
+                          <tr key={e.row} className="bg-red-950/10">
+                            <td className="px-3 py-2 text-slate-500">{e.row}</td>
+                            <td className="px-3 py-2 text-white">{e.name || '—'}</td>
+                            <td className="px-3 py-2 text-red-400">{e.error}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Footer */}
+            <div className="flex justify-end gap-3 pt-3 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={closeBulk}
+                className="rounded-lg px-4 py-2 text-sm text-slate-400 hover:text-white"
+              >
+                {bulkResult ? 'Close' : 'Cancel'}
+              </button>
+              {!bulkResult && (
+                <button
+                  type="button"
+                  disabled={validBulkRows.length === 0 || bulkMutation.isPending}
+                  onClick={() => bulkMutation.mutate(validBulkRows)}
+                  className="inline-flex items-center gap-2 rounded-lg bg-navy-600 px-5 py-2 text-sm font-semibold text-white hover:bg-navy-600 disabled:opacity-50 transition"
+                >
+                  {bulkMutation.isPending
+                    ? 'Importing…'
+                    : `Import ${validBulkRows.length} Vendor${validBulkRows.length !== 1 ? 's' : ''}`}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}

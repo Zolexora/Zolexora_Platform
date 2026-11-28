@@ -1,27 +1,33 @@
 import uuid
-from typing import Optional
+from typing import Any, Optional
 from fastapi import HTTPException, status
+from pydantic import ValidationError
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.core.audit.models import AuditLog
 from app.modules.crm.vendors.models import Vendor, VendorStatus, VendorType
-from app.modules.crm.vendors.schemas import VendorCreate, VendorResponse, VendorUpdate
+from app.modules.crm.vendors.schemas import (
+    VendorBulkCreateResponse,
+    VendorBulkItemError,
+    VendorCreate,
+    VendorResponse,
+    VendorUpdate,
+)
 
 
-async def create_vendor(
+def _build_vendor_and_audit(
     org_id: uuid.UUID,
     actor_id: uuid.UUID,
     req: VendorCreate,
-    db: AsyncSession,
-) -> VendorResponse:
+) -> tuple[Vendor, AuditLog]:
     vendor = Vendor(
         id=uuid.uuid4(),
         organisation_id=org_id,
         name=req.name.strip(),
         vendor_type=req.vendor_type,
         contact_person=req.contact_person.strip() if req.contact_person else None,
-        email=req.email,
+        email=req.email.strip() if req.email else None,
         phone=req.phone.strip() if req.phone else None,
         address=req.address.strip() if req.address else None,
         gstin=req.gstin.strip().upper() if req.gstin else None,
@@ -32,8 +38,6 @@ async def create_vendor(
         bank_name=req.bank_name.strip() if req.bank_name else None,
         status=VendorStatus.ACTIVE,
     )
-    db.add(vendor)
-
     audit = AuditLog(
         id=uuid.uuid4(),
         organisation_id=org_id,
@@ -43,11 +47,68 @@ async def create_vendor(
         entity_id=vendor.id,
         metadata_={"vendor_name": vendor.name, "vendor_type": vendor.vendor_type.value},
     )
+    return vendor, audit
+
+
+async def create_vendor(
+    org_id: uuid.UUID,
+    actor_id: uuid.UUID,
+    req: VendorCreate,
+    db: AsyncSession,
+) -> VendorResponse:
+    vendor, audit = _build_vendor_and_audit(org_id=org_id, actor_id=actor_id, req=req)
+    db.add(vendor)
     db.add(audit)
 
     await db.commit()
     await db.refresh(vendor)
     return VendorResponse.model_validate(vendor)
+
+
+async def bulk_create_vendors(
+    org_id: uuid.UUID,
+    actor_id: uuid.UUID,
+    items: list[dict[str, Any]],
+    db: AsyncSession,
+) -> VendorBulkCreateResponse:
+    created_vendors: list[Vendor] = []
+    errors: list[VendorBulkItemError] = []
+
+    for idx, raw in enumerate(items, start=1):
+        cleaned = {
+            k: (v.strip() if isinstance(v, str) else v)
+            for k, v in raw.items()
+            if not (isinstance(v, str) and v.strip() == "")
+        }
+        try:
+            req = VendorCreate.model_validate(cleaned)
+        except ValidationError as exc:
+            msg = "; ".join(f"{'.'.join(str(p) for p in e['loc'])}: {e['msg']}" for e in exc.errors())
+            errors.append(
+                VendorBulkItemError(
+                    row=idx,
+                    name=str(cleaned.get("name")) if cleaned.get("name") else None,
+                    error=msg,
+                )
+            )
+            continue
+
+        vendor, audit = _build_vendor_and_audit(org_id=org_id, actor_id=actor_id, req=req)
+        db.add(vendor)
+        db.add(audit)
+        created_vendors.append(vendor)
+
+    if created_vendors:
+        await db.commit()
+        for vendor in created_vendors:
+            await db.refresh(vendor)
+
+    return VendorBulkCreateResponse(
+        created_count=len(created_vendors),
+        failed_count=len(errors),
+        created=[VendorResponse.model_validate(v) for v in created_vendors],
+        errors=errors,
+    )
 
 
 async def list_vendors(

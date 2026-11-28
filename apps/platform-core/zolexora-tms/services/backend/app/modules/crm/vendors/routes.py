@@ -7,7 +7,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.dependencies import get_current_active_organisation, CurrentUserContext
 from app.db.session import get_db
 from app.modules.crm.vendors.models import Vendor, VendorStatus, VendorType
-from app.modules.crm.vendors.schemas import VendorCreate, VendorResponse, VendorUpdate
+from app.modules.crm.vendors.schemas import (
+    VendorBulkCreateRequest,
+    VendorBulkCreateResponse,
+    VendorCreate,
+    VendorResponse,
+    VendorUpdate,
+)
 from app.modules.crm.vendors import service
 
 router = APIRouter(prefix="/api/v1/vendors", tags=["Vendors"])
@@ -57,6 +63,20 @@ async def create_vendor(
         org_id=ctx.organisation_id,
         actor_id=ctx.user_id,
         req=req,
+        db=db,
+    )
+
+
+@router.post("/bulk", response_model=VendorBulkCreateResponse, status_code=status.HTTP_201_CREATED)
+async def bulk_create_vendors(
+    req: VendorBulkCreateRequest,
+    ctx: CurrentUserContext = Depends(get_current_active_organisation),
+    db: AsyncSession = Depends(get_db),
+):
+    return await service.bulk_create_vendors(
+        org_id=ctx.organisation_id,
+        actor_id=ctx.user_id,
+        items=req.vendors,
         db=db,
     )
 

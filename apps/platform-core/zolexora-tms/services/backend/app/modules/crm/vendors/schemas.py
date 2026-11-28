@@ -1,6 +1,6 @@
 import datetime
 import uuid
-from typing import Optional
+from typing import Any, Optional
 from pydantic import BaseModel, ConfigDict, Field
 from app.modules.crm.vendors.models import VendorType, VendorStatus
 
@@ -48,3 +48,20 @@ class VendorResponse(VendorBase):
     status: VendorStatus
     created_at: datetime.datetime
     updated_at: datetime.datetime
+
+
+class VendorBulkItemError(BaseModel):
+    row: int
+    name: Optional[str] = None
+    error: str
+
+
+class VendorBulkCreateRequest(BaseModel):
+    vendors: list[dict[str, Any]] = Field(..., min_length=1, max_length=500)
+
+
+class VendorBulkCreateResponse(BaseModel):
+    created_count: int
+    failed_count: int
+    created: list[VendorResponse]
+    errors: list[VendorBulkItemError]
