@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   CalendarCheck,
@@ -32,6 +33,7 @@ import type {
   BookingType,
   BookingServiceType,
   Customer,
+  OrganisationService,
 } from '../../types';
 
 // ── Bulk CSV Helpers ─────────────────────────────────────────────────────────
@@ -247,7 +249,7 @@ function reqStatusClass(status: string): string {
 
 const EMPTY_REQUEST: BookingRequestCreate = {
   customer_id: '',
-  booking_type: 'ETS',
+  booking_type: '',
   service_type: 'PASSENGER',
   pickup_address: '',
   drop_address: '',
@@ -305,6 +307,11 @@ export function BookingsPage() {
   const { data: customers } = useQuery({
     queryKey: ['customers'],
     queryFn: () => apiClient<Customer[]>('/api/v1/crm/clients'),
+  });
+
+  const { data: orgServices = [] } = useQuery({
+    queryKey: ['organisation-services', 'active'],
+    queryFn: () => apiClient<OrganisationService[]>('/api/v1/services?active_only=true'),
   });
 
   const { data: bookings, isLoading: isBookingsLoading } = useQuery({
@@ -519,7 +526,16 @@ export function BookingsPage() {
           <button
             onClick={() => {
               setFormError('');
-              setRequestForm({ ...EMPTY_REQUEST, service_type: defaultServiceType });
+              const visibleServices = orgServices.filter((s) =>
+                (serviceConfig.passenger && s.service_category === 'PASSENGER') ||
+                (serviceConfig.cargo && s.service_category === 'CARGO')
+              );
+              const firstSvc = visibleServices[0];
+              setRequestForm({
+                ...EMPTY_REQUEST,
+                booking_type: firstSvc?.code || '',
+                service_type: firstSvc?.service_category || defaultServiceType,
+              });
               setIsRequestModalOpen(true);
             }}
             className="inline-flex items-center gap-2 rounded-xl bg-navy-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-navy-800/30 hover:bg-navy-600 transition"
@@ -1146,23 +1162,48 @@ export function BookingsPage() {
               {/* Booking Type + Service Type */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">Booking Type</label>
+                  <label className="block text-xs font-medium text-slate-400 mb-1">Booking Type (Our Services) *</label>
                   <select
+                    required
                     value={requestForm.booking_type}
-                    onChange={(e) => setRequestForm({ ...requestForm, booking_type: e.target.value as BookingType })}
+                    onChange={(e) => {
+                      const code = e.target.value;
+                      const match = orgServices.find((s) => s.code === code);
+                      setRequestForm({
+                        ...requestForm,
+                        booking_type: code as BookingType,
+                        service_type: match ? match.service_category : requestForm.service_type,
+                      });
+                    }}
                     className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:border-navy-500 focus:outline-none"
                   >
-                    <option value="ETS">ETS Shuttle / Shift</option>
-                    <option value="FIXED">Fixed Route</option>
-                    <option value="CORPORATE">Corporate Cab</option>
-                    <option value="AIRPORT">Airport Transfer</option>
-                    <option value="SPOT">Spot / Ad-hoc</option>
-                    <option value="RENTAL">Package Rental</option>
-                    <option value="LOCAL">Local City Run</option>
-                    <option value="OUTSTATION">Outstation Intercity</option>
-                    <option value="CONTRACT">Contract / Dedicated</option>
-                    <option value="RECURRING">Recurring Schedule</option>
+                    {orgServices.length === 0 ? (
+                      <option value="">No services added yet</option>
+                    ) : (
+                      <>
+                        <option value="">Select a service...</option>
+                        {orgServices
+                          .filter((s) =>
+                            (serviceConfig.passenger && s.service_category === 'PASSENGER') ||
+                            (serviceConfig.cargo && s.service_category === 'CARGO')
+                          )
+                          .map((s) => (
+                            <option key={s.id} value={s.code}>
+                              {s.name}
+                            </option>
+                          ))}
+                      </>
+                    )}
                   </select>
+                  {orgServices.length === 0 && (
+                    <p className="mt-1 text-[11px] text-amber-300">
+                      Add your services in{' '}
+                      <Link to="/our-services-catalog" className="underline font-semibold">
+                        Our Services
+                      </Link>{' '}
+                      first.
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-400 mb-1">Service Type</label>

@@ -117,6 +117,7 @@ from app.modules.identity.roles.routes import router as roles_router
 from app.modules.fleet.vehicles.routes import router as vehicles_router
 from app.modules.operations.bookings.routes_request import router as booking_requests_router
 from app.modules.operations.bookings.routes import router as bookings_router
+from app.modules.operations.bookings.services_catalog import router as services_catalog_router
 from app.modules.operations.duties.routes import router as duties_router
 from app.modules.core.customization.routes import router as customization_router
 from app.modules.finance.billing.routes import router as billing_router
@@ -150,6 +151,7 @@ app.include_router(customization_router)
 app.include_router(vehicles_router)
 app.include_router(booking_requests_router)
 app.include_router(bookings_router)
+app.include_router(services_catalog_router)
 app.include_router(duties_router)
 app.include_router(billing_router)
 app.include_router(platform_router)

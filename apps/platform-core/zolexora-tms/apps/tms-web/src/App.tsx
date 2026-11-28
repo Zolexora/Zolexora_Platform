@@ -11,6 +11,7 @@ import { BookingsPage } from './features/bookings/BookingsPage';
 import { DutiesPage } from './features/duties/DutiesPage';
 import { DispatchPage } from './features/dispatch/DispatchPage';
 import { ShiftRostersPage } from './features/rosters/ShiftRostersPage';
+import { OurServicesPage } from './features/operations/OurServicesPage';
 import { VehiclesPage } from './features/fleet/VehiclesPage';
 import { DriversPage } from './features/fleet/DriversPage';
 import { CustomersPage } from './features/fleet/CustomersPage';
@@ -119,6 +120,7 @@ export function App() {
                 <Route path="/duties" element={<DutiesPage />} />
                 <Route path="/dispatch" element={<DispatchPage />} />
                 <Route path="/rosters" element={<ShiftRostersPage />} />
+                <Route path="/our-services-catalog" element={<OurServicesPage />} />
                 <Route path="/settings/operating-units" element={<OperatingUnitsPage />} />
                 <Route path="/compliance/vehicles" element={<VehiclesPage />} />
                 <Route path="/compliance/drivers" element={<DriversPage />} />

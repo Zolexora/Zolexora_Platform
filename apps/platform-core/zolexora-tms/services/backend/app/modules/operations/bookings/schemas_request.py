@@ -7,7 +7,7 @@ from app.modules.operations.bookings.enums import BookingRequestStatus, BookingS
 
 class BookingRequestBase(BaseModel):
     customer_id: uuid.UUID
-    booking_type: BookingType = Field(default=BookingType.SPOT)
+    booking_type: str = Field(default="SPOT", min_length=1, max_length=64)
     service_type: BookingServiceType = Field(default=BookingServiceType.CARGO)
     pickup_address: str = Field(..., min_length=3)
     pickup_lat: Optional[float] = None

@@ -15,6 +15,7 @@ import {
   Shield,
   Crown,
   ChevronRight,
+  Briefcase,
 } from 'lucide-react';
 import { useAuth } from '../features/auth/useAuth';
 import { useApplicationRuntime } from '../providers/ApplicationRuntimeProvider';
@@ -46,6 +47,7 @@ const navigation: NavGroup[] = [
   {
     section: 'Operations',
     items: [
+      { name: 'Our Services', href: '/our-services-catalog', icon: Briefcase, visible: (c) => c.service_provider || c.client },
       { name: 'Bookings', href: '/bookings', icon: CalendarCheck, visible: (c) => c.service_provider },
       { name: 'Book Transport', href: '/client-bookings', icon: CalendarCheck, visible: (c) => c.client },
       { name: 'Shift Rosters', href: '/rosters', icon: CalendarClock, visible: (c) => c.service_provider && c.passenger },

@@ -285,17 +285,27 @@ export interface VehicleCreate {
 // Phase 4: Core Operational Engine Types
 // -------------------------------------------------------------
 
-export type BookingType =
-  | 'ETS'
-  | 'SPOT'
-  | 'FIXED'
-  | 'RENTAL'
-  | 'AIRPORT'
-  | 'LOCAL'
-  | 'OUTSTATION'
-  | 'CORPORATE'
-  | 'CONTRACT'
-  | 'RECURRING';
+export type BookingType = string;
+
+export interface OrganisationService {
+  id: string;
+  organisation_id: string;
+  name: string;
+  code: string;
+  service_category: BookingServiceType;
+  description?: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OrganisationServiceCreate {
+  name: string;
+  code?: string;
+  service_category: BookingServiceType;
+  description?: string;
+  is_active?: boolean;
+}
 
 export type BookingServiceType = 'PASSENGER' | 'CARGO';
 
