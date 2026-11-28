@@ -4,6 +4,7 @@ import { Building2, Plus, Search, AlertCircle, X, ShieldCheck, Upload, Download,
 import { apiClient } from '../../lib/api';
 import type { Customer, CustomerCreate, CustomerBulkCreateResponse, CustomerBulkItemError } from '../../types';
 import { EntityComplianceManager } from '../compliance/EntityComplianceManager';
+import { DownloadChoiceModal, type DownloadTarget } from '../../components/DownloadChoiceModal';
 
 // ── CSV helpers ──────────────────────────────────────────────────────────────
 
@@ -325,6 +326,7 @@ export function CustomersPage() {
   });
   const [editError, setEditError] = useState('');
   const [formError, setFormError] = useState('');
+  const [downloadTarget, setDownloadTarget] = useState<DownloadTarget | null>(null);
 
   // Bulk state
   const [isBulkOpen, setIsBulkOpen] = useState(false);
@@ -508,10 +510,19 @@ export function CustomersPage() {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => customers && customers.length > 0 && downloadClientCSV(customers)}
+            onClick={() =>
+              customers &&
+              customers.length > 0 &&
+              setDownloadTarget({
+                title: 'All Clients',
+                entityType: 'CUSTOMER',
+                onDownloadDetails: () => downloadClientCSV(customers),
+                fallbackZipName: 'customer_all_docs.zip',
+              })
+            }
             disabled={!customers || customers.length === 0}
             className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-slate-700 hover:text-white transition disabled:opacity-40 disabled:cursor-not-allowed"
-            title="Export all clients as CSV"
+            title="Export client details or compliance docs"
           >
             <Download className="h-4 w-4" />
             Export All
@@ -609,9 +620,17 @@ export function CustomersPage() {
                         View
                       </button>
                       <button
-                        onClick={() => downloadClientCSV([c], `client_${c.client_code || c.id}.csv`)}
+                        onClick={() =>
+                          setDownloadTarget({
+                            title: c.name,
+                            entityType: 'CUSTOMER',
+                            entityId: c.id,
+                            onDownloadDetails: () => downloadClientCSV([c], `client_${c.client_code || c.id}.csv`),
+                            fallbackZipName: `${c.name}_docs.zip`,
+                          })
+                        }
                         className="rounded bg-slate-800 p-1.5 text-slate-400 hover:bg-slate-700 hover:text-white"
-                        title="Download client details as CSV"
+                        title="Download details or compliance docs"
                       >
                         <Download className="h-3.5 w-3.5" />
                       </button>
@@ -805,9 +824,18 @@ export function CustomersPage() {
                   <div className="flex justify-end gap-3 pt-3 border-t border-slate-800">
                     <button
                       type="button"
-                      onClick={() => downloadClientCSV([profileCustomer], `client_${profileCustomer.client_code || profileCustomer.id}.csv`)}
+                      onClick={() =>
+                        setDownloadTarget({
+                          title: profileCustomer.name,
+                          entityType: 'CUSTOMER',
+                          entityId: profileCustomer.id,
+                          onDownloadDetails: () =>
+                            downloadClientCSV([profileCustomer], `client_${profileCustomer.client_code || profileCustomer.id}.csv`),
+                          fallbackZipName: `${profileCustomer.name}_docs.zip`,
+                        })
+                      }
                       className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-200 hover:bg-slate-700 transition"
-                      title="Download this client's details as CSV"
+                      title="Download details or compliance docs"
                     >
                       <Download className="h-4 w-4 text-silver-300" />
                       Download
@@ -1037,6 +1065,8 @@ export function CustomersPage() {
           </div>
         </div>
       )}
+
+      <DownloadChoiceModal target={downloadTarget} onClose={() => setDownloadTarget(null)} />
     </div>
   );
 }

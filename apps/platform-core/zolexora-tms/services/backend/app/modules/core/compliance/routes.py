@@ -1,11 +1,18 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Body, Path, UploadFile, File, Form
+from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy.orm import selectinload
 from typing import List, Optional
+import asyncio
+import io
+import os
+import re
 import uuid
 import datetime
+import zipfile
 
-from app.core.storage import upload_document_to_r2
+from app.core.storage import download_document_bytes, upload_document_to_r2
 from app.db.session import get_db
 from app.auth.dependencies import get_current_user, require_permission
 from app.modules.identity.users.models import Profile
@@ -254,3 +261,110 @@ async def waive_compliance_record(
     await db.commit()
     await db.refresh(record)
     return record
+
+
+def _safe_zip_segment(raw: str, fallback: str) -> str:
+    cleaned = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "_", (raw or "").strip())
+    return cleaned[:100] or fallback
+
+
+@router.get("/export-docs")
+async def export_compliance_docs(
+    entity_type: ComplianceEntityType = Query(...),
+    entity_id: Optional[uuid.UUID] = Query(None),
+    current_user: Profile = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Exports uploaded compliance documents as a ZIP grouped into folders by
+    registration number (VEHICLE), vendor name (VENDOR), or client name (CUSTOMER)."""
+    org_id = current_user.organisation_id
+    stmt = (
+        select(ComplianceRecord)
+        .options(selectinload(ComplianceRecord.requirement))
+        .where(
+            ComplianceRecord.organisation_id == org_id,
+            ComplianceRecord.entity_type == entity_type,
+            ComplianceRecord.document_url.is_not(None),
+            ComplianceRecord.document_url != "",
+        )
+    )
+    if entity_id is not None:
+        stmt = stmt.where(ComplianceRecord.entity_id == entity_id)
+
+    records = list((await db.execute(stmt)).scalars().all())
+    if not records:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No uploaded compliance documents found",
+        )
+
+    entity_ids = {r.entity_id for r in records}
+    folder_map: dict[uuid.UUID, str] = {}
+
+    if entity_type == ComplianceEntityType.VEHICLE:
+        from app.modules.fleet.vehicles.models import Vehicle
+
+        rows = (await db.execute(select(Vehicle.id, Vehicle.registration_number).where(Vehicle.id.in_(entity_ids)))).all()
+        folder_map = {eid: _safe_zip_segment(reg, str(eid)) for eid, reg in rows}
+    elif entity_type == ComplianceEntityType.VENDOR:
+        from app.modules.crm.vendors.models import Vendor
+
+        rows = (await db.execute(select(Vendor.id, Vendor.name).where(Vendor.id.in_(entity_ids)))).all()
+        folder_map = {eid: _safe_zip_segment(name, str(eid)) for eid, name in rows}
+    elif entity_type == ComplianceEntityType.CUSTOMER:
+        from app.modules.crm.clients.models import Client
+
+        rows = (await db.execute(select(Client.id, Client.name).where(Client.id.in_(entity_ids)))).all()
+        folder_map = {eid: _safe_zip_segment(name, str(eid)) for eid, name in rows}
+
+    downloads = await asyncio.gather(
+        *(download_document_bytes(r.document_url or "") for r in records),
+        return_exceptions=True,
+    )
+
+    buf = io.BytesIO()
+    added_count = 0
+    used_paths: set[str] = set()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        for rec, content in zip(records, downloads):
+            if not isinstance(content, bytes) or not content:
+                continue
+            folder = folder_map.get(rec.entity_id, str(rec.entity_id))
+            req_label = _safe_zip_segment(
+                rec.requirement.name if rec.requirement else str(rec.requirement_id),
+                "document",
+            )
+            ext = ""
+            if rec.original_filename:
+                _, ext = os.path.splitext(rec.original_filename)
+            if not ext and rec.document_url:
+                _, ext = os.path.splitext(rec.document_url.split("?")[0])
+            if not ext:
+                ext = ".pdf"
+
+            candidate = f"{folder}/{req_label}{ext}"
+            counter = 2
+            while candidate in used_paths:
+                candidate = f"{folder}/{req_label}_{counter}{ext}"
+                counter += 1
+            used_paths.add(candidate)
+            zf.writestr(candidate, content)
+            added_count += 1
+
+    if added_count == 0:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Could not retrieve any uploaded compliance files",
+        )
+
+    if entity_id is not None:
+        single_folder = folder_map.get(entity_id, str(entity_id))
+        zip_name = f"{single_folder}_docs.zip"
+    else:
+        zip_name = f"{entity_type.value.lower()}_all_docs.zip"
+
+    return Response(
+        content=buf.getvalue(),
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{zip_name}"'},
+    )

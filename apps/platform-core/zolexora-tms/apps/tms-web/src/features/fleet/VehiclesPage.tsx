@@ -4,6 +4,7 @@ import { Truck, Plus, Search, AlertCircle, X, Navigation, ShieldCheck, Upload, D
 import { apiClient } from '../../lib/api';
 import type { Vehicle, VehicleBodyType, VehicleCreate, Vendor } from '../../types';
 import { EntityComplianceManager } from '../compliance/EntityComplianceManager';
+import { DownloadChoiceModal, type DownloadTarget } from '../../components/DownloadChoiceModal';
 
 // ── Vehicle Type Options (Public Transport default + Cargo + Custom) ─────────
 
@@ -186,6 +187,7 @@ export function VehiclesPage() {
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formError, setFormError] = useState('');
+  const [downloadTarget, setDownloadTarget] = useState<DownloadTarget | null>(null);
 
   // ── View modal (merged Details + Docs) ──────────────────────────────────────
   const [profileVehicle, setProfileVehicle] = useState<Vehicle | null>(null);
@@ -397,10 +399,19 @@ export function VehiclesPage() {
         </div>
         <div className="flex gap-2">
           <button
-            onClick={() => vehicles && vehicles.length > 0 && downloadVehicleCSV(vehicles)}
+            onClick={() =>
+              vehicles &&
+              vehicles.length > 0 &&
+              setDownloadTarget({
+                title: 'All Vehicles',
+                entityType: 'VEHICLE',
+                onDownloadDetails: () => downloadVehicleCSV(vehicles),
+                fallbackZipName: 'vehicle_all_docs.zip',
+              })
+            }
             disabled={!vehicles || vehicles.length === 0}
             className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-200 hover:bg-slate-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
-            title="Export all vehicles as CSV"
+            title="Export vehicle details or compliance docs"
           >
             <Download className="h-4 w-4" />
             Export All
@@ -510,9 +521,17 @@ export function VehiclesPage() {
                         View
                       </button>
                       <button
-                        onClick={() => downloadVehicleCSV([v], `vehicle_${v.registration_number}.csv`)}
+                        onClick={() =>
+                          setDownloadTarget({
+                            title: v.registration_number,
+                            entityType: 'VEHICLE',
+                            entityId: v.id,
+                            onDownloadDetails: () => downloadVehicleCSV([v], `vehicle_${v.registration_number}.csv`),
+                            fallbackZipName: `${v.registration_number}_docs.zip`,
+                          })
+                        }
                         className="rounded bg-slate-800 p-1.5 text-slate-400 hover:bg-slate-700 hover:text-white"
-                        title="Download vehicle details as CSV"
+                        title="Download details or compliance docs"
                       >
                         <Download className="h-3.5 w-3.5" />
                       </button>
@@ -940,9 +959,18 @@ export function VehiclesPage() {
                   <div className="flex justify-end gap-3 pt-3 border-t border-slate-800">
                     <button
                       type="button"
-                      onClick={() => downloadVehicleCSV([profileVehicle], `vehicle_${profileVehicle.registration_number}.csv`)}
+                      onClick={() =>
+                        setDownloadTarget({
+                          title: profileVehicle.registration_number,
+                          entityType: 'VEHICLE',
+                          entityId: profileVehicle.id,
+                          onDownloadDetails: () =>
+                            downloadVehicleCSV([profileVehicle], `vehicle_${profileVehicle.registration_number}.csv`),
+                          fallbackZipName: `${profileVehicle.registration_number}_docs.zip`,
+                        })
+                      }
                       className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-200 hover:bg-slate-700 transition"
-                      title="Download this vehicle's details as CSV"
+                      title="Download details or compliance docs"
                     >
                       <Download className="h-4 w-4 text-silver-300" />
                       Download
@@ -1195,6 +1223,8 @@ export function VehiclesPage() {
           </div>
         </div>
       )}
+
+      <DownloadChoiceModal target={downloadTarget} onClose={() => setDownloadTarget(null)} />
     </div>
   );
 }

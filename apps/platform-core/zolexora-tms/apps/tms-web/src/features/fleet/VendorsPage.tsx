@@ -4,6 +4,7 @@ import { Building2, Plus, Search, AlertCircle, X, ShieldCheck, Upload, Download,
 import { apiClient } from '../../lib/api';
 import type { Vendor, VendorCreate, VendorBulkCreateResponse, VendorBulkItemError } from '../../types';
 import { EntityComplianceManager } from '../compliance/EntityComplianceManager';
+import { DownloadChoiceModal, type DownloadTarget } from '../../components/DownloadChoiceModal';
 
 // ── CSV helpers ──────────────────────────────────────────────────────────────
 
@@ -358,6 +359,7 @@ export function VendorsPage() {
   });
   const [editError, setEditError] = useState('');
   const [formError, setFormError] = useState('');
+  const [downloadTarget, setDownloadTarget] = useState<DownloadTarget | null>(null);
 
   // Bulk state
   const [isBulkOpen, setIsBulkOpen] = useState(false);
@@ -533,10 +535,19 @@ export function VendorsPage() {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => vendors && vendors.length > 0 && downloadVendorCSV(vendors)}
+            onClick={() =>
+              vendors &&
+              vendors.length > 0 &&
+              setDownloadTarget({
+                title: 'All Vendors',
+                entityType: 'VENDOR',
+                onDownloadDetails: () => downloadVendorCSV(vendors),
+                fallbackZipName: 'vendor_all_docs.zip',
+              })
+            }
             disabled={!vendors || vendors.length === 0}
             className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-slate-700 hover:text-white transition disabled:opacity-40 disabled:cursor-not-allowed"
-            title="Export all vendors as CSV"
+            title="Export vendor details or compliance docs"
           >
             <Download className="h-4 w-4" />
             Export All
@@ -639,9 +650,17 @@ export function VendorsPage() {
                         View
                       </button>
                       <button
-                        onClick={() => downloadVendorCSV([v], `vendor_${v.vendor_code || v.id}.csv`)}
+                        onClick={() =>
+                          setDownloadTarget({
+                            title: v.name,
+                            entityType: 'VENDOR',
+                            entityId: v.id,
+                            onDownloadDetails: () => downloadVendorCSV([v], `vendor_${v.vendor_code || v.id}.csv`),
+                            fallbackZipName: `${v.name}_docs.zip`,
+                          })
+                        }
                         className="rounded bg-slate-800 p-1.5 text-slate-400 hover:bg-slate-700 hover:text-white"
-                        title="Download vendor details as CSV"
+                        title="Download details or compliance docs"
                       >
                         <Download className="h-3.5 w-3.5" />
                       </button>
@@ -838,9 +857,18 @@ export function VendorsPage() {
                   <div className="flex justify-end gap-3 pt-3 border-t border-slate-800">
                     <button
                       type="button"
-                      onClick={() => downloadVendorCSV([profileVendor], `vendor_${profileVendor.vendor_code || profileVendor.id}.csv`)}
+                      onClick={() =>
+                        setDownloadTarget({
+                          title: profileVendor.name,
+                          entityType: 'VENDOR',
+                          entityId: profileVendor.id,
+                          onDownloadDetails: () =>
+                            downloadVendorCSV([profileVendor], `vendor_${profileVendor.vendor_code || profileVendor.id}.csv`),
+                          fallbackZipName: `${profileVendor.name}_docs.zip`,
+                        })
+                      }
                       className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-200 hover:bg-slate-700 transition"
-                      title="Download this vendor's details as CSV"
+                      title="Download details or compliance docs"
                     >
                       <Download className="h-4 w-4 text-silver-300" />
                       Download
@@ -1092,6 +1120,8 @@ export function VendorsPage() {
           </div>
         </div>
       )}
+
+      <DownloadChoiceModal target={downloadTarget} onClose={() => setDownloadTarget(null)} />
     </div>
   );
 }

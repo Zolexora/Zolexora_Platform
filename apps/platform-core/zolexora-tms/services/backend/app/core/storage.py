@@ -6,6 +6,7 @@ from typing import Optional
 import cloudinary
 import cloudinary.uploader
 import boto3
+import httpx
 from botocore.config import Config
 from app.core.config import settings
 
@@ -94,3 +95,31 @@ async def upload_document_to_r2(
     except Exception as e:
         raise StorageError(f"Cloudflare R2 upload failed: {e}") from e
     return f"{settings.R2_PUBLIC_BASE_URL.rstrip('/')}/{key}"
+
+
+async def download_document_bytes(url: str) -> Optional[bytes]:
+    """Downloads a compliance document from R2 (by key) or via HTTP GET."""
+    if not url:
+        return None
+    base = (settings.R2_PUBLIC_BASE_URL or "").rstrip("/")
+    client = get_r2_client()
+    if base and client and settings.R2_BUCKET_NAME and url.startswith(base + "/"):
+        key = url[len(base) + 1 :]
+        try:
+            obj = await asyncio.to_thread(
+                client.get_object,
+                Bucket=settings.R2_BUCKET_NAME,
+                Key=key,
+            )
+            return await asyncio.to_thread(obj["Body"].read)
+        except Exception as e:
+            logger.warning(f"R2 get_object failed for {key}, falling back to HTTP: {e}")
+
+    try:
+        async with httpx.AsyncClient(timeout=20.0, follow_redirects=True) as http:
+            resp = await http.get(url)
+            if resp.status_code == 200:
+                return resp.content
+    except Exception as e:
+        logger.warning(f"HTTP download failed for {url}: {e}")
+    return None
