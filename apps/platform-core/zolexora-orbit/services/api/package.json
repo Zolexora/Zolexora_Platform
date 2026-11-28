@@ -13,7 +13,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@fastify/cors": "^10.0.3",
+    "@fastify/cors": "^11.4.3",
     "@fastify/helmet": "^13.0.1",
     "@fastify/jwt": "^9.1.0",
     "@fastify/rate-limit": "^10.3.0",

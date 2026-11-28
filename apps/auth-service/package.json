@@ -13,7 +13,7 @@
     "lint": "eslint src --ext .ts"
   },
   "dependencies": {
-    "@fastify/cors": "^10.0.2",
+    "@fastify/cors": "^11.4.3",
     "@fastify/swagger": "^9.4.2",
     "@fastify/swagger-ui": "^5.2.2",
     "@xmldom/xmldom": "^0.9.12",
