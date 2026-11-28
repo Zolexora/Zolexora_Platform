@@ -32,11 +32,12 @@ async def test_commander_transfer_flow():
         
         # User A invites User B (or we bypass and just create membership, let's use the DB)
         user_b = uuid.uuid4()
-        from app.db.session import AsyncSessionLocal
+        from app.db.session import AsyncSessionLocal, rls_bypass
         from sqlalchemy import text
         async with AsyncSessionLocal() as session:
-            await session.execute(text("INSERT INTO organisation_members (id, organisation_id, user_id, status, is_creator, is_commander, created_at, updated_at) VALUES (:id, :oid, :uid, 'ACTIVE', false, false, now(), now())"), {"id": uuid.uuid4(), "oid": org_id, "uid": user_b})
-            await session.commit()
+            async with rls_bypass(session):
+                await session.execute(text("INSERT INTO organisation_members (id, organisation_id, user_id, status, is_creator, is_commander, created_at, updated_at) VALUES (:id, :oid, :uid, 'ACTIVE', false, false, now(), now())"), {"id": uuid.uuid4(), "oid": org_id, "uid": user_b})
+                await session.commit()
             
         token_b = make_test_token(user_b, "user_b@test.com")
         

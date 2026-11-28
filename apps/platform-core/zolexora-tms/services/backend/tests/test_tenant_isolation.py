@@ -68,13 +68,26 @@ async def test_cross_tenant_isolation_boundary():
         for m in members_a.json():
             assert m["organisation_id"] == org_a_id
 
-        # Cleanup
-        from app.db.session import AsyncSessionLocal
+        # Cleanup under RLS bypass in FK order
+        from app.db.session import AsyncSessionLocal, rls_bypass
         from sqlalchemy import text
         async with AsyncSessionLocal() as session:
-            await session.execute(text(f"DELETE FROM organisation_members WHERE organisation_id IN ('{org_a_id}', '{org_b_id}')"))
-            await session.execute(text(f"DELETE FROM organisations WHERE id IN ('{org_a_id}', '{org_b_id}')"))
-            await session.commit()
+            async with rls_bypass(session):
+                ids = f"'{org_a_id}', '{org_b_id}'"
+                await session.execute(text(f"UPDATE tenant_database_registry SET assigned_organisation_id = NULL WHERE assigned_organisation_id IN ({ids})"))
+                for tbl in (
+                    "audit_logs",
+                    "organisation_applications",
+                    "organisation_database_assignments",
+                    "organisation_mongodb_assignments",
+                    "organisation_storage_assignments",
+                    "tenant_quotas",
+                    "organisation_members",
+                ):
+                    await session.execute(text(f"DELETE FROM {tbl} WHERE organisation_id IN ({ids})"))
+                await session.execute(text(f"DELETE FROM organisation_roles WHERE organisation_id IN ({ids})"))
+                await session.execute(text(f"DELETE FROM organisations WHERE id IN ({ids})"))
+                await session.commit()
 
 @pytest.mark.asyncio
 async def test_tenant_context_resolution():

@@ -5,7 +5,7 @@ from httpx import ASGITransport, AsyncClient
 from jose import jwt
 from app.main import app
 from app.core.config import settings
-from app.db.session import AsyncSessionLocal
+from app.db.session import AsyncSessionLocal, rls_bypass
 from sqlalchemy import text
 
 def make_test_token(user_id: uuid.UUID, email: str) -> str:
@@ -60,10 +60,11 @@ async def test_application_definition_isolation():
     
         # Update B's app directly in db to test modification
         async with AsyncSessionLocal() as session:
-            await session.execute(text(f"""
-                UPDATE organisation_applications SET application_type = 'EXTENDED' WHERE organisation_id = '{org_b_id}'
-            """))
-            await session.commit()
+            async with rls_bypass(session):
+                await session.execute(text(f"""
+                    UPDATE organisation_applications SET application_type = 'EXTENDED' WHERE organisation_id = '{org_b_id}'
+                """))
+                await session.commit()
         
         resp_b_2 = await client.get("/api/v1/application", headers={"Authorization": f"Bearer {token_b}"})
         assert resp_b_2.status_code == 200

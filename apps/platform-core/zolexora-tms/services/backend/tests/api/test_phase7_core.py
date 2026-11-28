@@ -32,29 +32,40 @@ async def test_booking_to_duty_lifecycle():
         assert res_a.status_code == 201, res_a.text
         
         headers = {"Authorization": f"Bearer {token_a}"}
-        
-        from app.db.session import AsyncSessionLocal
-        from sqlalchemy import text
-        from app.core.providers.database import D1TenantProvider
-        
-        
-        async with AsyncSessionLocal() as session:
-            # Get organisation to get tenant database
-            org = await session.execute(text(f"SELECT database_registry_id FROM organisation_database_assignments WHERE organisation_id = '{res_a.json()['organisation']['id']}'"))
-            tenant_db_id = org.scalar_one()
-            
-            reg = await session.execute(text(f"SELECT database_identifier FROM tenant_database_registry WHERE id = '{tenant_db_id}'"))
-            d1_uuid = reg.scalar_one()
-            
-        provider = D1TenantProvider(d1_uuid)
-        conn = await provider.get_connection()
-        
-        cust_id = str(uuid.uuid4())
-        await conn.execute("INSERT INTO customers (id, name, email) VALUES (?, ?, ?)", (cust_id, "Test Customer", "cust@test.com"))
-        driver_id = str(uuid.uuid4())
-        await conn.execute("INSERT INTO drivers (id, name, status) VALUES (?, ?, ?)", (driver_id, "Test Driver", "AVAILABLE"))
-        vehicle_id = str(uuid.uuid4())
-        await conn.execute("INSERT INTO vehicles (id, registration_number, status) VALUES (?, ?, ?)", (vehicle_id, "KA01AB1234", "AVAILABLE"))
+
+        # Provision client, driver, and vehicle via REST APIs under Postgres RLS
+        c_res = await client.post(
+            "/api/v1/crm/clients",
+            json={"name": "Phase7 Client", "email": "cust@test.com", "phone": "+919999900001"},
+            headers=headers,
+        )
+        assert c_res.status_code == 201, c_res.text
+        cust_id = c_res.json()["id"]
+
+        d_res = await client.post(
+            "/api/v1/drivers",
+            json={
+                "full_name": "Phase7 Driver",
+                "phone": "+919999900002",
+                "license_number": f"DL-{uuid.uuid4().hex[:8].upper()}",
+            },
+            headers=headers,
+        )
+        assert d_res.status_code == 201, d_res.text
+        driver_id = d_res.json()["id"]
+
+        v_res = await client.post(
+            "/api/v1/vehicles",
+            json={
+                "registration_number": f"KA01P{uuid.uuid4().int % 9000 + 1000}",
+                "vehicle_type": "TEMPO",
+                "ownership_type": "OWNED",
+                "fuel_type": "DIESEL",
+            },
+            headers=headers,
+        )
+        assert v_res.status_code == 201, v_res.text
+        vehicle_id = v_res.json()["id"]
 
         # 1. Create Booking Request
         req_payload = {

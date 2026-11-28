@@ -5,7 +5,7 @@ from app.main import app
 import uuid
 from jose import jwt
 from app.core.config import settings
-from app.db.session import AsyncSessionLocal
+from app.db.session import AsyncSessionLocal, rls_bypass
 from app.modules.identity.organisations.models import Organisation, OrganisationStatus, OrganisationType
 from app.modules.identity.organisations.membership_models import OrganisationMember, MemberStatus
 
@@ -46,17 +46,18 @@ async def test_roles_flow(monkeypatch):
         org_id = uuid.uuid4()
         
         async with AsyncSessionLocal() as db:
-            await db.execute(text("""
-                INSERT INTO organisations (id, name, organisation_type, status, created_at, updated_at)
-                VALUES (:oid, :name, :type, 'ACTIVE', now(), now())
-            """), {"oid": org_id, "name": "Roles Test Org", "type": "Private Limited Company"})
-            
-            await db.execute(text("""
-                INSERT INTO organisation_members (id, organisation_id, user_id, status, is_creator, is_commander, created_at, updated_at)
-                VALUES (:mid, :oid, :uid, 'ACTIVE', true, true, now(), now())
-            """), {"mid": uuid.uuid4(), "oid": org_id, "uid": user1_id})
-            
-            await db.commit()
+            async with rls_bypass(db):
+                await db.execute(text("""
+                    INSERT INTO organisations (id, name, organisation_type, status, created_at, updated_at)
+                    VALUES (:oid, :name, :type, 'ACTIVE', now(), now())
+                """), {"oid": org_id, "name": "Roles Test Org", "type": "Private Limited Company"})
+                
+                await db.execute(text("""
+                    INSERT INTO organisation_members (id, organisation_id, user_id, status, is_creator, is_commander, created_at, updated_at)
+                    VALUES (:mid, :oid, :uid, 'ACTIVE', true, true, now(), now())
+                """), {"mid": uuid.uuid4(), "oid": org_id, "uid": user1_id})
+                
+                await db.commit()
 
         token1 = make_test_token(user1_id, "commander@example.com")
 
@@ -82,16 +83,17 @@ async def test_roles_flow(monkeypatch):
         user2_id = uuid.uuid4()
         member2_id = uuid.uuid4()
         async with AsyncSessionLocal() as db:
-            member2 = OrganisationMember(
-                id=member2_id,
-                organisation_id=org_id,
-                user_id=user2_id,
-                status=MemberStatus.ACTIVE,
-                is_creator=False,
-                is_commander=False
-            )
-            db.add(member2)
-            await db.commit()
+            async with rls_bypass(db):
+                member2 = OrganisationMember(
+                    id=member2_id,
+                    organisation_id=org_id,
+                    user_id=user2_id,
+                    status=MemberStatus.ACTIVE,
+                    is_creator=False,
+                    is_commander=False
+                )
+                db.add(member2)
+                await db.commit()
 
         token2 = make_test_token(user2_id, "member@example.com")
 

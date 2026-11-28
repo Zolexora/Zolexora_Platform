@@ -39,7 +39,8 @@ async def test_runtime_isolation():
         data_a = run_a.json()
         assert data_a["application"]["name"] == "Org A TMS"
         assert data_a["application"]["type"] == "STANDARD"
-        assert data_a["modules"]["bookings"]["enabled"] is True # Safe default
+        assert data_a["modules"]["operations"]["enabled"] is True # Safe default
+        assert data_a["modules"]["operations"]["pages"]["bookings"]["enabled"] is True
 
         # Fetch runtime for B
         run_b = await client.get("/api/v1/application/runtime", headers={"Authorization": f"Bearer {token_b}"})
