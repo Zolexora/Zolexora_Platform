@@ -49,7 +49,7 @@ class ClientLocation(Base, TimestampMixin):
     status: Mapped[ClientStatus] = mapped_column(Enum(ClientStatus, name="client_status", create_type=False), default=ClientStatus.ACTIVE, nullable=False)
 
     client: Mapped["Client"] = relationship("Client", back_populates="locations")
-    operating_unit = relationship("app.modules.operations.operating_units.models.OperatingUnit")
+    operating_unit = relationship("app.modules.operations.operating_units.models.OperatingUnit", overlaps="client,locations")
 
     __table_args__ = (
         ForeignKeyConstraint(
