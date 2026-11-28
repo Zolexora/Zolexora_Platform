@@ -452,8 +452,8 @@ importers:
         specifier: ~14.0.10
         version: 14.0.12(54e7f4aea0e1fc59df7614b1110fc724)
       expo-glass-effect:
-        specifier: ~0.1.4
-        version: 0.1.10(54e7f4aea0e1fc59df7614b1110fc724)
+        specifier: ~58.0.5
+        version: 58.0.5(54e7f4aea0e1fc59df7614b1110fc724)
       expo-haptics:
         specifier: ~15.0.8
         version: 15.0.8(03cd8dd57bc6d56ae269aebd617816b4)
@@ -13064,8 +13064,8 @@ packages:
       react: 19.1.0
       react-native: '*'
 
-  expo-glass-effect@0.1.10:
-    resolution: {integrity: sha512-R0OrsMbs2TxFQZp26rRDl1Wxu5PaBXM7qAxiT0Bfyb1bojr3eI90bMKry9lBM3aKbq7DOBXYT7ePrE3vUaf41g==}
+  expo-glass-effect@58.0.5:
+    resolution: {integrity: sha512-PkL1X/r0cTs6NG47Xp3TxRvtqSeRmPYhPOHp3GDmZB2oOxpjXge6qLi/bSSv0asFWqf+MLOlXZ+hq2Imuh0Z1g==}
     peerDependencies:
       expo: '*'
       react: 19.1.0
@@ -32685,7 +32685,7 @@ snapshots:
       - react-native-screens
       - react-native-webview
 
-  expo-glass-effect@0.1.10(54e7f4aea0e1fc59df7614b1110fc724):
+  expo-glass-effect@58.0.5(54e7f4aea0e1fc59df7614b1110fc724):
     dependencies:
       expo: 54.0.37(986090f79d59315f3f12c5ed83aaf91f)
       react: 19.1.0
