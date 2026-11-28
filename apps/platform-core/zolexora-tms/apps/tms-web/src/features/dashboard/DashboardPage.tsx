@@ -94,7 +94,7 @@ export function DashboardPage() {
   );
   const completedDutiesCount = duties.filter((d) => d.status === 'DUTY_COMPLETED').length;
 
-  const availableVehicles = vehicles.filter((v) => v.status === 'AVAILABLE' || v.status === 'ACTIVE').length;
+  const availableVehicles = vehicles.filter((v) => v.status === 'AVAILABLE').length;
   const availableDrivers = drivers.filter((d) => d.status === 'AVAILABLE').length;
   const onDutyDrivers = drivers.filter((d) => d.status === 'ON_DUTY').length;
 

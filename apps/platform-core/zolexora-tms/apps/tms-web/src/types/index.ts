@@ -390,6 +390,7 @@ export interface Booking {
   vehicle_requirements: Record<string, any>;
   driver_requirements: Record<string, any>;
   boarding_pin?: string | null;
+  eway_bill_number?: string | null;
   escort_required?: boolean;
   escort_guard_name?: string | null;
   safe_drop_confirmed_at?: string | null;

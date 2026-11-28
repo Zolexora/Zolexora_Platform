@@ -5,7 +5,6 @@ import {
   MapPin,
   Receipt,
   CreditCard,
-  Building2,
   ChevronRight,
 } from 'lucide-react';
 import { useAuth } from '../features/auth/useAuth';

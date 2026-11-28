@@ -13,7 +13,6 @@ import {
   CreditCard,
   Receipt,
   Shield,
-  Crown,
   ChevronRight,
   Briefcase,
 } from 'lucide-react';
