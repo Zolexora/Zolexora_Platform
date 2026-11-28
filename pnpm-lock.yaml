@@ -956,8 +956,8 @@ importers:
         specifier: ~18.0.13
         version: 18.0.14(e0ccca449fff1175f5c553fee82f658a)
       expo-crypto:
-        specifier: ~15.0.9
-        version: 15.0.9(dceb79965a8f444fb8d1ac9790a05ba6)
+        specifier: ~58.0.8
+        version: 58.0.8(dceb79965a8f444fb8d1ac9790a05ba6)
       expo-image-picker:
         specifier: ~17.0.11
         version: 17.0.11(dceb79965a8f444fb8d1ac9790a05ba6)
@@ -1059,8 +1059,8 @@ importers:
         specifier: ~18.0.13
         version: 18.0.14(e0ccca449fff1175f5c553fee82f658a)
       expo-crypto:
-        specifier: ~15.0.9
-        version: 15.0.9(dceb79965a8f444fb8d1ac9790a05ba6)
+        specifier: ~58.0.8
+        version: 58.0.8(dceb79965a8f444fb8d1ac9790a05ba6)
       expo-image-picker:
         specifier: ~17.0.11
         version: 17.0.11(dceb79965a8f444fb8d1ac9790a05ba6)
@@ -1159,8 +1159,8 @@ importers:
         specifier: ~18.0.13
         version: 18.0.14(e0ccca449fff1175f5c553fee82f658a)
       expo-crypto:
-        specifier: ~15.0.9
-        version: 15.0.9(dceb79965a8f444fb8d1ac9790a05ba6)
+        specifier: ~58.0.8
+        version: 58.0.8(dceb79965a8f444fb8d1ac9790a05ba6)
       expo-image-picker:
         specifier: ~17.0.11
         version: 17.0.11(dceb79965a8f444fb8d1ac9790a05ba6)
@@ -13052,6 +13052,11 @@ packages:
 
   expo-crypto@15.0.9:
     resolution: {integrity: sha512-SNWKa2fXx7v9gkp1h/7nqXY5XN7qgNDn3yRc2aO0gWGbeMbvob/haMxxsPFe9f51aqH5NjNCqHf2kvLhvAd8KQ==}
+    peerDependencies:
+      expo: '*'
+
+  expo-crypto@58.0.8:
+    resolution: {integrity: sha512-yMSiMlallOweQ28oQ3BqJf6I/4ZoBggFNRg+PfjG1NbQWBWzGKmkPPUrd3yT0oPW4P+AYppg+Mw6xoAYddLUKA==}
     peerDependencies:
       expo: '*'
 
@@ -32705,6 +32710,23 @@ snapshots:
   expo-crypto@15.0.9(dceb79965a8f444fb8d1ac9790a05ba6):
     dependencies:
       base64-js: 1.5.1
+      expo: 54.0.37(680360f4297d02ca83d0cb48f3dbc3e3)
+    transitivePeerDependencies:
+      - '@babel/core'
+      - '@expo/metro-runtime'
+      - '@types/react'
+      - expo-constants
+      - expo-linking
+      - expo-router
+      - react-native
+      - react-native-gesture-handler
+      - react-native-reanimated
+      - react-native-safe-area-context
+      - react-native-screens
+      - react-native-webview
+
+  expo-crypto@58.0.8(dceb79965a8f444fb8d1ac9790a05ba6):
+    dependencies:
       expo: 54.0.37(680360f4297d02ca83d0cb48f3dbc3e3)
     transitivePeerDependencies:
       - '@babel/core'
