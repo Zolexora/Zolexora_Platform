@@ -28,7 +28,7 @@
   },
   "devDependencies": {
     "@zolexora/tsconfig": "workspace:*",
-    "prettier": "^3.2.0",
+    "prettier": "^3.10.1",
     "typescript": "^5.4.0"
   },
   "overrides": {
