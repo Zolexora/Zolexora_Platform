@@ -397,7 +397,7 @@ export interface BookingCreate {
 }
 
 export interface BookingBulkRow {
-  customer_name: string;
+  client_code: string;
   booking_type: BookingType;
   service_type: BookingServiceType;
   pickup_address: string;

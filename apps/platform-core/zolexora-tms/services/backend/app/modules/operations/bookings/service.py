@@ -134,13 +134,14 @@ async def bulk_create_bookings(
 ) -> BookingBulkCreateResponse:
     clients_rows = (
         await ctx.db.execute(
-            select(Client.id, Client.name, Client.client_code).where(Client.organisation_id == ctx.organisation_id)
+            select(Client.id, Client.client_code).where(
+                Client.organisation_id == ctx.organisation_id,
+                Client.client_code.is_not(None),
+            )
         )
     ).all()
 
-    by_id: dict[str, uuid.UUID] = {str(r.id): r.id for r in clients_rows}
     by_code: dict[str, uuid.UUID] = {r.client_code.strip().upper(): r.id for r in clients_rows if r.client_code}
-    by_name: dict[str, uuid.UUID] = {r.name.strip().lower(): r.id for r in clients_rows if r.name}
 
     created_bookings: list[Booking] = []
     errors: list[BookingBulkItemError] = []
@@ -151,26 +152,18 @@ async def bulk_create_bookings(
             for k, v in raw.items()
             if not (isinstance(v, str) and v.strip() == "")
         }
-        ref = str(
-            cleaned.get("customer_name")
-            or cleaned.get("client_code")
-            or cleaned.get("customer_id")
-            or cleaned.get("pickup_address")
-            or ""
-        ).strip() or None
+        code_raw = str(cleaned.get("client_code") or "").strip().upper()
+        ref = code_raw or (str(cleaned.get("pickup_address") or "").strip() or None)
 
-        # Resolve customer_id from UUID, client_code, or client name
-        resolved_cid: Optional[uuid.UUID] = None
-        if cleaned.get("customer_id"):
-            resolved_cid = by_id.get(str(cleaned["customer_id"]).strip())
-        if not resolved_cid and cleaned.get("client_code"):
-            resolved_cid = by_code.get(str(cleaned["client_code"]).strip().upper())
-        if not resolved_cid and cleaned.get("customer_name"):
-            key = str(cleaned["customer_name"]).strip()
-            resolved_cid = by_code.get(key.upper()) or by_name.get(key.lower())
-
+        resolved_cid: Optional[uuid.UUID] = by_code.get(code_raw) if code_raw else None
         if not resolved_cid:
-            errors.append(BookingBulkItemError(row=idx, reference=ref, error="Customer not found in organisation (check Client Name or Code)"))
+            errors.append(
+                BookingBulkItemError(
+                    row=idx,
+                    reference=ref,
+                    error="Client Code not found in organisation",
+                )
+            )
             continue
 
         try:

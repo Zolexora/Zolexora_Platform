@@ -34,19 +34,15 @@ import type {
 // ── Bulk CSV Helpers ─────────────────────────────────────────────────────────
 
 const BULK_TEMPLATE_HEADERS = [
-  'Client Name or Code', 'Booking Type', 'Service Type',
+  'Client Code', 'Booking Type', 'Service Type',
   'Pickup Address', 'Drop Address', 'Pickup DateTime',
   'Lead Passenger', 'Passenger Phone', 'Headcount', 'Shift Label',
   'Cargo Material', 'Cargo Weight (kg)', 'E-Way Bill No', 'Instructions',
 ];
 
 const BULK_HEADER_ALIASES: Record<string, string> = {
-  'client name or code': 'customer_name',
-  'client name': 'customer_name',
-  'client code': 'customer_name',
-  'customer': 'customer_name',
-  'customer_name': 'customer_name',
-  'client_code': 'customer_name',
+  'client code': 'client_code',
+  'client_code': 'client_code',
   'booking type': 'booking_type',
   'booking_type': 'booking_type',
   'service type': 'service_type',
@@ -109,7 +105,7 @@ function splitCsvLine(line: string): string[] {
 }
 
 function getBulkBookingRowError(r: BookingBulkRow): string | null {
-  if (!r.customer_name.trim()) return 'Client Name or Code required';
+  if (!r.client_code.trim()) return 'Client Code required';
   if (r.pickup_address.trim().length < 3) return 'Pickup address too short';
   if (r.drop_address.trim().length < 3) return 'Drop address too short';
   if (!r.pickup_datetime.trim()) return 'Pickup DateTime required';
@@ -126,14 +122,14 @@ function parseBookingCsv(text: string): { rows: BookingBulkRow[]; error?: string
     return BULK_HEADER_ALIASES[norm] ?? norm;
   });
   if (
-    !header.includes('customer_name') ||
+    !header.includes('client_code') ||
     !header.includes('pickup_address') ||
     !header.includes('drop_address') ||
     !header.includes('pickup_datetime')
   ) {
     return {
       rows: [],
-      error: 'CSV must include Client Name or Code, Pickup Address, Drop Address, and Pickup DateTime columns.',
+      error: 'CSV must include Client Code, Pickup Address, Drop Address, and Pickup DateTime columns.',
     };
   }
 
@@ -147,7 +143,7 @@ function parseBookingCsv(text: string): { rows: BookingBulkRow[]; error?: string
     const countRaw = get('passenger_count');
     const weightRaw = get('cargo_weight_kg');
     rows.push({
-      customer_name: get('customer_name'),
+      client_code: get('client_code').toUpperCase(),
       booking_type: (get('booking_type').toUpperCase() || 'ETS') as BookingType,
       service_type: (get('service_type').toUpperCase() || 'PASSENGER') as BookingServiceType,
       pickup_address: get('pickup_address'),
@@ -1450,12 +1446,11 @@ export function BookingsPage() {
 
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-950/60 px-4 py-3 text-xs">
               <span className="text-slate-400">
-                Match clients by <strong className="text-slate-200">Client Name</strong> or{' '}
-                <strong className="text-slate-200">Client Code</strong>. Night-shift passenger bookings auto-generate a Boarding PIN &amp; Escort flag.
+                Match clients strictly by <strong className="text-slate-200">Client Code</strong> (e.g. <span className="font-mono text-silver-300">CLI-12345678</span>). Night-shift passenger bookings auto-generate a Boarding PIN &amp; Escort flag.
               </span>
               <button
                 type="button"
-                onClick={() => downloadBookingTemplate(customers?.[0]?.name || 'Acme Corp')}
+                onClick={() => downloadBookingTemplate(customers?.find((c) => c.client_code)?.client_code || 'CLI-12345678')}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 font-medium text-silver-300 hover:bg-slate-700 hover:text-white transition shrink-0"
               >
                 <Download className="h-3.5 w-3.5" />
@@ -1490,7 +1485,7 @@ export function BookingsPage() {
                   <table className="w-full text-left text-xs text-slate-300">
                     <thead className="bg-slate-800/80 text-slate-400">
                       <tr>
-                        <th className="px-3 py-2">Client</th>
+                        <th className="px-3 py-2">Client Code</th>
                         <th className="px-3 py-2">Type</th>
                         <th className="px-3 py-2">Route</th>
                         <th className="px-3 py-2">Pickup Time</th>
@@ -1501,9 +1496,9 @@ export function BookingsPage() {
                         const rowErr = getBulkBookingRowError(r);
                         return (
                           <tr key={i} className={rowErr ? 'bg-red-500/10' : ''}>
-                            <td className="px-3 py-2 font-medium text-white">
-                              {r.customer_name || <span className="text-red-400">(missing)</span>}
-                              {rowErr && <div className="text-[10px] text-red-400">{rowErr}</div>}
+                            <td className="px-3 py-2 font-mono font-medium text-white">
+                              {r.client_code || <span className="text-red-400 font-sans">(missing)</span>}
+                              {rowErr && <div className="text-[10px] font-sans text-red-400">{rowErr}</div>}
                             </td>
                             <td className="px-3 py-2 font-mono">
                               {r.booking_type} · {r.service_type}
