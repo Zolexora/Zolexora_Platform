@@ -40,8 +40,8 @@ module.exports = ({ config }) => {
       ...config.extra,
       ...(projectId ? { eas: { projectId } } : {}),
       apiBaseUrl: process.env.EXPO_PUBLIC_API_BASE_URL,
-      authServiceUrl: process.env.AUTH_SERVICE_PUBLIC_URL,
-      turnstileSiteKey: process.env.TURNSTILE_SITE_KEY,
+      authServiceUrl: process.env.TMS_AUTH_SERVICE_PUBLIC_URL || process.env.AUTH_SERVICE_PUBLIC_URL,
+      turnstileSiteKey: process.env.TMS_TURNSTILE_SITE_KEY || process.env.TURNSTILE_SITE_KEY,
     },
   };
 };

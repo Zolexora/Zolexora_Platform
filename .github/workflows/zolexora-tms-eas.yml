@@ -61,7 +61,7 @@ jobs:
       - uses: ./.github/actions/setup-node
 
       # Infisical is the only secret source — injects EXPO_PUBLIC_API_BASE_URL,
-      # AUTH_SERVICE_PUBLIC_URL, TURNSTILE_SITE_KEY (and optional EAS_PROJECT_ID).
+      # TMS_AUTH_SERVICE_PUBLIC_URL, TMS_TURNSTILE_SITE_KEY (and optional EAS_PROJECT_ID).
       - uses: ./.github/actions/infisical
         with:
           client-id: ${{ secrets.INFISICAL_CLIENT_ID }}
@@ -73,9 +73,9 @@ jobs:
       - name: Verify required Infisical keys
         run: |
           missing=0
-          for key in EXPO_PUBLIC_API_BASE_URL AUTH_SERVICE_PUBLIC_URL TURNSTILE_SITE_KEY; do
-            [ -n "${!key:-}" ] || { echo "::error title=Missing Infisical key::$key (/Zolexora_TMS)"; missing=1; }
-          done
+          [ -n "${EXPO_PUBLIC_API_BASE_URL:-}" ] || { echo "::error title=Missing Infisical key::EXPO_PUBLIC_API_BASE_URL (/Zolexora_TMS)"; missing=1; }
+          [ -n "${TMS_AUTH_SERVICE_PUBLIC_URL:-${AUTH_SERVICE_PUBLIC_URL:-}}" ] || { echo "::error title=Missing Infisical key::TMS_AUTH_SERVICE_PUBLIC_URL (/Zolexora_TMS)"; missing=1; }
+          [ -n "${TMS_TURNSTILE_SITE_KEY:-${TURNSTILE_SITE_KEY:-}}" ] || { echo "::error title=Missing Infisical key::TMS_TURNSTILE_SITE_KEY (/Zolexora_TMS)"; missing=1; }
           exit "$missing"
 
       - name: Setup Expo + EAS CLI

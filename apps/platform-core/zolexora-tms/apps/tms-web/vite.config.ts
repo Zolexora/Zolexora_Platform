@@ -8,7 +8,7 @@ const apiProxyTarget = process.env.TMS_DEV_API_PROXY_TARGET
 
 export default defineConfig({
   // Values come from Infisical (scripts/setup/with-infisical.sh); same keys as window.__ENV__ in Docker
-  envPrefix: ['VITE_', 'AUTH_SERVICE_PUBLIC_URL', 'TURNSTILE_SITE_KEY', 'NEXT_PUBLIC_TMS_CLIENT_FIREBASE_', 'NEXT_PUBLIC_FIREBASE_PROJECT_ID'],
+  envPrefix: ['VITE_', 'TMS_AUTH_SERVICE_PUBLIC_URL', 'AUTH_SERVICE_PUBLIC_URL', 'TMS_TURNSTILE_SITE_KEY', 'TURNSTILE_SITE_KEY', 'NEXT_PUBLIC_TMS_CLIENT_FIREBASE_', 'NEXT_PUBLIC_FIREBASE_PROJECT_ID'],
   plugins: [
     react(),
     tailwindcss(),

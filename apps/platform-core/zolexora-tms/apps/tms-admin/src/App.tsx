@@ -43,7 +43,7 @@ export function App() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-brand-black px-4">
         <p className="text-sm text-rose-300">
-          Sign-in is not configured: set AUTH_SERVICE_PUBLIC_URL and TURNSTILE_SITE_KEY in Infisical.
+          Sign-in is not configured: set TMS_AUTH_SERVICE_PUBLIC_URL and TMS_TURNSTILE_SITE_KEY in Infisical.
         </p>
       </div>
     );

@@ -20,9 +20,10 @@ services:
       # NODE_ENV unset => backend runs in production mode (strict auth, no /docs).
       - NODE_ENV
       # Every token is verified by the Zolexora auth service; platform admins are its is_platform_admin users.
-      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL:?AUTH_SERVICE_URL missing - run via scripts/setup/with-infisical.sh}
+      - AUTH_SERVICE_URL=${TMS_AUTH_SERVICE_URL:-${AUTH_SERVICE_URL:?TMS_AUTH_SERVICE_URL missing - run via scripts/setup/with-infisical.sh}}
+      - TMS_PRODUCT_KEY
       - TMS_IN_DOCKER=1
-      - CORS_ORIGINS=${CORS_ORIGINS:?CORS_ORIGINS missing - run via scripts/setup/with-infisical.sh}
+      - CORS_ORIGINS=${TMS_CORS_ORIGINS:-${CORS_ORIGINS:?TMS_CORS_ORIGINS missing - run via scripts/setup/with-infisical.sh}}
       - OPERATIONS_TIMEZONE
       - REDIS_URL
       - REDIS_DATABASE_R1_HOST
@@ -31,8 +32,12 @@ services:
       - REDIS_DATABASE_R1_PASSWORD
       - REDIS_DB
       - REDIS_USE_SSL
-      - SENTRY_DSN
+      - SENTRY_DSN=${TMS_SENTRY_DSN:-${SENTRY_DSN:-}}
       - RESEND_API_KEY
+      - RESEND_FROM_EMAIL
+      - PASSENGER_NOTIFY_WEBHOOK_URL
+      - TMS_PUBLIC_WEB_URL
+      - NEXT_PUBLIC_TMS_CLIENT_PORTAL_URL
       - CASHFREE_APP_ID
       - CASHFREE_SECRET_KEY
       - CASHFREE_ENV
@@ -75,8 +80,8 @@ services:
       - ./docker-entrypoint-env.sh:/docker-entrypoint.d/40-env-config.sh:ro
     environment:
       # Sign-in goes through the Zolexora auth service; values come from Infisical.
-      - AUTH_SERVICE_PUBLIC_URL=${AUTH_SERVICE_PUBLIC_URL:?AUTH_SERVICE_PUBLIC_URL missing - run via scripts/setup/with-infisical.sh}
-      - TURNSTILE_SITE_KEY=${TURNSTILE_SITE_KEY:?TURNSTILE_SITE_KEY missing - run via scripts/setup/with-infisical.sh}
+      - AUTH_SERVICE_PUBLIC_URL=${TMS_AUTH_SERVICE_PUBLIC_URL:-${AUTH_SERVICE_PUBLIC_URL:?TMS_AUTH_SERVICE_PUBLIC_URL missing - run via scripts/setup/with-infisical.sh}}
+      - TURNSTILE_SITE_KEY=${TMS_TURNSTILE_SITE_KEY:-${TURNSTILE_SITE_KEY:?TMS_TURNSTILE_SITE_KEY missing - run via scripts/setup/with-infisical.sh}}
       # Firebase web app (Track 1 Google / phone verification).
       - NEXT_PUBLIC_TMS_CLIENT_FIREBASE_API_KEY=${NEXT_PUBLIC_TMS_CLIENT_FIREBASE_API_KEY:?NEXT_PUBLIC_TMS_CLIENT_FIREBASE_API_KEY missing - run via scripts/setup/with-infisical.sh}
       - NEXT_PUBLIC_TMS_CLIENT_FIREBASE_AUTH_DOMAIN=${NEXT_PUBLIC_TMS_CLIENT_FIREBASE_AUTH_DOMAIN:?NEXT_PUBLIC_TMS_CLIENT_FIREBASE_AUTH_DOMAIN missing - run via scripts/setup/with-infisical.sh}
@@ -107,8 +112,8 @@ services:
       - ./docker-entrypoint-env.sh:/docker-entrypoint.d/40-env-config.sh:ro
     environment:
       # Sign-in goes through the Zolexora auth service; values come from Infisical.
-      - AUTH_SERVICE_PUBLIC_URL=${AUTH_SERVICE_PUBLIC_URL:?AUTH_SERVICE_PUBLIC_URL missing - run via scripts/setup/with-infisical.sh}
-      - TURNSTILE_SITE_KEY=${TURNSTILE_SITE_KEY:?TURNSTILE_SITE_KEY missing - run via scripts/setup/with-infisical.sh}
+      - AUTH_SERVICE_PUBLIC_URL=${TMS_AUTH_SERVICE_PUBLIC_URL:-${AUTH_SERVICE_PUBLIC_URL:?TMS_AUTH_SERVICE_PUBLIC_URL missing - run via scripts/setup/with-infisical.sh}}
+      - TURNSTILE_SITE_KEY=${TMS_TURNSTILE_SITE_KEY:-${TURNSTILE_SITE_KEY:?TMS_TURNSTILE_SITE_KEY missing - run via scripts/setup/with-infisical.sh}}
     deploy:
       resources:
         limits:

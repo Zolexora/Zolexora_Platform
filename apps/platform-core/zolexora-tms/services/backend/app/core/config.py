@@ -34,13 +34,13 @@ class Settings(BaseSettings):
 
     # Zolexora auth service: verifies every bearer token (/api/v1/auth/me). Platform admins
     # are the auth service's is_platform_admin users; there is no local allowlist.
-    AUTH_SERVICE_URL: Optional[str] = Field(default=None, validation_alias="AUTH_SERVICE_URL")
+    AUTH_SERVICE_URL: Optional[str] = Field(default=None, validation_alias=AliasChoices("TMS_AUTH_SERVICE_URL", "AUTH_SERVICE_URL"))
     TMS_PRODUCT_KEY: Optional[str] = Field(default=None, validation_alias="TMS_PRODUCT_KEY")
     # Set to 1 by compose so a localhost AUTH_SERVICE_URL is reached via host.docker.internal
     TMS_IN_DOCKER: bool = Field(default=False, validation_alias="TMS_IN_DOCKER")
 
     # CORS (comma-separated origins via CORS_ORIGINS env var)
-    CORS_ORIGINS: EnvList = Field(default=[], validation_alias="CORS_ORIGINS")
+    CORS_ORIGINS: EnvList = Field(default=[], validation_alias=AliasChoices("TMS_CORS_ORIGINS", "CORS_ORIGINS"))
 
     # Database - Infisical connection credentials
     DATABASE_ZOLEXORA_TMS_HOST: Optional[str] = Field(default=None, validation_alias="DATABASE_ZOLEXORA_TMS_HOST")
@@ -140,8 +140,15 @@ class Settings(BaseSettings):
     # IANA timezone for operational dates without an offset (e.g. R1 CSV imports), e.g. Asia/Kolkata
     OPERATIONS_TIMEZONE: Optional[str] = Field(default=None, validation_alias="OPERATIONS_TIMEZONE")
 
-    # Observability (Sentry)
-    SENTRY_DSN: Optional[str] = Field(default=None, validation_alias="SENTRY_DSN")
+    # Observability (Sentry) — accepts both TMS_SENTRY_DSN and SENTRY_DSN
+    SENTRY_DSN: Optional[str] = Field(default=None, validation_alias=AliasChoices("TMS_SENTRY_DSN", "SENTRY_DSN"))
+
+    # Email sender address (Resend)
+    RESEND_FROM_EMAIL: Optional[str] = Field(default=None, validation_alias="RESEND_FROM_EMAIL")
+
+    # Passenger notifications
+    PASSENGER_NOTIFY_WEBHOOK_URL: Optional[str] = Field(default=None, validation_alias="PASSENGER_NOTIFY_WEBHOOK_URL")
+    TMS_PUBLIC_WEB_URL: Optional[str] = Field(default=None, validation_alias=AliasChoices("TMS_PUBLIC_WEB_URL", "NEXT_PUBLIC_TMS_CLIENT_PORTAL_URL"))
 
     @property
     def IS_DEV_OR_TEST(self) -> bool:

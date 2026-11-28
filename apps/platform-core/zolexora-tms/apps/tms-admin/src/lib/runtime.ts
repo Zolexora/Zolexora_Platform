@@ -14,5 +14,7 @@ export function runtimeEnv(key: string): string {
   return (fromWindow ?? (import.meta.env as Record<string, string | undefined>)[key] ?? '').trim();
 }
 
-export const AUTH_SERVICE_PUBLIC_URL = () => runtimeEnv('AUTH_SERVICE_PUBLIC_URL').replace(/\/$/, '');
-export const TURNSTILE_SITE_KEY = () => runtimeEnv('TURNSTILE_SITE_KEY');
+export const AUTH_SERVICE_PUBLIC_URL = () =>
+  (runtimeEnv('TMS_AUTH_SERVICE_PUBLIC_URL') || runtimeEnv('AUTH_SERVICE_PUBLIC_URL')).replace(/\/$/, '');
+export const TURNSTILE_SITE_KEY = () =>
+  runtimeEnv('TMS_TURNSTILE_SITE_KEY') || runtimeEnv('TURNSTILE_SITE_KEY');

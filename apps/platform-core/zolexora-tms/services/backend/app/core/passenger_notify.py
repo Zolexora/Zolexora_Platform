@@ -75,7 +75,7 @@ async def _dispatch_external(
     recipients: List[Dict[str, Any]],
     duty_number: str,
 ) -> None:
-    webhook_url = os.getenv("PASSENGER_NOTIFY_WEBHOOK_URL")
+    webhook_url = settings.PASSENGER_NOTIFY_WEBHOOK_URL or os.getenv("PASSENGER_NOTIFY_WEBHOOK_URL")
     if webhook_url:
         try:
             async with httpx.AsyncClient(timeout=8) as client:
@@ -86,7 +86,7 @@ async def _dispatch_external(
             logger.warning("Passenger notify webhook error: %s", exc)
 
     if settings.RESEND_API_KEY:
-        from_addr = os.getenv("RESEND_FROM_EMAIL", "Zolexora TMS <onboarding@resend.dev>")
+        from_addr = settings.RESEND_FROM_EMAIL or os.getenv("RESEND_FROM_EMAIL") or "Zolexora TMS <onboarding@resend.dev>"
         for r in recipients:
             email = r.get("email")
             if not email:
@@ -143,7 +143,13 @@ async def notify_passengers_for_duty(
         else None
     )
 
-    origin = (public_origin or os.getenv("TMS_PUBLIC_WEB_URL") or "https://track.zolexora.com").rstrip("/")
+    origin = (
+        public_origin
+        or settings.TMS_PUBLIC_WEB_URL
+        or os.getenv("TMS_PUBLIC_WEB_URL")
+        or os.getenv("NEXT_PUBLIC_TMS_CLIENT_PORTAL_URL")
+        or "https://track.zolexora.com"
+    ).rstrip("/")
     share_token = trip.share_token if trip and trip.share_token else None
     tracking_url = f"{origin}/t/{share_token}" if share_token else None
 

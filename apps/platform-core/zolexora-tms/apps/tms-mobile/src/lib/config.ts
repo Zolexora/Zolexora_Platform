@@ -8,6 +8,6 @@ function required(key: 'apiBaseUrl' | 'authServiceUrl' | 'turnstileSiteKey', sou
 
 export const config = {
   apiBaseUrl: () => required('apiBaseUrl', 'EXPO_PUBLIC_API_BASE_URL'),
-  authServiceUrl: () => required('authServiceUrl', 'AUTH_SERVICE_PUBLIC_URL'),
-  turnstileSiteKey: () => required('turnstileSiteKey', 'TURNSTILE_SITE_KEY'),
+  authServiceUrl: () => required('authServiceUrl', 'TMS_AUTH_SERVICE_PUBLIC_URL'),
+  turnstileSiteKey: () => required('turnstileSiteKey', 'TMS_TURNSTILE_SITE_KEY'),
 };
