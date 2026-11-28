@@ -36,13 +36,50 @@ const HEADER_ALIASES: Record<string, string> = {
 
 const VENDOR_TYPES = ['FLEET_SUPPLIER', 'DCO', 'EMI_DRIVER', 'WORKSHOP', 'FUEL_PARTNER', 'BROKER', 'OTHER'] as const;
 
+function splitCsvLine(line: string): string[] {
+  const cols: string[] = [];
+  let cur = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        cur += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (ch === ',' && !inQuotes) {
+      cols.push(cur.trim());
+      cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+  cols.push(cur.trim());
+  return cols;
+}
+
+function isValidGstinOrAadhaar(val?: string): boolean {
+  if (!val) return true;
+  return /^\d{12}$/.test(val) || /^[A-Z0-9]{15}$/.test(val);
+}
+
+function getBulkRowError(r: VendorCreate): string | null {
+  if (r.name.trim().length < 2) return 'Name too short';
+  if (r.gstin && !isValidGstinOrAadhaar(r.gstin)) return 'GSTIN/Aadhaar must be 12 digits or 15 chars';
+  if (r.pan && r.pan.length > 10) return 'PAN max 10 chars';
+  return null;
+}
+
 function parseCsv(text: string): { rows: VendorCreate[]; error?: string } {
-  const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(Boolean);
+  const cleaned = text.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const lines = cleaned.split('\n').filter(Boolean);
   if (lines.length < 2) return { rows: [], error: 'CSV must have a header row and at least one data row.' };
 
   // Normalise header: lowercase, resolve friendly display names → field keys
-  const header = lines[0].split(',').map((h) => {
-    const normalised = h.trim().toLowerCase();
+  const header = splitCsvLine(lines[0]).map((h) => {
+    const normalised = h.toLowerCase();
     return HEADER_ALIASES[normalised] ?? normalised;
   });
   const nameIdx = header.indexOf('name');
@@ -50,7 +87,7 @@ function parseCsv(text: string): { rows: VendorCreate[]; error?: string } {
 
   const rows: VendorCreate[] = [];
   for (let i = 1; i < lines.length; i++) {
-    const cols = lines[i].split(',').map((c) => c.trim());
+    const cols = splitCsvLine(lines[i]);
     const get = (field: string) => {
       const idx = header.indexOf(field);
       return idx !== -1 ? cols[idx] || '' : '';
@@ -168,11 +205,16 @@ export function VendorsPage() {
       setFormError('Vendor name is required.');
       return;
     }
+    const cleanGstin = formData.gstin?.trim().toUpperCase();
+    if (cleanGstin && !isValidGstinOrAadhaar(cleanGstin)) {
+      setFormError('GSTIN / Aadhaar No must be a 12-digit Aadhaar number or a 15-character GSTIN.');
+      return;
+    }
     createMutation.mutate({
       ...formData,
-      gstin: formData.gstin?.toUpperCase() || undefined,
-      pan: formData.pan?.toUpperCase() || undefined,
-      bank_ifsc: formData.bank_ifsc?.toUpperCase() || undefined,
+      gstin: cleanGstin || undefined,
+      pan: formData.pan?.trim().toUpperCase() || undefined,
+      bank_ifsc: formData.bank_ifsc?.trim().toUpperCase() || undefined,
     });
   };
 
@@ -198,7 +240,7 @@ export function VendorsPage() {
     if (fileRef.current) fileRef.current.value = '';
   };
 
-  const validBulkRows = bulkRows.filter((r) => r.name.trim().length >= 2);
+  const validBulkRows = bulkRows.filter((r) => !getBulkRowError(r));
 
   return (
     <div className="space-y-6">
@@ -430,7 +472,7 @@ export function VendorsPage() {
                     type="text"
                     value={formData.gstin}
                     onChange={(e) => setFormData({ ...formData, gstin: e.target.value.toUpperCase() })}
-                    placeholder="07AAAAA0000A1Z5"
+                    placeholder="07AAAAA0000A1Z5 / 12-digit Aadhaar"
                     maxLength={15}
                     className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white font-mono text-xs focus:border-navy-500 focus:outline-none"
                   />
@@ -542,7 +584,7 @@ export function VendorsPage() {
             <div className="rounded-lg border border-slate-800 bg-slate-800/40 px-4 py-3 flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-medium text-white">Download CSV Template</p>
-                <p className="text-xs text-slate-400 mt-0.5">Fill in the template and re-upload. <span className="font-mono">vendor_type</span> must be one of: FLEET_SUPPLIER, DCO, EMI_DRIVER, WORKSHOP, FUEL_PARTNER, BROKER, OTHER.</p>
+                <p className="text-xs text-slate-400 mt-0.5">Fill in the template and re-upload. <span className="font-mono">Vendor Type</span>: FLEET_SUPPLIER, DCO, EMI_DRIVER, WORKSHOP, FUEL_PARTNER, BROKER, OTHER. <span className="font-mono">GSTIN / Aadhaar No</span>: 12-digit Aadhaar (format as Text in Excel) or 15-char GSTIN.</p>
               </div>
               <button
                 onClick={downloadTemplate}
@@ -579,7 +621,7 @@ export function VendorsPage() {
                 <p className="text-xs text-slate-400 mb-2">
                   <span className="font-semibold text-white">{bulkRows.length}</span> row(s) parsed —{' '}
                   <span className="font-semibold text-green-400">{validBulkRows.length}</span> valid,{' '}
-                  <span className="font-semibold text-red-400">{bulkRows.length - validBulkRows.length}</span> invalid (name too short).
+                  <span className="font-semibold text-red-400">{bulkRows.length - validBulkRows.length}</span> invalid.
                 </p>
                 <div className="overflow-x-auto rounded-lg border border-slate-800 max-h-48">
                   <table className="w-full text-left text-xs text-slate-300">
@@ -588,20 +630,26 @@ export function VendorsPage() {
                         <th className="px-3 py-2">#</th>
                         <th className="px-3 py-2">Name</th>
                         <th className="px-3 py-2">Type</th>
-                        <th className="px-3 py-2">Contact</th>
-                        <th className="px-3 py-2">GSTIN</th>
+                        <th className="px-3 py-2">PAN</th>
+                        <th className="px-3 py-2">GSTIN / Aadhaar</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800/60">
-                      {bulkRows.slice(0, 10).map((r, i) => (
-                        <tr key={i} className={r.name.trim().length < 2 ? 'bg-red-950/20' : ''}>
-                          <td className="px-3 py-2 text-slate-500">{i + 1}</td>
-                          <td className="px-3 py-2 font-semibold text-white">{r.name || <span className="text-red-400 italic">missing</span>}</td>
-                          <td className="px-3 py-2 font-mono">{r.vendor_type}</td>
-                          <td className="px-3 py-2">{r.contact_person || '—'}</td>
-                          <td className="px-3 py-2 font-mono">{r.gstin || '—'}</td>
-                        </tr>
-                      ))}
+                      {bulkRows.slice(0, 10).map((r, i) => {
+                        const rowErr = getBulkRowError(r);
+                        return (
+                          <tr key={i} className={rowErr ? 'bg-red-950/20' : ''}>
+                            <td className="px-3 py-2 text-slate-500">{i + 1}</td>
+                            <td className="px-3 py-2 font-semibold text-white">
+                              {r.name || <span className="text-red-400 italic">missing</span>}
+                              {rowErr && <div className="text-[10px] font-normal text-red-400">{rowErr}</div>}
+                            </td>
+                            <td className="px-3 py-2 font-mono">{r.vendor_type}</td>
+                            <td className="px-3 py-2 font-mono">{r.pan || '—'}</td>
+                            <td className="px-3 py-2 font-mono">{r.gstin || '—'}</td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                   {bulkRows.length > 10 && (
