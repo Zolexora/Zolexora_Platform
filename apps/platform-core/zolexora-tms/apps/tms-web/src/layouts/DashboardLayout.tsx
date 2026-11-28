@@ -45,6 +45,7 @@ const navigation = [
   {
     section: 'Compliance & Fleet',
     items: [
+      { name: 'Compliance & Rules', href: '/sp/compliance', icon: Shield },
       { name: 'Vehicles', href: '/sp/compliance/vehicles', icon: Truck },
       { name: 'Drivers', href: '/sp/compliance/drivers', icon: Users },
       { name: 'Clients', href: '/sp/compliance/customers', icon: Building2 },
