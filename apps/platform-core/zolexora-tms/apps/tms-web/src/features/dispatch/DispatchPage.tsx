@@ -14,6 +14,7 @@ import {
   Search,
   Clock,
   Inbox,
+  Send,
   Share2,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -219,6 +220,8 @@ export function DispatchPage() {
               toast.error(text);
             } else if (msg?.event === 'duty.safe_drop_confirmed') {
               toast.success('🏠 Night-shift safe drop confirmed');
+            } else if (msg?.event === 'duty.passenger_alert') {
+              toast.success(`📩 Boarding PIN dispatched for ${msg?.data?.duty_number || 'duty'}`);
             }
           } catch {
             // non-JSON event: treat as an ops update
@@ -270,6 +273,27 @@ export function DispatchPage() {
     },
     onError: (err: Error) => alert(`Error: ${err.message}`),
   });
+
+  const sendPassengerAlert = async (dutyId: string) => {
+    try {
+      const res = await apiClient<{
+        message_text: string;
+        recipients: Array<{ wa_url?: string | null }>;
+      }>(`/api/v1/duties/${dutyId}/notify-passengers`, {
+        method: 'POST',
+        body: JSON.stringify({ public_origin: window.location.origin }),
+      });
+      await navigator.clipboard?.writeText(res.message_text);
+      const waUrl = res.recipients?.[0]?.wa_url;
+      toast.success('Boarding PIN & cab details copied', {
+        ...(waUrl
+          ? { action: { label: 'WhatsApp', onClick: () => window.open(waUrl, '_blank', 'noopener') } }
+          : {}),
+      });
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Failed to notify passenger');
+    }
+  };
 
   // Start Trip Mutation
   const startTripMutation = useMutation({
@@ -668,30 +692,54 @@ export function DispatchPage() {
                           )}
 
                           {duty.status === 'DISPATCHED' && (
-                            <button
-                              type="button"
-                              onClick={() => arrivePickupMutation.mutate(duty.id)}
-                              disabled={arrivePickupMutation.isPending}
-                              className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-cyan-500/15 border border-cyan-500/30 py-2 text-xs font-semibold text-cyan-200 hover:bg-cyan-500 hover:text-slate-950 transition"
-                            >
-                              <MapPin className="h-3.5 w-3.5" />
-                              Arrived Pickup
-                            </button>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => arrivePickupMutation.mutate(duty.id)}
+                                disabled={arrivePickupMutation.isPending}
+                                className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg bg-cyan-500/15 border border-cyan-500/30 py-2 text-xs font-semibold text-cyan-200 hover:bg-cyan-500 hover:text-slate-950 transition"
+                              >
+                                <MapPin className="h-3.5 w-3.5" />
+                                Arrived Pickup
+                              </button>
+                              {duty.service_type !== 'CARGO' && (
+                                <button
+                                  type="button"
+                                  title="Send Boarding PIN to Passenger"
+                                  onClick={() => sendPassengerAlert(duty.id)}
+                                  className="inline-flex items-center justify-center rounded-lg border border-teal-500/30 bg-teal-500/15 px-2.5 py-2 text-teal-200 hover:bg-teal-500 hover:text-slate-950 transition"
+                                >
+                                  <Send className="h-3.5 w-3.5" />
+                                </button>
+                              )}
+                            </div>
                           )}
 
                           {duty.status === 'ARRIVED_PICKUP' && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setStartTripModalDuty(duty);
-                                setStartOdo('50000.00');
-                                setFormError('');
-                              }}
-                              className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-indigo-500/15 border border-indigo-500/30 py-2 text-xs font-semibold text-indigo-200 hover:bg-indigo-500 hover:text-white transition"
-                            >
-                              <Gauge className="h-3.5 w-3.5" />
-                              Start Trip
-                            </button>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setStartTripModalDuty(duty);
+                                  setStartOdo('50000.00');
+                                  setFormError('');
+                                }}
+                                className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg bg-indigo-500/15 border border-indigo-500/30 py-2 text-xs font-semibold text-indigo-200 hover:bg-indigo-500 hover:text-white transition"
+                              >
+                                <Gauge className="h-3.5 w-3.5" />
+                                Start Trip
+                              </button>
+                              {duty.service_type !== 'CARGO' && (
+                                <button
+                                  type="button"
+                                  title="Send Boarding PIN to Passenger"
+                                  onClick={() => sendPassengerAlert(duty.id)}
+                                  className="inline-flex items-center justify-center rounded-lg border border-teal-500/30 bg-teal-500/15 px-2.5 py-2 text-teal-200 hover:bg-teal-500 hover:text-slate-950 transition"
+                                >
+                                  <Send className="h-3.5 w-3.5" />
+                                </button>
+                              )}
+                            </div>
                           )}
 
                           {duty.status === 'IN_TRANSIT' && (() => {
@@ -707,6 +755,16 @@ export function DispatchPage() {
                                   <Navigation className="h-3.5 w-3.5" />
                                   Arrived Drop
                                 </button>
+                                {duty.service_type !== 'CARGO' && (
+                                  <button
+                                    type="button"
+                                    title="Send Boarding PIN & Tracking Link"
+                                    onClick={() => sendPassengerAlert(duty.id)}
+                                    className="inline-flex items-center justify-center rounded-lg border border-teal-500/30 bg-teal-500/15 px-2.5 py-2 text-teal-200 hover:bg-teal-500 hover:text-slate-950 transition"
+                                  >
+                                    <Send className="h-3.5 w-3.5" />
+                                  </button>
+                                )}
                                 {matchingTrip && (
                                   <button
                                     type="button"

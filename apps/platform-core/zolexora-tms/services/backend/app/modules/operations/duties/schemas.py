@@ -108,6 +108,31 @@ class SafeDropConfirmRequest(BaseModel):
     longitude: Optional[float] = Field(None, ge=-180.0, le=180.0)
 
 
+class PassengerNotifyRequest(BaseModel):
+    public_origin: Optional[str] = Field(None, max_length=256)
+
+
+class PassengerRecipientPayload(BaseModel):
+    seq: Optional[int] = None
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    boarding_pin: Optional[str] = None
+    message: str
+    wa_url: Optional[str] = None
+
+
+class PassengerNotifyResponse(BaseModel):
+    duty_id: str
+    duty_number: str
+    stage: str
+    share_token: Optional[str] = None
+    tracking_url: Optional[str] = None
+    boarding_pin: Optional[str] = None
+    message_text: str
+    recipients: List[PassengerRecipientPayload] = Field(default_factory=list)
+
+
 class DutyVehicleSummary(BaseModel):
     id: uuid.UUID
     registration_number: str

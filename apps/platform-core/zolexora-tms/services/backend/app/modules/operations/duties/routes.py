@@ -11,6 +11,8 @@ from app.modules.operations.duties.schemas import (
     DutyStatus,
     DutyStopUpdateRequest,
     EscortVerifyRequest,
+    PassengerNotifyRequest,
+    PassengerNotifyResponse,
     SafeDropConfirmRequest,
 )
 from app.modules.operations.duties import service
@@ -145,4 +147,13 @@ async def confirm_safe_drop(
     ctx: OrgContext = Depends(get_org_context),
 ):
     return await service.confirm_safe_drop(ctx, duty_id, req)
+
+
+@router.post("/{duty_id}/notify-passengers", response_model=PassengerNotifyResponse)
+async def notify_passengers(
+    duty_id: uuid.UUID,
+    req: PassengerNotifyRequest = PassengerNotifyRequest(),
+    ctx: OrgContext = Depends(get_org_context),
+):
+    return await service.notify_passengers(ctx, duty_id, public_origin=req.public_origin)
 

@@ -248,4 +248,22 @@ export const dutiesService = {
       body: JSON.stringify({ days_ahead: daysAhead }),
     });
   },
+
+  notifyPassengers(
+    dutyId: string,
+    publicOrigin?: string,
+  ): Promise<{
+    duty_id: string;
+    duty_number: string;
+    stage: string;
+    share_token?: string | null;
+    tracking_url?: string | null;
+    boarding_pin?: string | null;
+    message_text: string;
+  }> {
+    return apiClient(`/api/v1/duties/${dutyId}/notify-passengers`, {
+      method: 'POST',
+      body: JSON.stringify(publicOrigin ? { public_origin: publicOrigin } : {}),
+    });
+  },
 };

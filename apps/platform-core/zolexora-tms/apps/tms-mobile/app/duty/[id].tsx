@@ -890,23 +890,43 @@ export default function DutyDetailScreen() {
                 </TouchableOpacity>
                 {/* Share link button — only for supervisors / ops (non-driver) */}
                 {!isAssignedDriver && (
-                  <TouchableOpacity
-                    style={[styles.mapsBtn, { marginTop: 8, backgroundColor: theme.colors.primaryMuted }]}
-                    onPress={async () => {
-                      try {
-                        const res = await dutiesService.createShareLink(trip.id);
-                        await Share.share({
-                          title: 'Track live cab / trip',
-                          message: `Track your vehicle live: ${res.share_url}`,
-                          url: res.share_url,
-                        });
-                      } catch (e: unknown) {
-                        Alert.alert('Share Failed', e instanceof Error ? e.message : 'Could not generate link');
-                      }
-                    }}
-                  >
-                    <Text style={[styles.mapsBtnText, { color: theme.colors.primaryLight }]}>🔗  Share Live Tracking Link</Text>
-                  </TouchableOpacity>
+                  <View style={{ gap: 8, marginTop: 8 }}>
+                    <TouchableOpacity
+                      style={[styles.mapsBtn, { backgroundColor: theme.colors.primaryMuted }]}
+                      onPress={async () => {
+                        try {
+                          const res = await dutiesService.createShareLink(trip.id);
+                          await Share.share({
+                            title: 'Track live cab / trip',
+                            message: `Track your vehicle live: ${res.share_url}`,
+                            url: res.share_url,
+                          });
+                        } catch (e: unknown) {
+                          Alert.alert('Share Failed', e instanceof Error ? e.message : 'Could not generate link');
+                        }
+                      }}
+                    >
+                      <Text style={[styles.mapsBtnText, { color: theme.colors.primaryLight }]}>🔗  Share Live Tracking Link</Text>
+                    </TouchableOpacity>
+                    {duty.booking?.service_type !== 'CARGO' && (
+                      <TouchableOpacity
+                        style={[styles.mapsBtn, { backgroundColor: theme.colors.successMuted }]}
+                        onPress={async () => {
+                          try {
+                            const res = await dutiesService.notifyPassengers(duty.id);
+                            await Share.share({
+                              title: `Boarding Pass ${res.duty_number}`,
+                              message: res.message_text,
+                            });
+                          } catch (e: unknown) {
+                            Alert.alert('Notify Failed', e instanceof Error ? e.message : 'Could not prepare boarding alert');
+                          }
+                        }}
+                      >
+                        <Text style={[styles.mapsBtnText, { color: theme.colors.success }]}>📩  Send Boarding PIN &amp; Live Pass</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 )}
               </View>
             ) : (

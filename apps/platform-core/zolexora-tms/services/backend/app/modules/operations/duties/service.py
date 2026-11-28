@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import OrgContext
 from app.core.audit import record_audit
+from app.core.passenger_notify import notify_passengers_for_duty
 from app.core.websocket import ws_manager
 from app.core.push import send_duty_assigned_push, send_duty_dispatched_push
 from app.modules.core.devices.models import DeviceToken
@@ -345,7 +346,16 @@ async def _update_duty_status(ctx: OrgContext, duty_id: uuid.UUID, target: DutyS
             )
         duty.actual_end_time = now
     _audit(ctx, duty, f"DUTY_{target.value}", previous)
-    return await _commit_and_broadcast(ctx, duty, f"duty.{target.value.lower()}")
+    resp = await _commit_and_broadcast(ctx, duty, f"duty.{target.value.lower()}")
+    if target in (DutyStatus.DISPATCHED, DutyStatus.ARRIVED_PICKUP):
+        await notify_passengers_for_duty(
+            ctx.db,
+            duty,
+            stage=target.value,
+            actor_user_id=ctx.user_id,
+            commit_audit=True,
+        )
+    return resp
 
 
 async def dispatch_duty(ctx: OrgContext, duty_id: uuid.UUID) -> DutyResponse:
@@ -525,3 +535,21 @@ async def confirm_safe_drop(ctx: OrgContext, duty_id: uuid.UUID, req: SafeDropCo
         {"duty_id": str(duty.id), "confirmed_at": now.isoformat()},
     )
     return (await enrich_duties(ctx.db, [duty]))[0]
+
+
+async def notify_passengers(ctx: OrgContext, duty_id: uuid.UUID, public_origin: Optional[str] = None) -> dict:
+    duty = await _get(ctx, duty_id)
+    result = await notify_passengers_for_duty(
+        ctx.db,
+        duty,
+        stage=duty.status.value,
+        actor_user_id=ctx.user_id,
+        public_origin=public_origin,
+        commit_audit=True,
+    )
+    if result.get("skipped"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Passenger boarding alerts apply only to PASSENGER duties.",
+        )
+    return result

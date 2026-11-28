@@ -1,5 +1,6 @@
 import datetime
 from decimal import Decimal
+import secrets
 import uuid
 from typing import Optional
 from fastapi import HTTPException, status
@@ -7,6 +8,7 @@ from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import CurrentUserContext, _resolve_member_permissions
+from app.core.passenger_notify import notify_passengers_for_duty
 from app.core.storage import upload_document_to_r2
 from app.core.websocket import ws_manager
 from app.modules.core.audit.models import AuditLog
@@ -14,6 +16,8 @@ from app.modules.crm.vendors.routes import find_vendor_for_caller
 from app.modules.fleet.drivers.models import Driver
 from app.modules.fleet.drivers.routes import find_driver_for_caller
 from app.modules.fleet.vehicles.models import Vehicle
+from app.modules.operations.bookings.enums import BookingServiceType
+from app.modules.operations.bookings.models import Booking
 from app.modules.operations.duties.models import Duty, DutyStatus
 from app.modules.operations.trips.models import Trip, TripEvent, TripStatus
 from app.modules.operations.trips.schemas import (
@@ -119,6 +123,13 @@ async def start_trip(
     now = datetime.datetime.now(datetime.timezone.utc)
     trip_num = f"TR-{now.year}-{uuid.uuid4().hex[:6].upper()}"
 
+    booking = (await db.execute(select(Booking).where(Booking.id == duty.booking_id))).scalars().first()
+    is_passenger = bool(
+        booking
+        and (booking.service_type.value if hasattr(booking.service_type, "value") else str(booking.service_type))
+        == BookingServiceType.PASSENGER.value
+    )
+
     trip = Trip(
         id=uuid.uuid4(),
         trip_number=trip_num,
@@ -130,6 +141,8 @@ async def start_trip(
         start_timestamp=now,
         start_location=req.start_location,
         status=TripStatus.IN_TRANSIT,
+        share_token=secrets.token_urlsafe(32) if is_passenger else None,
+        share_token_expires_at=(now + datetime.timedelta(hours=72)) if is_passenger else None,
     )
     db.add(trip)
 
@@ -169,6 +182,15 @@ async def start_trip(
         "trip.started",
         {"trip_id": str(trip.id), "trip_number": trip.trip_number, "duty_id": str(duty.id)},
     )
+    if is_passenger:
+        await notify_passengers_for_duty(
+            db,
+            duty,
+            stage="IN_TRANSIT",
+            trip=trip,
+            actor_user_id=actor_id,
+            commit_audit=True,
+        )
 
     return TripResponse.model_validate(trip)
 

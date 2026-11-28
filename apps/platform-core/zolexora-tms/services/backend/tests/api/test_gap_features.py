@@ -345,3 +345,32 @@ async def test_gap_features_end_to_end():
         assert csv_duty["booking"]["stops"][0]["boarding_pin"]
         assert csv_duty["booking"]["stops"][1]["boarding_pin"]
         assert csv_duty["booking"]["passenger_count"] == 2
+
+        # Step 3: Auto-generate share_token on PASSENGER trip start + notify-passengers PIN/link payload
+        csv_duty_id = csv_duty["id"]
+        assert (
+            await client.post(
+                f"/api/v1/duties/{csv_duty_id}/assign",
+                json={"driver_id": driver_id, "vehicle_id": vehicle_id},
+                headers=headers,
+            )
+        ).status_code == 200
+        assert (await client.post(f"/api/v1/duties/{csv_duty_id}/dispatch", headers=headers)).status_code == 200
+        assert (await client.post(f"/api/v1/duties/{csv_duty_id}/arrived-pickup", headers=headers)).status_code == 200
+        start_csv = await client.post(
+            f"/api/v1/trips/duties/{csv_duty_id}/start",
+            json={"start_odometer": 1000.0},
+            headers=headers,
+        )
+        assert start_csv.status_code == 201, start_csv.text
+        notify_res = await client.post(
+            f"/api/v1/duties/{csv_duty_id}/notify-passengers",
+            json={"public_origin": "https://tms.zolexora.com"},
+            headers=headers,
+        )
+        assert notify_res.status_code == 200, notify_res.text
+        np = notify_res.json()
+        assert np["share_token"] and "/t/" in (np["tracking_url"] or "")
+        assert np["boarding_pin"] and len(np["recipients"]) >= 2
+        assert np["recipients"][0]["boarding_pin"] in np["message_text"]
+        assert np["recipients"][0]["wa_url"].startswith("https://wa.me/")
