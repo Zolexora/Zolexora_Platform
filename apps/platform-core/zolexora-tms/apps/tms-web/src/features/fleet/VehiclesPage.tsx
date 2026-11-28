@@ -2,6 +2,9 @@ import { useState, useRef, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Truck, Plus, Search, AlertCircle, X, Navigation, ShieldCheck, Upload, Download, CheckCircle2, Building2, Pencil, Eye } from 'lucide-react';
 import { apiClient } from '../../lib/api';
+import { useAuth } from '../auth/useAuth';
+import { useApplicationRuntime } from '../../providers/ApplicationRuntimeProvider';
+import { resolveServiceConfig } from '../../lib/serviceConfig';
 import type { Vehicle, VehicleBodyType, VehicleCreate, Vendor } from '../../types';
 import { EntityComplianceManager } from '../compliance/EntityComplianceManager';
 import { DownloadChoiceModal, type DownloadTarget } from '../../components/DownloadChoiceModal';
@@ -231,6 +234,9 @@ export function VehiclesPage() {
   const [bulkResult, setBulkResult] = useState<BulkResult | null>(null);
   const [bulkError, setBulkError] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
+  const { authMe } = useAuth();
+  const runtime = useApplicationRuntime();
+  const serviceConfig = resolveServiceConfig(runtime, authMe?.workspace_type);
 
   const [formData, setFormData] = useState<VehicleCreate>(EMPTY_FORM);
 
@@ -777,12 +783,16 @@ export function VehiclesPage() {
                         onChange={(e) => setEditFormData({ ...editFormData, vehicle_type: e.target.value as VehicleBodyType })}
                         className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
                       >
-                        <optgroup label="Public Transport Vehicles">
-                          {PUBLIC_TRANSPORT_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-                        </optgroup>
-                        <optgroup label="Commercial / Cargo">
-                          {CARGO_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-                        </optgroup>
+                        {serviceConfig.passenger && (
+                          <optgroup label="Public Transport Vehicles">
+                            {PUBLIC_TRANSPORT_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                          </optgroup>
+                        )}
+                        {serviceConfig.cargo && (
+                          <optgroup label="Commercial / Cargo">
+                            {CARGO_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                          </optgroup>
+                        )}
                         <option value="OTHER">Other (Add Custom Type)</option>
                       </select>
                     </div>
@@ -1041,16 +1051,20 @@ export function VehiclesPage() {
                     onChange={(e) => setFormData({ ...formData, vehicle_type: e.target.value as VehicleBodyType })}
                     className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
                   >
-                    <optgroup label="Public Transport Vehicles">
-                      {PUBLIC_TRANSPORT_TYPES.map((t) => (
-                        <option key={t.value} value={t.value}>{t.label}</option>
-                      ))}
-                    </optgroup>
-                    <optgroup label="Commercial / Cargo">
-                      {CARGO_TYPES.map((t) => (
-                        <option key={t.value} value={t.value}>{t.label}</option>
-                      ))}
-                    </optgroup>
+                    {serviceConfig.passenger && (
+                      <optgroup label="Public Transport Vehicles">
+                        {PUBLIC_TRANSPORT_TYPES.map((t) => (
+                          <option key={t.value} value={t.value}>{t.label}</option>
+                        ))}
+                      </optgroup>
+                    )}
+                    {serviceConfig.cargo && (
+                      <optgroup label="Commercial / Cargo">
+                        {CARGO_TYPES.map((t) => (
+                          <option key={t.value} value={t.value}>{t.label}</option>
+                        ))}
+                      </optgroup>
+                    )}
                     <option value="OTHER">Other (Add Custom Type)</option>
                   </select>
                 </div>

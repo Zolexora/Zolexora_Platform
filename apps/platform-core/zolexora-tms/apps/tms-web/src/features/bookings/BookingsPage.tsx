@@ -18,6 +18,9 @@ import {
   ClipboardList,
 } from 'lucide-react';
 import { apiClient } from '../../lib/api';
+import { useAuth } from '../auth/useAuth';
+import { useApplicationRuntime } from '../../providers/ApplicationRuntimeProvider';
+import { resolveServiceConfig } from '../../lib/serviceConfig';
 import type {
   Booking,
   BookingBulkCreateResponse,
@@ -162,13 +165,16 @@ function parseBookingCsv(text: string): { rows: BookingBulkRow[]; error?: string
   return { rows };
 }
 
-function downloadBookingTemplate(sampleClient = 'Acme Corp') {
+function downloadBookingTemplate(sampleClient = 'CLI-12345678', allowPassenger = true, allowCargo = true) {
   const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
-  const exampleRows = [
-    `"${sampleClient}",ETS,PASSENGER,"Electronic City Phase 1, Bengaluru","Manyata Tech Park Gate 2, Bengaluru","${tomorrow} 09:00","Ananya Sharma","+919876543210",3,"Morning Login 09:00",,,,Gate pass at reception`,
-    `"${sampleClient}",SPOT,CARGO,"Bhiwandi Logistics Park, Mumbai","JNPT Port Terminal 2, Navi Mumbai","${tomorrow} 14:30",,,,,IT Hardware,450,123456789012,Fragile cargo`,
-  ].join('\n');
-  const csv = [BULK_TEMPLATE_HEADERS.join(','), exampleRows].join('\n');
+  const exampleRows: string[] = [];
+  if (allowPassenger) {
+    exampleRows.push(`"${sampleClient}",ETS,PASSENGER,"Electronic City Phase 1, Bengaluru","Manyata Tech Park Gate 2, Bengaluru","${tomorrow} 09:00","Ananya Sharma","+919876543210",3,"Morning Login 09:00",,,,Gate pass at reception`);
+  }
+  if (allowCargo) {
+    exampleRows.push(`"${sampleClient}",SPOT,CARGO,"Bhiwandi Logistics Park, Mumbai","JNPT Port Terminal 2, Navi Mumbai","${tomorrow} 14:30",,,,,IT Hardware,450,123456789012,Fragile cargo`);
+  }
+  const csv = [BULK_TEMPLATE_HEADERS.join(','), ...exampleRows].join('\n');
   const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
   const a = document.createElement('a');
   a.href = url;
@@ -269,6 +275,10 @@ const STATUS_FILTERS: { label: string; value: StatusFilter }[] = [
 export function BookingsPage() {
   const queryClient = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
+  const { authMe } = useAuth();
+  const runtime = useApplicationRuntime();
+  const serviceConfig = resolveServiceConfig(runtime, authMe?.workspace_type);
+  const defaultServiceType: BookingServiceType = serviceConfig.passenger ? 'PASSENGER' : 'CARGO';
 
   const [activeTab, setActiveTab] = useState<BookingTab>('bookings');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
@@ -509,7 +519,7 @@ export function BookingsPage() {
           <button
             onClick={() => {
               setFormError('');
-              setRequestForm(EMPTY_REQUEST);
+              setRequestForm({ ...EMPTY_REQUEST, service_type: defaultServiceType });
               setIsRequestModalOpen(true);
             }}
             className="inline-flex items-center gap-2 rounded-xl bg-navy-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-navy-800/30 hover:bg-navy-600 transition"
@@ -1161,8 +1171,8 @@ export function BookingsPage() {
                     onChange={(e) => setRequestForm({ ...requestForm, service_type: e.target.value as BookingServiceType })}
                     className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:border-navy-500 focus:outline-none"
                   >
-                    <option value="PASSENGER">Passenger Transit</option>
-                    <option value="CARGO">Cargo / Parcel</option>
+                    {serviceConfig.passenger && <option value="PASSENGER">Passenger Transit</option>}
+                    {serviceConfig.cargo && <option value="CARGO">Cargo / Parcel</option>}
                   </select>
                 </div>
               </div>
@@ -1450,7 +1460,13 @@ export function BookingsPage() {
               </span>
               <button
                 type="button"
-                onClick={() => downloadBookingTemplate(customers?.find((c) => c.client_code)?.client_code || 'CLI-12345678')}
+                onClick={() =>
+                  downloadBookingTemplate(
+                    customers?.find((c) => c.client_code)?.client_code || 'CLI-12345678',
+                    serviceConfig.passenger,
+                    serviceConfig.cargo
+                  )
+                }
                 className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 font-medium text-silver-300 hover:bg-slate-700 hover:text-white transition shrink-0"
               >
                 <Download className="h-3.5 w-3.5" />

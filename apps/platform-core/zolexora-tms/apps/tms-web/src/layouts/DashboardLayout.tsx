@@ -24,7 +24,19 @@ import { TopRightProfileMenu, SP_ADMIN_MENU_ITEMS } from '../components/TopRight
 
 
 
-const navigation = [
+interface NavItem {
+  name: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  visible?: (cfg: ReturnType<typeof resolveServiceConfig>) => boolean;
+}
+
+interface NavGroup {
+  section: string;
+  items: NavItem[];
+}
+
+const navigation: NavGroup[] = [
   {
     section: 'Overview',
     items: [
@@ -34,57 +46,42 @@ const navigation = [
   {
     section: 'Operations',
     items: [
-      { name: 'Bookings', href: '/bookings', icon: CalendarCheck },
-      { name: 'Shift Rosters', href: '/rosters', icon: CalendarClock },
-      { name: 'Duties', href: '/duties', icon: ClipboardList },
-      { name: 'Dispatch Board', href: '/dispatch', icon: Radio },
-      { name: 'SLA & Safety Audit', href: '/reports/sla-safety', icon: Shield },
+      { name: 'Bookings', href: '/bookings', icon: CalendarCheck, visible: (c) => c.service_provider },
+      { name: 'Book Transport', href: '/client-bookings', icon: CalendarCheck, visible: (c) => c.client },
+      { name: 'Shift Rosters', href: '/rosters', icon: CalendarClock, visible: (c) => c.service_provider && c.passenger },
+      { name: 'Duties', href: '/duties', icon: ClipboardList, visible: (c) => c.service_provider },
+      { name: 'Dispatch Board', href: '/dispatch', icon: Radio, visible: (c) => c.service_provider },
+      { name: 'Trip Tracking', href: '/client-duties', icon: Radio, visible: (c) => c.client },
+      { name: 'SLA & Safety Audit', href: '/reports/sla-safety', icon: Shield, visible: (c) => c.service_provider && c.passenger },
     ],
   },
   {
     section: 'Compliance & Fleet',
     items: [
-      { name: 'Compliance & Rules', href: '/compliance', icon: Shield },
-      { name: 'Vehicles', href: '/compliance/vehicles', icon: Truck },
-      { name: 'Drivers', href: '/compliance/drivers', icon: Users },
-      { name: 'Clients', href: '/compliance/customers', icon: Building2 },
-      { name: 'Vendors', href: '/compliance/vendors', icon: Building2 },
+      { name: 'Compliance & Rules', href: '/compliance', icon: Shield, visible: (c) => c.service_provider },
+      { name: 'Vehicles', href: '/compliance/vehicles', icon: Truck, visible: (c) => c.service_provider },
+      { name: 'Drivers', href: '/compliance/drivers', icon: Users, visible: (c) => c.service_provider },
+      { name: 'Clients', href: '/compliance/customers', icon: Building2, visible: (c) => c.service_provider },
+      { name: 'Vendors', href: '/compliance/vendors', icon: Building2, visible: (c) => c.service_provider },
     ],
   },
   {
-    section: 'Billing & Receivables',
+    section: 'Finance',
     items: [
-      { name: 'Customer Rate Cards', href: '/rate-cards/customers', icon: FileText },
-      { name: 'Billing', href: '/billing', icon: FileText },
-      { name: 'Invoices', href: '/invoices', icon: Receipt },
-      { name: 'Payments', href: '/payments', icon: CreditCard },
-      { name: 'Receivables', href: '/receivables', icon: CreditCard },
-    ],
-  },
-  {
-    section: 'Vendor Payments',
-    items: [
-      { name: 'Vendor Rate Cards', href: '/rate-cards/vendors', icon: FileText },
-      { name: 'Payables', href: '/payables', icon: Receipt },
-      { name: 'Vendor Settlements', href: '/vendor-settlements', icon: Receipt },
-      { name: 'Payment History', href: '/vendor-payments', icon: CreditCard },
-    ],
-  },
-  {
-    section: 'Finances',
-    items: [
-      { name: 'Expenses', href: '/expenses', icon: Receipt },
-      { name: 'Profit & Loss', href: '/reports/pnl', icon: FileText },
-      { name: 'Financial Periods', href: '/financial-periods', icon: FileText },
-    ],
-  },
-  {
-    section: 'Client Portal',
-    items: [
-      { name: 'Book Transport', href: '/client-bookings', icon: CalendarCheck },
-      { name: 'Trip Tracking', href: '/client-duties', icon: Radio },
-      { name: 'Client Invoices', href: '/client-invoices', icon: Receipt },
-      { name: 'Client Payments', href: '/client-payments', icon: CreditCard },
+      { name: 'Customer Rate Cards', href: '/rate-cards/customers', icon: FileText, visible: (c) => c.service_provider },
+      { name: 'Billing', href: '/billing', icon: FileText, visible: (c) => c.service_provider },
+      { name: 'Invoices', href: '/invoices', icon: Receipt, visible: (c) => c.service_provider },
+      { name: 'Payments', href: '/payments', icon: CreditCard, visible: (c) => c.service_provider },
+      { name: 'Receivables', href: '/receivables', icon: CreditCard, visible: (c) => c.service_provider },
+      { name: 'Vendor Rate Cards', href: '/rate-cards/vendors', icon: FileText, visible: (c) => c.service_provider },
+      { name: 'Payables', href: '/payables', icon: Receipt, visible: (c) => c.service_provider },
+      { name: 'Vendor Settlements', href: '/vendor-settlements', icon: Receipt, visible: (c) => c.service_provider },
+      { name: 'Payment History', href: '/vendor-payments', icon: CreditCard, visible: (c) => c.service_provider },
+      { name: 'Expenses', href: '/expenses', icon: Receipt, visible: (c) => c.service_provider },
+      { name: 'Profit & Loss', href: '/reports/pnl', icon: FileText, visible: (c) => c.service_provider },
+      { name: 'Financial Periods', href: '/financial-periods', icon: FileText, visible: (c) => c.service_provider },
+      { name: 'Client Invoices', href: '/client-invoices', icon: Receipt, visible: (c) => c.client },
+      { name: 'Client Payments', href: '/client-payments', icon: CreditCard, visible: (c) => c.client },
     ],
   },
 ];
@@ -100,33 +97,22 @@ export function DashboardLayout() {
   const financeModule = runtime.modules['finance'];
 
   const filteredNavigation = navigation.map(group => {
-    if (group.section === 'Client Portal') {
-      return serviceConfig.client ? group : { ...group, items: [] };
-    }
-    if (group.section !== 'Overview' && !serviceConfig.service_provider) {
-      return { ...group, items: [] };
-    }
-    // Check canonical module & page flags (`!== false` so absent keys default to enabled).
-    if (group.section === 'Operations') {
-      if (opsModule?.enabled === false) return { ...group, items: [] };
-      return {
-        ...group,
-        items: group.items.filter(item => {
-          if (!serviceConfig.passenger && (item.name === 'Shift Rosters' || item.name === 'SLA & Safety Audit')) {
-            return false;
-          }
-          const pageCode =
-            item.name === 'Bookings' ? 'bookings' :
-            item.name === 'Duties' ? 'duties' :
-            item.name === 'Dispatch Board' ? 'dispatch' : null;
-          return !pageCode || opsModule?.pages?.[pageCode]?.enabled !== false;
-        }),
-      };
-    }
-    if (group.section === 'Billing & Receivables' && (financeModule?.enabled === false || financeModule?.pages?.['billing']?.enabled === false)) {
-      return { ...group, items: [] };
-    }
-    return group;
+    const visibleItems = group.items.filter(item => {
+      if (item.visible && !item.visible(serviceConfig)) return false;
+      if (group.section === 'Operations') {
+        if (opsModule?.enabled === false) return false;
+        const pageCode =
+          item.name === 'Bookings' ? 'bookings' :
+          item.name === 'Duties' ? 'duties' :
+          item.name === 'Dispatch Board' ? 'dispatch' : null;
+        if (pageCode && opsModule?.pages?.[pageCode]?.enabled === false) return false;
+      }
+      if (group.section === 'Finance' && item.href === '/billing') {
+        if (financeModule?.enabled === false || financeModule?.pages?.['billing']?.enabled === false) return false;
+      }
+      return true;
+    });
+    return { ...group, items: visibleItems };
   }).filter(group => group.items.length > 0);
 
   const handleSignOut = async () => {
