@@ -7,11 +7,20 @@ import { EntityComplianceManager } from '../compliance/EntityComplianceManager';
 
 // ── CSV helpers ──────────────────────────────────────────────────────────────
 
-const CSV_HEADERS = [
-  'name', 'vendor_type', 'contact_person', 'email', 'phone',
-  'address', 'gstin', 'pan', 'bank_account_name', 'bank_account_number',
+// Display headers used in the downloaded CSV template
+const TEMPLATE_HEADERS = [
+  'Vendor / Supplier name', 'vendor_type', 'contact_person', 'email', 'phone',
+  'address', 'GSTIN / Aadhaar No', 'pan', 'bank_account_name', 'bank_account_number',
   'bank_ifsc', 'bank_name',
-] as const;
+];
+
+// Map friendly display headers → internal field keys (case-insensitive)
+const HEADER_ALIASES: Record<string, string> = {
+  'vendor / supplier name': 'name',
+  'vendor/supplier name': 'name',
+  'gstin / aadhaar no': 'gstin',
+  'gstin/aadhaar no': 'gstin',
+};
 
 const VENDOR_TYPES = ['FLEET_SUPPLIER', 'DCO', 'EMI_DRIVER', 'WORKSHOP', 'FUEL_PARTNER', 'BROKER', 'OTHER'] as const;
 
@@ -19,7 +28,11 @@ function parseCsv(text: string): { rows: VendorCreate[]; error?: string } {
   const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(Boolean);
   if (lines.length < 2) return { rows: [], error: 'CSV must have a header row and at least one data row.' };
 
-  const header = lines[0].split(',').map((h) => h.trim().toLowerCase());
+  // Normalise header: lowercase, resolve friendly display names → field keys
+  const header = lines[0].split(',').map((h) => {
+    const normalised = h.trim().toLowerCase();
+    return HEADER_ALIASES[normalised] ?? normalised;
+  });
   const nameIdx = header.indexOf('name');
   if (nameIdx === -1) return { rows: [], error: 'CSV must have a "name" column.' };
 
@@ -59,7 +72,7 @@ function downloadTemplate() {
     '07AAAAA0000A1Z5', 'AAAPA1234A', 'Western Fleet Logistics',
     '918273645019', 'HDFC0001234', 'HDFC Bank',
   ].join(',');
-  const csv = [CSV_HEADERS.join(','), exampleRow].join('\n');
+  const csv = [TEMPLATE_HEADERS.join(','), exampleRow].join('\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
   a.download = 'vendor_bulk_template.csv';
