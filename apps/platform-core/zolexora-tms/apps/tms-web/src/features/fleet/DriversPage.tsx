@@ -1,8 +1,8 @@
-import { useMemo, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Users, Plus, Search, AlertCircle, X, ShieldCheck, Upload, Download, CheckCircle2, Eye, Pencil, Building2 } from 'lucide-react';
+import { Users, Plus, Search, AlertCircle, X, ShieldCheck, Upload, Download, CheckCircle2, Eye, Pencil } from 'lucide-react';
 import { apiClient } from '../../lib/api';
-import type { Driver, DriverCreate, DriverBulkCreateResponse, DriverBulkItemError, Vendor } from '../../types';
+import type { Driver, DriverCreate, DriverBulkCreateResponse, DriverBulkItemError } from '../../types';
 import { EntityComplianceManager } from '../compliance/EntityComplianceManager';
 import { DownloadChoiceModal, type DownloadTarget } from '../../components/DownloadChoiceModal';
 
@@ -11,7 +11,7 @@ import { DownloadChoiceModal, type DownloadTarget } from '../../components/Downl
 const TEMPLATE_HEADERS = [
   'Full Name', 'Primary Phone', 'Alternate Phone', 'Email',
   'License Number', 'License Type', 'License Expiry', 'Badge Number',
-  'Aadhaar Last 4', 'PAN', 'Driver Type', 'Vendor Code',
+  'Aadhaar Last 4', 'PAN',
 ];
 
 const HEADER_ALIASES: Record<string, string> = {
@@ -35,13 +35,7 @@ const HEADER_ALIASES: Record<string, string> = {
   'aadhaar last 4': 'aadhaar_last4',
   'aadhaar_last4': 'aadhaar_last4',
   'pan': 'pan',
-  'driver type': 'driver_type',
-  'driver_type': 'driver_type',
-  'vendor code': 'vendor_code',
-  'vendor_code': 'vendor_code',
 };
-
-const DRIVER_TYPES = ['PERMANENT', 'CONTRACT', 'MARKET'] as const;
 
 function splitCsvLine(line: string): string[] {
   const cols: string[] = [];
@@ -106,10 +100,6 @@ function parseCsv(text: string): { rows: DriverCreate[]; error?: string } {
       const idx = header.indexOf(field);
       return idx !== -1 ? cols[idx] || '' : '';
     };
-    const rawType = get('driver_type').toUpperCase();
-    const driver_type = (DRIVER_TYPES as readonly string[]).includes(rawType)
-      ? (rawType as DriverCreate['driver_type'])
-      : 'PERMANENT';
     rows.push({
       full_name: get('full_name'),
       phone: get('phone'),
@@ -121,18 +111,15 @@ function parseCsv(text: string): { rows: DriverCreate[]; error?: string } {
       badge_number: get('badge_number').toUpperCase() || undefined,
       aadhaar_last4: get('aadhaar_last4') || undefined,
       pan: get('pan').toUpperCase() || undefined,
-      driver_type,
-      vendor_code: get('vendor_code').toUpperCase() || undefined,
     });
   }
   return { rows };
 }
 
-function downloadTemplate(sampleVendorCode?: string) {
-  const vcode = sampleVendorCode || '';
+function downloadTemplate() {
   const exampleRows = [
-    `Ramesh Kumar Yadav,+919988776655,+919876543210,ramesh@example.com,DL1420110012345,HMV,2029-12-31,BDG-101,5678,AAAPA1234A,PERMANENT,`,
-    `Suresh Singh,+919811223344,,suresh@example.com,MH1220150099887,TRANS,2028-06-30,,4321,BBBPB5678B,MARKET,${vcode}`,
+    'Ramesh Kumar Yadav,+919988776655,+919876543210,ramesh@example.com,DL1420110012345,HMV,2029-12-31,BDG-101,5678,AAAPA1234A',
+    'Suresh Singh,+919811223344,,suresh@example.com,MH1220150099887,TRANS,2028-06-30,,4321,BBBPB5678B',
   ].join('\n');
   const csv = [TEMPLATE_HEADERS.join(','), exampleRows].join('\n');
   const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
@@ -146,11 +133,10 @@ function downloadTemplate(sampleVendorCode?: string) {
 // ── Export driver(s) as CSV ──────────────────────────────────────────────────
 
 const EXPORT_HEADERS = [
-  'Driver Code', 'Full Name', 'Status', 'Driver Type',
+  'Driver Code', 'Full Name', 'Status',
   'Primary Phone', 'Alternate Phone', 'Email',
   'License Number', 'License Type', 'License Expiry', 'Badge Number',
-  'Aadhaar Last 4', 'PAN',
-  'Vendor Code', 'Vendor Name', 'Vendor PAN', 'Created At',
+  'Aadhaar Last 4', 'PAN', 'Created At',
 ];
 
 function escapeCsvField(val: string | number | undefined): string {
@@ -163,11 +149,10 @@ function downloadDriverCSV(rows: Driver[], filename = 'drivers_export.csv') {
   const lines = [EXPORT_HEADERS.join(',')];
   for (const d of rows) {
     lines.push([
-      d.driver_code, d.full_name, d.status, d.driver_type,
+      d.driver_code, d.full_name, d.status,
       d.phone, d.alternate_phone, d.email,
       d.license_number, d.license_type, d.license_expiry, d.badge_number,
       d.aadhaar_last4, d.pan,
-      d.vendor_code, d.vendor_name, d.vendor_pan,
       new Date(d.created_at).toLocaleDateString('en-IN'),
     ].map(escapeCsvField).join(','));
   }
@@ -192,20 +177,14 @@ const EMPTY_DRIVER_FORM: DriverCreate = {
   badge_number: '',
   aadhaar_last4: '',
   pan: '',
-  driver_type: 'PERMANENT',
-  vendor_code: '',
 };
 
 function DriverFormFields({
   value,
   onChange,
-  vendors,
-  selectedVendor,
 }: {
   value: DriverCreate;
   onChange: (next: DriverCreate) => void;
-  vendors: Vendor[];
-  selectedVendor?: Vendor;
 }) {
   return (
     <>
@@ -326,52 +305,6 @@ function DriverFormFields({
           />
         </div>
       </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs font-medium text-slate-300">Employment Type</label>
-          <select
-            value={value.driver_type || 'PERMANENT'}
-            onChange={(e) => onChange({ ...value, driver_type: e.target.value as DriverCreate['driver_type'] })}
-            className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
-          >
-            <option value="PERMANENT">Permanent Roster</option>
-            <option value="CONTRACT">Contract Staff</option>
-            <option value="MARKET">Market / Vendor Driver</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-slate-300">Vendor Code</label>
-          <select
-            value={value.vendor_code || ''}
-            onChange={(e) => onChange({ ...value, vendor_code: e.target.value })}
-            className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
-          >
-            <option value="">Company Roster (No Vendor)</option>
-            {vendors.map((v) => (
-              <option key={v.id} value={v.vendor_code || ''}>
-                {v.vendor_code ? `${v.vendor_code} — ${v.name}` : v.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {selectedVendor && (
-        <div className="rounded-lg border border-slate-800 bg-slate-950/70 px-3 py-2.5 flex items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2">
-            <Building2 className="h-4 w-4 text-silver-300 shrink-0" />
-            <div>
-              <div className="text-slate-400 text-[10px]">Selected Vendor</div>
-              <div className="font-semibold text-white">{selectedVendor.name}</div>
-            </div>
-          </div>
-          <div className="text-right">
-            <div className="text-slate-400 text-[10px]">PAN</div>
-            <div className="font-mono text-silver-300">{selectedVendor.pan || 'Not provided'}</div>
-          </div>
-        </div>
-      )}
     </>
   );
 }
@@ -402,29 +335,6 @@ export function DriversPage() {
   const [bulkResult, setBulkResult] = useState<DriverBulkCreateResponse | null>(null);
 
   const [formData, setFormData] = useState<DriverCreate>(EMPTY_DRIVER_FORM);
-
-  const { data: vendors = [] } = useQuery({
-    queryKey: ['vendors', 'dropdown'],
-    queryFn: () => apiClient<Vendor[]>('/api/v1/vendors?limit=200'),
-  });
-
-  const vendorByCode = useMemo(() => {
-    const map = new Map<string, Vendor>();
-    vendors.forEach((v) => {
-      if (v.vendor_code) map.set(v.vendor_code.toUpperCase(), v);
-    });
-    return map;
-  }, [vendors]);
-
-  const selectedAddVendor = useMemo(
-    () => (formData.vendor_code ? vendorByCode.get(formData.vendor_code.toUpperCase()) : undefined),
-    [formData.vendor_code, vendorByCode]
-  );
-
-  const selectedEditVendor = useMemo(
-    () => (editFormData.vendor_code ? vendorByCode.get(editFormData.vendor_code.toUpperCase()) : undefined),
-    [editFormData.vendor_code, vendorByCode]
-  );
 
   const { data: drivers, isLoading } = useQuery({
     queryKey: ['drivers', search],
@@ -499,9 +409,6 @@ export function DriversPage() {
       badge_number: d.badge_number || '',
       aadhaar_last4: d.aadhaar_last4 || '',
       pan: d.pan || '',
-      driver_type: d.driver_type,
-      vendor_code: d.vendor_code || '',
-      vendor_id: d.vendor_id,
       status: d.status,
     });
     setEditError('');
@@ -537,8 +444,6 @@ export function DriversPage() {
       badge_number: formData.badge_number?.trim().toUpperCase() || undefined,
       aadhaar_last4: formData.aadhaar_last4?.trim() || undefined,
       pan: formData.pan?.trim().toUpperCase() || undefined,
-      vendor_id: selectedAddVendor?.id,
-      vendor_code: formData.vendor_code || undefined,
     });
   };
 
@@ -563,9 +468,6 @@ export function DriversPage() {
         badge_number: editFormData.badge_number?.trim().toUpperCase() || undefined,
         aadhaar_last4: editFormData.aadhaar_last4?.trim() || undefined,
         pan: editFormData.pan?.trim().toUpperCase() || undefined,
-        driver_type: editFormData.driver_type,
-        vendor_code: editFormData.vendor_code || undefined,
-        vendor_id: selectedEditVendor?.id,
         status: editFormData.status,
       },
     });
@@ -601,7 +503,7 @@ export function DriversPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white">Drivers Roster</h1>
-          <p className="text-sm text-slate-400">Driver roster, commercial license verification, and vendor linking.</p>
+          <p className="text-sm text-slate-400">Driver roster, commercial license verification, and compliance tracking.</p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -658,7 +560,6 @@ export function DriversPage() {
             <tr>
               <th className="px-5 py-4 font-semibold">Driver Name &amp; Phone</th>
               <th className="px-5 py-4 font-semibold">License &amp; KYC</th>
-              <th className="px-5 py-4 font-semibold">Type &amp; Vendor</th>
               <th className="px-5 py-4 font-semibold">Status</th>
               <th className="px-5 py-4 font-semibold">Action</th>
             </tr>
@@ -666,7 +567,7 @@ export function DriversPage() {
           <tbody className="divide-y divide-slate-800/60">
             {isLoading ? (
               <tr>
-                <td colSpan={5} className="px-5 py-8 text-center text-xs text-slate-500">
+                <td colSpan={4} className="px-5 py-8 text-center text-xs text-slate-500">
                   Loading drivers...
                 </td>
               </tr>
@@ -691,16 +592,6 @@ export function DriversPage() {
                         .filter(Boolean)
                         .join(' · ')}
                     </div>
-                  </td>
-                  <td className="px-5 py-4 text-xs">
-                    <span className="rounded-md bg-slate-800 px-2 py-0.5 text-xs text-slate-300">
-                      {d.driver_type}
-                    </span>
-                    {d.vendor_code && (
-                      <div className="text-silver-300 text-[11px] font-mono mt-1">
-                        {d.vendor_code} {d.vendor_name ? `· ${d.vendor_name}` : ''}
-                      </div>
-                    )}
                   </td>
                   <td className="px-5 py-4">
                     <span
@@ -746,7 +637,7 @@ export function DriversPage() {
               ))
             ) : (
               <tr>
-                <td colSpan={5} className="px-5 py-12 text-center">
+                <td colSpan={4} className="px-5 py-12 text-center">
                   <div className="flex flex-col items-center justify-center text-center">
                     <Users className="h-8 w-8 text-slate-600 mb-2" />
                     <p className="text-sm font-semibold text-slate-300">No drivers registered</p>
@@ -779,16 +670,13 @@ export function DriversPage() {
                     {profileDriver.status}
                   </span>
                 </div>
-                <div className="flex items-center gap-2 mt-1 text-xs text-slate-400">
-                  {profileDriver.driver_code && (
-                    <span className="rounded bg-slate-800 px-2 py-0.5 font-mono text-silver-300">
+                {profileDriver.driver_code && (
+                  <div className="mt-1">
+                    <span className="rounded bg-slate-800 px-2 py-0.5 font-mono text-xs text-silver-300">
                       {profileDriver.driver_code}
                     </span>
-                  )}
-                  <span className="rounded bg-navy-800/40 px-2 py-0.5 font-medium text-silver-300 border border-navy-600/20">
-                    {profileDriver.driver_type}
-                  </span>
-                </div>
+                  </div>
+                )}
               </div>
               <button onClick={() => setProfileDriver(null)} className="text-slate-400 hover:text-white">
                 <X className="h-5 w-5" />
@@ -831,8 +719,6 @@ export function DriversPage() {
                   <DriverFormFields
                     value={editFormData}
                     onChange={(next) => setEditFormData({ ...next, status: editFormData.status })}
-                    vendors={vendors}
-                    selectedVendor={selectedEditVendor}
                   />
 
                   <div>
@@ -908,7 +794,7 @@ export function DriversPage() {
                     </div>
 
                     <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4 space-y-2.5">
-                      <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">License &amp; Vendor</h3>
+                      <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">License Details</h3>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
                           <div className="text-[11px] text-slate-500">License Number</div>
@@ -929,18 +815,6 @@ export function DriversPage() {
                           <div className="text-white font-mono text-xs">{profileDriver.badge_number || '—'}</div>
                         </div>
                       </div>
-                      {profileDriver.vendor_code ? (
-                        <div className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 flex items-center gap-2.5">
-                          <Building2 className="h-4 w-4 text-silver-300 shrink-0" />
-                          <div>
-                            <div className="text-[10px] text-slate-500 font-mono">{profileDriver.vendor_code}</div>
-                            <div className="font-semibold text-white text-xs">{profileDriver.vendor_name || '—'}</div>
-                            <div className="text-[11px] text-slate-400">PAN: {profileDriver.vendor_pan || 'Not provided'}</div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="text-xs text-slate-500">Company Roster (No Vendor)</div>
-                      )}
                       <div className="pt-1">
                         <div className="text-[11px] text-slate-500">Enrolled On</div>
                         <div className="text-xs text-slate-300">
@@ -1019,12 +893,7 @@ export function DriversPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4 text-sm">
-              <DriverFormFields
-                value={formData}
-                onChange={setFormData}
-                vendors={vendors}
-                selectedVendor={selectedAddVendor}
-              />
+              <DriverFormFields value={formData} onChange={setFormData} />
 
               {formError && (
                 <p className="flex items-center gap-1 text-xs text-red-400">
@@ -1057,7 +926,7 @@ export function DriversPage() {
       {/* Bulk Import Modal */}
       {isBulkOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="w-full max-w-3xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl space-y-4 my-8">
+          <div className="w-full max-w-2xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl space-y-4 my-8">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h2 className="text-lg font-bold text-white">Bulk Import Drivers</h2>
               <button onClick={closeBulk} className="text-slate-400 hover:text-white">
@@ -1071,7 +940,7 @@ export function DriversPage() {
               </span>
               <button
                 type="button"
-                onClick={() => downloadTemplate(vendors[0]?.vendor_code)}
+                onClick={downloadTemplate}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 font-medium text-silver-300 hover:bg-slate-700 hover:text-white transition shrink-0"
               >
                 <Download className="h-3.5 w-3.5" />
@@ -1109,14 +978,12 @@ export function DriversPage() {
                         <th className="px-3 py-2">Full Name</th>
                         <th className="px-3 py-2">Phone</th>
                         <th className="px-3 py-2">License</th>
-                        <th className="px-3 py-2">Vendor Code (Name / PAN)</th>
+                        <th className="px-3 py-2">PAN / Aadhaar</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800/60">
                       {bulkRows.slice(0, 5).map((r, i) => {
                         const rowErr = getBulkRowError(r);
-                        const vcode = r.vendor_code?.toUpperCase();
-                        const matchedVendor = vcode ? vendorByCode.get(vcode) : undefined;
                         return (
                           <tr key={i} className={rowErr ? 'bg-red-500/10' : ''}>
                             <td className="px-3 py-2 font-medium text-white">
@@ -1125,21 +992,8 @@ export function DriversPage() {
                             </td>
                             <td className="px-3 py-2 font-mono">{r.phone || '—'}</td>
                             <td className="px-3 py-2 font-mono">{r.license_number || '—'}</td>
-                            <td className="px-3 py-2">
-                              {vcode ? (
-                                matchedVendor ? (
-                                  <div>
-                                    <span className="font-mono text-white">{vcode}</span>
-                                    <div className="text-[10px] text-silver-400">
-                                      {matchedVendor.name} · PAN: {matchedVendor.pan || '—'}
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <span className="font-mono text-red-400">{vcode} (not found)</span>
-                                )
-                              ) : (
-                                <span className="text-slate-500">Company Roster</span>
-                              )}
+                            <td className="px-3 py-2 font-mono">
+                              {[r.pan, r.aadhaar_last4 ? `••••${r.aadhaar_last4}` : ''].filter(Boolean).join(' · ') || '—'}
                             </td>
                           </tr>
                         );
