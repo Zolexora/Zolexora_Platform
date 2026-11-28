@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Building2, Plus, Search, AlertCircle, X, ShieldCheck, Upload, Download, CheckCircle2, Eye } from 'lucide-react';
+import { Building2, Plus, Search, AlertCircle, X, ShieldCheck, Upload, Download, CheckCircle2, Eye, Pencil } from 'lucide-react';
 import { apiClient } from '../../lib/api';
 import type { Vendor, VendorCreate, VendorBulkCreateResponse, VendorBulkItemError } from '../../types';
 import { EntityComplianceManager } from '../compliance/EntityComplianceManager';
@@ -145,14 +145,179 @@ const EMPTY_VENDOR_FORM: VendorCreate = {
   bank_name: '',
 };
 
+function VendorFormFields({
+  value,
+  onChange,
+}: {
+  value: VendorCreate;
+  onChange: (next: VendorCreate) => void;
+}) {
+  return (
+    <>
+      <div>
+        <label className="block text-xs font-medium text-slate-300">Vendor / Supplier Legal Name *</label>
+        <input
+          type="text"
+          required
+          value={value.name}
+          onChange={(e) => onChange({ ...value, name: e.target.value })}
+          placeholder="e.g. Western Fleet Logistics"
+          className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
+        />
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-slate-300">Vendor Type</label>
+        <select
+          value={value.vendor_type}
+          onChange={(e) => onChange({ ...value, vendor_type: e.target.value as VendorCreate['vendor_type'] })}
+          className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
+        >
+          <option value="FLEET_SUPPLIER">Fleet Supplier (Market Vehicles)</option>
+          <option value="DCO">DCO</option>
+          <option value="EMI_DRIVER">EMI Driver</option>
+          <option value="WORKSHOP">Maintenance Workshop</option>
+          <option value="FUEL_PARTNER">Fuel Partner</option>
+          <option value="BROKER">Logistics Broker</option>
+          <option value="OTHER">Other Service Provider</option>
+        </select>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-medium text-slate-300">Contact Person</label>
+          <input
+            type="text"
+            value={value.contact_person || ''}
+            onChange={(e) => onChange({ ...value, contact_person: e.target.value })}
+            placeholder="e.g. Rajesh Sharma"
+            className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-slate-300">Email</label>
+          <input
+            type="email"
+            value={value.email || ''}
+            onChange={(e) => onChange({ ...value, email: e.target.value })}
+            placeholder="rajesh@wfl.in"
+            className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-medium text-slate-300">Phone</label>
+          <input
+            type="text"
+            value={value.phone || ''}
+            onChange={(e) => onChange({ ...value, phone: e.target.value })}
+            placeholder="+919811223344"
+            className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-slate-300">Address</label>
+          <input
+            type="text"
+            value={value.address || ''}
+            onChange={(e) => onChange({ ...value, address: e.target.value })}
+            placeholder="Mumbai"
+            className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-medium text-slate-300">GSTIN / Aadhaar No</label>
+          <input
+            type="text"
+            value={value.gstin || ''}
+            onChange={(e) => onChange({ ...value, gstin: e.target.value.toUpperCase() })}
+            placeholder="07AAAAA0000A1Z5 / 12-digit Aadhaar"
+            maxLength={15}
+            className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white font-mono text-xs focus:border-navy-500 focus:outline-none"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-slate-300">PAN</label>
+          <input
+            type="text"
+            value={value.pan || ''}
+            onChange={(e) => onChange({ ...value, pan: e.target.value.toUpperCase() })}
+            placeholder="AAAPA1234A"
+            maxLength={10}
+            className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white font-mono text-xs focus:border-navy-500 focus:outline-none"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-medium text-slate-300">Bank Account Name</label>
+          <input
+            type="text"
+            value={value.bank_account_name || ''}
+            onChange={(e) => onChange({ ...value, bank_account_name: e.target.value })}
+            placeholder="Western Fleet Logistics"
+            className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-slate-300">Bank Account Number</label>
+          <input
+            type="text"
+            value={value.bank_account_number || ''}
+            onChange={(e) => onChange({ ...value, bank_account_number: e.target.value })}
+            placeholder="918273645019"
+            className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white font-mono text-xs focus:border-navy-500 focus:outline-none"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-medium text-slate-300">Bank IFSC</label>
+          <input
+            type="text"
+            value={value.bank_ifsc || ''}
+            onChange={(e) => onChange({ ...value, bank_ifsc: e.target.value.toUpperCase() })}
+            placeholder="HDFC0001234"
+            maxLength={11}
+            className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white font-mono text-xs focus:border-navy-500 focus:outline-none"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-slate-300">Bank Name</label>
+          <input
+            type="text"
+            value={value.bank_name || ''}
+            onChange={(e) => onChange({ ...value, bank_name: e.target.value })}
+            placeholder="HDFC Bank"
+            className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
+          />
+        </div>
+      </div>
+    </>
+  );
+}
+
 export function VendorsPage() {
   const queryClient = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [complianceModalId, setComplianceModalId] = useState<string | null>(null);
   const [profileVendor, setProfileVendor] = useState<Vendor | null>(null);
+  const [profileTab, setProfileTab] = useState<'details' | 'docs'>('details');
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editFormData, setEditFormData] = useState<VendorCreate & { status: Vendor['status'] }>({
+    ...EMPTY_VENDOR_FORM,
+    status: 'ACTIVE',
+  });
+  const [editError, setEditError] = useState('');
   const [formError, setFormError] = useState('');
 
   // Bulk state
@@ -187,6 +352,82 @@ export function VendorsPage() {
       setFormError(err.message || 'Failed to create vendor');
     },
   });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<VendorCreate> & { status?: Vendor['status'] } }) =>
+      apiClient<Vendor>(`/api/v1/vendors/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }),
+    onSuccess: (updated) => {
+      queryClient.invalidateQueries({ queryKey: ['vendors'] });
+      setProfileVendor(updated);
+      setIsEditingProfile(false);
+      setEditError('');
+    },
+    onError: (err: any) => {
+      setEditError(err.message || 'Failed to update vendor');
+    },
+  });
+
+  const openProfile = (v: Vendor) => {
+    setProfileVendor(v);
+    setProfileTab('details');
+    setIsEditingProfile(false);
+    setEditError('');
+  };
+
+  const startEditProfile = (v: Vendor) => {
+    setEditFormData({
+      name: v.name,
+      vendor_type: v.vendor_type,
+      contact_person: v.contact_person || '',
+      email: v.email || '',
+      phone: v.phone || '',
+      address: v.address || '',
+      gstin: v.gstin || '',
+      pan: v.pan || '',
+      bank_account_name: v.bank_account_name || '',
+      bank_account_number: v.bank_account_number || '',
+      bank_ifsc: v.bank_ifsc || '',
+      bank_name: v.bank_name || '',
+      status: v.status,
+    });
+    setEditError('');
+    setIsEditingProfile(true);
+  };
+
+  const handleEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!profileVendor) return;
+    if (!editFormData.name.trim()) {
+      setEditError('Vendor name is required.');
+      return;
+    }
+    const cleanGstin = editFormData.gstin?.trim().toUpperCase();
+    if (cleanGstin && !isValidGstinOrAadhaar(cleanGstin)) {
+      setEditError('GSTIN / Aadhaar No must be a 12-digit Aadhaar number or a 15-character GSTIN.');
+      return;
+    }
+    updateMutation.mutate({
+      id: profileVendor.id,
+      data: {
+        name: editFormData.name.trim(),
+        vendor_type: editFormData.vendor_type,
+        contact_person: editFormData.contact_person?.trim() || undefined,
+        email: editFormData.email?.trim() || undefined,
+        phone: editFormData.phone?.trim() || undefined,
+        address: editFormData.address?.trim() || undefined,
+        gstin: cleanGstin || undefined,
+        pan: editFormData.pan?.trim().toUpperCase() || undefined,
+        bank_account_name: editFormData.bank_account_name?.trim() || undefined,
+        bank_account_number: editFormData.bank_account_number?.trim() || undefined,
+        bank_ifsc: editFormData.bank_ifsc?.trim().toUpperCase() || undefined,
+        bank_name: editFormData.bank_name?.trim() || undefined,
+        status: editFormData.status,
+      },
+    });
+  };
 
   const bulkMutation = useMutation({
     mutationFn: (vendors: VendorCreate[]) =>
@@ -340,24 +581,14 @@ export function VendorsPage() {
                     </span>
                   </td>
                   <td className="px-5 py-4">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setProfileVendor(v)}
-                        className="inline-flex items-center gap-1 rounded bg-slate-800 px-2 py-1 text-xs font-medium text-slate-300 hover:bg-slate-700 hover:text-white"
-                        title="View Profile"
-                      >
-                        <Eye className="h-3.5 w-3.5 text-silver-300" />
-                        Profile
-                      </button>
-                      <button
-                        onClick={() => setComplianceModalId(v.id)}
-                        className="inline-flex items-center gap-1 rounded bg-slate-800 px-2 py-1 text-xs font-medium text-slate-300 hover:bg-slate-700 hover:text-white"
-                        title="Manage Compliance"
-                      >
-                        <ShieldCheck className="h-3.5 w-3.5 text-silver-300" />
-                        Docs
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => openProfile(v)}
+                      className="inline-flex items-center gap-1.5 rounded bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-300 hover:bg-slate-700 hover:text-white"
+                      title="View Profile & Compliance Docs"
+                    >
+                      <Eye className="h-3.5 w-3.5 text-silver-300" />
+                      View
+                    </button>
                   </td>
                 </tr>
               ))
@@ -376,10 +607,10 @@ export function VendorsPage() {
         </table>
       </div>
 
-      {/* Vendor Profile Modal */}
+      {/* Merged Vendor Profile & Compliance Modal */}
       {profileVendor && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="w-full max-w-2xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl space-y-5 my-8">
+          <div className="w-full max-w-2xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl space-y-4 my-8">
             <div className="flex items-start justify-between border-b border-slate-800 pb-4">
               <div>
                 <div className="flex items-center gap-2.5">
@@ -410,105 +641,178 @@ export function VendorsPage() {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-              <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4 space-y-2.5">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">Contact &amp; Tax</h3>
-                <div>
-                  <div className="text-[11px] text-slate-500">Contact Person</div>
-                  <div className="text-white">{profileVendor.contact_person || '—'}</div>
-                </div>
-                <div>
-                  <div className="text-[11px] text-slate-500">Email</div>
-                  <div className="text-white">{profileVendor.email || '—'}</div>
-                </div>
-                <div>
-                  <div className="text-[11px] text-slate-500">Phone</div>
-                  <div className="text-white font-mono">{profileVendor.phone || '—'}</div>
-                </div>
-                <div>
-                  <div className="text-[11px] text-slate-500">Address</div>
-                  <div className="text-white">{profileVendor.address || '—'}</div>
-                </div>
-                <div className="grid grid-cols-2 gap-2 pt-1">
-                  <div>
-                    <div className="text-[11px] text-slate-500">GSTIN / Aadhaar No</div>
-                    <div className="text-white font-mono text-xs">{profileVendor.gstin || '—'}</div>
-                  </div>
-                  <div>
-                    <div className="text-[11px] text-slate-500">PAN</div>
-                    <div className="text-white font-mono text-xs">{profileVendor.pan || '—'}</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4 space-y-2.5">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">Bank &amp; Settlement</h3>
-                <div>
-                  <div className="text-[11px] text-slate-500">Bank Account Name</div>
-                  <div className="text-white">{profileVendor.bank_account_name || '—'}</div>
-                </div>
-                <div>
-                  <div className="text-[11px] text-slate-500">Bank Account Number</div>
-                  <div className="text-white font-mono">{profileVendor.bank_account_number || '—'}</div>
-                </div>
-                <div>
-                  <div className="text-[11px] text-slate-500">Bank IFSC</div>
-                  <div className="text-white font-mono">{profileVendor.bank_ifsc || '—'}</div>
-                </div>
-                <div>
-                  <div className="text-[11px] text-slate-500">Bank Name</div>
-                  <div className="text-white">{profileVendor.bank_name || '—'}</div>
-                </div>
-                <div className="pt-1">
-                  <div className="text-[11px] text-slate-500">Created</div>
-                  <div className="text-xs text-slate-300">
-                    {new Date(profileVendor.created_at).toLocaleDateString()}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 pt-3 border-t border-slate-800">
+            {/* Tabs */}
+            <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+              <button
+                type="button"
+                onClick={() => setProfileTab('details')}
+                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                  profileTab === 'details'
+                    ? 'bg-navy-600 text-white'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                Profile Details
+              </button>
               <button
                 type="button"
                 onClick={() => {
-                  const id = profileVendor.id;
-                  setProfileVendor(null);
-                  setComplianceModalId(id);
+                  setProfileTab('docs');
+                  setIsEditingProfile(false);
                 }}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-200 hover:bg-slate-700 transition"
+                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                  profileTab === 'docs'
+                    ? 'bg-navy-600 text-white'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
               >
-                <ShieldCheck className="h-4 w-4 text-silver-300" />
+                <ShieldCheck className="h-3.5 w-3.5" />
                 Compliance Docs
               </button>
-              <button
-                type="button"
-                onClick={() => setProfileVendor(null)}
-                className="rounded-lg bg-navy-600 px-5 py-2 text-sm font-semibold text-white hover:bg-navy-600 transition"
-              >
-                Close
-              </button>
             </div>
-          </div>
-        </div>
-      )}
 
-      {/* Compliance Modal */}
-      {complianceModalId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="w-full max-w-2xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl space-y-4 my-8">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <ShieldCheck className="h-5 w-5 text-silver-300" />
-                Vendor Compliance
-              </h2>
-              <button onClick={() => setComplianceModalId(null)} className="text-slate-400 hover:text-white">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="dark">
-              <EntityComplianceManager entityType="VENDOR" entityId={complianceModalId} />
-            </div>
+            {profileTab === 'details' ? (
+              isEditingProfile ? (
+                <form onSubmit={handleEditSubmit} className="space-y-4 text-sm">
+                  <VendorFormFields
+                    value={editFormData}
+                    onChange={(next) => setEditFormData({ ...next, status: editFormData.status })}
+                  />
+
+                  <div>
+                    <label className="block text-xs font-medium text-slate-300">Status</label>
+                    <select
+                      value={editFormData.status}
+                      onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value as Vendor['status'] })}
+                      className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
+                    >
+                      <option value="ACTIVE">ACTIVE</option>
+                      <option value="INACTIVE">INACTIVE</option>
+                    </select>
+                  </div>
+
+                  {editError && (
+                    <p className="flex items-center gap-1 text-xs text-red-400">
+                      <AlertCircle className="h-3.5 w-3.5" />
+                      {editError}
+                    </p>
+                  )}
+
+                  <div className="flex justify-end gap-3 pt-3 border-t border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsEditingProfile(false);
+                        setEditError('');
+                      }}
+                      className="rounded-lg px-4 py-2 text-sm text-slate-400 hover:text-white"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={updateMutation.isPending}
+                      className="inline-flex items-center gap-2 rounded-lg bg-navy-600 px-5 py-2 text-sm font-semibold text-white hover:bg-navy-600 disabled:opacity-50 transition"
+                    >
+                      {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                    <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4 space-y-2.5">
+                      <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">Contact &amp; Tax</h3>
+                      <div>
+                        <div className="text-[11px] text-slate-500">Contact Person</div>
+                        <div className="text-white">{profileVendor.contact_person || '—'}</div>
+                      </div>
+                      <div>
+                        <div className="text-[11px] text-slate-500">Email</div>
+                        <div className="text-white">{profileVendor.email || '—'}</div>
+                      </div>
+                      <div>
+                        <div className="text-[11px] text-slate-500">Phone</div>
+                        <div className="text-white font-mono">{profileVendor.phone || '—'}</div>
+                      </div>
+                      <div>
+                        <div className="text-[11px] text-slate-500">Address</div>
+                        <div className="text-white">{profileVendor.address || '—'}</div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 pt-1">
+                        <div>
+                          <div className="text-[11px] text-slate-500">GSTIN / Aadhaar No</div>
+                          <div className="text-white font-mono text-xs">{profileVendor.gstin || '—'}</div>
+                        </div>
+                        <div>
+                          <div className="text-[11px] text-slate-500">PAN</div>
+                          <div className="text-white font-mono text-xs">{profileVendor.pan || '—'}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4 space-y-2.5">
+                      <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">Bank &amp; Settlement</h3>
+                      <div>
+                        <div className="text-[11px] text-slate-500">Bank Account Name</div>
+                        <div className="text-white">{profileVendor.bank_account_name || '—'}</div>
+                      </div>
+                      <div>
+                        <div className="text-[11px] text-slate-500">Bank Account Number</div>
+                        <div className="text-white font-mono">{profileVendor.bank_account_number || '—'}</div>
+                      </div>
+                      <div>
+                        <div className="text-[11px] text-slate-500">Bank IFSC</div>
+                        <div className="text-white font-mono">{profileVendor.bank_ifsc || '—'}</div>
+                      </div>
+                      <div>
+                        <div className="text-[11px] text-slate-500">Bank Name</div>
+                        <div className="text-white">{profileVendor.bank_name || '—'}</div>
+                      </div>
+                      <div className="pt-1">
+                        <div className="text-[11px] text-slate-500">Created</div>
+                        <div className="text-xs text-slate-300">
+                          {new Date(profileVendor.created_at).toLocaleDateString()}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-3 pt-3 border-t border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => startEditProfile(profileVendor)}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-200 hover:bg-slate-700 transition"
+                    >
+                      <Pencil className="h-4 w-4 text-silver-300" />
+                      Edit Details
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setProfileVendor(null)}
+                      className="rounded-lg bg-navy-600 px-5 py-2 text-sm font-semibold text-white hover:bg-navy-600 transition"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </>
+              )
+            ) : (
+              <div className="space-y-4">
+                <div className="dark">
+                  <EntityComplianceManager entityType="VENDOR" entityId={profileVendor.id} />
+                </div>
+                <div className="flex justify-end pt-3 border-t border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setProfileVendor(null)}
+                    className="rounded-lg bg-navy-600 px-5 py-2 text-sm font-semibold text-white hover:bg-navy-600 transition"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -525,152 +829,7 @@ export function VendorsPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4 text-sm">
-              <div>
-                <label className="block text-xs font-medium text-slate-300">Vendor / Supplier Legal Name *</label>
-                <input
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="e.g. Western Fleet Logistics"
-                  className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-slate-300">Vendor Type</label>
-                <select
-                  value={formData.vendor_type}
-                  onChange={(e) => setFormData({ ...formData, vendor_type: e.target.value as VendorCreate['vendor_type'] })}
-                  className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
-                >
-                  <option value="FLEET_SUPPLIER">Fleet Supplier (Market Vehicles)</option>
-                  <option value="DCO">DCO</option>
-                  <option value="EMI_DRIVER">EMI Driver</option>
-                  <option value="WORKSHOP">Maintenance Workshop</option>
-                  <option value="FUEL_PARTNER">Fuel Partner</option>
-                  <option value="BROKER">Logistics Broker</option>
-                  <option value="OTHER">Other Service Provider</option>
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-slate-300">Contact Person</label>
-                  <input
-                    type="text"
-                    value={formData.contact_person}
-                    onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })}
-                    placeholder="e.g. Rajesh Sharma"
-                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-300">Email</label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="rajesh@wfl.in"
-                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-slate-300">Phone</label>
-                  <input
-                    type="text"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    placeholder="+919811223344"
-                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-300">Address</label>
-                  <input
-                    type="text"
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    placeholder="Mumbai"
-                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-slate-300">GSTIN / Aadhaar No</label>
-                  <input
-                    type="text"
-                    value={formData.gstin}
-                    onChange={(e) => setFormData({ ...formData, gstin: e.target.value.toUpperCase() })}
-                    placeholder="07AAAAA0000A1Z5 / 12-digit Aadhaar"
-                    maxLength={15}
-                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white font-mono text-xs focus:border-navy-500 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-300">PAN</label>
-                  <input
-                    type="text"
-                    value={formData.pan}
-                    onChange={(e) => setFormData({ ...formData, pan: e.target.value.toUpperCase() })}
-                    placeholder="AAAPA1234A"
-                    maxLength={10}
-                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white font-mono text-xs focus:border-navy-500 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-slate-300">Bank Account Name</label>
-                  <input
-                    type="text"
-                    value={formData.bank_account_name}
-                    onChange={(e) => setFormData({ ...formData, bank_account_name: e.target.value })}
-                    placeholder="Western Fleet Logistics"
-                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-300">Bank Account Number</label>
-                  <input
-                    type="text"
-                    value={formData.bank_account_number}
-                    onChange={(e) => setFormData({ ...formData, bank_account_number: e.target.value })}
-                    placeholder="918273645019"
-                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white font-mono text-xs focus:border-navy-500 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-slate-300">Bank IFSC</label>
-                  <input
-                    type="text"
-                    value={formData.bank_ifsc}
-                    onChange={(e) => setFormData({ ...formData, bank_ifsc: e.target.value.toUpperCase() })}
-                    placeholder="HDFC0001234"
-                    maxLength={11}
-                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white font-mono text-xs focus:border-navy-500 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-300">Bank Name</label>
-                  <input
-                    type="text"
-                    value={formData.bank_name}
-                    onChange={(e) => setFormData({ ...formData, bank_name: e.target.value })}
-                    placeholder="HDFC Bank"
-                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
-                  />
-                </div>
-              </div>
+              <VendorFormFields value={formData} onChange={setFormData} />
 
               {formError && (
                 <p className="flex items-center gap-1 text-xs text-red-400">
