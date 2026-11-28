@@ -4,7 +4,7 @@ import uuid
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, Text, UniqueConstraint, Uuid, select
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, Text, UniqueConstraint, Uuid, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -91,15 +91,35 @@ async def list_services(
     return [ServiceCatalogResponse.model_validate(r) for r in rows]
 
 
+async def _ensure_unique_name(
+    ctx: OrgContext,
+    name: str,
+    exclude_id: Optional[uuid.UUID] = None,
+) -> None:
+    stmt = select(OrganisationService.id).where(
+        OrganisationService.organisation_id == ctx.organisation_id,
+        func.lower(func.trim(OrganisationService.name)) == name.strip().lower(),
+    )
+    if exclude_id is not None:
+        stmt = stmt.where(OrganisationService.id != exclude_id)
+    if (await ctx.db.execute(stmt)).scalar():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Service '{name.strip()}' already exists.",
+        )
+
+
 @router.post("", response_model=ServiceCatalogResponse, status_code=status.HTTP_201_CREATED)
 async def create_service(
     req: ServiceCatalogCreate,
     ctx: OrgContext = Depends(get_org_context),
 ):
-    code = _slug_code(req.code) if req.code else _slug_code(req.name)
+    clean_name = req.name.strip()
+    await _ensure_unique_name(ctx, clean_name)
+    code = _slug_code(req.code) if req.code else _slug_code(clean_name)
     svc = OrganisationService(
         organisation_id=ctx.organisation_id,
-        name=req.name.strip(),
+        name=clean_name,
         code=code,
         service_category=req.service_category.upper(),
         description=req.description.strip() if req.description else None,
@@ -112,7 +132,7 @@ async def create_service(
         await ctx.db.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Service with code '{code}' already exists.",
+            detail=f"Service '{clean_name}' or code '{code}' already exists.",
         )
     await ctx.db.refresh(svc)
     return ServiceCatalogResponse.model_validate(svc)
@@ -135,14 +155,23 @@ async def update_service(
     if not svc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Service not found")
     if req.name is not None:
-        svc.name = req.name.strip()
+        clean_name = req.name.strip()
+        await _ensure_unique_name(ctx, clean_name, exclude_id=svc.id)
+        svc.name = clean_name
     if req.service_category is not None:
         svc.service_category = req.service_category.upper()
     if req.description is not None:
         svc.description = req.description.strip() or None
     if req.is_active is not None:
         svc.is_active = req.is_active
-    await ctx.db.commit()
+    try:
+        await ctx.db.commit()
+    except IntegrityError:
+        await ctx.db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A service with this name already exists.",
+        )
     await ctx.db.refresh(svc)
     return ServiceCatalogResponse.model_validate(svc)
 

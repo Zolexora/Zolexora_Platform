@@ -118,15 +118,23 @@ export function OurServicesPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name.trim()) {
+    const cleanName = form.name.trim();
+    if (!cleanName) {
       setFormError('Service name is required.');
+      return;
+    }
+    const duplicate = services.some(
+      (s) => s.id !== editing?.id && s.name.trim().toLowerCase() === cleanName.toLowerCase()
+    );
+    if (duplicate) {
+      setFormError(`Service "${cleanName}" already exists.`);
       return;
     }
     if (editing) {
       updateMutation.mutate({
         id: editing.id,
         payload: {
-          name: form.name.trim(),
+          name: cleanName,
           service_category: form.service_category,
           description: form.description?.trim() || '',
           is_active: form.is_active,
