@@ -51,10 +51,10 @@ export async function kycRoutes(
         throw forbidden("You can only upload KYC documents for your own account and organisation.");
       }
       if (!USER_ID_RE.test(userId)) {
-        throw new AppError({ statusCode: 400, code: "AUTH_INVALID_ID_FORMAT", message: "Token or X-Zolexora-ID must carry a ZX-XXXX-XXXX-XXXX ID." });
+        throw new AppError({ statusCode: 400, code: "AUTH_INVALID_ID_FORMAT", message: "Token or X-Zolexora-ID must carry a <userid>@zolexora.com handle." });
       }
       if (!ORG_ID_RE.test(orgId)) {
-        throw new AppError({ statusCode: 400, code: "AUTH_INVALID_ORG_ID_FORMAT", message: "Token or X-Organisation-ID must carry a ZX-ORG-XXXX-XXXX-XXXX ID." });
+        throw new AppError({ statusCode: 400, code: "AUTH_INVALID_ORG_ID_FORMAT", message: "Token or X-Organisation-ID must carry a <userid>@zolexora.com handle." });
       }
       if (!(await opts.repo.getOrganizationByOrgId(orgId))) {
         throw new AppError({ statusCode: 404, code: "AUTH_ORG_NOT_FOUND", message: "Organisation not found." });

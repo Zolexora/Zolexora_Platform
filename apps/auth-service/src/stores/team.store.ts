@@ -1,4 +1,4 @@
-import { generatePartnerZolexoraId, generateZolexoraOrgId, normalizeZolexoraOrgId } from "@zolexora/utils";
+import { generatePartnerZolexoraId, normalizeZolexoraOrgId } from "@zolexora/utils";
 import { Db } from "../db.js";
 import { AccessInput, RoleRow } from "../rbac/engine.js";
 
@@ -69,10 +69,8 @@ const ROLE_SELECT = `r.id, r.scope, r.key, r.name, r.built_in, r.disabled,
 const INVITE_COLS = `id, organization_id, kind, email, phone_number, org_role_id, product_roles, invited_by, expires_at,
   accepted_at, revoked_at, reset_member_id, created_at`;
 
-export type NewOrg = Pick<OrgRow, "legal_name" | "trade_name" | "pan_holder_type" | "business_kind" | "pan_encrypted" | "pan_last4"
-  | "pan_hash" | "email" | "phone" | "address" | "logo_url" | "activity_primary" | "activity_others"> & {
-  zolexora_org_id?: string | null;
-};
+export type NewOrg = Pick<OrgRow, "zolexora_org_id" | "legal_name" | "trade_name" | "pan_holder_type" | "business_kind" | "pan_encrypted" | "pan_last4"
+  | "pan_hash" | "email" | "phone" | "address" | "logo_url" | "activity_primary" | "activity_others">;
 
 export const ORG_EDITABLE = ["legal_name", "trade_name", "email", "phone", "address", "logo_url", "activity_primary", "activity_others"] as const;
 export type OrgPatch = Partial<Pick<OrgRow, (typeof ORG_EDITABLE)[number] | "official_activities" | "mfa_policy" | "status">>;
@@ -98,7 +96,7 @@ export class TeamStore {
             pan_hash, email, phone, address, logo_url, activity_primary, activity_others, created_by)
          VALUES ($1, $2, 'active', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12::jsonb, $13, $14, $15::jsonb, $16)
          RETURNING ${ORG_COLS}`,
-        [data.zolexora_org_id || generateZolexoraOrgId(), data.trade_name || data.legal_name, data.legal_name, data.trade_name, data.pan_holder_type,
+        [data.zolexora_org_id, data.trade_name || data.legal_name, data.legal_name, data.trade_name, data.pan_holder_type,
           data.business_kind, data.pan_encrypted, data.pan_last4, data.pan_hash, data.email, data.phone, json(data.address),
           data.logo_url, data.activity_primary, json(data.activity_others ?? []), ownerUserId],
       )).rows[0];
@@ -131,24 +129,36 @@ export class TeamStore {
       `SELECT (
          EXISTS(SELECT 1 FROM zolexora_organizations WHERE LOWER(zolexora_org_id) = LOWER($1))
          OR EXISTS(SELECT 1 FROM zolexora_auth_users WHERE LOWER(zolexora_id) = LOWER($1))
-         OR EXISTS(SELECT 1 FROM zolexora_partner_ids WHERE LOWER(zolexora_id) = LOWER($1))
+         OR EXISTS(SELECT 1 FROM zolexora_organization_memberships WHERE LOWER(zolexora_id) = LOWER($1))
        ) AS taken`,
       [candidate.trim()],
     );
     return r.rows[0]?.taken === true;
   }
 
-  async reservePartnerZolexoraId(kind: "client" | "vendor", ownerOrgId: string | null, displayName: string | null): Promise<string> {
+  /**
+   * Reserves an external client/vendor Zolexora handle (c<8-digits>@zolexora.com or v<8-digits>@zolexora.com)
+   * as a Track 2 organization membership with role = 'client' | 'vendor' and empty permissions.
+   */
+  async reservePartnerZolexoraId(kind: "client" | "vendor", ownerOrgId: string): Promise<string> {
     for (let attempt = 0; attempt < 10; attempt++) {
       const candidate = generatePartnerZolexoraId(kind);
       const taken = await this.isZolexoraIdTaken(candidate);
       if (taken) continue;
       try {
-        await this.db.query(
-          `INSERT INTO zolexora_partner_ids (zolexora_id, partner_kind, owner_org_id, display_name)
-           VALUES ($1, $2, $3, $4)`,
-          [candidate, kind, ownerOrgId, displayName],
-        );
+        await this.db.tx(async (tx) => {
+          const emp = (await tx.query<{ id: string }>(
+            `INSERT INTO zolexora_organization_memberships
+               (organization_id, zolexora_id, email, password_hash, role, permissions, status)
+             VALUES ($1, $2, $2, '!external!partner', $3, '[]'::jsonb, 'active')
+             RETURNING id`,
+            [ownerOrgId, candidate, kind],
+          )).rows[0];
+          await tx.query(
+            `INSERT INTO zolexora_org_members (organization_id, employee_id) VALUES ($1, $2)`,
+            [ownerOrgId, emp.id],
+          );
+        });
         return candidate;
       } catch (err: any) {
         if (err?.code === "23505") continue;

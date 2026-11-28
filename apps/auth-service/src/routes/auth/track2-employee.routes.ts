@@ -32,7 +32,7 @@ const invalidOrgId = (raw: string) =>
   new AppError({
     statusCode: 400,
     code: "AUTH_INVALID_ORG_ID_FORMAT",
-    message: `Invalid Zolexora Org ID format: "${raw}". Expected ZX-ORG-XXXX-XXXX-XXXX`,
+    message: `Invalid Zolexora Org ID format: "${raw}". Expected <userid>@zolexora.com`,
   });
 const invalidCredentials = () =>
   new AppError({ statusCode: 401, code: "AUTH_INVALID_CREDENTIALS", message: "Invalid employee credentials" });

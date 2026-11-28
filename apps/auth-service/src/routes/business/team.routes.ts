@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyRequest } from "fastify";
 import { z } from "zod";
-import { generateZolexoraId, isPublicWebmailDomain, isValidZolexoraOrgId, normalizeZolexoraOrgId } from "@zolexora/utils";
+import { generateZolexoraHandle, isPublicWebmailDomain, isValidZolexoraOrgId, normalizeZolexoraOrgId } from "@zolexora/utils";
 import { AppError } from "../../plugins/error-handler.js";
 import { createAuthMiddleware } from "../../middleware/auth.middleware.js";
 import { CONSTANTS } from "../../config/constants.js";
@@ -388,7 +388,7 @@ export async function teamRoutes(app: FastifyInstance, d: BusinessDeps) {
       permissions: z.array(z.string()).max(0, "Give access with roles (role, org_role_id, product_roles), not a permissions list.").optional(),
     }).strict(), req.body);
     if (!isValidZolexoraOrgId(b.org_id)) {
-      throw badRequest(`Invalid Zolexora Org ID format: "${b.org_id}". Expected ZX-ORG-XXXX-XXXX-XXXX`, "AUTH_INVALID_ORG_ID_FORMAT");
+      throw badRequest(`Invalid Zolexora Org ID format: "${b.org_id}". Expected <userid>@zolexora.com`, "AUTH_INVALID_ORG_ID_FORMAT");
     }
     const actor = await actorFor(req, d, normalizeZolexoraOrgId(b.org_id));
     need(actor, "org:team:invite");
@@ -519,7 +519,7 @@ export async function teamRoutes(app: FastifyInstance, d: BusinessDeps) {
       row = (await tx.query<{ id: string; zolexora_id: string }>(
         `INSERT INTO zolexora_organization_memberships (organization_id, zolexora_id, email, phone_number, password_hash, role, permissions, status)
          VALUES ($1, $2, $3, $4, $5, $6, '[]'::jsonb, 'active') RETURNING id, zolexora_id`,
-        [org.id, generateZolexoraId(), e.email, e.phone_number, e.hash, orgRole?.built_in ? orgRole.key : "member"],
+        [org.id, generateZolexoraHandle("e"), e.email, e.phone_number, e.hash, orgRole?.built_in ? orgRole.key : "member"],
       )).rows[0];
     } catch (err: any) {
       if (err?.code === "23505") throw conflict("This person is already in the team.", "AUTH_EMPLOYEE_EXISTS");

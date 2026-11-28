@@ -26,7 +26,7 @@ $$ LANGUAGE plpgsql;
 -- 1. Organizations Table (`zolexora_organizations`)
 -- ------------------------------------------------------------------------------
 -- Represents multi-tenant enterprise organizations (TMS, IMS, ERP).
--- Enforces canonical Crockford Base32 ID format: ZX-ORG-XXXX-XXXX-XXXX
+-- Enforces canonical Zolexora handle format: <userid>@zolexora.com
 CREATE TABLE IF NOT EXISTS public.zolexora_organizations (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     zolexora_org_id TEXT UNIQUE NOT NULL,
@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS public.zolexora_organizations (
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
     CONSTRAINT chk_zolexora_org_id_format
-      CHECK (zolexora_org_id ~* '^ZX-ORG-[2-9A-HJ-NP-Z]{4}-[2-9A-HJ-NP-Z]{4}-[2-9A-HJ-NP-Z]{4}$')
+      CHECK (zolexora_org_id ~* '^[a-z0-9][a-z0-9._-]{1,48}[a-z0-9]@zolexora\.com$')
 );
 
 -- Fast lookup B-tree indexes for organizations
@@ -72,7 +72,7 @@ CREATE TABLE IF NOT EXISTS public.zolexora_organization_memberships (
     CONSTRAINT uq_org_memberships_org_email UNIQUE(organization_id, email),
     CONSTRAINT uq_org_memberships_org_zx_id UNIQUE(organization_id, zolexora_id),
     CONSTRAINT chk_org_memberships_zx_id_format
-      CHECK (zolexora_id ~* '^ZX-[2-9A-HJ-NP-Z]{4}-[2-9A-HJ-NP-Z]{4}-[2-9A-HJ-NP-Z]{4}$')
+      CHECK (zolexora_id ~* '^[a-z0-9][a-z0-9._-]{1,48}[a-z0-9]@zolexora\.com$')
 );
 
 -- Fast lookup B-tree indexes for employee memberships
@@ -109,7 +109,7 @@ CREATE TABLE IF NOT EXISTS public.zolexora_auth_users (
     phone_verified_at TIMESTAMPTZ,
     created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
     CONSTRAINT chk_auth_users_zx_id_format
-      CHECK (zolexora_id ~* '^ZX-[2-9A-HJ-NP-Z]{4}-[2-9A-HJ-NP-Z]{4}-[2-9A-HJ-NP-Z]{4}$')
+      CHECK (zolexora_id ~* '^[a-z0-9][a-z0-9._-]{1,48}[a-z0-9]@zolexora\.com$')
 );
 
 -- Fast lookup B-tree indexes for global auth users

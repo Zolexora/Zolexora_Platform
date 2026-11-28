@@ -26,7 +26,7 @@ export async function mediaRoutes(
     async (req, reply) => {
       const zxId = String(req.headers["x-zolexora-id"] || "");
       if (!USER_ID_RE.test(zxId)) {
-        throw new AppError({ statusCode: 400, code: "AUTH_INVALID_ID_FORMAT", message: "X-Zolexora-ID must be ZX-XXXX-XXXX-XXXX (Crockford Base32)." });
+        throw new AppError({ statusCode: 400, code: "AUTH_INVALID_ID_FORMAT", message: "X-Zolexora-ID must be <userid>@zolexora.com." });
       }
       const user = req.user!;
       if (!user.is_platform_admin && user.zolexora_id !== zxId) {
@@ -48,7 +48,7 @@ export async function mediaRoutes(
     async (req, reply) => {
       const orgId = String(req.headers["x-organisation-id"] || req.headers["x-organization-id"] || "");
       if (!ORG_ID_RE.test(orgId)) {
-        throw new AppError({ statusCode: 400, code: "AUTH_INVALID_ORG_ID_FORMAT", message: "X-Organisation-ID must be ZX-ORG-XXXX-XXXX-XXXX (Crockford Base32)." });
+        throw new AppError({ statusCode: 400, code: "AUTH_INVALID_ORG_ID_FORMAT", message: "X-Organisation-ID must be <userid>@zolexora.com." });
       }
       if (!(await opts.repo.getOrganizationByOrgId(orgId))) {
         throw new AppError({ statusCode: 404, code: "AUTH_ORG_NOT_FOUND", message: "Organisation not found." });

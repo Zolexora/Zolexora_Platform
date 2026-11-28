@@ -5,12 +5,14 @@ export * from "./env.js";
 export {
   isValidZolexoraId,
   normalizeZolexoraId,
-  generateZolexoraId,
   isValidZolexoraOrgId,
   normalizeZolexoraOrgId,
-  generateZolexoraOrgId,
-  ZOLEXORA_ID_REGEX,
-  ZOLEXORA_ORG_ID_REGEX,
+  isValidZolexoraHandle,
+  formatZolexoraHandle,
+  generateZolexoraHandle,
+  generatePartnerZolexoraId,
+  ZOLEXORA_HANDLE_REGEX,
+  ZOLEXORA_PARTNER_HANDLE_REGEX,
 } from "@zolexora/utils/zolexora-id";
 
 export {

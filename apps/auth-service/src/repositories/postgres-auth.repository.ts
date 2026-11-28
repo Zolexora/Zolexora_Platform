@@ -1,5 +1,5 @@
 import { Db } from "../db.js";
-import { normalizeZolexoraOrgId, generateZolexoraId } from "@zolexora/utils";
+import { normalizeZolexoraOrgId, generateZolexoraHandle } from "@zolexora/utils";
 import {
   IAuthRepository,
   OrganizationRecord,
@@ -194,7 +194,7 @@ export class PostgresAuthRepository implements IAuthRepository {
            (organization_id, zolexora_id, email, password_hash, role, permissions, status)
          VALUES ($1, $2, $3, $4, $5, $6::jsonb, 'active')
          RETURNING id, organization_id, zolexora_id, email, password_hash, role, permissions, status`,
-        [org.id, generateZolexoraId(), data.email.toLowerCase().trim(), data.password_hash, data.role,
+        [org.id, generateZolexoraHandle("e"), data.email.toLowerCase().trim(), data.password_hash, data.role,
           JSON.stringify(data.permissions)],
       );
       return { ...res.rows[0], zolexora_org_id: org.zolexora_org_id, product: data.product };

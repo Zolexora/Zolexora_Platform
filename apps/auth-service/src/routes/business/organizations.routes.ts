@@ -127,17 +127,18 @@ export async function organizationRoutes(app: FastifyInstance, d: BusinessDeps &
     if (pan[3] !== "P" && (await d.team.countOrgsWithPan(panHash)) > 0) {
       throw conflict("A business with this PAN already exists. Ask its owner to invite you.", "ORG_PAN_EXISTS");
     }
-    let customOrgId: string | null = null;
     const requestedHandle = b.userid ?? b.zolexora_org_id;
-    if (requestedHandle) {
-      try {
-        customOrgId = b.userid ? formatZolexoraHandle(b.userid) : normalizeZolexoraOrgId(requestedHandle);
-      } catch (e: any) {
-        throw badRequest(e?.message || "Invalid Zolexora ID format.", "ORG_INVALID_ZOLEXORA_ID");
-      }
-      if (await d.team.isZolexoraIdTaken(customOrgId)) {
-        throw conflict(`Zolexora ID '${customOrgId}' is already taken. Choose another.`, "ORG_ZOLEXORA_ID_TAKEN");
-      }
+    if (!requestedHandle) {
+      throw badRequest("Choose a unique Zolexora ID (e.g. company@zolexora.com).", "ORG_ZOLEXORA_ID_REQUIRED");
+    }
+    let customOrgId: string;
+    try {
+      customOrgId = b.userid ? formatZolexoraHandle(b.userid) : normalizeZolexoraOrgId(requestedHandle);
+    } catch (e: any) {
+      throw badRequest(e?.message || "Invalid Zolexora ID format.", "ORG_INVALID_ZOLEXORA_ID");
+    }
+    if (await d.team.isZolexoraIdTaken(customOrgId)) {
+      throw conflict(`Zolexora ID '${customOrgId}' is already taken. Choose another.`, "ORG_ZOLEXORA_ID_TAKEN");
     }
     let created;
     try {
@@ -245,11 +246,12 @@ export async function organizationRoutes(app: FastifyInstance, d: BusinessDeps &
       return { success: true, zolexora_id: org.zolexora_org_id, organization_name: org.name, verified: true };
     }
 
-    const reserved = await d.team.reservePartnerZolexoraId(
-      body.kind,
-      body.owner_org_id ?? null,
-      body.display_name ?? null,
-    );
+    const ownerOrgId = body.owner_org_id
+      ?? (req.user?.org_id ? (await d.team.getOrg(req.user.org_id))?.id : undefined);
+    if (!ownerOrgId) {
+      throw badRequest("owner_org_id is required to register an external partner.", "PARTNER_OWNER_ORG_REQUIRED");
+    }
+    const reserved = await d.team.reservePartnerZolexoraId(body.kind, ownerOrgId);
     return { success: true, zolexora_id: reserved, verified: false };
   });
 

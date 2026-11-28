@@ -4,7 +4,7 @@ import { CONSTANTS } from "../../config/constants.js";
 import { detectMimeFromBuffer } from "../../services/storage.service.js";
 
 // The same patterns the IDs are generated and stored with.
-export { ZOLEXORA_ID_REGEX as USER_ID_RE, ZOLEXORA_ORG_ID_REGEX as ORG_ID_RE } from "@zolexora/utils";
+export { ZOLEXORA_HANDLE_REGEX as USER_ID_RE, ZOLEXORA_HANDLE_REGEX as ORG_ID_RE } from "@zolexora/utils";
 
 // Base64 JSON payloads: 10MB file + ~33% encoding overhead
 export const UPLOAD_BODY_LIMIT = 15 * 1024 * 1024;

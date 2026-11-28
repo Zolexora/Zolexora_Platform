@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyRequest } from "fastify";
-import { generateZolexoraId, verifyPassword } from "@zolexora/utils";
+import { generateZolexoraHandle, verifyPassword } from "@zolexora/utils";
 import { GlobalUserRecord, IAuthRepository } from "../../repositories/types.js";
 import { TurnstileService } from "../../services/turnstile.service.js";
 import { RateLimitService } from "../../services/rate-limit.service.js";
@@ -248,7 +248,7 @@ export async function track1PublicRoutes(
       const passwordHash = await hashNewPassword(req.body?.password);
 
       const user = await repo.createGlobalUser({
-        zolexora_id: generateZolexoraId(),
+        zolexora_id: generateZolexoraHandle("u"),
         email: facts.email!,
         phone_number: facts.phone_number,
         phone_verified: facts.phone_verified === true,
