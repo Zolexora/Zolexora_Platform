@@ -11,68 +11,152 @@ import {
   Clock,
   ArrowRight,
   Truck,
+  Eye,
+  Download,
+  Ban,
+  ClipboardList,
 } from 'lucide-react';
 import { apiClient } from '../../lib/api';
 import type {
   Booking,
   BookingRequest,
   BookingRequestCreate,
+  BookingOperationalStatus,
   BookingType,
   BookingServiceType,
   Customer,
 } from '../../types';
 
+// ── CSV Export ───────────────────────────────────────────────────────────────
+
+const EXPORT_HEADERS = [
+  'Booking #', 'Customer', 'Type', 'Service', 'Status',
+  'Pickup Address', 'Drop Address', 'Pickup DateTime',
+  'Boarding PIN', 'Escort Required', 'Created At',
+];
+
+function escapeCsvField(val: string | number | boolean | undefined): string {
+  const s = val !== undefined && val !== null ? String(val) : '';
+  if (s.includes(',') || s.includes('"') || s.includes('\n')) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+function downloadBookingsCSV(rows: Booking[], customerMap: Record<string, string>, filename = 'bookings_export.csv') {
+  const lines = [EXPORT_HEADERS.join(',')];
+  for (const b of rows) {
+    lines.push([
+      b.booking_number,
+      customerMap[b.customer_id] || b.customer_id,
+      b.booking_type,
+      b.service_type,
+      b.status,
+      b.pickup_address,
+      b.drop_address,
+      new Date(b.pickup_datetime).toLocaleString('en-IN'),
+      b.boarding_pin || '',
+      b.escort_required ? 'Yes' : 'No',
+      new Date(b.created_at).toLocaleDateString('en-IN'),
+    ].map(escapeCsvField).join(','));
+  }
+  const url = URL.createObjectURL(new Blob([lines.join('\n')], { type: 'text/csv' }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── Status badge helpers ─────────────────────────────────────────────────────
+
+function bookingStatusClass(status: BookingOperationalStatus): string {
+  switch (status) {
+    case 'CONFIRMED':   return 'bg-silver-900/60 text-silver-300 border border-silver-700/30';
+    case 'IN_PROGRESS': return 'bg-navy-900/40 text-silver-400 border border-navy-600/20';
+    case 'COMPLETED':   return 'bg-blue-500/10 text-blue-400 border border-blue-500/20';
+    case 'CANCELLED':   return 'bg-rose-500/10 text-rose-400 border border-rose-500/20';
+    default:            return 'bg-slate-700/20 text-slate-400';
+  }
+}
+
+function reqStatusClass(status: string): string {
+  switch (status) {
+    case 'CONFIRMED': return 'bg-silver-900/60 text-silver-300 border border-silver-700/30';
+    case 'REQUESTED': return 'bg-navy-800/40 text-silver-400 border border-navy-600/20';
+    case 'DRAFT':     return 'bg-slate-800 text-slate-400 border border-slate-700';
+    default:          return 'bg-rose-500/10 text-rose-400 border border-rose-500/20';
+  }
+}
+
+// ── Empty booking request form ───────────────────────────────────────────────
+
+const EMPTY_REQUEST: BookingRequestCreate = {
+  customer_id: '',
+  booking_type: 'ETS',
+  service_type: 'PASSENGER',
+  pickup_address: '',
+  drop_address: '',
+  pickup_datetime: new Date(Date.now() + 3600000).toISOString().slice(0, 16),
+  passenger_info: { name: '', phone: '', count: 1, shift: '' },
+  cargo_info: { weight_kg: '', material: '' },
+  special_instructions: '',
+  estimated_pricing: '',
+};
+
+// ── Status filter tabs ───────────────────────────────────────────────────────
+
+type BookingTab = 'bookings' | 'requests';
+type StatusFilter = 'ALL' | BookingOperationalStatus;
+const STATUS_FILTERS: { label: string; value: StatusFilter }[] = [
+  { label: 'All', value: 'ALL' },
+  { label: 'Confirmed', value: 'CONFIRMED' },
+  { label: 'In Progress', value: 'IN_PROGRESS' },
+  { label: 'Completed', value: 'COMPLETED' },
+  { label: 'Cancelled', value: 'CANCELLED' },
+];
+
+// ── Main Component ───────────────────────────────────────────────────────────
+
 export function BookingsPage() {
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<'bookings' | 'requests'>('bookings');
+
+  const [activeTab, setActiveTab] = useState<BookingTab>('bookings');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
   const [search, setSearch] = useState('');
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [profileTab, setProfileTab] = useState<'details' | 'duty'>('details');
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [isDutyModalOpen, setIsDutyModalOpen] = useState(false);
-  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [dutyBooking, setDutyBooking] = useState<Booking | null>(null);
   const [formError, setFormError] = useState('');
+  const [cancelConfirm, setCancelConfirm] = useState<Booking | null>(null);
 
-  // New Booking Request Form State (people-transport first: ETS + PASSENGER)
-  const [requestForm, setRequestForm] = useState<BookingRequestCreate>({
-    customer_id: '',
-    booking_type: 'ETS',
-    service_type: 'PASSENGER',
-    pickup_address: '',
-    drop_address: '',
-    pickup_datetime: new Date(Date.now() + 3600000).toISOString().slice(0, 16),
-    passenger_info: { name: '', phone: '', count: 1, shift: '' },
-    cargo_info: { weight_kg: '', material: '' },
-    special_instructions: '',
-    estimated_pricing: '',
-  });
+  // Booking Request form
+  const [requestForm, setRequestForm] = useState<BookingRequestCreate>(EMPTY_REQUEST);
+  const [dutyForm, setDutyForm] = useState({ scheduled_start_time: '', scheduled_end_time: '', notes: '' });
 
-  // Duty Form State
-  const [dutyForm, setDutyForm] = useState({
-    scheduled_start_time: '',
-    scheduled_end_time: '',
-    notes: '',
-  });
-
-  // Fetch Customers for selector
+  // Queries
   const { data: customers } = useQuery({
     queryKey: ['customers'],
     queryFn: () => apiClient<Customer[]>('/api/v1/crm/clients'),
   });
 
-  // Fetch Bookings
   const { data: bookings, isLoading: isBookingsLoading } = useQuery({
     queryKey: ['bookings'],
-    queryFn: () => apiClient<Booking[]>('/api/v1/bookings'),
+    queryFn: () => apiClient<Booking[]>('/api/v1/bookings?limit=200'),
     enabled: activeTab === 'bookings',
   });
 
-  // Fetch Booking Requests
   const { data: bookingRequests, isLoading: isRequestsLoading } = useQuery({
     queryKey: ['booking-requests'],
-    queryFn: () => apiClient<BookingRequest[]>('/api/v1/booking-requests'),
+    queryFn: () => apiClient<BookingRequest[]>('/api/v1/booking-requests?limit=200'),
     enabled: activeTab === 'requests',
   });
 
-  // Create Request Mutation
+  // Map customer_id → name for display
+  const customerMap: Record<string, string> = {};
+  customers?.forEach((c) => { customerMap[c.id] = c.name; });
+
+  // Mutations
   const createRequestMutation = useMutation({
     mutationFn: (data: BookingRequestCreate) => {
       const pax = data.passenger_info || {};
@@ -99,41 +183,51 @@ export function BookingsPage() {
           cargo_info: cleanCargo,
           pickup_datetime: new Date(data.pickup_datetime).toISOString(),
           estimated_pricing: data.estimated_pricing ? data.estimated_pricing : undefined,
+          special_instructions: data.special_instructions?.trim() || undefined,
         }),
       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['booking-requests'] });
       setIsRequestModalOpen(false);
+      setRequestForm(EMPTY_REQUEST);
       setFormError('');
     },
     onError: (err: Error) => setFormError(err.message),
   });
 
-  // Confirm Request Mutation
   const confirmRequestMutation = useMutation({
     mutationFn: (requestId: string) =>
-      apiClient<Booking>(`/api/v1/booking-requests/${requestId}/confirm`, {
-        method: 'POST',
-      }),
+      apiClient<Booking>(`/api/v1/booking-requests/${requestId}/confirm`, { method: 'POST' }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['booking-requests'] });
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
       setActiveTab('bookings');
     },
-    onError: (err: Error) => alert(`Error confirming request: ${err.message}`),
+    onError: (err: Error) => setFormError(err.message),
   });
 
-  // Submit Request Mutation
   const submitRequestMutation = useMutation({
     mutationFn: (requestId: string) =>
-      apiClient<BookingRequest>(`/api/v1/booking-requests/${requestId}/submit`, {
-        method: 'POST',
-      }),
+      apiClient<BookingRequest>(`/api/v1/booking-requests/${requestId}/submit`, { method: 'POST' }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['booking-requests'] }),
+    onError: (err: Error) => setFormError(err.message),
   });
 
-  // Create Duty Mutation
+  const cancelBookingMutation = useMutation({
+    mutationFn: (bookingId: string) =>
+      apiClient<Booking>(`/api/v1/bookings/${bookingId}/cancel`, {
+        method: 'POST',
+        body: JSON.stringify({ reason: 'Cancelled by dispatcher' }),
+      }),
+    onSuccess: (updated) => {
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      setCancelConfirm(null);
+      if (selectedBooking?.id === updated.id) setSelectedBooking(updated);
+    },
+    onError: (err: Error) => setFormError(err.message),
+  });
+
   const createDutyMutation = useMutation({
     mutationFn: (bookingId: string) =>
       apiClient(`/api/v1/bookings/${bookingId}/create-duty`, {
@@ -147,99 +241,156 @@ export function BookingsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['duties'] });
       setIsDutyModalOpen(false);
-      setSelectedBooking(null);
-      alert('Duty roster generated successfully! Proceed to Duties page to allocate Driver & Vehicle.');
+      setDutyBooking(null);
+      setFormError('');
     },
     onError: (err: Error) => setFormError(err.message),
   });
 
   const openDutyModal = (b: Booking) => {
-    setSelectedBooking(b);
+    setDutyBooking(b);
     const start = new Date(b.pickup_datetime).toISOString().slice(0, 16);
     const end = new Date(new Date(b.pickup_datetime).getTime() + 4 * 3600000).toISOString().slice(0, 16);
     setDutyForm({ scheduled_start_time: start, scheduled_end_time: end, notes: '' });
+    setFormError('');
     setIsDutyModalOpen(true);
   };
 
-  const filteredBookings = bookings?.filter((b) =>
-    b.booking_number.toLowerCase().includes(search.toLowerCase()) ||
-    b.pickup_address.toLowerCase().includes(search.toLowerCase()) ||
-    b.drop_address.toLowerCase().includes(search.toLowerCase())
-  );
+  const openProfile = (b: Booking) => {
+    setSelectedBooking(b);
+    setProfileTab('details');
+  };
 
-  const filteredRequests = bookingRequests?.filter((r) =>
-    r.request_number.toLowerCase().includes(search.toLowerCase()) ||
-    r.pickup_address.toLowerCase().includes(search.toLowerCase()) ||
-    r.drop_address.toLowerCase().includes(search.toLowerCase())
-  );
+  // Filter logic
+  const filteredBookings = bookings?.filter((b) => {
+    const matchStatus = statusFilter === 'ALL' || b.status === statusFilter;
+    const q = search.toLowerCase();
+    const matchSearch = !q || (
+      b.booking_number.toLowerCase().includes(q) ||
+      b.pickup_address.toLowerCase().includes(q) ||
+      b.drop_address.toLowerCase().includes(q) ||
+      (customerMap[b.customer_id] || '').toLowerCase().includes(q)
+    );
+    return matchStatus && matchSearch;
+  });
+
+  const filteredRequests = bookingRequests?.filter((r) => {
+    const q = search.toLowerCase();
+    return !q || (
+      r.request_number.toLowerCase().includes(q) ||
+      r.pickup_address.toLowerCase().includes(q) ||
+      r.drop_address.toLowerCase().includes(q) ||
+      (customerMap[r.customer_id] || '').toLowerCase().includes(q)
+    );
+  });
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">People Transport &amp; Trip Bookings</h1>
-          <p className="text-sm text-slate-400">Manage corporate cab requests, ETS shuttle bookings, and authoritative trip orders.</p>
+          <h1 className="text-2xl font-bold text-white">Bookings</h1>
+          <p className="text-sm text-slate-400">Manage trip bookings, booking requests, and generate duty rosters.</p>
         </div>
-        <button
-          onClick={() => {
-            setFormError('');
-            setIsRequestModalOpen(true);
-          }}
-          className="inline-flex items-center gap-2 rounded-xl bg-navy-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-navy-800/30 hover:bg-navy-600 transition"
-        >
-          <Plus className="h-4 w-4" />
-          New Booking Request
-        </button>
-      </div>
-
-      {/* Tabs & Search */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex gap-2 p-1 rounded-xl bg-slate-900/60 border border-slate-800 w-fit">
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => setActiveTab('bookings')}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
-              activeTab === 'bookings'
-                ? 'bg-navy-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-white'
-            }`}
+            onClick={() => {
+              if (!bookings || bookings.length === 0) return;
+              downloadBookingsCSV(filteredBookings || bookings, customerMap);
+            }}
+            disabled={!bookings || bookings.length === 0}
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-slate-700 hover:text-white transition disabled:opacity-40 disabled:cursor-not-allowed"
+            title="Export visible bookings as CSV"
           >
-            Authoritative Bookings
+            <Download className="h-4 w-4" />
+            Export CSV
           </button>
           <button
-            onClick={() => setActiveTab('requests')}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
-              activeTab === 'requests'
-                ? 'bg-navy-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-white'
-            }`}
+            onClick={() => {
+              setFormError('');
+              setRequestForm(EMPTY_REQUEST);
+              setIsRequestModalOpen(true);
+            }}
+            className="inline-flex items-center gap-2 rounded-xl bg-navy-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-navy-800/30 hover:bg-navy-600 transition"
           >
-            Booking Requests
+            <Plus className="h-4 w-4" />
+            New Booking Request
           </button>
-        </div>
-
-        <div className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/60 px-3 py-2 max-w-md w-full">
-          <Search className="h-4 w-4 text-slate-500" />
-          <input
-            type="text"
-            placeholder={`Search ${activeTab === 'bookings' ? 'bookings' : 'requests'} by number, address...`}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="bg-transparent text-sm text-white placeholder-slate-500 focus:outline-none w-full"
-          />
         </div>
       </div>
 
-      {/* Table: Bookings */}
+      {/* Tabs + Status filter + Search */}
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex gap-2 p-1 rounded-xl bg-slate-900/60 border border-slate-800 w-fit">
+            <button
+              onClick={() => setActiveTab('bookings')}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
+                activeTab === 'bookings' ? 'bg-navy-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              Bookings
+            </button>
+            <button
+              onClick={() => setActiveTab('requests')}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
+                activeTab === 'requests' ? 'bg-navy-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              Booking Requests
+            </button>
+          </div>
+
+          <div className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/60 px-3 py-2 max-w-sm w-full">
+            <Search className="h-4 w-4 text-slate-500 shrink-0" />
+            <input
+              type="text"
+              placeholder="Search by number, address, or client..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="bg-transparent text-sm text-white placeholder-slate-500 focus:outline-none w-full"
+            />
+          </div>
+        </div>
+
+        {/* Status filter row (bookings tab only) */}
+        {activeTab === 'bookings' && (
+          <div className="flex items-center gap-2 flex-wrap">
+            {STATUS_FILTERS.map((f) => (
+              <button
+                key={f.value}
+                onClick={() => setStatusFilter(f.value)}
+                className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
+                  statusFilter === f.value
+                    ? 'bg-navy-600 text-white'
+                    : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
+                }`}
+              >
+                {f.label}
+                {f.value !== 'ALL' && bookings && (
+                  <span className="ml-1.5 opacity-70">
+                    ({bookings.filter((b) => b.status === f.value).length})
+                  </span>
+                )}
+                {f.value === 'ALL' && bookings && (
+                  <span className="ml-1.5 opacity-70">({bookings.length})</span>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ── Table: Bookings ────────────────────────────────────────────────── */}
       {activeTab === 'bookings' && (
         <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-900/40">
           <table className="w-full text-left text-sm text-slate-300">
             <thead className="border-b border-slate-800 bg-slate-950/80 text-xs font-semibold uppercase tracking-wider text-slate-400">
               <tr>
-                <th className="px-5 py-3.5">Booking #</th>
+                <th className="px-5 py-3.5">Booking # & Client</th>
                 <th className="px-5 py-3.5">Type & Service</th>
                 <th className="px-5 py-3.5">Route</th>
-                <th className="px-5 py-3.5">Pickup Date</th>
+                <th className="px-5 py-3.5">Pickup Time</th>
                 <th className="px-5 py-3.5">Status</th>
                 <th className="px-5 py-3.5 text-right">Actions</th>
               </tr>
@@ -248,21 +399,29 @@ export function BookingsPage() {
               {isBookingsLoading ? (
                 <tr>
                   <td colSpan={6} className="px-5 py-8 text-center text-slate-500">
-                    Loading authoritative bookings...
+                    Loading bookings...
                   </td>
                 </tr>
               ) : filteredBookings?.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-5 py-12 text-center text-slate-500">
-                    <CalendarCheck className="mx-auto h-8 w-8 text-slate-600 mb-2" />
-                    No confirmed transport bookings found.
+                  <td colSpan={6} className="px-5 py-12 text-center">
+                    <div className="flex flex-col items-center justify-center">
+                      <CalendarCheck className="h-8 w-8 text-slate-600 mb-2" />
+                      <p className="text-sm font-semibold text-slate-300">No bookings found</p>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        {statusFilter !== 'ALL' ? 'Try a different status filter.' : 'Create a booking request and confirm it.'}
+                      </p>
+                    </div>
                   </td>
                 </tr>
               ) : (
                 filteredBookings?.map((booking) => (
                   <tr key={booking.id} className="hover:bg-slate-800/30 transition">
-                    <td className="px-5 py-4 font-mono font-medium text-white">
-                      {booking.booking_number}
+                    <td className="px-5 py-4">
+                      <div className="font-mono font-semibold text-white">{booking.booking_number}</div>
+                      <div className="text-xs text-slate-400 mt-0.5">
+                        {customerMap[booking.customer_id] || <span className="text-slate-600 italic">Unknown client</span>}
+                      </div>
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex flex-wrap items-center gap-1.5">
@@ -279,51 +438,63 @@ export function BookingsPage() {
                         )}
                         {booking.escort_required && (
                           <span className="inline-block rounded-md bg-rose-500/15 border border-rose-500/30 px-2 py-0.5 text-[11px] font-semibold text-rose-300">
-                            🛡️ Escort
+                            🛡 Escort
                           </span>
                         )}
                       </div>
-                      {booking.service_type === 'PASSENGER' && booking.passenger_info && (booking.passenger_info.name || booking.passenger_info.count || booking.passenger_info.shift) && (
+                      {booking.service_type === 'PASSENGER' && booking.passenger_info?.name && (
                         <div className="mt-1 text-[11px] text-slate-400">
-                          {booking.passenger_info.name && <span className="text-slate-300 font-medium">{booking.passenger_info.name}</span>}
+                          <span className="text-slate-300 font-medium">{booking.passenger_info.name}</span>
                           {booking.passenger_info.count ? ` · 👤 ${booking.passenger_info.count}` : ''}
                           {booking.passenger_info.shift ? ` · 🕐 ${booking.passenger_info.shift}` : ''}
                         </div>
                       )}
                     </td>
-                    <td className="px-5 py-4 max-w-xs truncate">
-                      <div className="flex items-center gap-1.5 text-slate-200">
-                        <span className="truncate">{booking.pickup_address}</span>
+                    <td className="px-5 py-4 max-w-xs">
+                      <div className="flex items-center gap-1.5 text-slate-200 text-xs">
+                        <span className="truncate max-w-[120px]">{booking.pickup_address}</span>
                         <ArrowRight className="h-3 w-3 flex-shrink-0 text-slate-500" />
-                        <span className="truncate text-slate-400">{booking.drop_address}</span>
+                        <span className="truncate max-w-[120px] text-slate-400">{booking.drop_address}</span>
                       </div>
                     </td>
-                    <td className="px-5 py-4 text-slate-300">
-                      {new Date(booking.pickup_datetime).toLocaleString()}
+                    <td className="px-5 py-4 text-xs text-slate-300">
+                      {new Date(booking.pickup_datetime).toLocaleString('en-IN')}
                     </td>
                     <td className="px-5 py-4">
-                      <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                        booking.status === 'CONFIRMED'
-                          ? 'bg-silver-900/60 text-silver-300 border border-silver-700/30'
-                          : booking.status === 'IN_PROGRESS'
-                          ? 'bg-silver-900/30 text-silver-500 border border-silver-700/20'
-                          : booking.status === 'COMPLETED'
-                          ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
-                          : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
-                      }`}>
+                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${bookingStatusClass(booking.status)}`}>
                         {booking.status}
                       </span>
                     </td>
                     <td className="px-5 py-4 text-right">
-                      {booking.status === 'CONFIRMED' && (
+                      <div className="flex items-center justify-end gap-1.5">
                         <button
-                          onClick={() => openDutyModal(booking)}
-                          className="inline-flex items-center gap-1.5 rounded-lg bg-navy-600/20 border border-navy-600/30 px-3 py-1.5 text-xs font-semibold text-silver-300 hover:bg-navy-600 hover:text-white transition"
+                          onClick={() => openProfile(booking)}
+                          className="inline-flex items-center gap-1.5 rounded bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-300 hover:bg-slate-700 hover:text-white"
+                          title="View booking details"
                         >
-                          <Truck className="h-3.5 w-3.5" />
-                          Create Duty
+                          <Eye className="h-3.5 w-3.5 text-silver-300" />
+                          View
                         </button>
-                      )}
+                        {booking.status === 'CONFIRMED' && (
+                          <button
+                            onClick={() => openDutyModal(booking)}
+                            className="inline-flex items-center gap-1 rounded bg-navy-600/20 border border-navy-600/30 px-2.5 py-1 text-xs font-semibold text-silver-300 hover:bg-navy-600 hover:text-white transition"
+                            title="Generate duty roster"
+                          >
+                            <Truck className="h-3.5 w-3.5" />
+                            Duty
+                          </button>
+                        )}
+                        {(booking.status === 'CONFIRMED') && (
+                          <button
+                            onClick={() => setCancelConfirm(booking)}
+                            className="rounded bg-rose-500/10 border border-rose-500/20 px-2.5 py-1 text-xs font-semibold text-rose-400 hover:bg-rose-500/20 transition"
+                            title="Cancel booking"
+                          >
+                            <Ban className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -333,13 +504,13 @@ export function BookingsPage() {
         </div>
       )}
 
-      {/* Table: Booking Requests */}
+      {/* ── Table: Booking Requests ────────────────────────────────────────── */}
       {activeTab === 'requests' && (
         <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-900/40">
           <table className="w-full text-left text-sm text-slate-300">
             <thead className="border-b border-slate-800 bg-slate-950/80 text-xs font-semibold uppercase tracking-wider text-slate-400">
               <tr>
-                <th className="px-5 py-3.5">Request #</th>
+                <th className="px-5 py-3.5">Request # & Client</th>
                 <th className="px-5 py-3.5">Type & Service</th>
                 <th className="px-5 py-3.5">Route</th>
                 <th className="px-5 py-3.5">Est. Price</th>
@@ -356,16 +527,22 @@ export function BookingsPage() {
                 </tr>
               ) : filteredRequests?.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-5 py-12 text-center text-slate-500">
-                    <FileCheck className="mx-auto h-8 w-8 text-slate-600 mb-2" />
-                    No booking requests recorded.
+                  <td colSpan={6} className="px-5 py-12 text-center">
+                    <div className="flex flex-col items-center justify-center">
+                      <FileCheck className="h-8 w-8 text-slate-600 mb-2" />
+                      <p className="text-sm font-semibold text-slate-300">No booking requests</p>
+                      <p className="text-xs text-slate-500 mt-0.5">Click "New Booking Request" to create one.</p>
+                    </div>
                   </td>
                 </tr>
               ) : (
                 filteredRequests?.map((req) => (
                   <tr key={req.id} className="hover:bg-slate-800/30 transition">
-                    <td className="px-5 py-4 font-mono font-medium text-white">
-                      {req.request_number}
+                    <td className="px-5 py-4">
+                      <div className="font-mono font-semibold text-white">{req.request_number}</div>
+                      <div className="text-xs text-slate-400 mt-0.5">
+                        {customerMap[req.customer_id] || <span className="text-slate-600 italic">Unknown client</span>}
+                      </div>
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex flex-wrap items-center gap-1.5">
@@ -376,58 +553,52 @@ export function BookingsPage() {
                           {req.service_type}
                         </span>
                       </div>
-                      {req.service_type === 'PASSENGER' && req.passenger_info && (req.passenger_info.name || req.passenger_info.count || req.passenger_info.shift) && (
+                      {req.service_type === 'PASSENGER' && req.passenger_info?.name && (
                         <div className="mt-1 text-[11px] text-slate-400">
-                          {req.passenger_info.name && <span className="text-slate-300 font-medium">{req.passenger_info.name}</span>}
+                          <span className="text-slate-300 font-medium">{req.passenger_info.name}</span>
                           {req.passenger_info.count ? ` · 👤 ${req.passenger_info.count}` : ''}
                           {req.passenger_info.shift ? ` · 🕐 ${req.passenger_info.shift}` : ''}
                         </div>
                       )}
                     </td>
-                    <td className="px-5 py-4 max-w-xs truncate">
-                      <div className="flex items-center gap-1.5 text-slate-200">
-                        <span className="truncate">{req.pickup_address}</span>
+                    <td className="px-5 py-4 max-w-xs">
+                      <div className="flex items-center gap-1.5 text-xs text-slate-200">
+                        <span className="truncate max-w-[120px]">{req.pickup_address}</span>
                         <ArrowRight className="h-3 w-3 flex-shrink-0 text-slate-500" />
-                        <span className="truncate text-slate-400">{req.drop_address}</span>
+                        <span className="truncate max-w-[120px] text-slate-400">{req.drop_address}</span>
                       </div>
                     </td>
-                    <td className="px-5 py-4 font-mono text-slate-300">
+                    <td className="px-5 py-4 font-mono text-slate-300 text-xs">
                       {req.estimated_pricing ? `₹${req.estimated_pricing}` : '—'}
                     </td>
                     <td className="px-5 py-4">
-                      <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                        req.status === 'CONFIRMED'
-                          ? 'bg-silver-900/60 text-silver-300 border border-silver-700/30'
-                          : req.status === 'REQUESTED'
-                          ? 'bg-navy-800/40 text-silver-400 border border-navy-600/20'
-                          : req.status === 'DRAFT'
-                          ? 'bg-slate-800 text-slate-400 border border-slate-700'
-                          : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
-                      }`}>
+                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${reqStatusClass(req.status)}`}>
                         {req.status}
                       </span>
                     </td>
-                    <td className="px-5 py-4 text-right space-x-2">
-                      {req.status === 'DRAFT' && (
-                        <button
-                          onClick={() => submitRequestMutation.mutate(req.id)}
-                          disabled={submitRequestMutation.isPending}
-                          className="inline-flex items-center gap-1 rounded-lg bg-slate-800 px-2.5 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-700 transition"
-                        >
-                          <Clock className="h-3.5 w-3.5" />
-                          Submit
-                        </button>
-                      )}
-                      {(req.status === 'DRAFT' || req.status === 'REQUESTED') && (
-                        <button
-                          onClick={() => confirmRequestMutation.mutate(req.id)}
-                          disabled={confirmRequestMutation.isPending}
-                          className="inline-flex items-center gap-1 rounded-lg bg-silver-800/40 border border-silver-700/40 px-3 py-1.5 text-xs font-semibold text-silver-300 hover:bg-navy-600 hover:text-white transition"
-                        >
-                          <CheckCircle2 className="h-3.5 w-3.5" />
-                          Confirm Booking
-                        </button>
-                      )}
+                    <td className="px-5 py-4 text-right">
+                      <div className="flex items-center justify-end gap-1.5">
+                        {req.status === 'DRAFT' && (
+                          <button
+                            onClick={() => submitRequestMutation.mutate(req.id)}
+                            disabled={submitRequestMutation.isPending}
+                            className="inline-flex items-center gap-1 rounded bg-slate-800 px-2.5 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-700 transition"
+                          >
+                            <Clock className="h-3.5 w-3.5" />
+                            Submit
+                          </button>
+                        )}
+                        {(req.status === 'DRAFT' || req.status === 'REQUESTED') && (
+                          <button
+                            onClick={() => confirmRequestMutation.mutate(req.id)}
+                            disabled={confirmRequestMutation.isPending}
+                            className="inline-flex items-center gap-1 rounded bg-silver-800/40 border border-silver-700/40 px-3 py-1.5 text-xs font-semibold text-silver-300 hover:bg-navy-600 hover:text-white transition"
+                          >
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            Confirm
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -437,10 +608,288 @@ export function BookingsPage() {
         </div>
       )}
 
-      {/* Modal: New Booking Request */}
+      {/* ── Booking Detail Modal ───────────────────────────────────────────── */}
+      {selectedBooking && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="w-full max-w-2xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl space-y-4 my-8">
+            {/* Header */}
+            <div className="flex items-start justify-between border-b border-slate-800 pb-4">
+              <div>
+                <div className="flex items-center gap-2.5">
+                  <h2 className="text-lg font-bold text-white font-mono">{selectedBooking.booking_number}</h2>
+                  <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${bookingStatusClass(selectedBooking.status)}`}>
+                    {selectedBooking.status}
+                  </span>
+                </div>
+                <div className="mt-1 text-xs text-slate-400">
+                  {customerMap[selectedBooking.customer_id] || selectedBooking.customer_id}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => downloadBookingsCSV([selectedBooking], customerMap, `booking_${selectedBooking.booking_number}.csv`)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-700 transition"
+                  title="Download CSV"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  CSV
+                </button>
+                <button onClick={() => setSelectedBooking(null)} className="text-slate-400 hover:text-white">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+              <button
+                onClick={() => setProfileTab('details')}
+                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                  profileTab === 'details' ? 'bg-navy-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                Booking Details
+              </button>
+              <button
+                onClick={() => setProfileTab('duty')}
+                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                  profileTab === 'duty' ? 'bg-navy-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                <ClipboardList className="h-3.5 w-3.5" />
+                Generate Duty
+              </button>
+            </div>
+
+            {profileTab === 'details' ? (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                  {/* Route */}
+                  <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4 space-y-2.5">
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">Route</h3>
+                    <div>
+                      <div className="text-[11px] text-slate-500">Pickup</div>
+                      <div className="text-white text-xs">{selectedBooking.pickup_address}</div>
+                    </div>
+                    <div>
+                      <div className="text-[11px] text-slate-500">Drop / Destination</div>
+                      <div className="text-white text-xs">{selectedBooking.drop_address}</div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <div>
+                        <div className="text-[11px] text-slate-500">Pickup Time</div>
+                        <div className="text-white text-xs">{new Date(selectedBooking.pickup_datetime).toLocaleString('en-IN')}</div>
+                      </div>
+                      {selectedBooking.expected_completion_datetime && (
+                        <div>
+                          <div className="text-[11px] text-slate-500">Expected End</div>
+                          <div className="text-white text-xs">{new Date(selectedBooking.expected_completion_datetime).toLocaleString('en-IN')}</div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Trip Info */}
+                  <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4 space-y-2.5">
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">Trip Details</h3>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <div className="text-[11px] text-slate-500">Booking Type</div>
+                        <div className="text-white text-xs font-semibold">{selectedBooking.booking_type}</div>
+                      </div>
+                      <div>
+                        <div className="text-[11px] text-slate-500">Service Type</div>
+                        <div className="text-white text-xs font-semibold">{selectedBooking.service_type}</div>
+                      </div>
+                    </div>
+                    {selectedBooking.service_type === 'PASSENGER' && Object.keys(selectedBooking.passenger_info || {}).length > 0 && (
+                      <div>
+                        <div className="text-[11px] text-slate-500">Passenger Info</div>
+                        <div className="text-white text-xs mt-0.5">
+                          {selectedBooking.passenger_info.name && <span className="font-medium">{selectedBooking.passenger_info.name}</span>}
+                          {selectedBooking.passenger_info.phone && <span className="text-slate-400"> · {selectedBooking.passenger_info.phone}</span>}
+                          {selectedBooking.passenger_info.count && <span className="text-slate-400"> · 👤 {selectedBooking.passenger_info.count}</span>}
+                          {selectedBooking.passenger_info.shift && <span className="text-slate-400"> · 🕐 {selectedBooking.passenger_info.shift}</span>}
+                        </div>
+                      </div>
+                    )}
+                    {selectedBooking.service_type === 'CARGO' && Object.keys(selectedBooking.cargo_info || {}).length > 0 && (
+                      <div>
+                        <div className="text-[11px] text-slate-500">Cargo Info</div>
+                        <div className="text-white text-xs mt-0.5">
+                          {selectedBooking.cargo_info.material && <span>{selectedBooking.cargo_info.material}</span>}
+                          {selectedBooking.cargo_info.weight_kg && <span className="text-slate-400"> · {selectedBooking.cargo_info.weight_kg} kg</span>}
+                        </div>
+                      </div>
+                    )}
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      {selectedBooking.boarding_pin && (
+                        <div>
+                          <div className="text-[11px] text-slate-500">Boarding PIN</div>
+                          <div className="text-indigo-300 font-mono text-sm font-bold">{selectedBooking.boarding_pin}</div>
+                        </div>
+                      )}
+                      <div>
+                        <div className="text-[11px] text-slate-500">Escort Required</div>
+                        <div className={`text-xs font-semibold ${selectedBooking.escort_required ? 'text-rose-400' : 'text-slate-400'}`}>
+                          {selectedBooking.escort_required ? '🛡 Yes' : 'No'}
+                        </div>
+                      </div>
+                    </div>
+                    {selectedBooking.eway_bill_number && (
+                      <div>
+                        <div className="text-[11px] text-slate-500">E-Way Bill</div>
+                        <div className="text-white font-mono text-xs">{selectedBooking.eway_bill_number}</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-3 border-t border-slate-800">
+                  {selectedBooking.status === 'CONFIRMED' && (
+                    <>
+                      <button
+                        onClick={() => { setCancelConfirm(selectedBooking); setSelectedBooking(null); }}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-sm font-medium text-rose-400 hover:bg-rose-500/20 transition"
+                      >
+                        <Ban className="h-4 w-4" />
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => { openDutyModal(selectedBooking); setSelectedBooking(null); }}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-200 hover:bg-slate-700 transition"
+                      >
+                        <Truck className="h-4 w-4 text-silver-300" />
+                        Generate Duty
+                      </button>
+                    </>
+                  )}
+                  <button
+                    onClick={() => setSelectedBooking(null)}
+                    className="rounded-lg bg-navy-600 px-5 py-2 text-sm font-semibold text-white hover:bg-navy-600 transition"
+                  >
+                    Close
+                  </button>
+                </div>
+              </>
+            ) : (
+              /* Generate Duty Tab (inline) */
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  createDutyMutation.mutate(selectedBooking.id);
+                }}
+                className="space-y-4"
+              >
+                <p className="text-xs text-slate-400">
+                  Generating duty roster for <span className="font-mono font-semibold text-silver-300">{selectedBooking.booking_number}</span>.
+                  After creation, go to <strong className="text-white">Duties</strong> to assign Driver & Vehicle.
+                </p>
+                {formError && (
+                  <div className="flex items-center gap-2 rounded-xl bg-rose-500/10 border border-rose-500/20 p-3 text-sm text-rose-400">
+                    <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                    <span>{formError}</span>
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-400 mb-1">Scheduled Start *</label>
+                    <input
+                      type="datetime-local"
+                      required
+                      value={dutyForm.scheduled_start_time}
+                      onChange={(e) => setDutyForm({ ...dutyForm, scheduled_start_time: e.target.value })}
+                      className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:border-navy-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-400 mb-1">Scheduled End *</label>
+                    <input
+                      type="datetime-local"
+                      required
+                      value={dutyForm.scheduled_end_time}
+                      onChange={(e) => setDutyForm({ ...dutyForm, scheduled_end_time: e.target.value })}
+                      className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:border-navy-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1">Duty Notes</label>
+                  <textarea
+                    rows={3}
+                    placeholder="Driver reporting point, escort / passenger pickup notes, gate pass requirements..."
+                    value={dutyForm.notes}
+                    onChange={(e) => setDutyForm({ ...dutyForm, notes: e.target.value })}
+                    className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-navy-500 focus:outline-none"
+                  />
+                </div>
+                <div className="flex justify-end gap-3 pt-3 border-t border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedBooking(null)}
+                    className="rounded-xl border border-slate-800 px-4 py-2 text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={createDutyMutation.isPending}
+                    className="rounded-xl bg-navy-600 px-4 py-2 text-sm font-semibold text-white hover:bg-navy-600 transition disabled:opacity-50"
+                  >
+                    {createDutyMutation.isPending ? 'Generating...' : 'Confirm & Generate Duty'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Cancel Confirm Modal ───────────────────────────────────────────── */}
+      {cancelConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm rounded-2xl border border-rose-500/30 bg-slate-900 p-6 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="rounded-full bg-rose-500/15 p-2">
+                <Ban className="h-5 w-5 text-rose-400" />
+              </div>
+              <div>
+                <h3 className="font-bold text-white">Cancel Booking</h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Cancel <span className="font-mono font-semibold text-silver-300">{cancelConfirm.booking_number}</span>?
+                </p>
+              </div>
+            </div>
+            <p className="text-sm text-slate-400">This action cannot be undone. Any associated duties must be cancelled separately.</p>
+            {formError && (
+              <div className="flex items-center gap-2 rounded-xl bg-rose-500/10 border border-rose-500/20 p-3 text-sm text-rose-400">
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                {formError}
+              </div>
+            )}
+            <div className="flex justify-end gap-3 pt-2 border-t border-slate-800">
+              <button
+                onClick={() => { setCancelConfirm(null); setFormError(''); }}
+                className="rounded-xl border border-slate-800 px-4 py-2 text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition"
+              >
+                Keep Booking
+              </button>
+              <button
+                onClick={() => cancelBookingMutation.mutate(cancelConfirm.id)}
+                disabled={cancelBookingMutation.isPending}
+                className="rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-500 transition disabled:opacity-50"
+              >
+                {cancelBookingMutation.isPending ? 'Cancelling...' : 'Yes, Cancel'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── New Booking Request Modal ──────────────────────────────────────── */}
       {isRequestModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm overflow-y-auto">
+          <div className="w-full max-w-xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl my-8">
             <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
               <div>
                 <h3 className="text-lg font-bold text-white">Create Booking Request</h3>
@@ -461,7 +910,11 @@ export function BookingsPage() {
               </div>
             )}
 
-            <form onSubmit={(e) => { e.preventDefault(); createRequestMutation.mutate(requestForm); }} className="space-y-4">
+            <form
+              onSubmit={(e) => { e.preventDefault(); createRequestMutation.mutate(requestForm); }}
+              className="space-y-4"
+            >
+              {/* Customer */}
               <div>
                 <label className="block text-xs font-medium text-slate-400 mb-1">Customer / Client *</label>
                 <select
@@ -473,12 +926,13 @@ export function BookingsPage() {
                   <option value="">Select a customer...</option>
                   {customers?.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.name} {c.gstin ? `(${c.gstin})` : ''}
+                      {c.name}{c.gstin ? ` (${c.gstin})` : ''}
                     </option>
                   ))}
                 </select>
               </div>
 
+              {/* Booking Type + Service Type */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-slate-400 mb-1">Booking Type</label>
@@ -512,6 +966,7 @@ export function BookingsPage() {
                 </div>
               </div>
 
+              {/* Passenger / Cargo Details */}
               {requestForm.service_type === 'PASSENGER' ? (
                 <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-3 space-y-3">
                   <div className="text-[11px] font-semibold uppercase tracking-wider text-indigo-300">
@@ -519,16 +974,13 @@ export function BookingsPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-medium text-slate-400 mb-1">Passenger / Lead Employee</label>
+                      <label className="block text-xs font-medium text-slate-400 mb-1">Lead Passenger</label>
                       <input
                         type="text"
                         placeholder="e.g. Ananya Sharma (EMP-204)"
                         value={requestForm.passenger_info?.name ?? ''}
                         onChange={(e) =>
-                          setRequestForm({
-                            ...requestForm,
-                            passenger_info: { ...(requestForm.passenger_info || {}), name: e.target.value },
-                          })
+                          setRequestForm({ ...requestForm, passenger_info: { ...requestForm.passenger_info, name: e.target.value } })
                         }
                         className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-1.5 text-sm text-white placeholder-slate-600 focus:border-navy-500 focus:outline-none"
                       />
@@ -537,13 +989,10 @@ export function BookingsPage() {
                       <label className="block text-xs font-medium text-slate-400 mb-1">Passenger Mobile</label>
                       <input
                         type="text"
-                        placeholder="e.g. +91 98765 43210"
+                        placeholder="+91 98765 43210"
                         value={requestForm.passenger_info?.phone ?? ''}
                         onChange={(e) =>
-                          setRequestForm({
-                            ...requestForm,
-                            passenger_info: { ...(requestForm.passenger_info || {}), phone: e.target.value },
-                          })
+                          setRequestForm({ ...requestForm, passenger_info: { ...requestForm.passenger_info, phone: e.target.value } })
                         }
                         className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-1.5 text-sm text-white placeholder-slate-600 focus:border-navy-500 focus:outline-none"
                       />
@@ -556,25 +1005,19 @@ export function BookingsPage() {
                         max={60}
                         value={requestForm.passenger_info?.count ?? 1}
                         onChange={(e) =>
-                          setRequestForm({
-                            ...requestForm,
-                            passenger_info: { ...(requestForm.passenger_info || {}), count: Number(e.target.value) || 1 },
-                          })
+                          setRequestForm({ ...requestForm, passenger_info: { ...requestForm.passenger_info, count: Number(e.target.value) || 1 } })
                         }
                         className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-1.5 text-sm text-white focus:border-navy-500 focus:outline-none"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-slate-400 mb-1">Shift Label / Flight No</label>
+                      <label className="block text-xs font-medium text-slate-400 mb-1">Shift / Flight No</label>
                       <input
                         type="text"
-                        placeholder="e.g. Night Login 22:00 / AI-502"
+                        placeholder="Night Login 22:00 / AI-502"
                         value={requestForm.passenger_info?.shift ?? ''}
                         onChange={(e) =>
-                          setRequestForm({
-                            ...requestForm,
-                            passenger_info: { ...(requestForm.passenger_info || {}), shift: e.target.value },
-                          })
+                          setRequestForm({ ...requestForm, passenger_info: { ...requestForm.passenger_info, shift: e.target.value } })
                         }
                         className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-1.5 text-sm text-white placeholder-slate-600 focus:border-navy-500 focus:outline-none"
                       />
@@ -590,10 +1033,7 @@ export function BookingsPage() {
                       placeholder="e.g. IT Hardware"
                       value={requestForm.cargo_info?.material ?? ''}
                       onChange={(e) =>
-                        setRequestForm({
-                          ...requestForm,
-                          cargo_info: { ...(requestForm.cargo_info || {}), material: e.target.value },
-                        })
+                        setRequestForm({ ...requestForm, cargo_info: { ...requestForm.cargo_info, material: e.target.value } })
                       }
                       className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-1.5 text-sm text-white placeholder-slate-600 focus:border-navy-500 focus:outline-none"
                     />
@@ -602,13 +1042,10 @@ export function BookingsPage() {
                     <label className="block text-xs font-medium text-slate-400 mb-1">Weight (kg)</label>
                     <input
                       type="number"
-                      placeholder="e.g. 250"
+                      placeholder="250"
                       value={requestForm.cargo_info?.weight_kg ?? ''}
                       onChange={(e) =>
-                        setRequestForm({
-                          ...requestForm,
-                          cargo_info: { ...(requestForm.cargo_info || {}), weight_kg: e.target.value },
-                        })
+                        setRequestForm({ ...requestForm, cargo_info: { ...requestForm.cargo_info, weight_kg: e.target.value } })
                       }
                       className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-1.5 text-sm text-white placeholder-slate-600 focus:border-navy-500 focus:outline-none"
                     />
@@ -616,30 +1053,39 @@ export function BookingsPage() {
                 </div>
               )}
 
+              {/* Addresses */}
               <div>
                 <label className="block text-xs font-medium text-slate-400 mb-1">Pickup Address *</label>
                 <input
                   type="text"
                   required
-                  placeholder={requestForm.service_type === 'PASSENGER' ? 'e.g. Electronic City Phase 1 / Employee Pickup' : 'e.g. Warehouse 3, Bhiwandi Logistics Park'}
+                  placeholder={
+                    requestForm.service_type === 'PASSENGER'
+                      ? 'e.g. Electronic City Phase 1 / Employee Pickup'
+                      : 'e.g. Warehouse 3, Bhiwandi Logistics Park'
+                  }
                   value={requestForm.pickup_address}
                   onChange={(e) => setRequestForm({ ...requestForm, pickup_address: e.target.value })}
                   className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-navy-500 focus:outline-none"
                 />
               </div>
-
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1">Drop / Destination Address *</label>
+                <label className="block text-xs font-medium text-slate-400 mb-1">Drop / Destination *</label>
                 <input
                   type="text"
                   required
-                  placeholder={requestForm.service_type === 'PASSENGER' ? 'e.g. Manyata Tech Park Gate 2 / Airport T1' : 'e.g. JNPT Port Container Terminal 2'}
+                  placeholder={
+                    requestForm.service_type === 'PASSENGER'
+                      ? 'e.g. Manyata Tech Park Gate 2 / Airport T1'
+                      : 'e.g. JNPT Port Container Terminal 2'
+                  }
                   value={requestForm.drop_address}
                   onChange={(e) => setRequestForm({ ...requestForm, drop_address: e.target.value })}
                   className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-navy-500 focus:outline-none"
                 />
               </div>
 
+              {/* Pickup datetime + Est. price */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-slate-400 mb-1">Pickup Date & Time *</label>
@@ -652,16 +1098,28 @@ export function BookingsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">Estimated Pricing (₹)</label>
+                  <label className="block text-xs font-medium text-slate-400 mb-1">Estimated Price (₹)</label>
                   <input
                     type="number"
                     step="0.01"
-                    placeholder="e.g. 18500.00"
+                    placeholder="18500.00"
                     value={requestForm.estimated_pricing}
                     onChange={(e) => setRequestForm({ ...requestForm, estimated_pricing: e.target.value })}
                     className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-navy-500 focus:outline-none"
                   />
                 </div>
+              </div>
+
+              {/* Special instructions */}
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1">Special Instructions</label>
+                <textarea
+                  rows={2}
+                  placeholder="Escort required, gate pass details, fragile cargo..."
+                  value={requestForm.special_instructions}
+                  onChange={(e) => setRequestForm({ ...requestForm, special_instructions: e.target.value })}
+                  className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-navy-500 focus:outline-none"
+                />
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
@@ -685,15 +1143,16 @@ export function BookingsPage() {
         </div>
       )}
 
-      {/* Modal: Generate Duty from Booking */}
-      {isDutyModalOpen && selectedBooking && (
+      {/* ── Standalone Generate Duty Modal (from table row) ────────────────── */}
+      {isDutyModalOpen && dutyBooking && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
               <div>
                 <h3 className="text-lg font-bold text-white">Generate Duty Roster</h3>
                 <p className="text-xs text-slate-400">
-                  Creating operational duty for Booking <span className="font-mono text-silver-400 font-semibold">{selectedBooking.booking_number}</span>
+                  Creating operational duty for Booking{' '}
+                  <span className="font-mono text-silver-400 font-semibold">{dutyBooking.booking_number}</span>
                 </p>
               </div>
               <button
@@ -712,10 +1171,7 @@ export function BookingsPage() {
             )}
 
             <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                createDutyMutation.mutate(selectedBooking.id);
-              }}
+              onSubmit={(e) => { e.preventDefault(); createDutyMutation.mutate(dutyBooking.id); }}
               className="space-y-4"
             >
               <div className="grid grid-cols-2 gap-4">
@@ -740,18 +1196,16 @@ export function BookingsPage() {
                   />
                 </div>
               </div>
-
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1">Duty Notes / Special Instructions</label>
+                <label className="block text-xs font-medium text-slate-400 mb-1">Duty Notes</label>
                 <textarea
                   rows={3}
-                  placeholder="Driver reporting point, escort / passenger pickup notes, or gate pass requirements..."
+                  placeholder="Driver reporting point, escort / passenger pickup notes, gate pass requirements..."
                   value={dutyForm.notes}
                   onChange={(e) => setDutyForm({ ...dutyForm, notes: e.target.value })}
                   className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-navy-500 focus:outline-none"
                 />
               </div>
-
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
                 <button
                   type="button"
@@ -775,4 +1229,3 @@ export function BookingsPage() {
     </div>
   );
 }
-
