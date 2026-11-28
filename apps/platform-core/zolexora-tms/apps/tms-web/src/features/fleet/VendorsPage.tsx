@@ -114,6 +114,45 @@ function parseCsv(text: string): { rows: VendorCreate[]; error?: string } {
   return { rows };
 }
 
+// ── Export vendor(s) as CSV ───────────────────────────────────────────────────
+
+const EXPORT_HEADERS = [
+  'Vendor Code', 'Vendor / Supplier Legal Name', 'Vendor Type', 'Status',
+  'Contact Person', 'Email', 'Phone', 'Address',
+  'GSTIN / Aadhaar No', 'PAN',
+  'Bank Account Name', 'Bank Account Number', 'Bank IFSC', 'Bank Name',
+  'Created At',
+];
+
+function escapeCsvField(val: string | undefined): string {
+  const s = val ?? '';
+  if (s.includes(',') || s.includes('"') || s.includes('\n')) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+function vendorsToCSV(rows: Vendor[]): string {
+  const lines = [EXPORT_HEADERS.join(',')];
+  for (const v of rows) {
+    lines.push([
+      v.vendor_code, v.name, v.vendor_type, v.status,
+      v.contact_person, v.email, v.phone, v.address,
+      v.gstin, v.pan,
+      v.bank_account_name, v.bank_account_number, v.bank_ifsc, v.bank_name,
+      new Date(v.created_at).toLocaleDateString('en-IN'),
+    ].map(escapeCsvField).join(','));
+  }
+  return lines.join('\n');
+}
+
+function downloadVendorCSV(rows: Vendor[], filename = 'vendors_export.csv') {
+  const blob = new Blob([vendorsToCSV(rows)], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
 function downloadTemplate() {
   const exampleRow = [
     'Western Fleet Logistics', 'FLEET_SUPPLIER', 'Rajesh Sharma',
@@ -494,6 +533,15 @@ export function VendorsPage() {
         </div>
         <div className="flex items-center gap-2">
           <button
+            onClick={() => vendors && vendors.length > 0 && downloadVendorCSV(vendors)}
+            disabled={!vendors || vendors.length === 0}
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-slate-700 hover:text-white transition disabled:opacity-40 disabled:cursor-not-allowed"
+            title="Export all vendors as CSV"
+          >
+            <Download className="h-4 w-4" />
+            Export All
+          </button>
+          <button
             onClick={() => setIsBulkOpen(true)}
             className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-slate-700 hover:text-white transition"
           >
@@ -581,14 +629,23 @@ export function VendorsPage() {
                     </span>
                   </td>
                   <td className="px-5 py-4">
-                    <button
-                      onClick={() => openProfile(v)}
-                      className="inline-flex items-center gap-1.5 rounded bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-300 hover:bg-slate-700 hover:text-white"
-                      title="View Profile & Compliance Docs"
-                    >
-                      <Eye className="h-3.5 w-3.5 text-silver-300" />
-                      View
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => openProfile(v)}
+                        className="inline-flex items-center gap-1.5 rounded bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-300 hover:bg-slate-700 hover:text-white"
+                        title="View Profile & Compliance Docs"
+                      >
+                        <Eye className="h-3.5 w-3.5 text-silver-300" />
+                        View
+                      </button>
+                      <button
+                        onClick={() => downloadVendorCSV([v], `vendor_${v.vendor_code || v.id}.csv`)}
+                        className="rounded bg-slate-800 p-1.5 text-slate-400 hover:bg-slate-700 hover:text-white"
+                        title="Download vendor details as CSV"
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -779,6 +836,15 @@ export function VendorsPage() {
                   </div>
 
                   <div className="flex justify-end gap-3 pt-3 border-t border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => downloadVendorCSV([profileVendor], `vendor_${profileVendor.vendor_code || profileVendor.id}.csv`)}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-200 hover:bg-slate-700 transition"
+                      title="Download this vendor's details as CSV"
+                    >
+                      <Download className="h-4 w-4 text-silver-300" />
+                      Download
+                    </button>
                     <button
                       type="button"
                       onClick={() => startEditProfile(profileVendor)}

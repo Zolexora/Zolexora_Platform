@@ -1,6 +1,6 @@
 import { useState, useRef, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Truck, Plus, Search, AlertCircle, X, Navigation, ShieldCheck, Upload, Download, CheckCircle2, Building2 } from 'lucide-react';
+import { Truck, Plus, Search, AlertCircle, X, Navigation, ShieldCheck, Upload, Download, CheckCircle2, Building2, Pencil, Eye } from 'lucide-react';
 import { apiClient } from '../../lib/api';
 import type { Vehicle, VehicleBodyType, VehicleCreate, Vendor } from '../../types';
 import { EntityComplianceManager } from '../compliance/EntityComplianceManager';
@@ -153,8 +153,43 @@ export function VehiclesPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [complianceModalId, setComplianceModalId] = useState<string | null>(null);
   const [formError, setFormError] = useState('');
+
+  // ── View modal (merged Details + Docs) ──────────────────────────────────────
+  const [profileVehicle, setProfileVehicle] = useState<Vehicle | null>(null);
+  const [profileTab, setProfileTab] = useState<'details' | 'docs'>('details');
+  const [isEditingVehicle, setIsEditingVehicle] = useState(false);
+  const [editFormData, setEditFormData] = useState<VehicleCreate & { status?: Vehicle['status'] }>(EMPTY_FORM);
+  const [editError, setEditError] = useState('');
+
+  const openProfile = (v: Vehicle) => {
+    setProfileVehicle(v);
+    setProfileTab('details');
+    setIsEditingVehicle(false);
+    setEditError('');
+  };
+
+  const startEdit = (v: Vehicle) => {
+    setEditFormData({
+      registration_number: v.registration_number,
+      vehicle_type: v.vehicle_type,
+      custom_vehicle_type: v.custom_vehicle_type || '',
+      vendor_code: v.vendor_code || '',
+      vendor_id: v.vendor_id,
+      ownership_type: v.ownership_type,
+      make: v.make || '',
+      model: v.model || '',
+      year: v.year,
+      fuel_type: v.fuel_type,
+      payload_capacity_kg: v.payload_capacity_kg || '',
+      odometer_km: v.odometer_km,
+      fastag_id: v.fastag_id || '',
+      gps_device_id: v.gps_device_id || '',
+      status: v.status,
+    });
+    setEditError('');
+    setIsEditingVehicle(true);
+  };
 
   // Bulk import state
   const [isBulkOpen, setIsBulkOpen] = useState(false);
@@ -249,6 +284,52 @@ export function VehiclesPage() {
       setFormError(err.message || 'Failed to create vehicle');
     },
   });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<VehicleCreate> & { status?: Vehicle['status'] } }) =>
+      apiClient<Vehicle>(`/api/v1/vehicles/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }),
+    onSuccess: (updated) => {
+      queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+      setProfileVehicle(updated);
+      setIsEditingVehicle(false);
+      setEditError('');
+    },
+    onError: (err: any) => setEditError(err.message || 'Failed to update vehicle'),
+  });
+
+  const handleEditVehicleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!profileVehicle) return;
+    if (editFormData.vehicle_type === 'OTHER' && !editFormData.custom_vehicle_type?.trim()) {
+      setEditError('Please specify the custom vehicle type.');
+      return;
+    }
+    const resolvedVendor = editFormData.vendor_code
+      ? vendorByCode.get(editFormData.vendor_code.toUpperCase())
+      : undefined;
+    updateMutation.mutate({
+      id: profileVehicle.id,
+      data: {
+        vehicle_type: editFormData.vehicle_type,
+        custom_vehicle_type: editFormData.vehicle_type === 'OTHER' ? editFormData.custom_vehicle_type?.trim() : undefined,
+        vendor_code: editFormData.vendor_code || undefined,
+        vendor_id: resolvedVendor?.id,
+        ownership_type: resolvedVendor ? 'ATTACHED' : (editFormData.ownership_type || 'OWNED'),
+        make: editFormData.make || undefined,
+        model: editFormData.model || undefined,
+        year: editFormData.year ? Number(editFormData.year) : undefined,
+        fuel_type: editFormData.fuel_type,
+        payload_capacity_kg: editFormData.payload_capacity_kg || undefined,
+        odometer_km: editFormData.odometer_km,
+        fastag_id: editFormData.fastag_id || undefined,
+        gps_device_id: editFormData.gps_device_id || undefined,
+        status: editFormData.status,
+      },
+    });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -379,12 +460,12 @@ export function VehiclesPage() {
                   </td>
                   <td className="px-5 py-4">
                     <button
-                      onClick={() => setComplianceModalId(v.id)}
+                      onClick={() => openProfile(v)}
                       className="inline-flex items-center gap-1 rounded bg-slate-800 px-2 py-1 text-xs font-medium text-slate-300 hover:bg-slate-700 hover:text-white"
-                      title="Manage Compliance"
+                      title="View Details & Compliance"
                     >
-                      <ShieldCheck className="h-3.5 w-3.5 text-silver-300" />
-                      Docs
+                      <Eye className="h-3.5 w-3.5 text-silver-300" />
+                      View
                     </button>
                   </td>
                 </tr>
@@ -561,22 +642,282 @@ export function VehiclesPage() {
         </div>
       )}
 
-      {/* Compliance Modal */}
-      {complianceModalId && (
+      {/* ── Merged Vehicle Profile & Compliance Modal ─────────────────────── */}
+      {profileVehicle && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto">
           <div className="w-full max-w-2xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl space-y-4 my-8">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <ShieldCheck className="h-5 w-5 text-silver-300" />
-                Vehicle Compliance
-              </h2>
-              <button onClick={() => setComplianceModalId(null)} className="text-slate-400 hover:text-white">
+            {/* Header */}
+            <div className="flex items-start justify-between border-b border-slate-800 pb-4">
+              <div>
+                <div className="flex items-center gap-2.5">
+                  <h2 className="text-lg font-bold text-white font-mono">{profileVehicle.registration_number}</h2>
+                  <span
+                    className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                      profileVehicle.status === 'AVAILABLE'
+                        ? 'bg-silver-900/60 text-silver-300 border border-silver-700/30'
+                        : profileVehicle.status === 'ON_DUTY'
+                        ? 'bg-silver-900/30 text-silver-500 border border-silver-700/20'
+                        : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                    }`}
+                  >
+                    {profileVehicle.status}
+                  </span>
+                </div>
+                <div className="mt-1 text-xs text-slate-400">
+                  {profileVehicle.custom_vehicle_type || profileVehicle.vehicle_type.replace(/_/g, ' ')}
+                  {profileVehicle.make && ` · ${profileVehicle.make} ${profileVehicle.model || ''} ${profileVehicle.year ? `(${profileVehicle.year})` : ''}`}
+                </div>
+              </div>
+              <button onClick={() => setProfileVehicle(null)} className="text-slate-400 hover:text-white">
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="dark">
-              <EntityComplianceManager entityType="VEHICLE" entityId={complianceModalId} />
+
+            {/* Tabs */}
+            <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+              <button
+                type="button"
+                onClick={() => setProfileTab('details')}
+                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                  profileTab === 'details' ? 'bg-navy-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                Vehicle Details
+              </button>
+              <button
+                type="button"
+                onClick={() => { setProfileTab('docs'); setIsEditingVehicle(false); }}
+                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                  profileTab === 'docs' ? 'bg-navy-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                <ShieldCheck className="h-3.5 w-3.5" />
+                Compliance Docs
+              </button>
             </div>
+
+            {profileTab === 'details' ? (
+              isEditingVehicle ? (
+                <form onSubmit={handleEditVehicleSubmit} className="space-y-4 text-sm">
+                  {/* Vehicle Type + Vendor */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-300">Vehicle Type</label>
+                      <select
+                        value={editFormData.vehicle_type}
+                        onChange={(e) => setEditFormData({ ...editFormData, vehicle_type: e.target.value as VehicleBodyType })}
+                        className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
+                      >
+                        <optgroup label="Public Transport Vehicles">
+                          {PUBLIC_TRANSPORT_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                        </optgroup>
+                        <optgroup label="Commercial / Cargo">
+                          {CARGO_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                        </optgroup>
+                        <option value="OTHER">Other (Add Custom Type)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-300">Vendor Code</label>
+                      <select
+                        value={editFormData.vendor_code || ''}
+                        onChange={(e) => setEditFormData({ ...editFormData, vendor_code: e.target.value })}
+                        className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
+                      >
+                        <option value="">Self Owned (No Vendor)</option>
+                        {vendors.map((v) => (
+                          <option key={v.id} value={v.vendor_code || ''}>{v.vendor_code ? `${v.vendor_code} — ${v.name}` : v.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  {editFormData.vehicle_type === 'OTHER' && (
+                    <div>
+                      <label className="block text-xs font-medium text-slate-300">Custom Vehicle Type *</label>
+                      <input
+                        type="text"
+                        required
+                        value={editFormData.custom_vehicle_type || ''}
+                        onChange={(e) => setEditFormData({ ...editFormData, custom_vehicle_type: e.target.value })}
+                        placeholder="e.g. Sleeper Coach, Electric Van"
+                        className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
+                      />
+                    </div>
+                  )}
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-300">Make</label>
+                      <input type="text" value={editFormData.make} onChange={(e) => setEditFormData({ ...editFormData, make: e.target.value })} placeholder="Maruti Suzuki" className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-300">Model</label>
+                      <input type="text" value={editFormData.model} onChange={(e) => setEditFormData({ ...editFormData, model: e.target.value })} placeholder="Dzire Tour S" className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-300">Year</label>
+                      <input type="number" min={1970} max={2050} value={editFormData.year || ''} onChange={(e) => setEditFormData({ ...editFormData, year: e.target.value ? Number(e.target.value) : undefined })} placeholder="2023" className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-300">Fuel Type</label>
+                      <select value={editFormData.fuel_type} onChange={(e) => setEditFormData({ ...editFormData, fuel_type: e.target.value as any })} className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none">
+                        <option value="DIESEL">Diesel</option>
+                        <option value="CNG">CNG</option>
+                        <option value="ELECTRIC">Electric</option>
+                        <option value="PETROL">Petrol</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-300">Capacity (Seats / KG)</label>
+                      <input type="number" value={editFormData.payload_capacity_kg} onChange={(e) => setEditFormData({ ...editFormData, payload_capacity_kg: e.target.value })} placeholder="4" className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-300">Odometer (KM)</label>
+                      <input type="number" value={editFormData.odometer_km} onChange={(e) => setEditFormData({ ...editFormData, odometer_km: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-300">FASTag ID</label>
+                      <input type="text" value={editFormData.fastag_id} onChange={(e) => setEditFormData({ ...editFormData, fastag_id: e.target.value.toUpperCase() })} className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white font-mono text-xs focus:border-navy-500 focus:outline-none" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-300">GPS Device IMEI / ID</label>
+                      <input type="text" value={editFormData.gps_device_id} onChange={(e) => setEditFormData({ ...editFormData, gps_device_id: e.target.value.toUpperCase() })} className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white font-mono text-xs focus:border-navy-500 focus:outline-none" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-300">Status</label>
+                    <select value={editFormData.status || profileVehicle.status} onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value as Vehicle['status'] })} className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none">
+                      <option value="AVAILABLE">AVAILABLE</option>
+                      <option value="ON_DUTY">ON_DUTY</option>
+                      <option value="MAINTENANCE">MAINTENANCE</option>
+                      <option value="DECOMMISSIONED">DECOMMISSIONED</option>
+                    </select>
+                  </div>
+                  {editError && (
+                    <p className="flex items-center gap-1 text-xs text-red-400">
+                      <AlertCircle className="h-3.5 w-3.5" /> {editError}
+                    </p>
+                  )}
+                  <div className="flex justify-end gap-3 pt-3 border-t border-slate-800">
+                    <button type="button" onClick={() => { setIsEditingVehicle(false); setEditError(''); }} className="rounded-lg px-4 py-2 text-sm text-slate-400 hover:text-white">Cancel</button>
+                    <button type="submit" disabled={updateMutation.isPending} className="inline-flex items-center gap-2 rounded-lg bg-navy-600 px-5 py-2 text-sm font-semibold text-white hover:bg-navy-600 disabled:opacity-50 transition">
+                      {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                    {/* Left card: Vehicle Info */}
+                    <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4 space-y-2.5">
+                      <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">Vehicle Info</h3>
+                      <div>
+                        <div className="text-[11px] text-slate-500">Type</div>
+                        <div className="text-white">{profileVehicle.custom_vehicle_type || profileVehicle.vehicle_type.replace(/_/g, ' ')}</div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <div className="text-[11px] text-slate-500">Make</div>
+                          <div className="text-white">{profileVehicle.make || '—'}</div>
+                        </div>
+                        <div>
+                          <div className="text-[11px] text-slate-500">Model</div>
+                          <div className="text-white">{profileVehicle.model || '—'}</div>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <div className="text-[11px] text-slate-500">Year</div>
+                          <div className="text-white">{profileVehicle.year || '—'}</div>
+                        </div>
+                        <div>
+                          <div className="text-[11px] text-slate-500">Fuel</div>
+                          <div className="text-white">{profileVehicle.fuel_type}</div>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <div className="text-[11px] text-slate-500">Capacity</div>
+                          <div className="text-white font-mono">{profileVehicle.payload_capacity_kg || '—'}</div>
+                        </div>
+                        <div>
+                          <div className="text-[11px] text-slate-500">Odometer</div>
+                          <div className="text-white font-mono">{Number(profileVehicle.odometer_km).toLocaleString('en-IN')} KM</div>
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[11px] text-slate-500">Ownership</div>
+                        <div className="text-white">{profileVehicle.ownership_type}</div>
+                      </div>
+                    </div>
+
+                    {/* Right card: Vendor & Telematics */}
+                    <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4 space-y-2.5">
+                      <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">Vendor & Telematics</h3>
+                      {profileVehicle.vendor_code ? (
+                        <div className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-2.5 flex items-center gap-3">
+                          <Building2 className="h-4 w-4 text-silver-300 shrink-0" />
+                          <div>
+                            <div className="text-[10px] text-slate-500 font-mono">{profileVehicle.vendor_code}</div>
+                            <div className="font-semibold text-white text-sm">{profileVehicle.vendor_name || '—'}</div>
+                            <div className="text-[11px] text-slate-400">PAN: {profileVehicle.vendor_pan || 'Not provided'}</div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-xs text-slate-500">Self Owned (No Vendor)</div>
+                      )}
+                      <div>
+                        <div className="text-[11px] text-slate-500">GPS Device ID</div>
+                        <div className="text-white font-mono flex items-center gap-1.5">
+                          <Navigation className="h-3 w-3 text-navy-300" />
+                          {profileVehicle.gps_device_id || 'Not fitted'}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[11px] text-slate-500">FASTag ID</div>
+                        <div className="text-white font-mono">{profileVehicle.fastag_id || '—'}</div>
+                      </div>
+                      <div>
+                        <div className="text-[11px] text-slate-500">Added On</div>
+                        <div className="text-xs text-slate-300">{new Date(profileVehicle.created_at).toLocaleDateString('en-IN')}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-3 pt-3 border-t border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => startEdit(profileVehicle)}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-200 hover:bg-slate-700 transition"
+                    >
+                      <Pencil className="h-4 w-4 text-silver-300" />
+                      Edit Details
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setProfileVehicle(null)}
+                      className="rounded-lg bg-navy-600 px-5 py-2 text-sm font-semibold text-white hover:bg-navy-600 transition"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </>
+              )
+            ) : (
+              <div className="space-y-4">
+                <div className="dark">
+                  <EntityComplianceManager entityType="VEHICLE" entityId={profileVehicle.id} />
+                </div>
+                <div className="flex justify-end pt-3 border-t border-slate-800">
+                  <button type="button" onClick={() => setProfileVehicle(null)} className="rounded-lg bg-navy-600 px-5 py-2 text-sm font-semibold text-white hover:bg-navy-600 transition">
+                    Close
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
