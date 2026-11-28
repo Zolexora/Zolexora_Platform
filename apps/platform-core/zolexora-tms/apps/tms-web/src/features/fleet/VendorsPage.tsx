@@ -9,14 +9,16 @@ import { EntityComplianceManager } from '../compliance/EntityComplianceManager';
 
 // Display headers used in the downloaded CSV template
 const TEMPLATE_HEADERS = [
-  'Vendor / Supplier Name', 'Vendor Type', 'Contact Person', 'Email', 'Phone',
+  'Vendor / Supplier Legal Name', 'Vendor Type', 'Contact Person', 'Email', 'Phone',
   'Address', 'GSTIN / Aadhaar No', 'PAN', 'Bank Account Name', 'Bank Account Number',
   'Bank IFSC', 'Bank Name',
 ];
 
 // Map friendly display headers → internal field keys (case-insensitive)
 const HEADER_ALIASES: Record<string, string> = {
+  'vendor / supplier legal name': 'name',
   'vendor / supplier name': 'name',
+  'vendor/supplier legal name': 'name',
   'vendor/supplier name': 'name',
   'vendor type': 'vendor_type',
   'contact person': 'contact_person',
@@ -349,7 +351,7 @@ export function VendorsPage() {
 
             <form onSubmit={handleSubmit} className="space-y-4 text-sm">
               <div>
-                <label className="block text-xs font-medium text-slate-300">Legal Name *</label>
+                <label className="block text-xs font-medium text-slate-300">Vendor / Supplier Legal Name *</label>
                 <input
                   type="text"
                   required
