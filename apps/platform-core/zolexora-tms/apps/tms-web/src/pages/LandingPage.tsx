@@ -30,7 +30,7 @@ const PREVIEW_DATA: Record<
 > = {
   sp: {
     badge: 'Service Provider Workspace',
-    route: '/sp/dashboard',
+    route: '/dashboard',
     headline: 'Live Dispatch & Fleet Ledger',
     metrics: [
       { label: 'Active Duties', value: '42' },
@@ -47,7 +47,7 @@ const PREVIEW_DATA: Record<
   },
   client: {
     badge: 'Client Portal Workspace',
-    route: '/client/dashboard',
+    route: '/dashboard',
     headline: 'Transport Requests & Invoices',
     metrics: [
       { label: 'Open Requests', value: '14' },

@@ -237,10 +237,10 @@ export function TopRightProfileMenu({
 }
 
 export const SP_ADMIN_MENU_ITEMS: ProfileMenuItem[] = [
-  { label: 'Workspace & RBAC', href: '/sp/settings', icon: Settings },
-  { label: 'Roles & Permissions', href: '/sp/settings/roles', icon: Shield },
-  { label: 'Members & Access', href: '/sp/settings/members', icon: Users },
-  { label: 'Operating Units', href: '/sp/settings/operating-units', icon: Building2 },
+  { label: 'Workspace & RBAC', href: '/settings', icon: Settings },
+  { label: 'Roles & Permissions', href: '/settings/roles', icon: Shield },
+  { label: 'Members & Access', href: '/settings/members', icon: Users },
+  { label: 'Operating Units', href: '/settings/operating-units', icon: Building2 },
 ];
 
 export const CLIENT_ADMIN_MENU_ITEMS: ProfileMenuItem[] = [

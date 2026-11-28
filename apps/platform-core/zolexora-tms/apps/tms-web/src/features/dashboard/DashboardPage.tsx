@@ -122,7 +122,7 @@ export function DashboardPage() {
               )}
               {unassignedDuties.length > 0 && (
                 <Link
-                  to="/sp/duties"
+                  to="/duties"
                   className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 px-3 py-1 text-xs font-semibold text-amber-300 border border-amber-500/30 hover:bg-amber-500/25 transition"
                 >
                   <Clock className="h-3 w-3" />
@@ -140,14 +140,14 @@ export function DashboardPage() {
 
           <div className="flex flex-wrap items-center gap-3">
             <Link
-              to="/sp/bookings"
+              to="/bookings"
               className="inline-flex items-center gap-2 rounded-xl bg-navy-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-navy-800/30 hover:bg-navy-500 transition"
             >
               <Plus className="h-4 w-4" />
               New Booking
             </Link>
             <Link
-              to="/sp/dispatch"
+              to="/dispatch"
               className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800/80 px-4 py-2.5 text-sm font-semibold text-slate-200 hover:bg-slate-700 transition"
             >
               <Radio className="h-4 w-4 text-emerald-400" />
@@ -160,7 +160,7 @@ export function DashboardPage() {
       {/* Live KPI Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Link
-          to="/sp/duties"
+          to="/duties"
           className="group rounded-xl border border-slate-800 bg-slate-900/60 p-5 shadow-sm hover:border-slate-700 transition"
         >
           <div className="flex items-center justify-between">
@@ -182,7 +182,7 @@ export function DashboardPage() {
         </Link>
 
         <Link
-          to="/sp/dispatch"
+          to="/dispatch"
           className="group rounded-xl border border-slate-800 bg-slate-900/60 p-5 shadow-sm hover:border-slate-700 transition"
         >
           <div className="flex items-center justify-between">
@@ -202,7 +202,7 @@ export function DashboardPage() {
         </Link>
 
         <Link
-          to="/sp/compliance/vehicles"
+          to="/compliance/vehicles"
           className="group rounded-xl border border-slate-800 bg-slate-900/60 p-5 shadow-sm hover:border-slate-700 transition"
         >
           <div className="flex items-center justify-between">
@@ -222,7 +222,7 @@ export function DashboardPage() {
         </Link>
 
         <Link
-          to="/sp/compliance/drivers"
+          to="/compliance/drivers"
           className="group rounded-xl border border-slate-800 bg-slate-900/60 p-5 shadow-sm hover:border-slate-700 transition"
         >
           <div className="flex items-center justify-between">
@@ -254,7 +254,7 @@ export function DashboardPage() {
               </p>
             </div>
             <Link
-              to="/sp/duties"
+              to="/duties"
               className="inline-flex items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-slate-800 hover:text-white transition"
             >
               Manage Duties
@@ -264,7 +264,7 @@ export function DashboardPage() {
 
           {pendingRequests.length > 0 && (
             <Link
-              to="/sp/bookings"
+              to="/bookings"
               className="flex items-center justify-between rounded-xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-xs text-amber-200 hover:bg-amber-500/15 transition"
             >
               <div className="flex items-center gap-2">
@@ -355,7 +355,7 @@ export function DashboardPage() {
             <h2 className="text-lg font-bold text-white">Operations Snapshot</h2>
             <div className="space-y-3 text-sm">
               <Link
-                to="/sp/compliance/customers"
+                to="/compliance/customers"
                 className="flex items-center justify-between rounded-xl border border-slate-800/80 bg-slate-950/60 px-3.5 py-2.5 hover:border-slate-700 transition"
               >
                 <span className="flex items-center gap-2 text-slate-300">
@@ -365,7 +365,7 @@ export function DashboardPage() {
                 <span className="font-mono font-semibold text-white">{customers.length}</span>
               </Link>
               <Link
-                to="/sp/bookings"
+                to="/bookings"
                 className="flex items-center justify-between rounded-xl border border-slate-800/80 bg-slate-950/60 px-3.5 py-2.5 hover:border-slate-700 transition"
               >
                 <span className="flex items-center gap-2 text-slate-300">
@@ -375,7 +375,7 @@ export function DashboardPage() {
                 <span className="font-mono font-semibold text-white">{confirmedBookings}</span>
               </Link>
               <Link
-                to="/sp/bookings"
+                to="/bookings"
                 className="flex items-center justify-between rounded-xl border border-slate-800/80 bg-slate-950/60 px-3.5 py-2.5 hover:border-slate-700 transition"
               >
                 <span className="flex items-center gap-2 text-slate-300">

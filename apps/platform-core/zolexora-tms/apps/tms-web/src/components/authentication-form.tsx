@@ -380,7 +380,7 @@ function WorkspaceSetup() {
             });
             localStorage.setItem('zolexora_active_org_id', created.organisation.id);
             await queryClient.invalidateQueries({ queryKey: ['auth-bootstrap'] });
-            navigate(created.organisation.workspace_type === 'CLIENT' ? '/client/dashboard' : '/sp/dashboard', { replace: true });
+            navigate('/dashboard', { replace: true });
           });
         }}
       >
@@ -546,7 +546,7 @@ export function AuthenticationForm() {
 
   useEffect(() => {
     if (!isLoading && businessSession && authMe?.organisation_id) {
-      navigate(authMe.workspace_type === 'CLIENT' ? '/client/dashboard' : '/sp/dashboard', { replace: true });
+      navigate('/dashboard', { replace: true });
     }
   }, [businessSession, authMe, isLoading, navigate]);
 

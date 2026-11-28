@@ -28,63 +28,63 @@ const navigation = [
   {
     section: 'Overview',
     items: [
-      { name: 'Dashboard', href: '/sp/dashboard', icon: LayoutDashboard },
+      { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     ],
   },
   {
     section: 'Operations',
     items: [
-      { name: 'Bookings', href: '/sp/bookings', icon: CalendarCheck },
-      { name: 'Shift Rosters', href: '/sp/rosters', icon: CalendarClock },
-      { name: 'Duties', href: '/sp/duties', icon: ClipboardList },
-      { name: 'Dispatch Board', href: '/sp/dispatch', icon: Radio },
-      { name: 'SLA & Safety Audit', href: '/sp/reports/sla-safety', icon: Shield },
+      { name: 'Bookings', href: '/bookings', icon: CalendarCheck },
+      { name: 'Shift Rosters', href: '/rosters', icon: CalendarClock },
+      { name: 'Duties', href: '/duties', icon: ClipboardList },
+      { name: 'Dispatch Board', href: '/dispatch', icon: Radio },
+      { name: 'SLA & Safety Audit', href: '/reports/sla-safety', icon: Shield },
     ],
   },
   {
     section: 'Compliance & Fleet',
     items: [
-      { name: 'Compliance & Rules', href: '/sp/compliance', icon: Shield },
-      { name: 'Vehicles', href: '/sp/compliance/vehicles', icon: Truck },
-      { name: 'Drivers', href: '/sp/compliance/drivers', icon: Users },
-      { name: 'Clients', href: '/sp/compliance/customers', icon: Building2 },
-      { name: 'Vendors', href: '/sp/compliance/vendors', icon: Building2 },
+      { name: 'Compliance & Rules', href: '/compliance', icon: Shield },
+      { name: 'Vehicles', href: '/compliance/vehicles', icon: Truck },
+      { name: 'Drivers', href: '/compliance/drivers', icon: Users },
+      { name: 'Clients', href: '/compliance/customers', icon: Building2 },
+      { name: 'Vendors', href: '/compliance/vendors', icon: Building2 },
     ],
   },
   {
     section: 'Billing & Receivables',
     items: [
-      { name: 'Customer Rate Cards', href: '/sp/rate-cards/customers', icon: FileText },
-      { name: 'Billing', href: '/sp/billing', icon: FileText },
-      { name: 'Invoices', href: '/sp/invoices', icon: Receipt },
-      { name: 'Payments', href: '/sp/payments', icon: CreditCard },
-      { name: 'Receivables', href: '/sp/receivables', icon: CreditCard },
+      { name: 'Customer Rate Cards', href: '/rate-cards/customers', icon: FileText },
+      { name: 'Billing', href: '/billing', icon: FileText },
+      { name: 'Invoices', href: '/invoices', icon: Receipt },
+      { name: 'Payments', href: '/payments', icon: CreditCard },
+      { name: 'Receivables', href: '/receivables', icon: CreditCard },
     ],
   },
   {
     section: 'Vendor Payments',
     items: [
-      { name: 'Vendor Rate Cards', href: '/sp/rate-cards/vendors', icon: FileText },
-      { name: 'Payables', href: '/sp/payables', icon: Receipt },
-      { name: 'Vendor Settlements', href: '/sp/vendor-settlements', icon: Receipt },
-      { name: 'Payment History', href: '/sp/vendor-payments', icon: CreditCard },
+      { name: 'Vendor Rate Cards', href: '/rate-cards/vendors', icon: FileText },
+      { name: 'Payables', href: '/payables', icon: Receipt },
+      { name: 'Vendor Settlements', href: '/vendor-settlements', icon: Receipt },
+      { name: 'Payment History', href: '/vendor-payments', icon: CreditCard },
     ],
   },
   {
     section: 'Finances',
     items: [
-      { name: 'Expenses', href: '/sp/expenses', icon: Receipt },
-      { name: 'Profit & Loss', href: '/sp/reports/pnl', icon: FileText },
-      { name: 'Financial Periods', href: '/sp/financial-periods', icon: FileText },
+      { name: 'Expenses', href: '/expenses', icon: Receipt },
+      { name: 'Profit & Loss', href: '/reports/pnl', icon: FileText },
+      { name: 'Financial Periods', href: '/financial-periods', icon: FileText },
     ],
   },
   {
     section: 'Client Portal',
     items: [
-      { name: 'Book Transport', href: '/sp/client/bookings', icon: CalendarCheck },
-      { name: 'Trip Tracking', href: '/sp/client/duties', icon: Radio },
-      { name: 'Client Invoices', href: '/sp/client/invoices', icon: Receipt },
-      { name: 'Client Payments', href: '/sp/client/payments', icon: CreditCard },
+      { name: 'Book Transport', href: '/client-bookings', icon: CalendarCheck },
+      { name: 'Trip Tracking', href: '/client-duties', icon: Radio },
+      { name: 'Client Invoices', href: '/client-invoices', icon: Receipt },
+      { name: 'Client Payments', href: '/client-payments', icon: CreditCard },
     ],
   },
 ];
@@ -223,7 +223,7 @@ export function DashboardLayout() {
               roleLabel={authMe?.role_code || 'Member'}
               isCommander={isCommander}
               personalSignedIn={personalSignedIn}
-              profileHref="/sp/profile"
+              profileHref="/profile"
               adminItems={SP_ADMIN_MENU_ITEMS}
               onSwitchBusiness={handleSwitchBusiness}
               onSignOut={handleSignOut}
