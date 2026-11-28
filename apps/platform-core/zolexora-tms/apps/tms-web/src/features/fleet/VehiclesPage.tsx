@@ -132,6 +132,38 @@ function downloadCSVTemplate(sampleVendorCode?: string) {
   URL.revokeObjectURL(a.href);
 }
 
+const EXPORT_HEADERS = [
+  'Registration Number', 'Vehicle Type', 'Custom Type', 'Ownership', 'Status',
+  'Vendor Code', 'Vendor Name', 'Vendor PAN',
+  'Make', 'Model', 'Year', 'Fuel Type', 'Capacity', 'Odometer (KM)',
+  'FASTag ID', 'GPS Device ID', 'Created At',
+];
+
+function escapeCsvField(val: string | number | undefined): string {
+  const s = val !== undefined && val !== null ? String(val) : '';
+  if (s.includes(',') || s.includes('"') || s.includes('\n')) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+function downloadVehicleCSV(rows: Vehicle[], filename = 'vehicles_export.csv') {
+  const lines = [EXPORT_HEADERS.join(',')];
+  for (const v of rows) {
+    lines.push([
+      v.registration_number, v.vehicle_type, v.custom_vehicle_type, v.ownership_type, v.status,
+      v.vendor_code, v.vendor_name, v.vendor_pan,
+      v.make, v.model, v.year, v.fuel_type, v.payload_capacity_kg, v.odometer_km,
+      v.fastag_id, v.gps_device_id,
+      new Date(v.created_at).toLocaleDateString('en-IN'),
+    ].map(escapeCsvField).join(','));
+  }
+  const url = URL.createObjectURL(new Blob([lines.join('\n')], { type: 'text/csv' }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 const EMPTY_FORM: VehicleCreate = {
   registration_number: '',
   vehicle_type: 'SEDAN',
@@ -365,6 +397,15 @@ export function VehiclesPage() {
         </div>
         <div className="flex gap-2">
           <button
+            onClick={() => vehicles && vehicles.length > 0 && downloadVehicleCSV(vehicles)}
+            disabled={!vehicles || vehicles.length === 0}
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-200 hover:bg-slate-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
+            title="Export all vehicles as CSV"
+          >
+            <Download className="h-4 w-4" />
+            Export All
+          </button>
+          <button
             onClick={() => setIsBulkOpen(true)}
             className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-200 hover:bg-slate-700 transition"
           >
@@ -459,14 +500,23 @@ export function VehiclesPage() {
                     </span>
                   </td>
                   <td className="px-5 py-4">
-                    <button
-                      onClick={() => openProfile(v)}
-                      className="inline-flex items-center gap-1 rounded bg-slate-800 px-2 py-1 text-xs font-medium text-slate-300 hover:bg-slate-700 hover:text-white"
-                      title="View Details & Compliance"
-                    >
-                      <Eye className="h-3.5 w-3.5 text-silver-300" />
-                      View
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => openProfile(v)}
+                        className="inline-flex items-center gap-1 rounded bg-slate-800 px-2 py-1 text-xs font-medium text-slate-300 hover:bg-slate-700 hover:text-white"
+                        title="View Details & Compliance"
+                      >
+                        <Eye className="h-3.5 w-3.5 text-silver-300" />
+                        View
+                      </button>
+                      <button
+                        onClick={() => downloadVehicleCSV([v], `vehicle_${v.registration_number}.csv`)}
+                        className="rounded bg-slate-800 p-1.5 text-slate-400 hover:bg-slate-700 hover:text-white"
+                        title="Download vehicle details as CSV"
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -888,6 +938,15 @@ export function VehiclesPage() {
                   </div>
 
                   <div className="flex justify-end gap-3 pt-3 border-t border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => downloadVehicleCSV([profileVehicle], `vehicle_${profileVehicle.registration_number}.csv`)}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-200 hover:bg-slate-700 transition"
+                      title="Download this vehicle's details as CSV"
+                    >
+                      <Download className="h-4 w-4 text-silver-300" />
+                      Download
+                    </button>
                     <button
                       type="button"
                       onClick={() => startEdit(profileVehicle)}
