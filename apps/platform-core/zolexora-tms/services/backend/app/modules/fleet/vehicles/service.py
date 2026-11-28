@@ -47,6 +47,40 @@ async def _hydrate_vehicles(
     return out
 
 
+async def _check_unique_fields(
+    org_id: uuid.UUID,
+    fastag_id: Optional[str],
+    gps_device_id: Optional[str],
+    db: AsyncSession,
+    exclude_vehicle_id: Optional[uuid.UUID] = None,
+) -> None:
+    """Raise 409 if fastag_id or gps_device_id is already taken (globally non-null)."""
+    if fastag_id:
+        stmt = select(Vehicle.id, Vehicle.registration_number).where(
+            Vehicle.fastag_id == fastag_id,
+        )
+        if exclude_vehicle_id:
+            stmt = stmt.where(Vehicle.id != exclude_vehicle_id)
+        row = (await db.execute(stmt)).first()
+        if row:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"FASTag ID '{fastag_id}' is already assigned to vehicle {row.registration_number}",
+            )
+    if gps_device_id:
+        stmt = select(Vehicle.id, Vehicle.registration_number).where(
+            Vehicle.gps_device_id == gps_device_id,
+        )
+        if exclude_vehicle_id:
+            stmt = stmt.where(Vehicle.id != exclude_vehicle_id)
+        row = (await db.execute(stmt)).first()
+        if row:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"GPS Device ID '{gps_device_id}' is already assigned to vehicle {row.registration_number}",
+            )
+
+
 async def _resolve_vendor_id(
     org_id: uuid.UUID,
     vendor_id: Optional[uuid.UUID],
@@ -94,6 +128,10 @@ async def create_vehicle(
             detail=f"Vehicle '{reg_clean}' is already registered in your organisation",
         )
 
+    fastag_clean = req.fastag_id.strip().upper() if req.fastag_id else None
+    gps_clean = req.gps_device_id.strip().upper() if req.gps_device_id else None
+    await _check_unique_fields(org_id, fastag_clean, gps_clean, db)
+
     resolved_vendor_id = await _resolve_vendor_id(org_id, req.vendor_id, req.vendor_code, db)
     ownership = req.ownership_type or (VehicleOwnershipType.ATTACHED if resolved_vendor_id else VehicleOwnershipType.OWNED)
     if resolved_vendor_id and req.ownership_type == VehicleOwnershipType.OWNED:
@@ -114,8 +152,8 @@ async def create_vehicle(
         payload_capacity_kg=req.payload_capacity_kg,
         volume_cft=req.volume_cft,
         odometer_km=req.odometer_km or Decimal("0.0"),
-        fastag_id=req.fastag_id.strip() if req.fastag_id else None,
-        gps_device_id=req.gps_device_id.strip() if req.gps_device_id else None,
+        fastag_id=fastag_clean,
+        gps_device_id=gps_clean,
         rc_number=req.rc_number.strip().upper() if req.rc_number else None,
         rc_expiry=req.rc_expiry,
         fitness_expiry=req.fitness_expiry,
@@ -159,6 +197,20 @@ async def bulk_create_vehicles(
     )
     res = await db.execute(existing_regs_stmt)
     existing_regs = set(res.scalars().all())
+
+    # Pre-fetch existing FASTag and GPS IDs (globally unique)
+    existing_fastags_res = await db.execute(
+        select(Vehicle.fastag_id).where(Vehicle.fastag_id.is_not(None))
+    )
+    existing_fastags: set[str] = set(existing_fastags_res.scalars().all())
+
+    existing_gps_res = await db.execute(
+        select(Vehicle.gps_device_id).where(Vehicle.gps_device_id.is_not(None))
+    )
+    existing_gps: set[str] = set(existing_gps_res.scalars().all())
+
+    seen_fastags_in_batch: set[str] = set()
+    seen_gps_in_batch: set[str] = set()
 
     vendor_res = await db.execute(
         select(Vendor.vendor_code, Vendor.id).where(
@@ -219,6 +271,26 @@ async def bulk_create_vehicles(
                 except ValueError:
                     ftype = FuelType.DIESEL
 
+            fastag_clean = item.fastag_id.strip().upper() if item.fastag_id else None
+            gps_clean = item.gps_device_id.strip().upper() if item.gps_device_id else None
+
+            # Unique FASTag check
+            if fastag_clean:
+                if fastag_clean in existing_fastags or fastag_clean in seen_fastags_in_batch:
+                    errors.append(
+                        {"row": row_num, "registration_number": reg_clean,
+                         "error": f"FASTag ID '{fastag_clean}' is already assigned to another vehicle"}
+                    )
+                    continue
+            # Unique GPS check
+            if gps_clean:
+                if gps_clean in existing_gps or gps_clean in seen_gps_in_batch:
+                    errors.append(
+                        {"row": row_num, "registration_number": reg_clean,
+                         "error": f"GPS Device ID '{gps_clean}' is already assigned to another vehicle"}
+                    )
+                    continue
+
             vehicle = Vehicle(
                 id=uuid.uuid4(),
                 organisation_id=org_id,
@@ -233,13 +305,17 @@ async def bulk_create_vehicles(
                 fuel_type=ftype,
                 payload_capacity_kg=item.payload_capacity_kg,
                 odometer_km=item.odometer_km or Decimal("0.0"),
-                fastag_id=item.fastag_id.strip().upper() if item.fastag_id else None,
-                gps_device_id=item.gps_device_id.strip().upper() if item.gps_device_id else None,
+                fastag_id=fastag_clean,
+                gps_device_id=gps_clean,
                 status=VehicleOperationalStatus.AVAILABLE,
                 documents={},
             )
             db.add(vehicle)
             seen_in_batch.add(reg_clean)
+            if fastag_clean:
+                seen_fastags_in_batch.add(fastag_clean)
+            if gps_clean:
+                seen_gps_in_batch.add(gps_clean)
             succeeded += 1
         except Exception as e:
             reg = getattr(item, "registration_number", f"row-{row_num}")
@@ -353,6 +429,17 @@ async def update_vehicle(
                 detail=f"Vehicle '{reg_clean}' is already registered in your organisation",
             )
         vehicle.registration_number = reg_clean
+
+    # Unique FASTag / GPS check (exclude self)
+    new_fastag = update_data.get("fastag_id")
+    new_gps = update_data.get("gps_device_id")
+    if new_fastag is not None:
+        new_fastag = new_fastag.strip().upper() if new_fastag else None
+        update_data["fastag_id"] = new_fastag
+    if new_gps is not None:
+        new_gps = new_gps.strip().upper() if new_gps else None
+        update_data["gps_device_id"] = new_gps
+    await _check_unique_fields(org_id, new_fastag or None, new_gps or None, db, exclude_vehicle_id=vehicle_id)
 
     if "vendor_code" in update_data:
         vcode = update_data.pop("vendor_code")
