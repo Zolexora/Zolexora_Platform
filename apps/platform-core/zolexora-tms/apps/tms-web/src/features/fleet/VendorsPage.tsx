@@ -93,6 +93,21 @@ function downloadTemplate() {
 
 // ── Main component ───────────────────────────────────────────────────────────
 
+const EMPTY_VENDOR_FORM: VendorCreate = {
+  name: '',
+  vendor_type: 'FLEET_SUPPLIER',
+  contact_person: '',
+  email: '',
+  phone: '',
+  address: '',
+  gstin: '',
+  pan: '',
+  bank_account_name: '',
+  bank_account_number: '',
+  bank_ifsc: '',
+  bank_name: '',
+};
+
 export function VendorsPage() {
   const queryClient = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -108,16 +123,7 @@ export function VendorsPage() {
   const [bulkParseError, setBulkParseError] = useState('');
   const [bulkResult, setBulkResult] = useState<VendorBulkCreateResponse | null>(null);
 
-  const [formData, setFormData] = useState<VendorCreate>({
-    name: '',
-    vendor_type: 'FLEET_SUPPLIER',
-    contact_person: '',
-    email: '',
-    phone: '',
-    address: '',
-    gstin: '',
-    pan: '',
-  });
+  const [formData, setFormData] = useState<VendorCreate>(EMPTY_VENDOR_FORM);
 
   const { data: vendors, isLoading } = useQuery({
     queryKey: ['vendors', search],
@@ -136,16 +142,7 @@ export function VendorsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vendors'] });
       setIsModalOpen(false);
-      setFormData({
-        name: '',
-        vendor_type: 'FLEET_SUPPLIER',
-        contact_person: '',
-        email: '',
-        phone: '',
-        address: '',
-        gstin: '',
-        pan: '',
-      });
+      setFormData(EMPTY_VENDOR_FORM);
       setFormError('');
     },
     onError: (err: any) => {
@@ -173,8 +170,9 @@ export function VendorsPage() {
     }
     createMutation.mutate({
       ...formData,
-      gstin: formData.gstin?.toUpperCase() || '',
-      pan: formData.pan?.toUpperCase() || '',
+      gstin: formData.gstin?.toUpperCase() || undefined,
+      pan: formData.pan?.toUpperCase() || undefined,
+      bank_ifsc: formData.bank_ifsc?.toUpperCase() || undefined,
     });
   };
 
@@ -391,12 +389,35 @@ export function VendorsPage() {
                   />
                 </div>
                 <div>
+                  <label className="block text-xs font-medium text-slate-300">Email</label>
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="rajesh@wfl.in"
+                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
                   <label className="block text-xs font-medium text-slate-300">Phone</label>
                   <input
                     type="text"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     placeholder="+919811223344"
+                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-300">Address</label>
+                  <input
+                    type="text"
+                    value={formData.address}
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    placeholder="Mumbai"
                     className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
                   />
                 </div>
@@ -415,13 +436,13 @@ export function VendorsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-300">Bank IFSC</label>
+                  <label className="block text-xs font-medium text-slate-300">PAN</label>
                   <input
                     type="text"
-                    value={formData.bank_ifsc}
-                    onChange={(e) => setFormData({ ...formData, bank_ifsc: e.target.value.toUpperCase() })}
-                    placeholder="HDFC0001234"
-                    maxLength={11}
+                    value={formData.pan}
+                    onChange={(e) => setFormData({ ...formData, pan: e.target.value.toUpperCase() })}
+                    placeholder="AAAPA1234A"
+                    maxLength={10}
                     className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white font-mono text-xs focus:border-navy-500 focus:outline-none"
                   />
                 </div>
@@ -429,12 +450,36 @@ export function VendorsPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
+                  <label className="block text-xs font-medium text-slate-300">Bank Account Name</label>
+                  <input
+                    type="text"
+                    value={formData.bank_account_name}
+                    onChange={(e) => setFormData({ ...formData, bank_account_name: e.target.value })}
+                    placeholder="Western Fleet Logistics"
+                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
+                  />
+                </div>
+                <div>
                   <label className="block text-xs font-medium text-slate-300">Bank Account Number</label>
                   <input
                     type="text"
                     value={formData.bank_account_number}
                     onChange={(e) => setFormData({ ...formData, bank_account_number: e.target.value })}
                     placeholder="918273645019"
+                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white font-mono text-xs focus:border-navy-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-300">Bank IFSC</label>
+                  <input
+                    type="text"
+                    value={formData.bank_ifsc}
+                    onChange={(e) => setFormData({ ...formData, bank_ifsc: e.target.value.toUpperCase() })}
+                    placeholder="HDFC0001234"
+                    maxLength={11}
                     className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white font-mono text-xs focus:border-navy-500 focus:outline-none"
                   />
                 </div>
