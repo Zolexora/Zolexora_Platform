@@ -1,9 +1,12 @@
 """ETS / Fixed-Route Shift Roster management & automated daily duty generation."""
 from __future__ import annotations
 
+import csv
 import datetime
+import io
 import secrets
 import uuid
+from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -89,9 +92,58 @@ class GenerateDutiesResponse(BaseModel):
     duty_ids: List[uuid.UUID]
 
 
+class RosterCsvImportRequest(BaseModel):
+    customer_id: uuid.UUID
+    csv_text: str = Field(..., min_length=10)
+    default_booking_type: BookingType = Field(default=BookingType.ETS)
+    default_duration_minutes: int = Field(default=120, ge=15, le=720)
+    update_existing: bool = True
+
+
+class RosterCsvImportResponse(BaseModel):
+    created_rosters: int
+    updated_rosters: int
+    total_stops: int
+    roster_ids: List[uuid.UUID]
+
+
+_DAY_NAME_MAP = {
+    "mon": 0, "monday": 0, "0": 0,
+    "tue": 1, "tuesday": 1, "1": 1,
+    "wed": 2, "wednesday": 2, "2": 2,
+    "thu": 3, "thursday": 3, "3": 3,
+    "fri": 4, "friday": 4, "4": 4,
+    "sat": 5, "saturday": 5, "5": 5,
+    "sun": 6, "sunday": 6, "6": 6,
+}
+
+
+def _parse_weekdays(raw: str | None) -> List[int]:
+    if not raw or not raw.strip():
+        return [0, 1, 2, 3, 4]
+    days = []
+    for part in raw.replace("|", ",").replace(";", ",").replace(" ", ",").split(","):
+        key = part.strip().lower()
+        if key in _DAY_NAME_MAP:
+            days.append(_DAY_NAME_MAP[key])
+    return sorted(set(days)) or [0, 1, 2, 3, 4]
+
+
+def _parse_opt_float(raw: str | None) -> Optional[float]:
+    if raw is None or not str(raw).strip():
+        return None
+    try:
+        return float(str(raw).strip())
+    except ValueError:
+        return None
+
+
 def _is_night_shift(shift_time: str) -> bool:
-    hour = int(shift_time.split(":")[0])
-    return hour >= 20 or hour < 6
+    try:
+        hour = int(shift_time.split(":")[0])
+        return hour >= 20 or hour < 6
+    except (ValueError, IndexError):
+        return False
 
 
 @router.post("", response_model=ShiftRosterResponse, status_code=status.HTTP_201_CREATED)
@@ -227,6 +279,19 @@ async def generate_duties_from_roster(
 
         b_type = BookingType(roster.booking_type) if roster.booking_type in BookingType._value2member_map_ else BookingType.ETS
         pin = str(secrets.randbelow(9000) + 1000)
+        raw_stops = roster.stops if isinstance(roster.stops, list) else []
+        daily_stops: List[Dict[str, Any]] = []
+        for idx, st in enumerate(raw_stops, start=1):
+            stop_copy = dict(st)
+            stop_copy["seq"] = int(stop_copy.get("seq") or idx)
+            stop_copy["status"] = "PENDING"
+            if str(stop_copy.get("stop_type", "PICKUP")).upper() == "PICKUP" and not stop_copy.get("boarding_pin"):
+                stop_copy["boarding_pin"] = str(secrets.randbelow(9000) + 1000)
+            daily_stops.append(stop_copy)
+
+        pickup_stops_count = sum(1 for st in daily_stops if str(st.get("stop_type", "PICKUP")).upper() == "PICKUP")
+        pax_count = pickup_stops_count or len(daily_stops) or 1
+
         booking = Booking(
             id=uuid.uuid4(),
             booking_number=f"BK-{day.year}-{uuid.uuid4().hex[:8].upper()}",
@@ -246,9 +311,9 @@ async def generate_duties_from_roster(
                 "shift": roster.shift_label,
                 "route_code": roster.route_code,
                 "route_name": roster.route_name,
-                "count": len(roster.stops) if isinstance(roster.stops, list) and roster.stops else 1,
+                "count": pax_count,
             },
-            stops=roster.stops if isinstance(roster.stops, list) else [],
+            stops=daily_stops,
             boarding_pin=pin,
             escort_required=roster.escort_required,
             status=BookingStatus.CONFIRMED,
@@ -284,4 +349,155 @@ async def generate_duties_from_roster(
         created_count=len(created_ids),
         skipped_count=skipped,
         duty_ids=created_ids,
+    )
+
+
+@router.post("/import-csv", response_model=RosterCsvImportResponse, status_code=status.HTTP_200_OK)
+async def import_rosters_csv(
+    req: RosterCsvImportRequest,
+    ctx: OrgContext = Depends(get_org_context),
+):
+    """Import or update ShiftRosters + ordered employee stops from a CSV payload grouped by route_code."""
+    reader = csv.DictReader(io.StringIO(req.csv_text.strip()))
+    if not reader.fieldnames:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Empty or invalid CSV header")
+
+    grouped: Dict[str, List[Dict[str, str]]] = defaultdict(list)
+    for raw_row in reader:
+        row = {str(k).strip().lower(): (str(v).strip() if v is not None else "") for k, v in raw_row.items() if k}
+        rc = (row.get("route_code") or "").upper()
+        addr = row.get("address") or row.get("pickup_address") or ""
+        if not rc or len(addr) < 3:
+            continue
+        row["_resolved_address"] = addr
+        grouped[rc].append(row)
+
+    if not grouped:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No valid rows found (requires route_code and address columns)",
+        )
+
+    created_count = 0
+    updated_count = 0
+    total_stops = 0
+    roster_ids: List[uuid.UUID] = []
+
+    for route_code, rows in grouped.items():
+        first = rows[0]
+        shift_time = first.get("shift_time") or "09:00"
+        if len(shift_time) == 4 and ":" in shift_time:
+            shift_time = f"0{shift_time}"
+        shift_label = first.get("shift_label") or f"Shift {shift_time}"
+        route_name = first.get("route_name") or route_code
+        weekdays = _parse_weekdays(first.get("weekdays"))
+        b_type_raw = (first.get("booking_type") or req.default_booking_type.value).upper()
+        b_type = b_type_raw if b_type_raw in BookingType._value2member_map_ else req.default_booking_type.value
+
+        escort_raw = (first.get("escort_required") or "").lower()
+        escort = (
+            escort_raw in {"1", "true", "yes", "y"}
+            if escort_raw
+            else _is_night_shift(shift_time)
+        )
+
+        stops_models: List[BookingStop] = []
+        for idx, r in enumerate(rows, start=1):
+            s_type = (r.get("stop_type") or "PICKUP").upper()
+            if s_type not in {"PICKUP", "DROP"}:
+                s_type = "PICKUP"
+            stops_models.append(
+                BookingStop(
+                    seq=idx,
+                    stop_type=s_type,
+                    address=r["_resolved_address"],
+                    lat=_parse_opt_float(r.get("lat")),
+                    lng=_parse_opt_float(r.get("lng")),
+                    contact_name=r.get("employee_name") or r.get("contact_name") or None,
+                    contact_phone=r.get("phone") or r.get("contact_phone") or None,
+                    employee_id=r.get("employee_id") or None,
+                    boarding_pin=(r.get("boarding_pin") or None),
+                )
+            )
+        stops_json = [s.model_dump(mode="json") for s in stops_models]
+        total_stops += len(stops_json)
+
+        pickups = [s for s in stops_models if s.stop_type == "PICKUP"]
+        drops = [s for s in stops_models if s.stop_type == "DROP"]
+        first_pickup = pickups[0] if pickups else stops_models[0]
+        last_drop = drops[-1] if drops else None
+
+        pickup_address = first_pickup.address
+        pickup_lat = first_pickup.lat
+        pickup_lng = first_pickup.lng
+        drop_address = (first.get("drop_address") or (last_drop.address if last_drop else stops_models[-1].address))
+        drop_lat = last_drop.lat if last_drop else None
+        drop_lng = last_drop.lng if last_drop else None
+
+        existing = (
+            await ctx.db.execute(
+                select(ShiftRoster).where(
+                    ShiftRoster.organisation_id == ctx.organisation_id,
+                    ShiftRoster.route_code == route_code,
+                )
+            )
+        ).scalars().first()
+
+        if existing:
+            if not req.update_existing:
+                roster_ids.append(existing.id)
+                continue
+            existing.customer_id = req.customer_id
+            existing.route_name = route_name
+            existing.booking_type = b_type
+            existing.shift_label = shift_label
+            existing.shift_time = shift_time
+            existing.weekdays = weekdays
+            existing.pickup_address = pickup_address
+            existing.pickup_lat = pickup_lat
+            existing.pickup_lng = pickup_lng
+            existing.drop_address = drop_address
+            existing.drop_lat = drop_lat
+            existing.drop_lng = drop_lng
+            existing.stops = stops_json
+            existing.escort_required = escort
+            existing.active = True
+            updated_count += 1
+            roster_ids.append(existing.id)
+        else:
+            roster = ShiftRoster(
+                id=uuid.uuid4(),
+                organisation_id=ctx.organisation_id,
+                customer_id=req.customer_id,
+                route_code=route_code,
+                route_name=route_name,
+                booking_type=b_type,
+                shift_label=shift_label,
+                shift_time=shift_time,
+                duration_minutes=req.default_duration_minutes,
+                weekdays=weekdays,
+                pickup_address=pickup_address,
+                pickup_lat=pickup_lat,
+                pickup_lng=pickup_lng,
+                drop_address=drop_address,
+                drop_lat=drop_lat,
+                drop_lng=drop_lng,
+                stops=stops_json,
+                escort_required=escort,
+                active=True,
+            )
+            ctx.db.add(roster)
+            created_count += 1
+            roster_ids.append(roster.id)
+
+    record_audit(
+        ctx.db, ctx.organisation_id, ctx.user_id, "ROSTER_CSV_IMPORTED", "shift_roster", roster_ids[0],
+        {"created_rosters": created_count, "updated_rosters": updated_count, "total_stops": total_stops},
+    )
+    await ctx.db.commit()
+    return RosterCsvImportResponse(
+        created_rosters=created_count,
+        updated_rosters=updated_count,
+        total_stops=total_stops,
+        roster_ids=roster_ids,
     )

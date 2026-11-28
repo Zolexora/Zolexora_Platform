@@ -320,3 +320,28 @@ async def test_gap_features_end_to_end():
         confirmed_booking = conf_res.json()
         assert confirmed_booking["boarding_pin"] and len(confirmed_booking["boarding_pin"]) == 4
         assert confirmed_booking["escort_required"] is True
+
+        # Bulk CSV import of multi-stop ETS roster -> daily duty gets per-stop boarding PINs
+        csv_code = f"CSV-{uuid.uuid4().hex[:5].upper()}"
+        csv_text = (
+            "route_code,route_name,shift_label,shift_time,weekdays,stop_type,employee_name,employee_id,phone,address,lat,lng,drop_address\n"
+            f"{csv_code},Tech Park Shuttle,Night 22:30,22:30,\"0,1,2,3,4,5,6\",PICKUP,Asha,EMP01,+919800000001,Point A,12.91,77.61,Office Hub\n"
+            f"{csv_code},Tech Park Shuttle,Night 22:30,22:30,\"0,1,2,3,4,5,6\",PICKUP,Vikram,EMP02,+919800000002,Point B,12.92,77.62,Office Hub\n"
+            f"{csv_code},Tech Park Shuttle,Night 22:30,22:30,\"0,1,2,3,4,5,6\",DROP,Office Gate,,,Office Hub,12.95,77.65,Office Hub\n"
+        )
+        imp_res = await client.post(
+            "/api/v1/rosters/import-csv",
+            json={"customer_id": client_id, "csv_text": csv_text},
+            headers=headers,
+        )
+        assert imp_res.status_code == 200, imp_res.text
+        imp_data = imp_res.json()
+        assert imp_data["created_rosters"] == 1 and imp_data["total_stops"] == 3
+        csv_roster_id = imp_data["roster_ids"][0]
+        csv_gen = await client.post(f"/api/v1/rosters/{csv_roster_id}/generate-duties", json={"days_ahead": 1}, headers=headers)
+        assert csv_gen.status_code == 200 and csv_gen.json()["created_count"] == 1
+        csv_duty = (await client.get(f"/api/v1/duties/{csv_gen.json()['duty_ids'][0]}", headers=headers)).json()
+        assert len(csv_duty["booking"]["stops"]) == 3
+        assert csv_duty["booking"]["stops"][0]["boarding_pin"]
+        assert csv_duty["booking"]["stops"][1]["boarding_pin"]
+        assert csv_duty["booking"]["passenger_count"] == 2
