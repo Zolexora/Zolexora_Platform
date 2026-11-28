@@ -54,6 +54,6 @@ class Vendor(Base, TimestampMixin):
             "organisation_id",
             "gstin",
             unique=True,
-            postgresql_where=text("gstin IS NOT NULL"),
+            postgresql_where=text("gstin IS NOT NULL AND gstin <> ''"),
         ),
     )
