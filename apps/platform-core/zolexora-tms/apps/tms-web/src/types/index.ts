@@ -296,7 +296,11 @@ export type BookingRequestStatus = 'DRAFT' | 'REQUESTED' | 'CONFIRMED' | 'CANCEL
 export type BookingOperationalStatus = 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
 
 export type DutyLifecycleStatus =
+  | 'UNASSIGNED'
+  | 'ASSIGNED'
   | 'ALLOCATED'
+  | 'DRIVER_ACCEPTANCE_PENDING'
+  | 'ACCEPTED'
   | 'DISPATCHED'
   | 'ARRIVED_PICKUP'
   | 'IN_TRANSIT'
@@ -392,6 +396,56 @@ export interface BookingCreate {
   operational_instructions?: string;
 }
 
+export interface DutyBookingSummary {
+  id: string;
+  booking_number: string;
+  booking_type?: string;
+  service_type?: string;
+  customer_name?: string;
+  customer_phone?: string;
+  passenger_name?: string;
+  passenger_phone?: string;
+  passenger_count?: number;
+  shift_label?: string;
+  pickup_address: string;
+  drop_address: string;
+  pickup_datetime: string;
+  cargo_description?: string;
+  cargo_weight_kg?: number;
+  special_instructions?: string;
+  eway_bill_number?: string;
+  boarding_pin?: string;
+  escort_required?: boolean;
+  escort_guard_name?: string;
+}
+
+export interface DutyVehicleSummary {
+  id: string;
+  registration_number: string;
+  make?: string;
+  model?: string;
+  fuel_type?: string;
+  odometer_km?: number;
+}
+
+export interface DutyDriverSummary {
+  id: string;
+  full_name: string;
+  phone: string;
+}
+
+export interface DutyTripSummary {
+  id: string;
+  trip_number: string;
+  status: string;
+  start_odometer: number;
+  end_odometer?: number;
+  total_distance_km?: number;
+  start_timestamp?: string;
+  end_timestamp?: string;
+  share_token?: string;
+}
+
 export interface Duty {
   id: string;
   duty_number: string;
@@ -399,6 +453,9 @@ export interface Duty {
   booking_id: string;
   driver_id?: string;
   vehicle_id?: string;
+  supervisor_id?: string;
+  supervisor_name?: string;
+  supervisor_phone?: string;
   scheduled_start_time: string;
   scheduled_end_time: string;
   actual_start_time?: string;
@@ -407,6 +464,10 @@ export interface Duty {
   notes?: string;
   dispatched_at?: string;
   dispatched_by_user_id?: string;
+  booking?: DutyBookingSummary;
+  vehicle?: DutyVehicleSummary;
+  driver?: DutyDriverSummary;
+  trip?: DutyTripSummary;
   created_at: string;
   updated_at: string;
 }
@@ -417,12 +478,18 @@ export interface DutyCreate {
   scheduled_end_time: string;
   driver_id?: string;
   vehicle_id?: string;
+  supervisor_id?: string;
+  supervisor_name?: string;
+  supervisor_phone?: string;
   notes?: string;
 }
 
 export interface DutyAssignRequest {
   driver_id: string;
   vehicle_id: string;
+  supervisor_id?: string;
+  supervisor_name?: string;
+  supervisor_phone?: string;
 }
 
 export interface TripStartRequest {

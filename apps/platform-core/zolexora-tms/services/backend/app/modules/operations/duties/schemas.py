@@ -31,14 +31,23 @@ class DutyBase(BaseModel):
 class DutyCreate(DutyBase):
     driver_id: Optional[uuid.UUID] = None
     vehicle_id: Optional[uuid.UUID] = None
+    supervisor_id: Optional[uuid.UUID] = None
+    supervisor_name: Optional[str] = Field(None, max_length=160)
+    supervisor_phone: Optional[str] = Field(None, max_length=32)
 
 class DutyAssignRequest(BaseModel):
     driver_id: uuid.UUID
     vehicle_id: uuid.UUID
+    supervisor_id: Optional[uuid.UUID] = None
+    supervisor_name: Optional[str] = Field(None, max_length=160)
+    supervisor_phone: Optional[str] = Field(None, max_length=32)
 
 class DutyReassignRequest(BaseModel):
     driver_id: Optional[uuid.UUID] = None
     vehicle_id: Optional[uuid.UUID] = None
+    supervisor_id: Optional[uuid.UUID] = None
+    supervisor_name: Optional[str] = None
+    supervisor_phone: Optional[str] = None
     reason: str = Field(..., min_length=3)
 
 class DriverActionRequest(BaseModel):
@@ -177,6 +186,9 @@ class DutyResponse(DutyBase):
     organisation_id: uuid.UUID
     driver_id: Optional[uuid.UUID] = None
     vehicle_id: Optional[uuid.UUID] = None
+    supervisor_id: Optional[uuid.UUID] = None
+    supervisor_name: Optional[str] = None
+    supervisor_phone: Optional[str] = None
     start_time: Optional[datetime.datetime] = None
     end_time: Optional[datetime.datetime] = None
     start_km: Optional[float] = None

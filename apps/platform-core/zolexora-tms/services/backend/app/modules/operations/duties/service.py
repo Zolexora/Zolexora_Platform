@@ -107,6 +107,9 @@ async def create_duty(ctx: OrgContext, req: DutyCreate) -> DutyResponse:
         booking_id=req.booking_id,
         driver_id=req.driver_id,
         vehicle_id=req.vehicle_id,
+        supervisor_id=req.supervisor_id,
+        supervisor_name=req.supervisor_name.strip() if req.supervisor_name else None,
+        supervisor_phone=req.supervisor_phone.strip() if req.supervisor_phone else None,
         scheduled_start_time=req.scheduled_start_time,
         scheduled_end_time=req.scheduled_end_time,
         notes=req.notes,
@@ -319,8 +322,16 @@ async def assign_duty(ctx: OrgContext, duty_id: uuid.UUID, req: DutyAssignReques
     previous = duty.status
     duty.driver_id = req.driver_id
     duty.vehicle_id = req.vehicle_id
+    duty.supervisor_id = req.supervisor_id
+    duty.supervisor_name = req.supervisor_name.strip() if req.supervisor_name else None
+    duty.supervisor_phone = req.supervisor_phone.strip() if req.supervisor_phone else None
     duty.status = DutyStatus.ASSIGNED
-    _audit(ctx, duty, "DUTY_ASSIGNED", previous, {"driver_id": str(req.driver_id), "vehicle_id": str(req.vehicle_id)})
+    _audit(ctx, duty, "DUTY_ASSIGNED", previous, {
+        "driver_id": str(req.driver_id),
+        "vehicle_id": str(req.vehicle_id),
+        "supervisor_id": str(req.supervisor_id) if req.supervisor_id else None,
+        "supervisor_name": duty.supervisor_name,
+    })
     return await _commit_and_broadcast(ctx, duty, "duty.assigned")
 
 
