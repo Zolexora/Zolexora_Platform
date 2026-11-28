@@ -16,7 +16,7 @@
     "@zolexora/shop-sign-in": "workspace:*",
     "axios": "^1.7.0",
     "framer-motion": "^13.1.0",
-    "zustand": "^5.0.0",
+    "zustand": "^5.1.0",
     "lucide-react": "^0.460.0",
     "clsx": "^2.1.1",
     "tailwind-merge": "^2.5.4",
