@@ -1,12 +1,12 @@
 """Enable RLS + tenant isolation policy for shift_rosters and fastag_transactions.
 
-Revision ID: o10000000011
+Revision ID: p10000000012
 Revises: n10000000010
 Create Date: 2026-11-27
 """
 from alembic import op
 
-revision = "o10000000011"
+revision = "p10000000012"
 down_revision = "n10000000010"
 branch_labels = None
 depends_on = None

@@ -106,7 +106,7 @@ async def test_postgres_engine_row_level_security():
 
 @pytest.mark.asyncio
 async def test_shift_rosters_rls_isolation():
-    """shift_rosters rows must be invisible across tenants (migration o10000000011)."""
+    """shift_rosters rows must be invisible across tenants (migration p10000000012)."""
     org_a = uuid.uuid4()
     org_b = uuid.uuid4()
 
@@ -170,7 +170,7 @@ async def test_shift_rosters_rls_isolation():
 
 @pytest.mark.asyncio
 async def test_fastag_transactions_rls_isolation():
-    """fastag_transactions rows must be invisible across tenants (migration o10000000011)."""
+    """fastag_transactions rows must be invisible across tenants (migration p10000000012)."""
     org_a = uuid.uuid4()
     org_b = uuid.uuid4()
 

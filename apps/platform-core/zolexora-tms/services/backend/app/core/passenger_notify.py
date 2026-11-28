@@ -21,6 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.audit import record_audit
 from app.core.config import settings
 from app.core.websocket import ws_manager
+from app.core.push import send_passenger_boarding_pin_push
 from app.modules.fleet.drivers.models import Driver
 from app.modules.fleet.vehicles.models import Vehicle
 from app.modules.operations.bookings.enums import BookingServiceType
@@ -106,6 +107,26 @@ async def _dispatch_external(
             except Exception as exc:
                 logger.warning("Resend passenger email error: %s", exc)
 
+    # Expo push notifications to passengers who have registered device tokens
+    duty_id = payload.get("duty_id", "")
+    stage = payload.get("stage", "")
+    tracking_url = payload.get("tracking_url")
+    for r in recipients:
+        push_token = r.get("push_token")
+        if not push_token:
+            continue
+        try:
+            await send_passenger_boarding_pin_push(
+                token=push_token,
+                duty_number=duty_number,
+                duty_id=duty_id,
+                boarding_pin=r.get("boarding_pin"),
+                stage=stage,
+                tracking_url=tracking_url,
+            )
+        except Exception as exc:
+            logger.warning("Passenger push error: %s", exc)
+
 
 async def notify_passengers_for_duty(
     db: AsyncSession,
@@ -181,6 +202,7 @@ async def notify_passengers_for_duty(
                 "boarding_pin": pin,
                 "message": msg,
                 "wa_url": f"https://wa.me/{digits}?text={quote(msg)}" if digits else None,
+                "push_token": None,  # populated below if DeviceToken available
             })
 
     pax = booking.passenger_info if isinstance(booking.passenger_info, dict) else {}
@@ -207,6 +229,7 @@ async def notify_passengers_for_duty(
             "boarding_pin": booking.boarding_pin,
             "message": msg,
             "wa_url": f"https://wa.me/{digits}?text={quote(msg)}" if digits else None,
+            "push_token": None,  # populated below if DeviceToken available
         })
 
     summary_message = recipients[0]["message"] if recipients else _compose_message(

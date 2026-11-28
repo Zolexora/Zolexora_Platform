@@ -93,6 +93,41 @@ async def send_trip_exception_push(
     )
 
 
+async def send_passenger_boarding_pin_push(
+    *,
+    token: str,
+    duty_number: str,
+    duty_id: str,
+    boarding_pin: Optional[str],
+    stage: str,
+    tracking_url: Optional[str] = None,
+) -> None:
+    """Push boarding PIN + live tracking link to a passenger's device token."""
+    stage_label = {
+        "DISPATCHED": "🚦 Your cab is dispatched",
+        "ARRIVED_PICKUP": "📍 Your cab has arrived",
+        "IN_TRANSIT": "🚗 Your trip has started",
+    }.get(stage, f"Trip update ({stage})")
+
+    body_parts = [f"{stage_label} — {duty_number}."]
+    if boarding_pin:
+        body_parts.append(f"Boarding PIN: {boarding_pin}")
+    if tracking_url:
+        body_parts.append("Track live in the app.")
+
+    await send_expo_push(
+        token=token,
+        title=stage_label,
+        body=" ".join(body_parts),
+        data={
+            "screen": "passenger-trip",
+            "duty_id": duty_id,
+            "boarding_pin": boarding_pin or "",
+            "tracking_url": tracking_url or "",
+        },
+    )
+
+
 async def send_eway_bill_alert_push(
     *,
     token: str,
