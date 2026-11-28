@@ -1,6 +1,16 @@
 import { apiClient } from '@/lib/api';
 
-export type ComplianceCategory = 'STATUTORY' | 'CONTRACTUAL' | 'INTERNAL' | 'SAFETY';
+export type ComplianceCategory =
+  | 'STATUTORY'
+  | 'CONTRACTUAL'
+  | 'INTERNAL'
+  | 'SAFETY'
+  | 'KYC_IDENTITY'
+  | 'TAX_GST'
+  | 'FINANCIAL_BANKING'
+  | 'INSURANCE'
+  | 'PERMIT_LICENSE'
+  | 'OPERATIONAL';
 export type ComplianceEntityType = 'ORGANISATION' | 'VEHICLE' | 'DRIVER' | 'VENDOR' | 'CUSTOMER' | 'SERVICE' | 'ROUTE' | 'DUTY';
 export type ComplianceStatus = 'MISSING' | 'PENDING' | 'VERIFICATION_REQUIRED' | 'VALID' | 'EXPIRING_SOON' | 'EXPIRED' | 'REJECTED' | 'WAIVED';
 

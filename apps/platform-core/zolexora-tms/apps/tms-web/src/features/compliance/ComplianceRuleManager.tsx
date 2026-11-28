@@ -221,10 +221,15 @@ export function ComplianceRuleManager() {
                     onChange={(e) => setFormData({ ...formData, category: e.target.value as ComplianceCategory })}
                     className="w-full rounded-lg border border-silver-900 bg-brand-near px-3 py-2 text-white focus:border-navy-500 focus:outline-none"
                   >
-                    <option value="STATUTORY">Statutory (Legal/RTO)</option>
-                    <option value="CONTRACTUAL">Contractual (Client Specific)</option>
+                    <option value="STATUTORY">Statutory (Legal / RTO)</option>
+                    <option value="KYC_IDENTITY">KYC &amp; Identity (PAN / Aadhaar / DL)</option>
+                    <option value="TAX_GST">Tax &amp; GST (GSTIN / TDS / ITR)</option>
+                    <option value="FINANCIAL_BANKING">Financial &amp; Banking (Bank / Cheque)</option>
+                    <option value="INSURANCE">Insurance &amp; Indemnity</option>
+                    <option value="PERMIT_LICENSE">Permits &amp; Licenses (Permit / Fitness / PUC)</option>
+                    <option value="CONTRACTUAL">Contractual (Client / Vendor Specific)</option>
                     <option value="SAFETY">Safety Policy</option>
-                    <option value="INTERNAL">Internal Zolexora Policy</option>
+                    <option value="OPERATIONAL">Operational / SLA</option>
                   </select>
                 </div>
               </div>
