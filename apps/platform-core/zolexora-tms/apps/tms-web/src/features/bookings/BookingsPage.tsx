@@ -1159,63 +1159,57 @@ export function BookingsPage() {
                 </select>
               </div>
 
-              {/* Booking Type + Service Type */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">Booking Type (Our Services) *</label>
-                  <select
-                    required
-                    value={requestForm.booking_type}
-                    onChange={(e) => {
-                      const code = e.target.value;
-                      const match = orgServices.find((s) => s.code === code);
-                      setRequestForm({
-                        ...requestForm,
-                        booking_type: code as BookingType,
-                        service_type: match ? match.service_category : requestForm.service_type,
-                      });
-                    }}
-                    className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:border-navy-500 focus:outline-none"
-                  >
-                    {orgServices.length === 0 ? (
-                      <option value="">No services added yet</option>
-                    ) : (
-                      <>
-                        <option value="">Select a service...</option>
-                        {orgServices
-                          .filter((s) =>
-                            (serviceConfig.passenger && s.service_category === 'PASSENGER') ||
-                            (serviceConfig.cargo && s.service_category === 'CARGO')
-                          )
-                          .map((s) => (
-                            <option key={s.id} value={s.code}>
-                              {s.name}
-                            </option>
-                          ))}
-                      </>
-                    )}
-                  </select>
-                  {orgServices.length === 0 && (
-                    <p className="mt-1 text-[11px] text-amber-300">
-                      Add your services in{' '}
-                      <Link to="/create-services" className="underline font-semibold">
-                        Create Services
-                      </Link>{' '}
-                      first.
-                    </p>
+              {/* Booking Type (Our Services) */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-medium text-slate-400">Booking Type (Our Services) *</label>
+                  {requestForm.booking_type && (
+                    <span className="rounded bg-slate-800 px-2 py-0.5 text-[10px] font-semibold text-silver-300">
+                      {requestForm.service_type}
+                    </span>
                   )}
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">Service Type</label>
-                  <select
-                    value={requestForm.service_type}
-                    onChange={(e) => setRequestForm({ ...requestForm, service_type: e.target.value as BookingServiceType })}
-                    className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:border-navy-500 focus:outline-none"
-                  >
-                    {serviceConfig.passenger && <option value="PASSENGER">Passenger Transit</option>}
-                    {serviceConfig.cargo && <option value="CARGO">Cargo / Parcel</option>}
-                  </select>
-                </div>
+                <select
+                  required
+                  value={requestForm.booking_type}
+                  onChange={(e) => {
+                    const code = e.target.value;
+                    const match = orgServices.find((s) => s.code === code);
+                    setRequestForm({
+                      ...requestForm,
+                      booking_type: code as BookingType,
+                      service_type: match ? match.service_category : requestForm.service_type,
+                    });
+                  }}
+                  className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:border-navy-500 focus:outline-none"
+                >
+                  {orgServices.length === 0 ? (
+                    <option value="">No services added yet</option>
+                  ) : (
+                    <>
+                      <option value="">Select a service...</option>
+                      {orgServices
+                        .filter((s) =>
+                          (serviceConfig.passenger && s.service_category === 'PASSENGER') ||
+                          (serviceConfig.cargo && s.service_category === 'CARGO')
+                        )
+                        .map((s) => (
+                          <option key={s.id} value={s.code}>
+                            {s.name}
+                          </option>
+                        ))}
+                    </>
+                  )}
+                </select>
+                {orgServices.length === 0 && (
+                  <p className="mt-1 text-[11px] text-amber-300">
+                    Add your services in{' '}
+                    <Link to="/create-services" className="underline font-semibold">
+                      Create Services
+                    </Link>{' '}
+                    first.
+                  </p>
+                )}
               </div>
 
               {/* Passenger / Cargo Details */}
