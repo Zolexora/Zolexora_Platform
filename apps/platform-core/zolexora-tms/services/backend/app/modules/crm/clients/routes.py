@@ -1,6 +1,6 @@
 import uuid
 from typing import List, Optional
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 from app.auth.dependencies import get_tenant_context, get_current_user, AuthenticatedUser
@@ -17,11 +17,14 @@ from app.modules.crm.clients.service import ClientService
 router = APIRouter(prefix="/api/v1/crm/clients", tags=["Clients"])
 
 def get_client_service(
+    request: Request,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
-    user: AuthenticatedUser = Depends(get_current_user)
+    user: AuthenticatedUser = Depends(get_current_user),
 ) -> ClientService:
-    return ClientService(db, tenant, user.id)
+    auth_header = request.headers.get("authorization") or ""
+    token = auth_header[7:].strip() if auth_header.lower().startswith("bearer ") else None
+    return ClientService(db, tenant, user.id, auth_token=token)
 
 @router.get("", response_model=List[ClientResponse])
 async def list_clients(

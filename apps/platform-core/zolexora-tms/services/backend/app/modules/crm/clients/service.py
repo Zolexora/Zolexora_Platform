@@ -6,6 +6,7 @@ from pydantic import ValidationError
 from sqlalchemy import desc, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
+from app.auth.zolexora import reserve_or_verify_partner_id
 from app.core.tenant import TenantContext
 from app.modules.crm.clients.models import Client, ClientLocation, ClientOperatingUnit, ClientLocationOUHistory
 from app.modules.crm.clients.repository import ClientRepository, ClientLocationRepository, ClientOperatingUnitRepository, ClientLocationOUHistoryRepository
@@ -31,10 +32,11 @@ def _normalize_partner_code(raw: Optional[str]) -> Optional[str]:
 
 
 class ClientService:
-    def __init__(self, db: AsyncSession, tenant: TenantContext, current_user_id: uuid.UUID = None):
+    def __init__(self, db: AsyncSession, tenant: TenantContext, current_user_id: uuid.UUID = None, auth_token: Optional[str] = None):
         self.db = db
         self.tenant = tenant
         self.current_user_id = current_user_id
+        self.auth_token = auth_token
         self.client_repo = ClientRepository(db, tenant)
         self.location_repo = ClientLocationRepository(db, tenant)
         self.client_ou_repo = ClientOperatingUnitRepository(db, tenant)
@@ -101,12 +103,20 @@ class ClientService:
         payload["gstin"] = payload["gstin"].strip().upper() if payload.get("gstin") else None
         payload["pan"] = payload["pan"].strip().upper() if payload.get("pan") else None
         zx_handle = _normalize_partner_code(payload.get("zolexora_org_id"))
-        if payload.get("is_zolexora_user") and zx_handle:
-            payload["zolexora_org_id"] = zx_handle
-            payload["client_code"] = zx_handle
+        is_zx = bool(payload.get("is_zolexora_user"))
+        reserved = await reserve_or_verify_partner_id(
+            kind="client",
+            is_zolexora_user=is_zx,
+            zolexora_id=zx_handle,
+            bearer_token=self.auth_token,
+        )
+        if is_zx and (reserved or zx_handle):
+            handle = reserved or zx_handle
+            payload["zolexora_org_id"] = handle
+            payload["client_code"] = handle
         else:
             payload["zolexora_org_id"] = None
-            payload["client_code"] = _generate_client_code()
+            payload["client_code"] = reserved or _generate_client_code()
 
         await self._ensure_unique_tax_ids(payload["gstin"], payload["pan"])
         try:

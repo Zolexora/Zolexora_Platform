@@ -7,6 +7,7 @@ from sqlalchemy import desc, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth.zolexora import reserve_or_verify_partner_id
 from app.modules.core.audit.models import AuditLog
 from app.modules.crm.vendors.models import Vendor, VendorStatus, VendorType
 from app.modules.crm.vendors.schemas import (
@@ -97,9 +98,21 @@ async def create_vendor(
     actor_id: uuid.UUID,
     req: VendorCreate,
     db: AsyncSession,
+    auth_token: Optional[str] = None,
 ) -> VendorResponse:
     await _ensure_unique_gstin(org_id=org_id, gstin=req.gstin, db=db)
+    zx_handle = _normalize_partner_code(req.zolexora_org_id)
+    reserved = await reserve_or_verify_partner_id(
+        kind="vendor",
+        is_zolexora_user=bool(req.is_zolexora_user),
+        zolexora_id=zx_handle,
+        bearer_token=auth_token,
+    )
     vendor, audit = _build_vendor_and_audit(org_id=org_id, actor_id=actor_id, req=req)
+    if reserved:
+        vendor.vendor_code = reserved
+        if req.is_zolexora_user:
+            vendor.zolexora_org_id = reserved
     db.add(vendor)
     db.add(audit)
 

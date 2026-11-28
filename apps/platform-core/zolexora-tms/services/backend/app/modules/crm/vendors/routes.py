@@ -1,6 +1,6 @@
 import uuid
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -56,14 +56,18 @@ async def find_vendor_for_caller(
 @router.post("", response_model=VendorResponse, status_code=status.HTTP_201_CREATED)
 async def create_vendor(
     req: VendorCreate,
+    request: Request,
     ctx: CurrentUserContext = Depends(get_current_active_organisation),
     db: AsyncSession = Depends(get_db),
 ):
+    auth_header = request.headers.get("authorization") or ""
+    token = auth_header[7:].strip() if auth_header.lower().startswith("bearer ") else None
     return await service.create_vendor(
         org_id=ctx.organisation_id,
         actor_id=ctx.user_id,
         req=req,
         db=db,
+        auth_token=token,
     )
 
 

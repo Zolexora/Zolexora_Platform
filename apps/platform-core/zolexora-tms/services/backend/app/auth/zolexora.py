@@ -139,3 +139,46 @@ async def introspect(token: str) -> Dict[str, Any]:
         _cache.popitem(last=False)
     _cache[key] = (now + CACHE_TTL_SECONDS, identity)
     return identity
+
+
+async def reserve_or_verify_partner_id(
+    *,
+    kind: str,
+    is_zolexora_user: bool,
+    zolexora_id: Optional[str] = None,
+    bearer_token: Optional[str] = None,
+) -> Optional[str]:
+    """Calls auth-service POST /api/v1/partners/reserve-id to verify a connected org
+    or reserve a Track 2 external partner handle (c/v/sp<8-digits>@zolexora.com).
+    Returns None in test environment or when AUTH_SERVICE_URL / token is absent."""
+    if settings.ENVIRONMENT == "test" or not bearer_token:
+        return None
+    base = auth_service_url()
+    if not base:
+        return None
+
+    from fastapi import HTTPException
+
+    payload: Dict[str, Any] = {
+        "kind": kind,
+        "is_zolexora_user": is_zolexora_user,
+    }
+    if zolexora_id:
+        payload["zolexora_id"] = zolexora_id
+
+    try:
+        client = _get_client()
+        res = await client.post(
+            f"{base}/api/v1/partners/reserve-id",
+            json=payload,
+            headers={"Authorization": f"Bearer {bearer_token}"},
+        )
+    except httpx.HTTPError as exc:
+        raise HTTPException(status_code=502, detail="Auth service unreachable while reserving partner ID") from exc
+
+    if res.status_code in (400, 404, 409):
+        err = res.json() if res.headers.get("content-type", "").startswith("application/json") else {}
+        raise HTTPException(status_code=res.status_code, detail=err.get("message") or "Partner Zolexora ID validation failed")
+    if res.status_code != 200:
+        raise HTTPException(status_code=502, detail=f"Auth service returned {res.status_code} while reserving partner ID")
+    return (res.json() or {}).get("zolexora_id")
