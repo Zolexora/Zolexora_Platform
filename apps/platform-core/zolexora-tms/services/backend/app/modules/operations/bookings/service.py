@@ -1,8 +1,9 @@
 import datetime
 import secrets
 import uuid
-from typing import Optional
+from typing import Any, Optional
 from fastapi import HTTPException, status
+from pydantic import ValidationError
 from sqlalchemy import select
 
 from app.auth.dependencies import OrgContext
@@ -11,7 +12,13 @@ from app.core.geocoding import geocoding_service
 from app.core.websocket import ws_manager
 from app.modules.crm.clients.models import Client
 from app.modules.operations.bookings.models import Booking
-from app.modules.operations.bookings.schemas import BookingCreate, BookingResponse, BookingStatus
+from app.modules.operations.bookings.schemas import (
+    BookingBulkCreateResponse,
+    BookingBulkItemError,
+    BookingCreate,
+    BookingResponse,
+    BookingStatus,
+)
 
 
 def new_booking_number() -> str:
@@ -104,6 +111,164 @@ async def create_booking(ctx: OrgContext, req: BookingCreate) -> BookingResponse
         {"booking_id": str(booking.id), "booking_number": booking.booking_number, "customer_id": str(req.customer_id)},
     )
     return BookingResponse.model_validate(booking)
+
+
+def _parse_bulk_datetime(val: Any) -> datetime.datetime:
+    if isinstance(val, datetime.datetime):
+        return val if val.tzinfo else val.replace(tzinfo=datetime.timezone.utc)
+    s = str(val).strip()
+    if not s:
+        raise ValueError("pickup_datetime is required")
+    # Support "YYYY-MM-DD HH:MM" and ISO formats
+    normalized = s.replace(" ", "T", 1) if len(s) >= 16 and s[10] == " " else s
+    dt = datetime.datetime.fromisoformat(normalized)
+    if dt.tzinfo is None:
+        ist = datetime.timezone(datetime.timedelta(hours=5, minutes=30))
+        dt = dt.replace(tzinfo=ist)
+    return dt
+
+
+async def bulk_create_bookings(
+    ctx: OrgContext,
+    items: list[dict[str, Any]],
+) -> BookingBulkCreateResponse:
+    clients_rows = (
+        await ctx.db.execute(
+            select(Client.id, Client.name, Client.client_code).where(Client.organisation_id == ctx.organisation_id)
+        )
+    ).all()
+
+    by_id: dict[str, uuid.UUID] = {str(r.id): r.id for r in clients_rows}
+    by_code: dict[str, uuid.UUID] = {r.client_code.strip().upper(): r.id for r in clients_rows if r.client_code}
+    by_name: dict[str, uuid.UUID] = {r.name.strip().lower(): r.id for r in clients_rows if r.name}
+
+    created_bookings: list[Booking] = []
+    errors: list[BookingBulkItemError] = []
+
+    for idx, raw in enumerate(items, start=1):
+        cleaned = {
+            k: (v.strip() if isinstance(v, str) else v)
+            for k, v in raw.items()
+            if not (isinstance(v, str) and v.strip() == "")
+        }
+        ref = str(
+            cleaned.get("customer_name")
+            or cleaned.get("client_code")
+            or cleaned.get("customer_id")
+            or cleaned.get("pickup_address")
+            or ""
+        ).strip() or None
+
+        # Resolve customer_id from UUID, client_code, or client name
+        resolved_cid: Optional[uuid.UUID] = None
+        if cleaned.get("customer_id"):
+            resolved_cid = by_id.get(str(cleaned["customer_id"]).strip())
+        if not resolved_cid and cleaned.get("client_code"):
+            resolved_cid = by_code.get(str(cleaned["client_code"]).strip().upper())
+        if not resolved_cid and cleaned.get("customer_name"):
+            key = str(cleaned["customer_name"]).strip()
+            resolved_cid = by_code.get(key.upper()) or by_name.get(key.lower())
+
+        if not resolved_cid:
+            errors.append(BookingBulkItemError(row=idx, reference=ref, error="Customer not found in organisation (check Client Name or Code)"))
+            continue
+
+        try:
+            pickup_dt = _parse_bulk_datetime(cleaned.get("pickup_datetime", ""))
+        except Exception:
+            errors.append(BookingBulkItemError(row=idx, reference=ref, error="Invalid pickup_datetime (use YYYY-MM-DD HH:MM or ISO)"))
+            continue
+
+        svc_type = str(cleaned.get("service_type") or "PASSENGER").upper()
+        pax_info = dict(cleaned.get("passenger_info") or {})
+        if svc_type == "PASSENGER":
+            if cleaned.get("passenger_name"):
+                pax_info["name"] = str(cleaned["passenger_name"])
+            if cleaned.get("passenger_phone"):
+                pax_info["phone"] = str(cleaned["passenger_phone"])
+            if cleaned.get("passenger_count") is not None:
+                try:
+                    pax_info["count"] = int(cleaned["passenger_count"])
+                except (TypeError, ValueError):
+                    pass
+            if cleaned.get("shift_label"):
+                pax_info["shift"] = str(cleaned["shift_label"])
+
+        cargo_info = dict(cleaned.get("cargo_info") or {})
+        if svc_type == "CARGO":
+            if cleaned.get("cargo_material"):
+                cargo_info["material"] = str(cleaned["cargo_material"])
+            if cleaned.get("cargo_weight_kg") is not None:
+                try:
+                    cargo_info["weight_kg"] = float(cleaned["cargo_weight_kg"])
+                except (TypeError, ValueError):
+                    pass
+
+        payload = {
+            "customer_id": resolved_cid,
+            "booking_type": str(cleaned.get("booking_type") or "ETS").upper(),
+            "service_type": svc_type,
+            "pickup_address": cleaned.get("pickup_address", ""),
+            "drop_address": cleaned.get("drop_address", ""),
+            "pickup_datetime": pickup_dt,
+            "passenger_info": pax_info,
+            "cargo_info": cargo_info,
+            "operational_instructions": cleaned.get("operational_instructions"),
+            "eway_bill_number": cleaned.get("eway_bill_number"),
+            "source": "BULK_CSV",
+        }
+        try:
+            req = BookingCreate.model_validate(payload)
+        except ValidationError as exc:
+            msg = "; ".join(f"{'.'.join(str(p) for p in e['loc'])}: {e['msg']}" for e in exc.errors())
+            errors.append(BookingBulkItemError(row=idx, reference=ref, error=msg))
+            continue
+
+        data = req.model_dump()
+        pin, escort = passenger_safety_defaults(
+            req.service_type.value,
+            req.pickup_datetime,
+            existing_pin=data.get("boarding_pin"),
+            existing_escort=data.get("escort_required"),
+        )
+        data["boarding_pin"] = pin
+        data["escort_required"] = escort
+        data.update(
+            pickup_address=req.pickup_address.strip(),
+            drop_address=req.drop_address.strip(),
+        )
+        booking = Booking(
+            **data,
+            booking_number=new_booking_number(),
+            organisation_id=ctx.organisation_id,
+            status=BookingStatus.CONFIRMED,
+            created_by_user_id=ctx.user_id,
+        )
+        ctx.db.add(booking)
+        created_bookings.append(booking)
+
+    if created_bookings:
+        await ctx.db.flush()
+        for b in created_bookings:
+            record_audit(
+                ctx.db, ctx.organisation_id, ctx.user_id, "BOOKING_CREATED", "booking", b.id,
+                {"booking_number": b.booking_number, "customer_id": str(b.customer_id), "source": "BULK_CSV"},
+            )
+        await ctx.db.commit()
+        for b in created_bookings:
+            await ctx.db.refresh(b)
+        await ws_manager.broadcast_to_org(
+            ctx.organisation_id,
+            "bookings.bulk_created",
+            {"count": len(created_bookings)},
+        )
+
+    return BookingBulkCreateResponse(
+        created_count=len(created_bookings),
+        failed_count=len(errors),
+        created=[BookingResponse.model_validate(b) for b in created_bookings],
+        errors=errors,
+    )
 
 
 async def list_bookings(

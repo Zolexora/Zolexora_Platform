@@ -396,6 +396,36 @@ export interface BookingCreate {
   operational_instructions?: string;
 }
 
+export interface BookingBulkRow {
+  customer_name: string;
+  booking_type: BookingType;
+  service_type: BookingServiceType;
+  pickup_address: string;
+  drop_address: string;
+  pickup_datetime: string;
+  passenger_name?: string;
+  passenger_phone?: string;
+  passenger_count?: number;
+  shift_label?: string;
+  cargo_material?: string;
+  cargo_weight_kg?: number;
+  eway_bill_number?: string;
+  operational_instructions?: string;
+}
+
+export interface BookingBulkItemError {
+  row: number;
+  reference?: string;
+  error: string;
+}
+
+export interface BookingBulkCreateResponse {
+  created_count: number;
+  failed_count: number;
+  created: Booking[];
+  errors: BookingBulkItemError[];
+}
+
 export interface DutyBookingSummary {
   id: string;
   booking_number: string;

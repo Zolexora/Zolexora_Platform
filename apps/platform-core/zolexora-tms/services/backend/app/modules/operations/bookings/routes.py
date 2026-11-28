@@ -4,6 +4,8 @@ from fastapi import APIRouter, Body, Depends, Query, status
 
 from app.auth.dependencies import OrgContext, get_org_context
 from app.modules.operations.bookings.schemas import (
+    BookingBulkCreateRequest,
+    BookingBulkCreateResponse,
     BookingCreate,
     BookingResponse,
     BookingStatus,
@@ -21,6 +23,14 @@ async def create_booking(
     ctx: OrgContext = Depends(get_org_context),
 ):
     return await service.create_booking(ctx, req)
+
+
+@router.post("/bulk", response_model=BookingBulkCreateResponse, status_code=status.HTTP_201_CREATED)
+async def bulk_create_bookings(
+    req: BookingBulkCreateRequest,
+    ctx: OrgContext = Depends(get_org_context),
+):
+    return await service.bulk_create_bookings(ctx, req.bookings)
 
 
 @router.get("", response_model=list[BookingResponse])

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   CalendarCheck,
@@ -13,12 +13,16 @@ import {
   Truck,
   Eye,
   Download,
+  Upload,
   Ban,
   ClipboardList,
 } from 'lucide-react';
 import { apiClient } from '../../lib/api';
 import type {
   Booking,
+  BookingBulkCreateResponse,
+  BookingBulkItemError,
+  BookingBulkRow,
   BookingRequest,
   BookingRequestCreate,
   BookingOperationalStatus,
@@ -26,6 +30,156 @@ import type {
   BookingServiceType,
   Customer,
 } from '../../types';
+
+// ── Bulk CSV Helpers ─────────────────────────────────────────────────────────
+
+const BULK_TEMPLATE_HEADERS = [
+  'Client Name or Code', 'Booking Type', 'Service Type',
+  'Pickup Address', 'Drop Address', 'Pickup DateTime',
+  'Lead Passenger', 'Passenger Phone', 'Headcount', 'Shift Label',
+  'Cargo Material', 'Cargo Weight (kg)', 'E-Way Bill No', 'Instructions',
+];
+
+const BULK_HEADER_ALIASES: Record<string, string> = {
+  'client name or code': 'customer_name',
+  'client name': 'customer_name',
+  'client code': 'customer_name',
+  'customer': 'customer_name',
+  'customer_name': 'customer_name',
+  'client_code': 'customer_name',
+  'booking type': 'booking_type',
+  'booking_type': 'booking_type',
+  'service type': 'service_type',
+  'service_type': 'service_type',
+  'pickup address': 'pickup_address',
+  'pickup_address': 'pickup_address',
+  'pickup': 'pickup_address',
+  'drop address': 'drop_address',
+  'drop_address': 'drop_address',
+  'drop': 'drop_address',
+  'pickup datetime': 'pickup_datetime',
+  'pickup_datetime': 'pickup_datetime',
+  'pickup time': 'pickup_datetime',
+  'lead passenger': 'passenger_name',
+  'passenger name': 'passenger_name',
+  'passenger_name': 'passenger_name',
+  'passenger phone': 'passenger_phone',
+  'passenger_phone': 'passenger_phone',
+  'headcount': 'passenger_count',
+  'passenger count': 'passenger_count',
+  'passenger_count': 'passenger_count',
+  'shift label': 'shift_label',
+  'shift': 'shift_label',
+  'shift_label': 'shift_label',
+  'cargo material': 'cargo_material',
+  'material': 'cargo_material',
+  'cargo_material': 'cargo_material',
+  'cargo weight (kg)': 'cargo_weight_kg',
+  'weight': 'cargo_weight_kg',
+  'cargo_weight_kg': 'cargo_weight_kg',
+  'e-way bill no': 'eway_bill_number',
+  'eway bill': 'eway_bill_number',
+  'eway_bill_number': 'eway_bill_number',
+  'instructions': 'operational_instructions',
+  'operational_instructions': 'operational_instructions',
+};
+
+function splitCsvLine(line: string): string[] {
+  const cols: string[] = [];
+  let cur = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        cur += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (ch === ',' && !inQuotes) {
+      cols.push(cur.trim());
+      cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+  cols.push(cur.trim());
+  return cols;
+}
+
+function getBulkBookingRowError(r: BookingBulkRow): string | null {
+  if (!r.customer_name.trim()) return 'Client Name or Code required';
+  if (r.pickup_address.trim().length < 3) return 'Pickup address too short';
+  if (r.drop_address.trim().length < 3) return 'Drop address too short';
+  if (!r.pickup_datetime.trim()) return 'Pickup DateTime required';
+  return null;
+}
+
+function parseBookingCsv(text: string): { rows: BookingBulkRow[]; error?: string } {
+  const cleaned = text.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const lines = cleaned.split('\n').filter(Boolean);
+  if (lines.length < 2) return { rows: [], error: 'CSV must have a header row and at least one data row.' };
+
+  const header = splitCsvLine(lines[0]).map((h) => {
+    const norm = h.toLowerCase();
+    return BULK_HEADER_ALIASES[norm] ?? norm;
+  });
+  if (
+    !header.includes('customer_name') ||
+    !header.includes('pickup_address') ||
+    !header.includes('drop_address') ||
+    !header.includes('pickup_datetime')
+  ) {
+    return {
+      rows: [],
+      error: 'CSV must include Client Name or Code, Pickup Address, Drop Address, and Pickup DateTime columns.',
+    };
+  }
+
+  const rows: BookingBulkRow[] = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cols = splitCsvLine(lines[i]);
+    const get = (field: string) => {
+      const idx = header.indexOf(field);
+      return idx !== -1 ? cols[idx] || '' : '';
+    };
+    const countRaw = get('passenger_count');
+    const weightRaw = get('cargo_weight_kg');
+    rows.push({
+      customer_name: get('customer_name'),
+      booking_type: (get('booking_type').toUpperCase() || 'ETS') as BookingType,
+      service_type: (get('service_type').toUpperCase() || 'PASSENGER') as BookingServiceType,
+      pickup_address: get('pickup_address'),
+      drop_address: get('drop_address'),
+      pickup_datetime: get('pickup_datetime'),
+      passenger_name: get('passenger_name') || undefined,
+      passenger_phone: get('passenger_phone') || undefined,
+      passenger_count: countRaw ? Number(countRaw) || undefined : undefined,
+      shift_label: get('shift_label') || undefined,
+      cargo_material: get('cargo_material') || undefined,
+      cargo_weight_kg: weightRaw ? Number(weightRaw) || undefined : undefined,
+      eway_bill_number: get('eway_bill_number') || undefined,
+      operational_instructions: get('operational_instructions') || undefined,
+    });
+  }
+  return { rows };
+}
+
+function downloadBookingTemplate(sampleClient = 'Acme Corp') {
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+  const exampleRows = [
+    `"${sampleClient}",ETS,PASSENGER,"Electronic City Phase 1, Bengaluru","Manyata Tech Park Gate 2, Bengaluru","${tomorrow} 09:00","Ananya Sharma","+919876543210",3,"Morning Login 09:00",,,,Gate pass at reception`,
+    `"${sampleClient}",SPOT,CARGO,"Bhiwandi Logistics Park, Mumbai","JNPT Port Terminal 2, Navi Mumbai","${tomorrow} 14:30",,,,,IT Hardware,450,123456789012,Fragile cargo`,
+  ].join('\n');
+  const csv = [BULK_TEMPLATE_HEADERS.join(','), exampleRows].join('\n');
+  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'booking_bulk_template.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 // ── CSV Export ───────────────────────────────────────────────────────────────
 
@@ -118,6 +272,7 @@ const STATUS_FILTERS: { label: string; value: StatusFilter }[] = [
 
 export function BookingsPage() {
   const queryClient = useQueryClient();
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const [activeTab, setActiveTab] = useState<BookingTab>('bookings');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
@@ -129,6 +284,12 @@ export function BookingsPage() {
   const [dutyBooking, setDutyBooking] = useState<Booking | null>(null);
   const [formError, setFormError] = useState('');
   const [cancelConfirm, setCancelConfirm] = useState<Booking | null>(null);
+
+  // Bulk import state
+  const [isBulkOpen, setIsBulkOpen] = useState(false);
+  const [bulkRows, setBulkRows] = useState<BookingBulkRow[]>([]);
+  const [bulkParseError, setBulkParseError] = useState('');
+  const [bulkResult, setBulkResult] = useState<BookingBulkCreateResponse | null>(null);
 
   // Booking Request form
   const [requestForm, setRequestForm] = useState<BookingRequestCreate>(EMPTY_REQUEST);
@@ -247,6 +408,43 @@ export function BookingsPage() {
     onError: (err: Error) => setFormError(err.message),
   });
 
+  const bulkMutation = useMutation({
+    mutationFn: (rows: BookingBulkRow[]) =>
+      apiClient<BookingBulkCreateResponse>('/api/v1/bookings/bulk', {
+        method: 'POST',
+        body: JSON.stringify({ bookings: rows }),
+      }),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      setBulkResult(res);
+    },
+    onError: (err: Error) => setBulkParseError(err.message),
+  });
+
+  const handleBulkFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target?.result as string;
+      const { rows, error } = parseBookingCsv(text);
+      setBulkParseError(error || '');
+      setBulkRows(rows);
+      setBulkResult(null);
+    };
+    reader.readAsText(file);
+  };
+
+  const closeBulk = () => {
+    setIsBulkOpen(false);
+    setBulkRows([]);
+    setBulkParseError('');
+    setBulkResult(null);
+    if (fileRef.current) fileRef.current.value = '';
+  };
+
+  const validBulkRows = bulkRows.filter((r) => !getBulkBookingRowError(r));
+
   const openDutyModal = (b: Booking) => {
     setDutyBooking(b);
     const start = new Date(b.pickup_datetime).toISOString().slice(0, 16);
@@ -304,6 +502,13 @@ export function BookingsPage() {
           >
             <Download className="h-4 w-4" />
             Export CSV
+          </button>
+          <button
+            onClick={() => setIsBulkOpen(true)}
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-slate-700 hover:text-white transition"
+          >
+            <Upload className="h-4 w-4" />
+            Bulk Import
           </button>
           <button
             onClick={() => {
@@ -1223,6 +1428,157 @@ export function BookingsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Bulk Import Bookings Modal ─────────────────────────────────────── */}
+      {isBulkOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="w-full max-w-3xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl space-y-4 my-8">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div>
+                <h2 className="text-lg font-bold text-white">Bulk Import Bookings</h2>
+                <p className="text-xs text-slate-400">
+                  Upload a CSV to create confirmed bookings in bulk (up to 5,000 rows).
+                </p>
+              </div>
+              <button onClick={closeBulk} className="text-slate-400 hover:text-white">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-950/60 px-4 py-3 text-xs">
+              <span className="text-slate-400">
+                Match clients by <strong className="text-slate-200">Client Name</strong> or{' '}
+                <strong className="text-slate-200">Client Code</strong>. Night-shift passenger bookings auto-generate a Boarding PIN &amp; Escort flag.
+              </span>
+              <button
+                type="button"
+                onClick={() => downloadBookingTemplate(customers?.[0]?.name || 'Acme Corp')}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 font-medium text-silver-300 hover:bg-slate-700 hover:text-white transition shrink-0"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Download Template
+              </button>
+            </div>
+
+            <div>
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".csv,text/csv"
+                onChange={handleBulkFileChange}
+                className="block w-full text-xs text-slate-400 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-800 file:px-4 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:bg-slate-700 cursor-pointer"
+              />
+              {bulkParseError && (
+                <p className="mt-2 flex items-center gap-1 text-xs text-red-400">
+                  <AlertCircle className="h-3.5 w-3.5" />
+                  {bulkParseError}
+                </p>
+              )}
+            </div>
+
+            {bulkRows.length > 0 && !bulkResult && (
+              <div className="space-y-2">
+                <p className="text-xs text-slate-400">
+                  Previewing {Math.min(5, bulkRows.length)} of{' '}
+                  <span className="font-semibold text-white">{bulkRows.length}</span> rows (
+                  <span className="text-silver-300">{validBulkRows.length} valid</span>)
+                </p>
+                <div className="overflow-x-auto rounded-lg border border-slate-800">
+                  <table className="w-full text-left text-xs text-slate-300">
+                    <thead className="bg-slate-800/80 text-slate-400">
+                      <tr>
+                        <th className="px-3 py-2">Client</th>
+                        <th className="px-3 py-2">Type</th>
+                        <th className="px-3 py-2">Route</th>
+                        <th className="px-3 py-2">Pickup Time</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/60">
+                      {bulkRows.slice(0, 5).map((r, i) => {
+                        const rowErr = getBulkBookingRowError(r);
+                        return (
+                          <tr key={i} className={rowErr ? 'bg-red-500/10' : ''}>
+                            <td className="px-3 py-2 font-medium text-white">
+                              {r.customer_name || <span className="text-red-400">(missing)</span>}
+                              {rowErr && <div className="text-[10px] text-red-400">{rowErr}</div>}
+                            </td>
+                            <td className="px-3 py-2 font-mono">
+                              {r.booking_type} · {r.service_type}
+                            </td>
+                            <td className="px-3 py-2 max-w-[220px] truncate">
+                              {r.pickup_address} → {r.drop_address}
+                            </td>
+                            <td className="px-3 py-2 font-mono">{r.pickup_datetime || '—'}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {bulkResult && (
+              <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/60 p-4 text-xs">
+                <div className="flex items-center gap-4">
+                  <span className="inline-flex items-center gap-1.5 font-semibold text-silver-300">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                    {bulkResult.created_count} bookings created
+                  </span>
+                  {bulkResult.failed_count > 0 && (
+                    <span className="inline-flex items-center gap-1.5 font-semibold text-red-400">
+                      <AlertCircle className="h-4 w-4" />
+                      {bulkResult.failed_count} failed
+                    </span>
+                  )}
+                </div>
+                {bulkResult.errors.length > 0 && (
+                  <div className="max-h-40 overflow-y-auto rounded-lg border border-slate-800">
+                    <table className="w-full text-left text-xs text-slate-300">
+                      <thead className="bg-slate-800/80 text-slate-400">
+                        <tr>
+                          <th className="px-3 py-1.5">Row</th>
+                          <th className="px-3 py-1.5">Reference</th>
+                          <th className="px-3 py-1.5">Error</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/60">
+                        {bulkResult.errors.map((err: BookingBulkItemError, i: number) => (
+                          <tr key={i}>
+                            <td className="px-3 py-1.5 font-mono">{err.row}</td>
+                            <td className="px-3 py-1.5">{err.reference || '---'}</td>
+                            <td className="px-3 py-1.5 text-red-400">{err.error}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="flex justify-end gap-3 pt-3 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={closeBulk}
+                className="rounded-lg px-4 py-2 text-sm text-slate-400 hover:text-white"
+              >
+                {bulkResult ? 'Close' : 'Cancel'}
+              </button>
+              {!bulkResult && (
+                <button
+                  type="button"
+                  disabled={bulkRows.length === 0 || bulkMutation.isPending}
+                  onClick={() => bulkMutation.mutate(bulkRows)}
+                  className="inline-flex items-center gap-2 rounded-lg bg-navy-600 px-5 py-2 text-sm font-semibold text-white hover:bg-navy-600 disabled:opacity-50 transition"
+                >
+                  {bulkMutation.isPending ? 'Importing...' : `Import ${bulkRows.length} Bookings`}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}

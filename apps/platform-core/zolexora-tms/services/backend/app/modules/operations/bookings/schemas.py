@@ -93,3 +93,20 @@ class EwayBillCheckResponse(BaseModel):
     expiring_soon_count: int
     expired_count: int
     alerts: list[Dict[str, Any]] = Field(default_factory=list)
+
+
+class BookingBulkItemError(BaseModel):
+    row: int
+    reference: Optional[str] = None
+    error: str
+
+
+class BookingBulkCreateRequest(BaseModel):
+    bookings: list[Dict[str, Any]] = Field(..., min_length=1, max_length=5000)
+
+
+class BookingBulkCreateResponse(BaseModel):
+    created_count: int
+    failed_count: int
+    created: list[BookingResponse]
+    errors: list[BookingBulkItemError]
