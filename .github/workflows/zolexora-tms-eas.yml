@@ -45,7 +45,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-node
       - name: Run TypeScript check
-        run: pnpm --filter @zolexora/tms-mobile run typecheck
+        run: pnpm --filter @zolexora/utils build && pnpm --filter @zolexora/tms-mobile run typecheck
 
   eas-build:
     name: EAS Build (${{ inputs.platform || 'android' }} / ${{ inputs.profile || 'production' }})
