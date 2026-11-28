@@ -391,8 +391,8 @@ importers:
   apps/platform-apps/clarityfi/apps/mobile:
     dependencies:
       expo-clipboard:
-        specifier: ^8.0.8
-        version: 8.0.8(54e7f4aea0e1fc59df7614b1110fc724)
+        specifier: ^58.0.4
+        version: 58.0.4(54e7f4aea0e1fc59df7614b1110fc724)
       expo-local-authentication:
         specifier: ^17.0.8
         version: 17.0.9(03cd8dd57bc6d56ae269aebd617816b4)
@@ -12997,8 +12997,8 @@ packages:
       react: 19.1.0
       react-native: '*'
 
-  expo-clipboard@8.0.8:
-    resolution: {integrity: sha512-VKoBkHIpZZDJTB0jRO4/PZskHdMNOEz3P/41tmM6fDuODMpqhvyWK053X0ebspkxiawJX9lX33JXHBCvVsTTOA==}
+  expo-clipboard@58.0.4:
+    resolution: {integrity: sha512-b2eEJMwdWXLTrmrkg/otsmL2OV6s9D90tytSNBsY87UswrWf6JwxcB2OaWegyUWD9XnvtBVNeVK7lej0zZh+5A==}
     peerDependencies:
       expo: '*'
       react: 19.1.0
@@ -32495,7 +32495,7 @@ snapshots:
       - react-native-screens
       - react-native-webview
 
-  expo-clipboard@8.0.8(54e7f4aea0e1fc59df7614b1110fc724):
+  expo-clipboard@58.0.4(54e7f4aea0e1fc59df7614b1110fc724):
     dependencies:
       expo: 54.0.37(986090f79d59315f3f12c5ed83aaf91f)
       react: 19.1.0
