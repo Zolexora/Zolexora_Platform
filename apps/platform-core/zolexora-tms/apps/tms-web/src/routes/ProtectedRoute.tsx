@@ -30,10 +30,5 @@ export function ProtectedRoute() {
     return <Navigate to="/authentication" replace />;
   }
 
-  // Client workspaces don't belong in the SP portal
-  if (authMe?.workspace_type === 'CLIENT') {
-    return <Navigate to="/client/dashboard" replace />;
-  }
-
   return <Outlet />;
 }

@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../features/auth/useAuth';
 import { useApplicationRuntime } from '../providers/ApplicationRuntimeProvider';
+import { resolveServiceConfig } from '../lib/serviceConfig';
 import { SidebarBrand, useSidebarCollapsed } from '../components/SidebarBrand';
 import { TopRightProfileMenu, SP_ADMIN_MENU_ITEMS } from '../components/TopRightProfileMenu';
 
@@ -77,11 +78,21 @@ const navigation = [
       { name: 'Financial Periods', href: '/sp/financial-periods', icon: FileText },
     ],
   },
+  {
+    section: 'Client Portal',
+    items: [
+      { name: 'Book Transport', href: '/sp/client/bookings', icon: CalendarCheck },
+      { name: 'Trip Tracking', href: '/sp/client/duties', icon: Radio },
+      { name: 'Client Invoices', href: '/sp/client/invoices', icon: Receipt },
+      { name: 'Client Payments', href: '/sp/client/payments', icon: CreditCard },
+    ],
+  },
 ];
 
 export function DashboardLayout() {
   const { user, authMe, organisation, zolexoraOrgId, personalSignedIn, isCommander, switchBusiness, signOut } = useAuth();
   const runtime = useApplicationRuntime();
+  const serviceConfig = resolveServiceConfig(runtime, authMe?.workspace_type);
   const navigate = useNavigate();
   const { collapsed, toggleCollapsed } = useSidebarCollapsed();
 
@@ -89,12 +100,21 @@ export function DashboardLayout() {
   const financeModule = runtime.modules['finance'];
 
   const filteredNavigation = navigation.map(group => {
+    if (group.section === 'Client Portal') {
+      return serviceConfig.client ? group : { ...group, items: [] };
+    }
+    if (group.section !== 'Overview' && !serviceConfig.service_provider) {
+      return { ...group, items: [] };
+    }
     // Check canonical module & page flags (`!== false` so absent keys default to enabled).
     if (group.section === 'Operations') {
       if (opsModule?.enabled === false) return { ...group, items: [] };
       return {
         ...group,
         items: group.items.filter(item => {
+          if (!serviceConfig.passenger && (item.name === 'Shift Rosters' || item.name === 'SLA & Safety Audit')) {
+            return false;
+          }
           const pageCode =
             item.name === 'Bookings' ? 'bookings' :
             item.name === 'Duties' ? 'duties' :

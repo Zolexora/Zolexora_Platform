@@ -5,9 +5,7 @@ import { ZolexoraAuthProvider } from '@zolexora/auth-client/react';
 import { AUTH_SERVICE_PUBLIC_URL, TURNSTILE_SITE_KEY } from './lib/runtime';
 import { AuthenticationForm } from './components/authentication-form';
 import { ProtectedRoute } from './routes/ProtectedRoute';
-import { ClientRoute } from './routes/ClientRoute';
 import { DashboardLayout } from './layouts/DashboardLayout';
-import { ClientDashboardLayout } from './layouts/ClientDashboardLayout';
 import { DashboardPage } from './features/dashboard/DashboardPage';
 import { BookingsPage } from './features/bookings/BookingsPage';
 import { DutiesPage } from './features/duties/DutiesPage';
@@ -42,12 +40,10 @@ import { SolutionsPage } from './pages/SolutionsPage';
 import { PricingPage } from './pages/PricingPage';
 import { AboutPage } from './pages/AboutPage';
 import { ContactPage } from './pages/ContactPage';
-import { ClientDashboardPage } from './features/client-dashboard/ClientDashboardPage';
 import { ClientBookingsPage } from './features/client-bookings/ClientBookingsPage';
 import { ClientDutiesPage } from './features/client-duties/ClientDutiesPage';
 import { ClientInvoicesPage } from './features/client-invoices/ClientInvoicesPage';
 import { ClientPaymentsPage } from './features/client-payments/ClientPaymentsPage';
-import { ClientSettingsPage } from './features/client-settings/ClientSettingsPage';
 import { UserProfilePage } from './features/profile/UserProfilePage';
 import { AcceptInvitePage } from './pages/AcceptInvitePage';
 import { PublicTrackingPage } from './pages/PublicTrackingPage';
@@ -146,21 +142,15 @@ export function App() {
                 <Route path="settings/roles" element={<RolesPage />} />
                 <Route path="settings/members" element={<MembersPage />} />
                 <Route path="profile" element={<UserProfilePage />} />
+                <Route path="client/bookings" element={<ClientBookingsPage />} />
+                <Route path="client/duties" element={<ClientDutiesPage />} />
+                <Route path="client/invoices" element={<ClientInvoicesPage />} />
+                <Route path="client/payments" element={<ClientPaymentsPage />} />
               </Route>
             </Route>
 
-            {/* Client Portal — isolated workspace for CLIENT organisations */}
-            <Route element={<ClientRoute />}>
-              <Route element={<ApplicationRuntimeProvider><ClientDashboardLayout /></ApplicationRuntimeProvider>}>
-                <Route path="/client/dashboard" element={<ClientDashboardPage />} />
-                <Route path="/client/bookings" element={<ClientBookingsPage />} />
-                <Route path="/client/duties" element={<ClientDutiesPage />} />
-                <Route path="/client/invoices" element={<ClientInvoicesPage />} />
-                <Route path="/client/payments" element={<ClientPaymentsPage />} />
-                <Route path="/client/settings" element={<ClientSettingsPage />} />
-                <Route path="/client/profile" element={<UserProfilePage />} />
-              </Route>
-            </Route>
+            {/* Legacy /client/* routes unified into /sp/* */}
+            <Route path="/client/*" element={<Navigate to="/sp/dashboard" replace />} />
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

@@ -8,12 +8,18 @@ import {
   Link2,
   Loader2,
   CheckCircle2,
+  Truck,
+  Users,
+  Package,
+  Sliders,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { listBusinesses } from '@zolexora/auth-client/business-session';
 import { useAuth } from '../auth/useAuth';
+import { useApplicationRuntime } from '../../providers/ApplicationRuntimeProvider';
+import { resolveServiceConfig, type ServiceConfig } from '../../lib/serviceConfig';
 import { apiClient } from '../../lib/api';
-import { getPersonalToken } from '../../lib/session';
+import { clearBootstrapCache, getPersonalToken } from '../../lib/session';
 import { AUTH_SERVICE_PUBLIC_URL } from '../../lib/runtime';
 import {
   closeCentralOrganisation,
@@ -38,6 +44,36 @@ export function WorkspaceSettingsPage() {
     hasAuthPermission,
     signOut,
   } = useAuth();
+  const runtime = useApplicationRuntime();
+  const currentServiceConfig = resolveServiceConfig(runtime, authMe?.workspace_type);
+
+  const serviceConfigMutation = useMutation({
+    mutationFn: (next: ServiceConfig) =>
+      apiClient<ServiceConfig>('/api/v1/application/service-config', {
+        method: 'PUT',
+        body: JSON.stringify(next),
+      }),
+    onSuccess: () => {
+      clearBootstrapCache();
+      queryClient.invalidateQueries({ queryKey: ['application-runtime'] });
+      queryClient.invalidateQueries({ queryKey: ['auth-bootstrap'] });
+      window.location.reload();
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const handleToggleServiceConfig = (patch: Partial<ServiceConfig>) => {
+    const next: ServiceConfig = { ...currentServiceConfig, ...patch };
+    if (patch.service_provider === true && !next.cargo && !next.passenger) {
+      next.cargo = true;
+      next.passenger = true;
+    }
+    if (!next.service_provider && !next.client) {
+      toast.error('At least one mode (Service Provider or Client) must remain enabled.');
+      return;
+    }
+    serviceConfigMutation.mutate(next);
+  };
 
   const canEditProfile = isCommander || hasAuthPermission('org:profile:edit');
   const canManageSecurity = isCommander || hasAuthPermission('org:security:manage');
@@ -183,8 +219,164 @@ export function WorkspaceSettingsPage() {
       <div>
         <h1 className="text-2xl font-bold text-white">Organisation Profile & Security</h1>
         <p className="text-sm text-slate-400">
-          Centralised business profile, PAN classification, MFA policy, and ownership managed via Zolexora Auth Service.
+          Centralised business profile, service type features, PAN classification, MFA policy, and ownership.
         </p>
+      </div>
+
+      {/* Service Type & Feature Configuration */}
+      <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-6 space-y-5">
+        <div className="flex items-center justify-between gap-4 border-b border-slate-800 pb-4">
+          <div className="flex items-center gap-3">
+            <Sliders className="h-5 w-5 text-cyan-400" />
+            <div>
+              <h2 className="text-lg font-semibold text-white">Service Type &amp; Features</h2>
+              <p className="text-xs text-slate-400">
+                Select active workspace modes and service lines. Toggling any option saves and refreshes the workspace immediately.
+              </p>
+            </div>
+          </div>
+          {serviceConfigMutation.isPending && (
+            <span className="inline-flex items-center gap-1.5 text-xs text-cyan-300">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              Applying &amp; refreshing…
+            </span>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Service Provider Card + Cargo & Passenger subsections */}
+          <div
+            className={`rounded-xl border p-4 space-y-4 transition ${
+              currentServiceConfig.service_provider
+                ? 'border-cyan-500/50 bg-cyan-950/15'
+                : 'border-slate-800 bg-slate-950/50'
+            }`}
+          >
+            <button
+              type="button"
+              disabled={serviceConfigMutation.isPending}
+              onClick={() =>
+                handleToggleServiceConfig({
+                  service_provider: !currentServiceConfig.service_provider,
+                })
+              }
+              className="flex w-full items-start justify-between gap-3 text-left disabled:opacity-60"
+            >
+              <div className="flex items-start gap-3">
+                <div className="rounded-lg bg-navy-800/60 p-2 text-cyan-300">
+                  <Truck className="h-5 w-5" />
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-white">Service Provider</div>
+                  <div className="text-xs text-slate-400">
+                    Fleet, bookings, duties, dispatch tower, billing &amp; vendor settlements.
+                  </div>
+                </div>
+              </div>
+              <span
+                className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold border ${
+                  currentServiceConfig.service_provider
+                    ? 'border-cyan-500/40 bg-cyan-500/15 text-cyan-300'
+                    : 'border-slate-700 bg-slate-800 text-slate-400'
+                }`}
+              >
+                {currentServiceConfig.service_provider ? 'Enabled' : 'Disabled'}
+              </span>
+            </button>
+
+            {/* Subsections: Cargo & Passenger */}
+            <div className="border-t border-slate-800/80 pt-3 pl-2 space-y-2">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                Service Provider Subsections
+              </p>
+              <div className="grid grid-cols-2 gap-2.5">
+                <button
+                  type="button"
+                  disabled={!currentServiceConfig.service_provider || serviceConfigMutation.isPending}
+                  onClick={() =>
+                    handleToggleServiceConfig({ cargo: !currentServiceConfig.cargo })
+                  }
+                  className={`flex items-center justify-between rounded-lg border px-3 py-2 text-xs font-medium transition disabled:opacity-40 ${
+                    currentServiceConfig.cargo && currentServiceConfig.service_provider
+                      ? 'border-cyan-500/40 bg-cyan-500/10 text-cyan-200'
+                      : 'border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700'
+                  }`}
+                >
+                  <span className="inline-flex items-center gap-1.5">
+                    <Package className="h-3.5 w-3.5" />
+                    Cargo
+                  </span>
+                  <span className="text-[10px] font-semibold">
+                    {currentServiceConfig.cargo ? 'ON' : 'OFF'}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={!currentServiceConfig.service_provider || serviceConfigMutation.isPending}
+                  onClick={() =>
+                    handleToggleServiceConfig({ passenger: !currentServiceConfig.passenger })
+                  }
+                  className={`flex items-center justify-between rounded-lg border px-3 py-2 text-xs font-medium transition disabled:opacity-40 ${
+                    currentServiceConfig.passenger && currentServiceConfig.service_provider
+                      ? 'border-cyan-500/40 bg-cyan-500/10 text-cyan-200'
+                      : 'border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700'
+                  }`}
+                >
+                  <span className="inline-flex items-center gap-1.5">
+                    <Users className="h-3.5 w-3.5" />
+                    Passenger
+                  </span>
+                  <span className="text-[10px] font-semibold">
+                    {currentServiceConfig.passenger ? 'ON' : 'OFF'}
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Client Card */}
+          <div
+            className={`rounded-xl border p-4 flex flex-col justify-between transition ${
+              currentServiceConfig.client
+                ? 'border-cyan-500/50 bg-cyan-950/15'
+                : 'border-slate-800 bg-slate-950/50'
+            }`}
+          >
+            <button
+              type="button"
+              disabled={serviceConfigMutation.isPending}
+              onClick={() =>
+                handleToggleServiceConfig({ client: !currentServiceConfig.client })
+              }
+              className="flex w-full items-start justify-between gap-3 text-left disabled:opacity-60"
+            >
+              <div className="flex items-start gap-3">
+                <div className="rounded-lg bg-cyan-950/60 p-2 text-cyan-300">
+                  <Building2 className="h-5 w-5" />
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-white">Client</div>
+                  <div className="text-xs text-slate-400">
+                    Book transport, live trip tracking, client invoices &amp; payments inside this unified workspace.
+                  </div>
+                </div>
+              </div>
+              <span
+                className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold border ${
+                  currentServiceConfig.client
+                    ? 'border-cyan-500/40 bg-cyan-500/15 text-cyan-300'
+                    : 'border-slate-700 bg-slate-800 text-slate-400'
+                }`}
+              >
+                {currentServiceConfig.client ? 'Enabled' : 'Disabled'}
+              </span>
+            </button>
+            <div className="mt-4 pt-3 border-t border-slate-800/80 text-[11px] text-slate-500">
+              Can be enabled alongside Service Provider or used standalone in the same unified portal.
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Legacy Workspace Link Banner */}
