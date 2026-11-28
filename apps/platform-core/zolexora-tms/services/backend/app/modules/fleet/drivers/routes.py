@@ -7,7 +7,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.dependencies import get_current_active_organisation, CurrentUserContext
 from app.db.session import get_db
 from app.modules.fleet.drivers.models import Driver, DriverStatus, DriverType
-from app.modules.fleet.drivers.schemas import DriverCreate, DriverResponse, DriverUpdate
+from app.modules.fleet.drivers.schemas import (
+    DriverBulkCreateRequest,
+    DriverBulkCreateResponse,
+    DriverCreate,
+    DriverResponse,
+    DriverUpdate,
+)
 from app.modules.fleet.drivers import service
 
 router = APIRouter(prefix="/api/v1/drivers", tags=["Drivers"])
@@ -57,6 +63,20 @@ async def create_driver(
         org_id=ctx.organisation_id,
         actor_id=ctx.user_id,
         req=req,
+        db=db,
+    )
+
+
+@router.post("/bulk", response_model=DriverBulkCreateResponse, status_code=status.HTTP_201_CREATED)
+async def bulk_create_drivers(
+    req: DriverBulkCreateRequest,
+    ctx: CurrentUserContext = Depends(get_current_active_organisation),
+    db: AsyncSession = Depends(get_db),
+):
+    return await service.bulk_create_drivers(
+        org_id=ctx.organisation_id,
+        actor_id=ctx.user_id,
+        items=req.drivers,
         db=db,
     )
 

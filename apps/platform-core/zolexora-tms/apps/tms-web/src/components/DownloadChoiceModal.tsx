@@ -5,7 +5,7 @@ import { downloadApiBlob } from '../lib/api';
 export interface DownloadTarget {
   /** Label shown in modal header, e.g. "MH12AB1234", "Tata Consumer", or "All Vehicles" */
   title: string;
-  entityType: 'VEHICLE' | 'VENDOR' | 'CUSTOMER';
+  entityType: 'VEHICLE' | 'VENDOR' | 'CUSTOMER' | 'DRIVER';
   /** Omit for Export All */
   entityId?: string;
   /** Callback to download the tabular details CSV */

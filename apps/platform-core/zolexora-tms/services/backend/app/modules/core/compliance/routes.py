@@ -316,6 +316,11 @@ async def export_compliance_docs(
 
         rows = (await db.execute(select(Client.id, Client.name).where(Client.id.in_(entity_ids)))).all()
         folder_map = {eid: _safe_zip_segment(name, str(eid)) for eid, name in rows}
+    elif entity_type == ComplianceEntityType.DRIVER:
+        from app.modules.fleet.drivers.models import Driver
+
+        rows = (await db.execute(select(Driver.id, Driver.full_name).where(Driver.id.in_(entity_ids)))).all()
+        folder_map = {eid: _safe_zip_segment(name, str(eid)) for eid, name in rows}
 
     downloads = await asyncio.gather(
         *(download_document_bytes(r.document_url or "") for r in records),

@@ -152,7 +152,11 @@ export interface VendorBulkCreateResponse {
 export interface Driver {
   id: string;
   organisation_id: string;
+  driver_code?: string;
   vendor_id?: string;
+  vendor_code?: string;
+  vendor_name?: string;
+  vendor_pan?: string;
   full_name: string;
   phone: string;
   alternate_phone?: string;
@@ -173,6 +177,7 @@ export interface Driver {
 
 export interface DriverCreate {
   vendor_id?: string;
+  vendor_code?: string;
   full_name: string;
   phone: string;
   alternate_phone?: string;
@@ -184,6 +189,19 @@ export interface DriverCreate {
   aadhaar_last4?: string;
   pan?: string;
   driver_type?: 'PERMANENT' | 'CONTRACT' | 'MARKET';
+}
+
+export interface DriverBulkItemError {
+  row: number;
+  full_name?: string;
+  error: string;
+}
+
+export interface DriverBulkCreateResponse {
+  created_count: number;
+  failed_count: number;
+  created: Driver[];
+  errors: DriverBulkItemError[];
 }
 
 export type VehicleBodyType =
