@@ -9,17 +9,27 @@ import { EntityComplianceManager } from '../compliance/EntityComplianceManager';
 
 // Display headers used in the downloaded CSV template
 const TEMPLATE_HEADERS = [
-  'Vendor / Supplier name', 'vendor_type', 'contact_person', 'email', 'phone',
-  'address', 'GSTIN / Aadhaar No', 'pan', 'bank_account_name', 'bank_account_number',
-  'bank_ifsc', 'bank_name',
+  'Vendor / Supplier Name', 'Vendor Type', 'Contact Person', 'Email', 'Phone',
+  'Address', 'GSTIN / Aadhaar No', 'PAN', 'Bank Account Name', 'Bank Account Number',
+  'Bank IFSC', 'Bank Name',
 ];
 
 // Map friendly display headers → internal field keys (case-insensitive)
 const HEADER_ALIASES: Record<string, string> = {
   'vendor / supplier name': 'name',
   'vendor/supplier name': 'name',
+  'vendor type': 'vendor_type',
+  'contact person': 'contact_person',
+  'email': 'email',
+  'phone': 'phone',
+  'address': 'address',
   'gstin / aadhaar no': 'gstin',
   'gstin/aadhaar no': 'gstin',
+  'pan': 'pan',
+  'bank account name': 'bank_account_name',
+  'bank account number': 'bank_account_number',
+  'bank ifsc': 'bank_ifsc',
+  'bank name': 'bank_name',
 };
 
 const VENDOR_TYPES = ['FLEET_SUPPLIER', 'DCO', 'EMI_DRIVER', 'WORKSHOP', 'FUEL_PARTNER', 'BROKER', 'OTHER'] as const;
