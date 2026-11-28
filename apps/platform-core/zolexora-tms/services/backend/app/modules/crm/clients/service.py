@@ -1,16 +1,24 @@
 import uuid
-from typing import List, Optional
+from typing import Any, List, Optional
 from fastapi import HTTPException, status
+from pydantic import ValidationError
+from sqlalchemy import desc, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from app.core.tenant import TenantContext
 from app.modules.crm.clients.models import Client, ClientLocation, ClientOperatingUnit, ClientLocationOUHistory
 from app.modules.crm.clients.repository import ClientRepository, ClientLocationRepository, ClientOperatingUnitRepository, ClientLocationOUHistoryRepository
 from app.modules.crm.clients.schemas import (
+    ClientBulkCreateResponse, ClientBulkItemError, ClientResponse,
     ClientCreate, ClientUpdate, ClientLocationCreate, ClientLocationUpdate,
     ClientOURelationshipRequest, ClientLocationTransferRequest
 )
 from app.modules.operations.operating_units.repository import OperatingUnitRepository
+
+
+def _generate_client_code() -> str:
+    return f"CLT-{uuid.uuid4().hex[:8].upper()}"
+
 
 class ClientService:
     def __init__(self, db: AsyncSession, tenant: TenantContext, current_user_id: uuid.UUID = None):
@@ -23,8 +31,53 @@ class ClientService:
         self.history_repo = ClientLocationOUHistoryRepository(db, tenant)
         self.ou_repo = OperatingUnitRepository(db, tenant)
 
-    async def list_clients(self) -> List[Client]:
-        return await self.client_repo.list_all()
+    async def _ensure_unique_tax_ids(
+        self,
+        gstin: Optional[str],
+        pan: Optional[str],
+        exclude_client_id: Optional[uuid.UUID] = None,
+    ) -> None:
+        org_id = self.tenant.organisation_id
+        if gstin:
+            stmt = select(Client.id).where(Client.organisation_id == org_id, Client.gstin == gstin)
+            if exclude_client_id is not None:
+                stmt = stmt.where(Client.id != exclude_client_id)
+            if (await self.db.execute(stmt.limit(1))).scalar_one_or_none() is not None:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"Client with GSTIN / Aadhaar No '{gstin}' already exists",
+                )
+        if pan:
+            stmt = select(Client.id).where(Client.organisation_id == org_id, Client.pan == pan)
+            if exclude_client_id is not None:
+                stmt = stmt.where(Client.id != exclude_client_id)
+            if (await self.db.execute(stmt.limit(1))).scalar_one_or_none() is not None:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"Client with PAN '{pan}' already exists",
+                )
+
+    async def list_clients(self, search: Optional[str] = None) -> List[Client]:
+        if not search or not search.strip():
+            return await self.client_repo.list_all()
+        term = f"%{search.strip()}%"
+        stmt = (
+            select(Client)
+            .where(
+                Client.organisation_id == self.tenant.organisation_id,
+                or_(
+                    Client.name.ilike(term),
+                    Client.client_code.ilike(term),
+                    Client.gstin.ilike(term),
+                    Client.pan.ilike(term),
+                    Client.phone.ilike(term),
+                    Client.email.ilike(term),
+                ),
+            )
+            .order_by(desc(Client.created_at))
+        )
+        res = await self.db.execute(stmt)
+        return list(res.scalars().all())
 
     async def get_client(self, client_id: uuid.UUID) -> Client:
         client = await self.client_repo.get_by_id(client_id)
@@ -33,17 +86,140 @@ class ClientService:
         return client
 
     async def create_client(self, data: ClientCreate) -> Client:
+        payload = data.model_dump()
+        payload["name"] = payload["name"].strip()
+        payload["gstin"] = payload["gstin"].strip().upper() if payload.get("gstin") else None
+        payload["pan"] = payload["pan"].strip().upper() if payload.get("pan") else None
+        payload["client_code"] = _generate_client_code()
+
+        await self._ensure_unique_tax_ids(payload["gstin"], payload["pan"])
         try:
-            return await self.client_repo.create(**data.model_dump())
+            return await self.client_repo.create(**payload)
         except IntegrityError:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Client code or name conflict")
+            await self.db.rollback()
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Client code, GSTIN, or PAN conflict")
+
+    async def bulk_create_clients(self, items: list[dict[str, Any]]) -> ClientBulkCreateResponse:
+        org_id = self.tenant.organisation_id
+        created_clients: list[Client] = []
+        errors: list[ClientBulkItemError] = []
+        parsed_rows: list[tuple[int, ClientCreate]] = []
+
+        for idx, raw in enumerate(items, start=1):
+            cleaned = {
+                k: (v.strip() if isinstance(v, str) else v)
+                for k, v in raw.items()
+                if not (isinstance(v, str) and v.strip() == "")
+            }
+            try:
+                req = ClientCreate.model_validate(cleaned)
+            except ValidationError as exc:
+                msg = "; ".join(f"{'.'.join(str(p) for p in e['loc'])}: {e['msg']}" for e in exc.errors())
+                errors.append(
+                    ClientBulkItemError(
+                        row=idx,
+                        name=str(cleaned.get("name")) if cleaned.get("name") else None,
+                        error=msg,
+                    )
+                )
+                continue
+            parsed_rows.append((idx, req))
+
+        candidate_gstins = {req.gstin for _, req in parsed_rows if req.gstin}
+        candidate_pans = {req.pan for _, req in parsed_rows if req.pan}
+
+        existing_gstins: set[str] = set()
+        if candidate_gstins:
+            res = await self.db.execute(
+                select(Client.gstin).where(Client.organisation_id == org_id, Client.gstin.in_(candidate_gstins))
+            )
+            existing_gstins = {g for g in res.scalars().all() if g}
+
+        existing_pans: set[str] = set()
+        if candidate_pans:
+            res = await self.db.execute(
+                select(Client.pan).where(Client.organisation_id == org_id, Client.pan.in_(candidate_pans))
+            )
+            existing_pans = {p for p in res.scalars().all() if p}
+
+        seen_gstins: set[str] = set()
+        seen_pans: set[str] = set()
+
+        for idx, req in parsed_rows:
+            if req.gstin and (req.gstin in existing_gstins or req.gstin in seen_gstins):
+                errors.append(
+                    ClientBulkItemError(
+                        row=idx,
+                        name=req.name,
+                        error=f"Duplicate GSTIN / Aadhaar No '{req.gstin}' already exists",
+                    )
+                )
+                continue
+            if req.pan and (req.pan in existing_pans or req.pan in seen_pans):
+                errors.append(
+                    ClientBulkItemError(
+                        row=idx,
+                        name=req.name,
+                        error=f"Duplicate PAN '{req.pan}' already exists",
+                    )
+                )
+                continue
+
+            if req.gstin:
+                seen_gstins.add(req.gstin)
+            if req.pan:
+                seen_pans.add(req.pan)
+
+            client = Client(
+                id=uuid.uuid4(),
+                organisation_id=org_id,
+                client_code=_generate_client_code(),
+                name=req.name.strip(),
+                contact_person=req.contact_person.strip() if req.contact_person else None,
+                email=req.email.strip() if req.email else None,
+                phone=req.phone.strip() if req.phone else None,
+                billing_address=req.billing_address.strip() if req.billing_address else None,
+                gstin=req.gstin,
+                pan=req.pan,
+                payment_terms_days=req.payment_terms_days if req.payment_terms_days is not None else 30,
+                credit_limit=req.credit_limit if req.credit_limit is not None else 0.0,
+                notes=req.notes.strip() if req.notes else None,
+            )
+            self.db.add(client)
+            created_clients.append(client)
+
+        if created_clients:
+            await self.db.commit()
+            for client in created_clients:
+                await self.db.refresh(client)
+
+        errors.sort(key=lambda e: e.row)
+        return ClientBulkCreateResponse(
+            created_count=len(created_clients),
+            failed_count=len(errors),
+            created=[ClientResponse.model_validate(c) for c in created_clients],
+            errors=errors,
+        )
 
     async def update_client(self, client_id: uuid.UUID, data: ClientUpdate) -> Client:
         update_data = data.model_dump(exclude_unset=True)
+        if "name" in update_data and update_data["name"]:
+            update_data["name"] = update_data["name"].strip()
+        if "gstin" in update_data:
+            update_data["gstin"] = update_data["gstin"].strip().upper() if update_data["gstin"] else None
+        if "pan" in update_data:
+            update_data["pan"] = update_data["pan"].strip().upper() if update_data["pan"] else None
+
+        await self._ensure_unique_tax_ids(
+            update_data.get("gstin"),
+            update_data.get("pan"),
+            exclude_client_id=client_id,
+        )
         try:
             client = await self.client_repo.update(client_id, **update_data)
         except IntegrityError:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Client code or name conflict")
+            await self.db.rollback()
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Client code, GSTIN, or PAN conflict")
         
         if not client:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client not found")

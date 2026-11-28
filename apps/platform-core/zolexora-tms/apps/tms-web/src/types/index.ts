@@ -58,6 +58,7 @@ export interface InviteMemberRequest {
 export interface Customer {
   id: string;
   organisation_id: string;
+  client_code?: string;
   name: string;
   contact_person?: string;
   email?: string;
@@ -67,7 +68,7 @@ export interface Customer {
   pan?: string;
   payment_terms_days: number;
   credit_limit: string;
-  status: 'ACTIVE' | 'INACTIVE';
+  status: 'ACTIVE' | 'INACTIVE' | 'ONBOARDING' | 'SUSPENDED';
   notes?: string;
   created_at: string;
   updated_at: string;
@@ -84,6 +85,19 @@ export interface CustomerCreate {
   payment_terms_days?: number;
   credit_limit?: string;
   notes?: string;
+}
+
+export interface CustomerBulkItemError {
+  row: number;
+  name?: string;
+  error: string;
+}
+
+export interface CustomerBulkCreateResponse {
+  created_count: number;
+  failed_count: number;
+  created: Customer[];
+  errors: CustomerBulkItemError[];
 }
 
 export interface Vendor {

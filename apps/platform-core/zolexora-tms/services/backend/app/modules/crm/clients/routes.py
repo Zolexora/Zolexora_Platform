@@ -1,12 +1,13 @@
 import uuid
-from typing import List
-from fastapi import APIRouter, Depends, status
+from typing import List, Optional
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 from app.auth.dependencies import get_tenant_context, get_current_user, AuthenticatedUser
 from app.core.tenant import TenantContext
 from app.modules.crm.clients.schemas import (
     ClientCreate, ClientUpdate, ClientResponse,
+    ClientBulkCreateRequest, ClientBulkCreateResponse,
     ClientLocationCreate, ClientLocationUpdate, ClientLocationResponse,
     ClientOURelationshipRequest, ClientOURelationshipResponse,
     ClientLocationTransferRequest, ClientLocationOUHistoryResponse
@@ -23,12 +24,19 @@ def get_client_service(
     return ClientService(db, tenant, user.id)
 
 @router.get("", response_model=List[ClientResponse])
-async def list_clients(service: ClientService = Depends(get_client_service)):
-    return await service.list_clients()
+async def list_clients(
+    search: Optional[str] = Query(None, min_length=1, max_length=100),
+    service: ClientService = Depends(get_client_service),
+):
+    return await service.list_clients(search=search)
 
 @router.post("", response_model=ClientResponse, status_code=status.HTTP_201_CREATED)
 async def create_client(data: ClientCreate, service: ClientService = Depends(get_client_service)):
     return await service.create_client(data)
+
+@router.post("/bulk", response_model=ClientBulkCreateResponse, status_code=status.HTTP_201_CREATED)
+async def bulk_create_clients(data: ClientBulkCreateRequest, service: ClientService = Depends(get_client_service)):
+    return await service.bulk_create_clients(data.clients)
 
 @router.get("/{client_id}", response_model=ClientResponse)
 async def get_client(client_id: uuid.UUID, service: ClientService = Depends(get_client_service)):

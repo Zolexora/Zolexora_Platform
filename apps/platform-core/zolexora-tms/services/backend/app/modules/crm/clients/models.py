@@ -1,6 +1,6 @@
 import enum
 import uuid
-from sqlalchemy import Enum, ForeignKey, ForeignKeyConstraint, String, UniqueConstraint, DECIMAL, Integer
+from sqlalchemy import Enum, ForeignKey, ForeignKeyConstraint, Index, String, UniqueConstraint, DECIMAL, Integer, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base, TimestampMixin
@@ -16,6 +16,7 @@ class Client(Base, TimestampMixin):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     organisation_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("organisations.id", ondelete="CASCADE"), nullable=False, index=True)
+    client_code: Mapped[str | None] = mapped_column(String(32), nullable=True)
     name: Mapped[str] = mapped_column(String(160), nullable=False)
     contact_person: Mapped[str | None] = mapped_column(String(120), nullable=True)
     email: Mapped[str | None] = mapped_column(String(160), nullable=True)
@@ -32,6 +33,27 @@ class Client(Base, TimestampMixin):
 
     __table_args__ = (
         UniqueConstraint("id", "organisation_id", name="uq_client_id_organisation_id"),
+        Index(
+            "uq_clients_org_client_code",
+            "organisation_id",
+            "client_code",
+            unique=True,
+            postgresql_where=text("client_code IS NOT NULL"),
+        ),
+        Index(
+            "uq_clients_org_gstin",
+            "organisation_id",
+            "gstin",
+            unique=True,
+            postgresql_where=text("gstin IS NOT NULL AND gstin <> ''"),
+        ),
+        Index(
+            "uq_clients_org_pan",
+            "organisation_id",
+            "pan",
+            unique=True,
+            postgresql_where=text("pan IS NOT NULL AND pan <> ''"),
+        ),
     )
 
 class ClientLocation(Base, TimestampMixin):
